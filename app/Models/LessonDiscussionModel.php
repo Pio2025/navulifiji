@@ -1,0 +1,211 @@
+<?php
+namespace App\Models;
+use CodeIgniter\Model;
+
+class LessonDiscussionModel extends Model
+{
+    protected $table      = 'lesson_discussion';
+    protected $primaryKey = 'lesson_discussion_id';
+    protected $returnType = 'array';
+    protected $useTimestamps = false;
+
+    protected $allowedFields = [
+        'lesson_id_fk', 'author', 'message',
+        'created_at', 'updated_at', 'created_time', 'message_status',
+    ];
+
+    public function ensureTables(): void
+    {
+        $db  = \Config\Database::connect();
+        $forge = \Config\Database::forge();
+
+        if (!$db->tableExists('lesson_discussion_like')) {
+            $forge->addField([
+                'like_id'          => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+                'discussion_id_fk' => ['type' => 'INT', 'unsigned' => false, 'null' => false],
+                'user_id_fk'       => ['type' => 'INT', 'unsigned' => false, 'null' => false],
+                'like_type'        => ['type' => 'ENUM', 'constraint' => ['like', 'dislike'], 'null' => false],
+            ]);
+            $forge->addPrimaryKey('like_id');
+            $forge->addUniqueKey(['discussion_id_fk', 'user_id_fk']);
+            $forge->createTable('lesson_discussion_like', true);
+        }
+
+        if (!$db->tableExists('lesson_discussion_comment')) {
+            $forge->addField([
+                'comment_id'       => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+                'discussion_id_fk' => ['type' => 'INT', 'unsigned' => false, 'null' => false],
+                'author'           => ['type' => 'INT', 'unsigned' => false, 'null' => false],
+                'comment'          => ['type' => 'LONGTEXT', 'null' => false],
+                'created_at'       => ['type' => 'DATETIME', 'null' => true],
+                'comment_status'   => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
+            ]);
+            $forge->addPrimaryKey('comment_id');
+            $forge->createTable('lesson_discussion_comment', true);
+        }
+
+        if (!$db->tableExists('lesson_discussion_comment_like')) {
+            $forge->addField([
+                'clike_id'      => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+                'comment_id_fk' => ['type' => 'INT', 'unsigned' => false, 'null' => false],
+                'user_id_fk'    => ['type' => 'INT', 'unsigned' => false, 'null' => false],
+                'like_type'     => ['type' => 'ENUM', 'constraint' => ['like', 'dislike'], 'null' => false, 'default' => 'like'],
+            ]);
+            $forge->addPrimaryKey('clike_id');
+            $forge->addUniqueKey(['comment_id_fk', 'user_id_fk']);
+            $forge->createTable('lesson_discussion_comment_like', true);
+        } elseif (!$db->fieldExists('like_type', 'lesson_discussion_comment_like')) {
+            $db->query("ALTER TABLE lesson_discussion_comment_like ADD COLUMN like_type ENUM('like','dislike') NOT NULL DEFAULT 'like'");
+        }
+    }
+
+    public function getDiscussions(int $lessonId, int $userId): array
+    {
+        $db   = \Config\Database::connect();
+        $rows = $db->query("
+            SELECT
+                ld.lesson_discussion_id,
+                ld.message,
+                ld.created_at,
+                ld.author AS author_id,
+                CONCAT(u.fname, ' ', u.lname) AS author_name,
+                u.profile_photo AS author_photo,
+                (SELECT COUNT(*) FROM lesson_discussion_comment ldc
+                 WHERE ldc.discussion_id_fk = ld.lesson_discussion_id AND ldc.comment_status = 'Active') AS comment_count,
+                (SELECT COUNT(*) FROM lesson_discussion_like ldl
+                 WHERE ldl.discussion_id_fk = ld.lesson_discussion_id AND ldl.like_type = 'like') AS like_count,
+                (SELECT COUNT(*) FROM lesson_discussion_like ldl
+                 WHERE ldl.discussion_id_fk = ld.lesson_discussion_id AND ldl.like_type = 'dislike') AS dislike_count,
+                (SELECT ldl2.like_type FROM lesson_discussion_like ldl2
+                 WHERE ldl2.discussion_id_fk = ld.lesson_discussion_id AND ldl2.user_id_fk = ?
+                 LIMIT 1) AS user_reaction
+            FROM lesson_discussion ld
+            INNER JOIN users u ON u.user_id = ld.author
+            WHERE ld.lesson_id_fk = ? AND ld.message_status = 1
+            ORDER BY ld.created_at DESC
+        ", [$userId, $lessonId])->getResultArray();
+
+        foreach ($rows as &$row) {
+            $row['comments'] = $this->getComments((int) $row['lesson_discussion_id'], $userId);
+        }
+        return $rows;
+    }
+
+    public function getComments(int $discussionId, int $userId = 0): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                ldc.comment_id,
+                ldc.comment,
+                ldc.created_at,
+                ldc.author AS author_id,
+                CONCAT(u.fname, ' ', u.lname) AS author_name,
+                u.profile_photo AS author_photo,
+                (SELECT COUNT(*) FROM lesson_discussion_comment_like cl
+                 WHERE cl.comment_id_fk = ldc.comment_id AND cl.like_type = 'like') AS like_count,
+                (SELECT COUNT(*) FROM lesson_discussion_comment_like cl
+                 WHERE cl.comment_id_fk = ldc.comment_id AND cl.like_type = 'dislike') AS dislike_count,
+                (SELECT cl2.like_type FROM lesson_discussion_comment_like cl2
+                 WHERE cl2.comment_id_fk = ldc.comment_id AND cl2.user_id_fk = ? LIMIT 1) AS user_reaction
+            FROM lesson_discussion_comment ldc
+            INNER JOIN users u ON u.user_id = ldc.author
+            WHERE ldc.discussion_id_fk = ? AND ldc.comment_status = 'Active'
+            ORDER BY ldc.created_at ASC
+        ", [$userId, $discussionId])->getResultArray();
+    }
+
+    public function toggleCommentLike(int $commentId, int $userId, string $type = 'like'): array
+    {
+        $db       = \Config\Database::connect();
+        $existing = $db->table('lesson_discussion_comment_like')
+            ->where('comment_id_fk', $commentId)->where('user_id_fk', $userId)
+            ->get()->getRowArray();
+
+        if (!$existing) {
+            $db->table('lesson_discussion_comment_like')->insert([
+                'comment_id_fk' => $commentId,
+                'user_id_fk'    => $userId,
+                'like_type'     => $type,
+            ]);
+            $reaction = $type;
+        } elseif ($existing['like_type'] === $type) {
+            $db->table('lesson_discussion_comment_like')
+                ->where('comment_id_fk', $commentId)->where('user_id_fk', $userId)->delete();
+            $reaction = null;
+        } else {
+            $db->table('lesson_discussion_comment_like')
+                ->where('comment_id_fk', $commentId)->where('user_id_fk', $userId)
+                ->update(['like_type' => $type]);
+            $reaction = $type;
+        }
+
+        $likes    = (int) $db->table('lesson_discussion_comment_like')
+            ->where('comment_id_fk', $commentId)->where('like_type', 'like')->countAllResults();
+        $dislikes = (int) $db->table('lesson_discussion_comment_like')
+            ->where('comment_id_fk', $commentId)->where('like_type', 'dislike')->countAllResults();
+
+        return ['reaction' => $reaction, 'likes' => $likes, 'dislikes' => $dislikes];
+    }
+
+    public function getDiscussionReactions(int $discussionId): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT ldl.like_type, CONCAT(u.fname, ' ', u.lname) AS name, u.profile_photo AS photo
+            FROM lesson_discussion_like ldl
+            INNER JOIN users u ON u.user_id = ldl.user_id_fk
+            WHERE ldl.discussion_id_fk = ?
+            ORDER BY ldl.like_type ASC, u.fname ASC
+        ", [$discussionId])->getResultArray();
+    }
+
+    public function getCommentReactions(int $commentId): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT cl.like_type, CONCAT(u.fname, ' ', u.lname) AS name, u.profile_photo AS photo
+            FROM lesson_discussion_comment_like cl
+            INNER JOIN users u ON u.user_id = cl.user_id_fk
+            WHERE cl.comment_id_fk = ?
+            ORDER BY cl.like_type ASC, u.fname ASC
+        ", [$commentId])->getResultArray();
+    }
+
+    public function toggleLike(int $discussionId, int $userId, string $type): array
+    {
+        $db      = \Config\Database::connect();
+        $existing = $db->table('lesson_discussion_like')
+            ->where('discussion_id_fk', $discussionId)
+            ->where('user_id_fk', $userId)
+            ->get()->getRowArray();
+
+        if (!$existing) {
+            $db->table('lesson_discussion_like')->insert([
+                'discussion_id_fk' => $discussionId,
+                'user_id_fk'       => $userId,
+                'like_type'        => $type,
+            ]);
+            $reaction = $type;
+        } elseif ($existing['like_type'] === $type) {
+            $db->table('lesson_discussion_like')
+                ->where('discussion_id_fk', $discussionId)
+                ->where('user_id_fk', $userId)
+                ->delete();
+            $reaction = null;
+        } else {
+            $db->table('lesson_discussion_like')
+                ->where('discussion_id_fk', $discussionId)
+                ->where('user_id_fk', $userId)
+                ->update(['like_type' => $type]);
+            $reaction = $type;
+        }
+
+        $likes    = (int) $db->table('lesson_discussion_like')
+            ->where('discussion_id_fk', $discussionId)->where('like_type', 'like')->countAllResults();
+        $dislikes = (int) $db->table('lesson_discussion_like')
+            ->where('discussion_id_fk', $discussionId)->where('like_type', 'dislike')->countAllResults();
+
+        return ['reaction' => $reaction, 'likes' => $likes, 'dislikes' => $dislikes];
+    }
+}

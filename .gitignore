@@ -1,0 +1,41 @@
+# ── Sensitive environment files ───────────────────────────────────────────────
+.env
+navuli_chat/.env
+
+# ── PHP / Composer dependencies (re-install with: composer install) ───────────
+vendor/
+
+# ── Node.js dependencies (re-install with: cd navuli_chat && npm install) ─────
+navuli_chat/node_modules/
+
+# ── CodeIgniter 4 runtime directories ────────────────────────────────────────
+writable/cache/*
+writable/debugbar/*
+writable/logs/*
+writable/session/*
+!writable/cache/.gitkeep
+!writable/debugbar/.gitkeep
+!writable/logs/.gitkeep
+!writable/session/.gitkeep
+
+# ── Uploaded user files (runtime content, not source code) ───────────────────
+public/uploads/*
+writable/uploads/*
+!public/uploads/.gitkeep
+!writable/uploads/.gitkeep
+
+# ── Error logs ────────────────────────────────────────────────────────────────
+error_log
+*.log
+public/error_log
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+
+# ── OS files ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Claude Code agent memory ─────────────────────────────────────────────────
+.claude/
