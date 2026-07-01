@@ -1000,6 +1000,20 @@ var NavuliChat = (function () {
                 showCallSwal("warning", "You can't call this user.", "");
             });
 
+            socket.on("call_already_in_call", () => {
+                CallAudio.playBusy();
+                resetCallState();
+                Swal.fire({
+                    icon: "warning",
+                    title: "Already in a call",
+                    html: "You are already on an active call in another tab or window.<br><br>Please end that call before starting a new one.",
+                    confirmButtonText: "OK",
+                    confirmButtonColor: "#1a56db",
+                    showClass: { popup: "animate__animated animate__fadeInDown animate__faster" },
+                    hideClass: { popup: "animate__animated animate__fadeOutUp animate__faster" },
+                });
+            });
+
             socket.on("call_ended", () => {
                 endCall("ended", false);
             });
