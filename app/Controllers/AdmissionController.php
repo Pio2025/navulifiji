@@ -243,13 +243,13 @@ class AdmissionController extends BaseController
             }
 
             $user = $this->userModel->find($userId);
+            $db   = \Config\Database::connect();
 
             // Save teaching subjects if provided (Teacher role)
             $teachingSubjectsJson = $this->request->getPost('teaching_subjects');
             if (!empty($teachingSubjectsJson)) {
                 $subjects = json_decode($teachingSubjectsJson, true);
                 if (is_array($subjects) && count($subjects) > 0) {
-                    $db = \Config\Database::connect();
                     foreach (array_slice($subjects, 0, 7) as $sub) {
                         $db->table('admission_teaching_subject')->insert([
                             'admission_id_fk'      => $admissionId,
@@ -258,6 +258,53 @@ class AdmissionController extends BaseController
                             'created_time'         => time(),
                             'adm_teach_sub_status' => 'Active',
                         ]);
+                    }
+                }
+            }
+
+            // Create enrolment + student subjects if a stream was selected (Student role)
+            $enrolStreamId = (int) $this->request->getPost('enrol_stream_id');
+            if ($enrolStreamId > 0) {
+                // Prevent duplicate active enrolment
+                $existingEnrol = $db->table('enrolment')
+                    ->where('admission_id_fk', $admissionId)
+                    ->where('enrol_status', 'Active')
+                    ->get()->getRowArray();
+
+                if (!$existingEnrol) {
+                    $enrolYear = (int) ($this->request->getPost('enrol_year') ?: date('Y'));
+                    $enrolTerm = (int) ($this->request->getPost('enrol_term') ?: 1);
+                    $enrolDate = $this->request->getPost('enrol_date') ?: date('Y-m-d');
+
+                    $enrolId = $this->enrolmentModel->insert([
+                        'admission_id_fk' => $admissionId,
+                        'stream_id_fk'    => $enrolStreamId,
+                        'enrol_date'      => $enrolDate,
+                        'enrol_time'      => time(),
+                        'enrol_term'      => $enrolTerm,
+                        'enrol_year'      => $enrolYear,
+                        'enrol_status'    => 'Active',
+                    ]);
+
+                    if ($enrolId && (int) $this->request->getPost('has_subjects')) {
+                        $coreSubjects = $this->request->getPost('core_subjects') ?? [];
+                        $optSubjects  = [];
+                        foreach ($this->request->getPost() as $key => $val) {
+                            if (preg_match('/^optional_group_\d+$/', $key) && !empty($val)) {
+                                $optSubjects[] = (int) $val;
+                            }
+                        }
+
+                        $allSubjects = array_merge(array_map('intval', $coreSubjects), $optSubjects);
+                        foreach ($allSubjects as $schSubId) {
+                            if ($schSubId > 0) {
+                                $db->table('student_subject')->insert([
+                                    'enrol_id_fk'     => $enrolId,
+                                    'sch_sub_id_fk'   => $schSubId,
+                                    'stud_sub_status' => 'Active',
+                                ]);
+                            }
+                        }
                     }
                 }
             }

@@ -18,21 +18,9 @@ class ChatModel extends Model
 
     public function getOrCreateDirectConversation(int $userId1, int $userId2): int
     {
-        $row = $this->db->query("
-            SELECT cp1.conversation_id
-            FROM chat_participants cp1
-            INNER JOIN chat_participants cp2
-                   ON cp2.conversation_id = cp1.conversation_id
-                  AND cp2.user_id = ?
-            INNER JOIN chat_conversations cc
-                   ON cc.id = cp1.conversation_id
-                  AND cc.type = 'direct'
-            WHERE cp1.user_id = ?
-            LIMIT 1
-        ", [$userId2, $userId1])->getRow();
-
-        if ($row) {
-            return (int) $row->conversation_id;
+        $existing = $this->findDirectConversationId($userId1, $userId2);
+        if ($existing !== null) {
+            return $existing;
         }
 
         $this->db->query(
@@ -47,6 +35,34 @@ class ChatModel extends Model
         );
 
         return $conversationId;
+    }
+
+    /** Returns the existing direct conversation ID between two users, or null if none exists yet. */
+    public function findDirectConversationId(int $userId1, int $userId2): ?int
+    {
+        $row = $this->db->query("
+            SELECT cp1.conversation_id
+            FROM chat_participants cp1
+            INNER JOIN chat_participants cp2
+                   ON cp2.conversation_id = cp1.conversation_id
+                  AND cp2.user_id = ?
+            INNER JOIN chat_conversations cc
+                   ON cc.id = cp1.conversation_id
+                  AND cc.type = 'direct'
+            WHERE cp1.user_id = ?
+            LIMIT 1
+        ", [$userId2, $userId1])->getRow();
+
+        return $row ? (int) $row->conversation_id : null;
+    }
+
+    /** True if the user currently has an active admission (i.e. is affiliated to a school). */
+    public function hasActiveAdmission(int $userId): bool
+    {
+        return (bool) $this->db->query(
+            "SELECT admission_id FROM admission WHERE user_id_fk = ? AND admission_status = 'Active' LIMIT 1",
+            [$userId]
+        )->getRow();
     }
 
     public function getConversations(int $userId): array
@@ -125,6 +141,9 @@ class ChatModel extends Model
                     : [];
             }
         }
+        unset($row);
+
+        $this->attachReactions($rows, $userId);
 
         return array_reverse($rows);
     }
@@ -161,7 +180,7 @@ class ChatModel extends Model
         );
     }
 
-    public function getMessage(int $messageId): ?array
+    public function getMessage(int $messageId, ?int $viewerId = null): ?array
     {
         $row = $this->db->query("
             SELECT
@@ -181,8 +200,9 @@ class ChatModel extends Model
 
         if (!$row) return null;
 
-        $result          = (array) $row;
-        $result['files'] = $this->getMessageFiles($messageId);
+        $result              = (array) $row;
+        $result['files']     = $this->getMessageFiles($messageId);
+        $result['reactions'] = $this->getReactionSummary($messageId, $viewerId ?? (int) $row->sender_id);
 
         return $result;
     }
@@ -216,6 +236,9 @@ class ChatModel extends Model
                     : [];
             }
         }
+        unset($row);
+
+        $this->attachReactions($rows, $userId);
 
         return $rows;
     }
@@ -245,6 +268,16 @@ class ChatModel extends Model
         return true;
     }
 
+    /** Soft-deletes every message in a conversation for the requesting user only (bulk "remove for me"). */
+    public function clearConversationForUser(int $conversationId, int $userId): void
+    {
+        $this->db->query(
+            "INSERT IGNORE INTO chat_message_deletions (message_id, user_id, deleted_at)
+             SELECT m.id, ?, NOW() FROM chat_messages m WHERE m.conversation_id = ?",
+            [$userId, $conversationId]
+        );
+    }
+
     /** Auto-create the deletions table if it doesn't exist yet. */
     public function ensureDeletionTable(): void
     {
@@ -261,6 +294,173 @@ class ChatModel extends Model
         $forge->addUniqueKey(['message_id', 'user_id']);
         $forge->addKey('message_id');
         $forge->createTable('chat_message_deletions', true);
+    }
+
+    // ------------------------------------------------------------------ Reactions
+
+    /** Set (or replace) the requesting user's single reaction on a message. */
+    public function setReaction(int $messageId, int $userId, string $emoji): array
+    {
+        $this->db->query(
+            "INSERT INTO chat_message_reactions (message_id, user_id, emoji, created_at) VALUES (?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE emoji = VALUES(emoji), created_at = NOW()",
+            [$messageId, $userId, $emoji]
+        );
+        return $this->getReactionSummary($messageId, $userId);
+    }
+
+    /** Remove the requesting user's reaction from a message. */
+    public function removeReaction(int $messageId, int $userId): array
+    {
+        $this->db->query(
+            "DELETE FROM chat_message_reactions WHERE message_id = ? AND user_id = ?",
+            [$messageId, $userId]
+        );
+        return $this->getReactionSummary($messageId, $userId);
+    }
+
+    /** Returns the requesting user's current reaction emoji on a message, or null. */
+    public function getUserReaction(int $messageId, int $userId): ?string
+    {
+        $row = $this->db->query(
+            "SELECT emoji FROM chat_message_reactions WHERE message_id = ? AND user_id = ?",
+            [$messageId, $userId]
+        )->getRow();
+        return $row ? $row->emoji : null;
+    }
+
+    /** Grouped reaction summary for a single message: [{emoji, count, mine}]. */
+    public function getReactionSummary(int $messageId, int $viewerId): array
+    {
+        $rows = $this->db->query(
+            "SELECT emoji, COUNT(*) AS cnt, SUM(user_id = ?) AS mine
+             FROM   chat_message_reactions
+             WHERE  message_id = ?
+             GROUP  BY emoji",
+            [$viewerId, $messageId]
+        )->getResultArray();
+
+        return array_map(fn($r) => [
+            'emoji' => $r['emoji'],
+            'count' => (int) $r['cnt'],
+            'mine'  => (bool) $r['mine'],
+        ], $rows);
+    }
+
+    /** Batch-attaches a `reactions` array to each row in $rows (avoids N+1 queries). */
+    private function attachReactions(array &$rows, int $viewerId): void
+    {
+        if (empty($rows)) return;
+
+        $ids = array_map(fn($r) => (int) $r['id'], $rows);
+        $in  = implode(',', array_fill(0, count($ids), '?'));
+
+        $all = $this->db->query(
+            "SELECT message_id, emoji, COUNT(*) AS cnt, SUM(user_id = ?) AS mine
+             FROM   chat_message_reactions
+             WHERE  message_id IN ($in)
+             GROUP  BY message_id, emoji",
+            array_merge([$viewerId], $ids)
+        )->getResultArray();
+
+        $byMessage = [];
+        foreach ($all as $r) {
+            $byMessage[(int) $r['message_id']][] = [
+                'emoji' => $r['emoji'],
+                'count' => (int) $r['cnt'],
+                'mine'  => (bool) $r['mine'],
+            ];
+        }
+
+        foreach ($rows as &$row) {
+            $row['reactions'] = $byMessage[(int) $row['id']] ?? [];
+        }
+        unset($row);
+    }
+
+    /** Auto-create the reactions table if it doesn't exist yet. */
+    public function ensureReactionsTable(): void
+    {
+        $db = \Config\Database::connect();
+        if ($db->tableExists('chat_message_reactions')) return;
+        $forge = \Config\Database::forge();
+        $forge->addField([
+            'id'         => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+            'message_id' => ['type' => 'INT', 'unsigned' => true],
+            'user_id'    => ['type' => 'INT', 'unsigned' => true],
+            'emoji'      => ['type' => 'VARCHAR', 'constraint' => 16],
+            'created_at' => ['type' => 'DATETIME'],
+        ]);
+        $forge->addPrimaryKey('id');
+        $forge->addUniqueKey(['message_id', 'user_id']);
+        $forge->addKey('message_id');
+        $forge->createTable('chat_message_reactions', true);
+    }
+
+    // ------------------------------------------------------------------ Block
+
+    public function blockUser(int $blockerId, int $blockedId): void
+    {
+        $this->db->query(
+            "INSERT IGNORE INTO chat_user_blocks (blocker_id, blocked_id, created_at) VALUES (?, ?, NOW())",
+            [$blockerId, $blockedId]
+        );
+    }
+
+    public function unblockUser(int $blockerId, int $blockedId): void
+    {
+        $this->db->query(
+            "DELETE FROM chat_user_blocks WHERE blocker_id = ? AND blocked_id = ?",
+            [$blockerId, $blockedId]
+        );
+    }
+
+    /** True if either user has blocked the other (mutual silence while blocked). */
+    public function isBlockedBetween(int $a, int $b): bool
+    {
+        return (bool) $this->db->query(
+            "SELECT id FROM chat_user_blocks
+             WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)
+             LIMIT 1",
+            [$a, $b, $b, $a]
+        )->getRow();
+    }
+
+    /** True only if $myId is the one who placed the block (controls Block vs Unblock label). */
+    public function blockedByMe(int $myId, int $otherId): bool
+    {
+        return (bool) $this->db->query(
+            "SELECT id FROM chat_user_blocks WHERE blocker_id = ? AND blocked_id = ? LIMIT 1",
+            [$myId, $otherId]
+        )->getRow();
+    }
+
+    /** Auto-create the blocks table if it doesn't exist yet. */
+    public function ensureBlocksTable(): void
+    {
+        $db = \Config\Database::connect();
+        if ($db->tableExists('chat_user_blocks')) return;
+        $forge = \Config\Database::forge();
+        $forge->addField([
+            'id'         => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+            'blocker_id' => ['type' => 'INT', 'unsigned' => true],
+            'blocked_id' => ['type' => 'INT', 'unsigned' => true],
+            'created_at' => ['type' => 'DATETIME'],
+        ]);
+        $forge->addPrimaryKey('id');
+        $forge->addUniqueKey(['blocker_id', 'blocked_id']);
+        $forge->addKey('blocked_id');
+        $forge->createTable('chat_user_blocks', true);
+    }
+
+    /** Returns the other participant's user_id in a direct conversation, or null. */
+    public function getOtherParticipant(int $conversationId, int $myId): ?int
+    {
+        $row = $this->db->query(
+            "SELECT user_id FROM chat_participants WHERE conversation_id = ? AND user_id != ? LIMIT 1",
+            [$conversationId, $myId]
+        )->getRow();
+        return $row ? (int) $row->user_id : null;
     }
 
     // ------------------------------------------------------------------ Participants / read

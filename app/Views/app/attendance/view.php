@@ -64,7 +64,7 @@
                     <select id="stream_select" class="form-select form-select-solid">
                         <option value="">-- Choose a stream to load attendance --</option>
                         <?php foreach ($streams as $s): ?>
-                        <option value="<?= $s['stream_id'] ?>">
+                        <option value="<?= $s['stream_id'] ?>" <?= (int)($preStreamId ?? 0) === (int)$s['stream_id'] ? 'selected' : '' ?>>
                             <?= esc($s['stream_name']) ?>
                             <?php if (!empty($s['level_name'])): ?>(<?= esc($s['level_name']) ?>)<?php endif; ?>
                         </option>
@@ -970,6 +970,14 @@
             .replace(/&/g,'&amp;').replace(/</g,'&lt;')
             .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
+    // Auto-trigger stream load when arriving from classroom attendance tab
+    (function() {
+        var preId = '<?= (int)($preStreamId ?? 0) ?>';
+        if (preId && preId !== '0' && streamSel.value === preId) {
+            streamSel.dispatchEvent(new Event('change'));
+        }
+    })();
 
 })();
 </script>

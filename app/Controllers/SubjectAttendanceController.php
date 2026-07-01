@@ -79,10 +79,36 @@ class SubjectAttendanceController extends BaseController
             }
         }
 
-        $data['_view']   = 'app/attendance/subject_view';
-        $data['error']   = null;
-        $data['streams'] = $this->studentAttendanceModel->getStreamsBySchool($schID);
-        $data['schID']   = $schID;
+        $data['_view']        = 'app/attendance/subject_view';
+        $data['error']        = null;
+        $data['streams']      = $this->studentAttendanceModel->getStreamsBySchool($schID);
+        $data['schID']        = $schID;
+        $data['preStreamId']  = (int) $this->request->getGet('stream_id');
+
+        return view('app/layouts/main', $data);
+    }
+
+    // ================================================================
+    // STUDENT SELF-VIEW — my subject attendance
+    // ================================================================
+    public function mySubjectAttendance()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $this->setPageData('My Subject Attendance', 'Attendance', 'My Subject Attendance');
+
+        $userId   = (int) $this->session->get('userID');
+        $streamId = (int) $this->request->getGet('stream_id');
+
+        $records    = $streamId ? $this->studentAttendanceModel->getStudentSubjectAttendance($userId, $streamId) : [];
+        $streamInfo = $streamId ? $this->studentAttendanceModel->getStreamById($streamId) : null;
+
+        $data['_view']      = 'app/attendance/my_subject';
+        $data['records']    = $records;
+        $data['streamId']   = $streamId;
+        $data['streamInfo'] = $streamInfo;
 
         return view('app/layouts/main', $data);
     }

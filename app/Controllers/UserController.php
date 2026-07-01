@@ -82,70 +82,84 @@ class UserController extends BaseController
 
         $page    = max(1, (int) ($this->request->getGet('page') ?? 1));
         $search  = trim($this->request->getGet('search') ?? '');
-        $perPage = 20;
+        $perPage = 50;
         $offset  = ($page - 1) * $perPage;
 
-        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
-        $myId         = (int) $this->session->get('userID');
+        $myRoleId       = (int) $this->session->get('roleID');
+        $mySchId        = (int) $this->session->get('schID');
+        $myId           = (int) $this->session->get('userID');
+        $isUnaffiliated = $myRoleId === 1 || $mySchId === 0;
 
         $db = \Config\Database::connect();
 
-        // For non-Super Admin, resolve school from active admission
-        $schId = null;
-        if (!$isSuperAdmin) {
-            $row = $db->query(
-                "SELECT sch_id_fk FROM admission WHERE user_id_fk = ? AND admission_status = 'Active' ORDER BY admission_date DESC LIMIT 1",
-                [$myId]
-            )->getRow();
-            $schId = $row ? (int) $row->sch_id_fk : null;
-
-            if (!$schId) {
-                return $this->response->setJSON([
-                    'success' => true, 'users' => [], 'hasMore' => false,
-                    'nextPage' => 2, 'total' => 0, 'onlineCount' => 0,
-                ]);
-            }
-        }
-
-        // Build query fragments
-        if ($isSuperAdmin) {
-            $joinSQL    = '';
-            $baseParams = [$myId];
-            $whereSQL   = "u.user_id != ? AND u.user_status = 'Active'";
-        } else {
-            $joinSQL    = "INNER JOIN admission a ON a.user_id_fk = u.user_id AND a.sch_id_fk = ? AND a.admission_status = 'Active'";
-            $baseParams = [$schId, $myId];
-            $whereSQL   = "u.user_id != ? AND u.user_status = 'Active'";
-        }
-
+        $searchSQL    = '';
+        $searchParams = [];
         if ($search !== '') {
-            $whereSQL    .= " AND (u.fname LIKE ? OR u.lname LIKE ?)";
+            $searchSQL    = " AND (u.fname LIKE ? OR u.lname LIKE ?)";
             $like         = '%' . $search . '%';
-            $baseParams[] = $like;
-            $baseParams[] = $like;
+            $searchParams = [$like, $like];
+        }
+
+        if ($isUnaffiliated) {
+            // Super Admin / Admin (or anyone without an active admission) can see and message everyone.
+            $combinedSQL = "
+                SELECT DISTINCT u.user_id, u.fname, u.lname, u.profile_photo, u.online_status
+                FROM users u
+                WHERE u.user_id != ? AND u.user_status = 'Active' $searchSQL
+            ";
+            $combinedParams = array_merge([$myId], $searchParams);
+        } else {
+            // Same-school users (normal visibility).
+            $sameSchoolSQL = "
+                SELECT DISTINCT u.user_id, u.fname, u.lname, u.profile_photo, u.online_status
+                FROM users u
+                INNER JOIN admission a ON a.user_id_fk = u.user_id AND a.sch_id_fk = ? AND a.admission_status = 'Active'
+                WHERE u.user_id != ? AND u.user_status = 'Active' $searchSQL
+            ";
+            $sameSchoolParams = array_merge([$mySchId, $myId], $searchParams);
+
+            // Plus: unaffiliated users (e.g. Super Admin/Admin) who have already messaged me and
+            // whose conversation still has at least one message visible to me. They disappear again
+            // once that conversation is fully cleared/deleted on my side.
+            $crossSchoolSQL = "
+                SELECT DISTINCT u.user_id, u.fname, u.lname, u.profile_photo, u.online_status
+                FROM users u
+                INNER JOIN chat_participants cp1 ON cp1.user_id = u.user_id
+                INNER JOIN chat_participants cp2 ON cp2.conversation_id = cp1.conversation_id AND cp2.user_id = ?
+                INNER JOIN chat_conversations cc ON cc.id = cp1.conversation_id AND cc.type = 'direct'
+                WHERE u.user_id != ? AND u.user_status = 'Active'
+                  AND NOT EXISTS (SELECT 1 FROM admission ad WHERE ad.user_id_fk = u.user_id AND ad.admission_status = 'Active')
+                  AND EXISTS (
+                      SELECT 1 FROM chat_messages m
+                      LEFT JOIN chat_message_deletions cmd ON cmd.message_id = m.id AND cmd.user_id = ?
+                      WHERE m.conversation_id = cc.id AND cmd.id IS NULL
+                  )
+                  $searchSQL
+            ";
+            $crossSchoolParams = array_merge([$myId, $myId, $myId], $searchParams);
+
+            $combinedSQL    = "($sameSchoolSQL) UNION ($crossSchoolSQL)";
+            $combinedParams = array_merge($sameSchoolParams, $crossSchoolParams);
         }
 
         $total = (int) $db->query(
-            "SELECT COUNT(DISTINCT u.user_id) AS cnt FROM users u $joinSQL WHERE $whereSQL",
-            $baseParams
+            "SELECT COUNT(*) AS cnt FROM ($combinedSQL) AS combined",
+            $combinedParams
         )->getRow()->cnt;
 
         $onlineCount = 0;
         if ($page === 1) {
             $onlineCount = (int) $db->query(
-                "SELECT COUNT(DISTINCT u.user_id) AS cnt FROM users u $joinSQL WHERE $whereSQL AND u.online_status = 'Online'",
-                $baseParams
+                "SELECT COUNT(*) AS cnt FROM ($combinedSQL) AS combined WHERE combined.online_status = 'Online'",
+                $combinedParams
             )->getRow()->cnt;
         }
 
-        $userParams = array_merge($baseParams, [$perPage, $offset]);
         $users = $db->query(
-            "SELECT DISTINCT u.user_id, u.fname, u.lname, u.profile_photo, u.online_status
-             FROM users u $joinSQL
-             WHERE $whereSQL
-             ORDER BY CASE WHEN u.online_status = 'Online' THEN 0 ELSE 1 END ASC, u.fname ASC
+            "SELECT * FROM ($combinedSQL) AS combined
+             ORDER BY CASE WHEN combined.online_status = 'Online' THEN 0 ELSE 1 END ASC, combined.fname ASC
              LIMIT ? OFFSET ?",
-            $userParams
+            array_merge($combinedParams, [$perPage, $offset])
         )->getResultArray();
 
         return $this->response->setJSON([
@@ -156,6 +170,65 @@ class UserController extends BaseController
             'total'       => $total,
             'onlineCount' => $onlineCount,
         ]);
+    }
+
+    /**
+     * Single-user lookup used by the chat list's live "user just came online" socket handler —
+     * returns the target user's row only if they're visible to me under the same rules as
+     * getChatUserList() (same school, or an unaffiliated user I already have a conversation with).
+     */
+    public function getChatUserInfo($targetUserId)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false]);
+        }
+
+        $targetUserId = (int) $targetUserId;
+        $myId         = (int) $this->session->get('userID');
+        if ($targetUserId === $myId) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $myRoleId       = (int) $this->session->get('roleID');
+        $mySchId        = (int) $this->session->get('schID');
+        $isUnaffiliated = $myRoleId === 1 || $mySchId === 0;
+
+        $db = \Config\Database::connect();
+
+        if ($isUnaffiliated) {
+            $row = $db->query(
+                "SELECT user_id, fname, lname, profile_photo, online_status
+                 FROM users WHERE user_id = ? AND user_status = 'Active'",
+                [$targetUserId]
+            )->getRowArray();
+        } else {
+            $row = $db->query("
+                SELECT u.user_id, u.fname, u.lname, u.profile_photo, u.online_status
+                FROM users u
+                WHERE u.user_id = ? AND u.user_status = 'Active'
+                  AND (
+                      EXISTS (SELECT 1 FROM admission a WHERE a.user_id_fk = u.user_id AND a.sch_id_fk = ? AND a.admission_status = 'Active')
+                      OR (
+                          NOT EXISTS (SELECT 1 FROM admission ad WHERE ad.user_id_fk = u.user_id AND ad.admission_status = 'Active')
+                          AND EXISTS (
+                              SELECT 1
+                              FROM chat_participants cp1
+                              INNER JOIN chat_participants cp2 ON cp2.conversation_id = cp1.conversation_id AND cp2.user_id = ?
+                              INNER JOIN chat_conversations cc ON cc.id = cp1.conversation_id AND cc.type = 'direct'
+                              INNER JOIN chat_messages m ON m.conversation_id = cc.id
+                              LEFT JOIN chat_message_deletions cmd ON cmd.message_id = m.id AND cmd.user_id = ?
+                              WHERE cp1.user_id = u.user_id AND cmd.id IS NULL
+                          )
+                      )
+                  )
+            ", [$targetUserId, $mySchId, $myId, $myId])->getRowArray();
+        }
+
+        if (!$row) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        return $this->response->setJSON(['success' => true, 'user' => $row]);
     }
 
     /**
@@ -934,9 +1007,49 @@ class UserController extends BaseController
                             );
                             
                             $addEnrolment = $this->enrolmentModel->addEnrolment($enrolmentData);
+
+                            if ($addEnrolment) {
+                                // Find the classroom for this stream + year and save subjects to student_subject
+                                $streamId  = (int) $this->request->getPost('stream_id_fk');
+                                $enrolYear = (int) $this->request->getPost('enrol_year');
+
+                                $classRow = $this->db->table('classroom')
+                                    ->where('stream_id_fk', $streamId)
+                                    ->where('class_year',   $enrolYear)
+                                    ->get()->getRowArray();
+
+                                if ($classRow) {
+                                    $classId = (int) $classRow['class_id'];
+
+                                    // Core subjects
+                                    $coreSubIds = array_filter(
+                                        array_map('intval', (array) ($this->request->getPost('exam_core_subs') ?? []))
+                                    );
+                                    foreach ($coreSubIds as $schSubId) {
+                                        $this->db->table('student_subject')->insert([
+                                            'admission_id_fk' => (int) $addAdmission,
+                                            'class_id_fk'     => $classId,
+                                            'sch_sub_id_fk'   => $schSubId,
+                                            'stud_sub_status' => 'Active',
+                                        ]);
+                                    }
+
+                                    // Optional subjects (one per group: exam_opt_group_{N})
+                                    foreach ($this->request->getPost() as $key => $val) {
+                                        if (preg_match('/^exam_opt_group_\d+$/', $key) && !empty($val)) {
+                                            $this->db->table('student_subject')->insert([
+                                                'admission_id_fk' => (int) $addAdmission,
+                                                'class_id_fk'     => $classId,
+                                                'sch_sub_id_fk'   => (int) $val,
+                                                'stud_sub_status' => 'Active',
+                                            ]);
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
-                    
+
                 }
                 if (!empty($email)) {
                     // Prepare email data

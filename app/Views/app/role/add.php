@@ -138,6 +138,32 @@
 					
 					<!--begin::Row-->
 					<div class="row mb-6">
+						<div class="col-lg-12">
+							<label class="col-form-label required fw-semibold fs-6">Role Category</label>
+							<select name="role_cat_id_fk" id="role_cat_id_fk"
+								class="form-select form-select-lg <?= (session()->has('validation') && session('validation')->hasError('role_cat_id_fk')) || (isset($validation) && $validation->hasError('role_cat_id_fk')) ? 'is-invalid' : '' ?>">
+								<option value="">— Select Category —</option>
+								<?php foreach ($roleCategories as $cat): ?>
+								<option value="<?= $cat['role_cat_id'] ?>" <?= old('role_cat_id_fk') == $cat['role_cat_id'] ? 'selected' : '' ?>>
+									<?= esc($cat['role_cat_name']) ?>
+								</option>
+								<?php endforeach; ?>
+							</select>
+							<?php
+							$validationObj = session()->has('validation') ? session('validation') : (isset($validation) ? $validation : null);
+							if ($validationObj && $validationObj->hasError('role_cat_id_fk')): ?>
+							<div class="fv-plugins-message-container">
+								<div class="fv-help-block">
+									<span role="alert" class="text-danger"><?= $validationObj->getError('role_cat_id_fk') ?></span>
+								</div>
+							</div>
+							<?php endif; ?>
+						</div>
+					</div>
+					<!--end::Row-->
+
+					<!--begin::Row-->
+					<div class="row mb-6">
 						<!--begin::Label-->
 						<label class="col-lg-12 col-form-label fw-semibold fs-6">Description</label>
 						<!--end::Label-->

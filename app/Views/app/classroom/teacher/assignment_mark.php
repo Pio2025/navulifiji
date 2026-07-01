@@ -61,11 +61,14 @@ $totalGraded    = count(array_filter($submissions, fn($s) => !empty($s['assignme
                 <i class="ki-duotone ki-check-circle fs-4 text-success"><span class="path1"></span><span class="path2"></span></i>
                 <div><div class="fw-bold text-gray-700 fs-7"><?= $totalGraded ?></div><div class="text-muted fs-9">Graded</div></div>
             </div>
-            <?php if (!empty($assignment['assignment_file'])): ?>
-            <div class="ms-auto">
-                <a href="<?= base_url('uploads/assignments/'.$assignment['assignment_file']) ?>" target="_blank" class="btn btn-sm btn-light-primary">
-                    <i class="ki-duotone ki-file-down fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>Assignment File
+            <?php if (!empty($assignment['files'])): ?>
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                <?php foreach ($assignment['files'] as $idx => $afile): ?>
+                <a href="<?= base_url('uploads/assignments/'.$afile['file_src']) ?>" target="_blank" class="btn btn-sm btn-light-primary">
+                    <i class="ki-duotone ki-file-down fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                    <?= count($assignment['files']) > 1 ? 'File ' . ($idx + 1) : 'Assignment File' ?>
                 </a>
+                <?php endforeach; ?>
             </div>
             <?php endif; ?>
         </div>
@@ -114,6 +117,7 @@ $totalGraded    = count(array_filter($submissions, fn($s) => !empty($s['assignme
                 <th>Submitted</th>
                 <th>Status</th>
                 <th>File</th>
+                <th>Plagiarism</th>
                 <th>Mark / <?= $totalScore ?></th>
                 <th class="pe-0 text-end">Action</th>
             </tr>
@@ -145,6 +149,29 @@ $totalGraded    = count(array_filter($submissions, fn($s) => !empty($s['assignme
                     <i class="ki-duotone ki-file-down fs-7 me-1"><span class="path1"></span><span class="path2"></span></i>
                     <?= strtoupper($sub['submission_file_type']) ?>
                 </a>
+            </td>
+            <td>
+                <?php
+                $plStatus = $sub['plagiarism_status'] ?? null;
+                $plScore  = isset($sub['plagiarism_score']) && $sub['plagiarism_score'] !== null
+                            ? (float) $sub['plagiarism_score'] : null;
+                if ($plStatus === 'completed' && $plScore !== null):
+                    $plColor = $plScore >= 40 ? 'danger' : ($plScore >= 20 ? 'warning' : 'success');
+                ?>
+                <span class="badge badge-light-<?= $plColor ?> fs-9 fw-bold"
+                      title="Similarity score from Copyleaks"
+                      data-bs-toggle="tooltip" data-bs-placement="top">
+                    <?= number_format($plScore, 1) ?>%
+                </span>
+                <?php elseif ($plStatus === 'submitted' || $plStatus === 'scanning' || $plStatus === 'pending'): ?>
+                <span class="badge badge-light-secondary fs-9 text-muted">Scanning…</span>
+                <?php elseif ($plStatus === 'error' || $plStatus === 'credits_expired'): ?>
+                <span class="badge badge-light-danger fs-9" title="Plagiarism check failed">Error</span>
+                <?php elseif ($plStatus): ?>
+                <span class="badge badge-light-secondary fs-9 text-muted"><?= esc(ucfirst($plStatus)) ?></span>
+                <?php else: ?>
+                <span class="text-muted fs-9">—</span>
+                <?php endif; ?>
             </td>
             <td>
                 <?php if ($isGraded && $sub['assignment_mark'] !== null): ?>

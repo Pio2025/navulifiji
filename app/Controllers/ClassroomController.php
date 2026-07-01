@@ -934,6 +934,34 @@ class ClassroomController extends BaseController
     // TEACHER ASSIGNMENTS — POST classroom/teacher/{schSubId}/assignment/store|update|delete
     // ================================================================
 
+    private const ASGN_ALLOWED_EXTS = ['pdf','jpg','jpeg','png','gif','webp','xls','xlsx','ppt','pptx','doc','docx','txt','zip','tar'];
+
+
+    /**
+     * Returns ['assignment_id' => [['assign_file_id' => ?, 'file_src' => ..], ...]], combining
+     * the new lesson_assignment_file rows with any legacy single-file assignment_file value.
+     */
+    private function getAssignmentFilesGrouped(\CodeIgniter\Database\BaseConnection $db, array $assignmentIds, array $legacyByAssignment = []): array
+    {
+        $grouped = [];
+        if (!empty($assignmentIds)) {
+            foreach ($db->table('lesson_assignment_file')->whereIn('assignment_id_fk', $assignmentIds)->get()->getResultArray() as $f) {
+                $grouped[$f['assignment_id_fk']][] = $f;
+            }
+        }
+        foreach ($legacyByAssignment as $assignmentId => $legacyFile) {
+            if (!$legacyFile) continue;
+            if (!isset($grouped[$assignmentId])) $grouped[$assignmentId] = [];
+            array_unshift($grouped[$assignmentId], [
+                'assign_file_id'   => null,
+                'assignment_id_fk' => $assignmentId,
+                'file_src'         => $legacyFile,
+                'file_type'        => null,
+            ]);
+        }
+        return $grouped;
+    }
+
     private function resolveTeacherClassSub(int $schSubId, int $userId, bool $anyStatus = false): ?array
     {
         $db = \Config\Database::connect();
@@ -964,15 +992,13 @@ class ClassroomController extends BaseController
         $dueDate = trim($this->request->getPost('assignment_due_date') ?? '');
         if (!$name) return $this->response->setJSON(['success' => false, 'message' => 'Assignment name is required.']);
 
-        $fileName = null;
-        $file = $this->request->getFile('assignment_file');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            if (strtolower($file->getClientExtension()) !== 'pdf') {
-                return $this->response->setJSON(['success' => false, 'message' => 'Only PDF files are allowed.']);
+        $files = $this->request->getFileMultiple('assignment_files');
+        foreach ($files ?? [] as $file) {
+            if ($file && $file->isValid() && !$file->hasMoved() && !in_array(strtolower($file->getClientExtension()), self::ASGN_ALLOWED_EXTS)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'File type not allowed. Accepted: PDF, images, Word, Excel, PowerPoint, TXT, ZIP, TAR.']);
             }
-            $fileName = $file->getRandomName();
-            $file->move(FCPATH . 'uploads/assignments/', $fileName);
         }
+
         $totalScore = (float) ($this->request->getPost('assignment_total_score') ?? 100);
         if ($totalScore <= 0) $totalScore = 100;
 
@@ -980,13 +1006,25 @@ class ClassroomController extends BaseController
             'class_sub_id_fk'        => $assign['class_sub_id'],
             'class_id_fk'            => $assign['class_id'],
             'assignment_name'        => $name,
-            'assignment_file'        => $fileName,
             'assignment_due_date'    => $dueDate ?: null,
             'assignment_total_score' => $totalScore,
             'assignment_status'      => 'Draft',
             'created_at'             => date('Y-m-d H:i:s'),
             'created_by'             => $userId,
         ]);
+        $assignmentId = $db->insertID();
+
+        foreach ($files ?? [] as $file) {
+            if (!$file || !$file->isValid() || $file->hasMoved()) continue;
+            $ext      = strtolower($file->getClientExtension());
+            $fileName = $file->getRandomName();
+            $file->move(FCPATH . 'uploads/assignments/', $fileName);
+            $db->table('lesson_assignment_file')->insert([
+                'assignment_id_fk' => $assignmentId,
+                'file_src'         => $fileName,
+                'file_type'        => strtolower($ext),
+            ]);
+        }
 
         return $this->response->setJSON(['success' => true, 'message' => 'Assignment created.']);
     }
@@ -1030,24 +1068,60 @@ class ClassroomController extends BaseController
             'updated_by'             => $userId,
         ];
 
-        // New file upload (optional on edit)
-        $file = $this->request->getFile('assignment_file');
-        if ($file && $file->isValid() && !$file->hasMoved()) {
-            if (strtolower($file->getClientExtension()) !== 'pdf') {
-                return $this->response->setJSON(['success' => false, 'message' => 'Only PDF files are allowed.']);
+        // Additional files (appended to the existing file set)
+        $files = $this->request->getFileMultiple('assignment_files');
+        foreach ($files ?? [] as $file) {
+            if ($file && $file->isValid() && !$file->hasMoved() && !in_array(strtolower($file->getClientExtension()), self::ASGN_ALLOWED_EXTS)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'File type not allowed. Accepted: PDF, images, Word, Excel, PowerPoint, TXT, ZIP, TAR.']);
             }
-            // Remove old file
-            if ($row['assignment_file'] && file_exists(FCPATH . 'uploads/assignments/' . $row['assignment_file'])) {
-                unlink(FCPATH . 'uploads/assignments/' . $row['assignment_file']);
-            }
-            $fileName = $file->getRandomName();
-            $file->move(FCPATH . 'uploads/assignments/', $fileName);
-            $update['assignment_file'] = $fileName;
         }
 
         $db->table('lesson_assignment')->where('assignment_id', $assignmentId)->update($update);
 
+        foreach ($files ?? [] as $file) {
+            if (!$file || !$file->isValid() || $file->hasMoved()) continue;
+            $ext      = strtolower($file->getClientExtension());
+            $fileName = $file->getRandomName();
+            $file->move(FCPATH . 'uploads/assignments/', $fileName);
+            $db->table('lesson_assignment_file')->insert([
+                'assignment_id_fk' => $assignmentId,
+                'file_src'         => $fileName,
+                'file_type'        => strtolower($ext),
+            ]);
+        }
+
         return $this->response->setJSON(['success' => true, 'message' => 'Assignment updated.']);
+    }
+
+    public function teacherAssignmentFileDelete(int $schSubId, int $assignmentId, int $fileId)
+    {
+        if (!$this->isLoggedIn()) return $this->response->setJSON(['success' => false, 'message' => 'Unauthenticated']);
+        $userId = (int) $this->session->get('userID');
+        $assign = $this->resolveTeacherClassSub($schSubId, $userId, true);
+        if (!$assign) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+
+        $db  = \Config\Database::connect();
+        $row = $db->table('lesson_assignment')
+                  ->where('assignment_id', $assignmentId)
+                  ->where('class_sub_id_fk', $assign['class_sub_id'])
+                  ->get()->getRowArray();
+        if (!$row) return $this->response->setJSON(['success' => false, 'message' => 'Assignment not found.']);
+        if ($row['assignment_status'] === 'Published') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Cannot edit a published assignment.']);
+        }
+
+        $fileRow = $db->table('lesson_assignment_file')
+                      ->where('assign_file_id', $fileId)
+                      ->where('assignment_id_fk', $assignmentId)
+                      ->get()->getRowArray();
+        if (!$fileRow) return $this->response->setJSON(['success' => false, 'message' => 'File not found.']);
+
+        if ($fileRow['file_src'] && file_exists(FCPATH . 'uploads/assignments/' . $fileRow['file_src'])) {
+            unlink(FCPATH . 'uploads/assignments/' . $fileRow['file_src']);
+        }
+        $db->table('lesson_assignment_file')->where('assign_file_id', $fileId)->delete();
+
+        return $this->response->setJSON(['success' => true, 'message' => 'File removed.']);
     }
 
     public function teacherAssignmentDelete(int $schSubId, int $assignmentId)
@@ -1075,6 +1149,12 @@ class ClassroomController extends BaseController
         if ($row['assignment_file'] && file_exists(FCPATH . 'uploads/assignments/' . $row['assignment_file'])) {
             unlink(FCPATH . 'uploads/assignments/' . $row['assignment_file']);
         }
+        foreach ($db->table('lesson_assignment_file')->where('assignment_id_fk', $assignmentId)->get()->getResultArray() as $fileRow) {
+            if ($fileRow['file_src'] && file_exists(FCPATH . 'uploads/assignments/' . $fileRow['file_src'])) {
+                unlink(FCPATH . 'uploads/assignments/' . $fileRow['file_src']);
+            }
+        }
+        $db->table('lesson_assignment_file')->where('assignment_id_fk', $assignmentId)->delete();
         $db->table('lesson_assignment')->where('assignment_id', $assignmentId)->delete();
 
         return $this->response->setJSON(['success' => true, 'message' => 'Assignment deleted.']);
@@ -1152,12 +1232,18 @@ class ClassroomController extends BaseController
 
         if (!$assignment) return redirect()->to('classroom/teacher/' . $schSubId . '/assignments')->with('error', 'Assignment not found.');
 
+        $assignment['files'] = $this->getAssignmentFilesGrouped(
+            $db, [$assignmentId], [$assignmentId => $assignment['assignment_file']]
+        )[$assignmentId] ?? [];
+
         $submissions = $db->query("
             SELECT asub.*, CONCAT(u.fname,' ',u.lname) AS student_name, u.profile_photo, u.user_id AS student_user_id,
-                   sas.score_id, sas.assignment_mark, sas.feedback AS score_feedback, sas.graded_at
+                   sas.score_id, sas.assignment_mark, sas.feedback AS score_feedback, sas.graded_at,
+                   aplg.status AS plagiarism_status, aplg.score AS plagiarism_score
             FROM assignment_submission asub
             INNER JOIN users u ON u.user_id = asub.user_id_fk
             LEFT JOIN student_assignment_score sas ON sas.assignment_id_fk = asub.assignment_id_fk AND sas.user_id_fk = asub.user_id_fk
+            LEFT JOIN assignment_plagiarism aplg ON aplg.submission_id_fk = asub.submission_id
             WHERE asub.assignment_id_fk = ?
             ORDER BY asub.submitted_at ASC
         ", [$assignmentId])->getResultArray();
@@ -1525,6 +1611,17 @@ class ClassroomController extends BaseController
                 WHERE a.class_sub_id_fk = ?
                 ORDER BY a.created_at DESC
             ", [$classSubId])->getResultArray();
+            if (!empty($data['assignments'])) {
+                $filesGrouped = $this->getAssignmentFilesGrouped(
+                    $db,
+                    array_column($data['assignments'], 'assignment_id'),
+                    array_column($data['assignments'], 'assignment_file', 'assignment_id')
+                );
+                foreach ($data['assignments'] as &$asgnRow) {
+                    $asgnRow['files'] = $filesGrouped[$asgnRow['assignment_id']] ?? [];
+                }
+                unset($asgnRow);
+            }
         } elseif ($section === 'exams') {
             $data['examStudents'] = $db->query("
                 SELECT u.user_id, u.fname, u.lname, u.profile_photo
@@ -1627,6 +1724,10 @@ class ClassroomController extends BaseController
 
         if (!$assignment) return redirect()->to('classroom/student/' . $classSubId . '/assignments')->with('error', 'Assignment not found.');
 
+        $assignment['files'] = $this->getAssignmentFilesGrouped(
+            $db, [$assignmentId], [$assignmentId => $assignment['assignment_file']]
+        )[$assignmentId] ?? [];
+
         $submission = $db->table('assignment_submission')
             ->where('assignment_id_fk', $assignmentId)
             ->where('user_id_fk', $userId)
@@ -1645,11 +1746,21 @@ class ClassroomController extends BaseController
             WHERE cs.class_sub_id = ?
         ", [$classSubId])->getRowArray();
 
+        $plagiarism = null;
+        if ($submission) {
+            $plagiarism = $db->table('assignment_plagiarism')
+                ->where('submission_id_fk', $submission['submission_id'])
+                ->orderBy('plagiarism_id', 'DESC')
+                ->limit(1)
+                ->get()->getRowArray();
+        }
+
         $this->setPageData('Submit Assignment', 'Classroom', 'Assignment');
 
         $data['assignment']   = $assignment;
         $data['submission']   = $submission;
         $data['score']        = $score;
+        $data['plagiarism']   = $plagiarism;
         $data['classSubId']   = $classSubId;
         $data['subjectData']  = $subjectData;
         $data['_view']        = 'app/classroom/student/assignment_submit';
@@ -1733,9 +1844,55 @@ class ClassroomController extends BaseController
 
         if ($existing) {
             $db->table('assignment_submission')->where('submission_id', $existing['submission_id'])->update($row);
+            $submissionId = (int) $existing['submission_id'];
         } else {
             $db->table('assignment_submission')->insert($row);
+            $submissionId = (int) $db->insertID();
         }
+
+        // ── Copyleaks plagiarism check ────────────────────────────────────────
+        $scanId = \App\Libraries\CopyleaksService::generateScanId($submissionId);
+
+        // Replace any prior plagiarism record for this submission (re-submit case)
+        $db->table('assignment_plagiarism')->where('submission_id_fk', $submissionId)->delete();
+        $db->table('assignment_plagiarism')->insert([
+            'submission_id_fk' => $submissionId,
+            'scan_id'          => $scanId,
+            'status'           => 'pending',
+            'created_at'       => date('Y-m-d H:i:s'),
+        ]);
+
+        try {
+            $copyleaks   = new \App\Libraries\CopyleaksService();
+            $token       = $copyleaks->getToken();
+            $filePath    = FCPATH . 'uploads/assignment_submissions/' . $fileName;
+            $webhookBase = base_url('copyleaks/webhook');
+            $copyleaks->submitFile($token, $scanId, $filePath, $webhookBase);
+            $copyleaks->startScan($token, $scanId);
+
+            // Try polling for immediate result (works for sandbox; falls back to
+            // webhook delivery in production). Timeout after 45 s.
+            $result = $copyleaks->waitForResult($token, $scanId, 45);
+            if ($result) {
+                $parsed = \App\Libraries\CopyleaksService::parseResult($result);
+                $db->table('assignment_plagiarism')->where('scan_id', $scanId)->update(array_merge(
+                    $parsed,
+                    ['submitted_at' => date('Y-m-d H:i:s'), 'webhook_raw' => json_encode($result)]
+                ));
+            } else {
+                $db->table('assignment_plagiarism')->where('scan_id', $scanId)->update([
+                    'status'       => 'scanning',
+                    'submitted_at' => date('Y-m-d H:i:s'),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            log_message('error', '[Copyleaks] scan_id=' . $scanId . ' — ' . $e->getMessage());
+            $db->table('assignment_plagiarism')->where('scan_id', $scanId)->update([
+                'status'        => 'error',
+                'error_message' => substr($e->getMessage(), 0, 900),
+            ]);
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         return $this->response->setJSON(['success' => true, 'status' => $status, 'file' => $fileName, 'ext' => $ext]);
     }
@@ -4970,7 +5127,7 @@ class ClassroomController extends BaseController
         $rows = $db->query("
             SELECT DISTINCT
                 c.class_id, c.class_name, c.class_year, c.class_status,
-                s.stream_name, l.level_name, sch.sch_name, sch.sch_logo,
+                s.stream_id, s.stream_name, l.level_name, sch.sch_name, sch.sch_logo,
                 sch.sch_address, sch.sch_phone,
                 (SELECT cr_ct.user_id_fk FROM classroom_role cr_ct
                  WHERE cr_ct.class_id_fk = c.class_id AND cr_ct.cs_role = 'Class Teacher' LIMIT 1) AS class_teacher_id,
@@ -5909,7 +6066,8 @@ class ClassroomController extends BaseController
         }
 
         $classroom = $db->query("
-            SELECT c.class_id, c.class_name, c.class_year, s.stream_name, sch.sch_name, sch.sch_logo
+            SELECT c.class_id, c.class_name, c.class_year, s.stream_name,
+                   sch.sch_name, sch.sch_logo, sch.sch_address, sch.sch_phone, sch.sch_email
             FROM classroom c INNER JOIN stream s ON s.stream_id = c.stream_id_fk
             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
             INNER JOIN school sch ON sch.sch_id = sl.sch_id_fk
@@ -5962,7 +6120,8 @@ class ClassroomController extends BaseController
         }
 
         $classroom = $db->query("
-            SELECT c.class_id, c.class_name, c.class_year, s.stream_name, sch.sch_name, sch.sch_logo
+            SELECT c.class_id, c.class_name, c.class_year, s.stream_name,
+                   sch.sch_name, sch.sch_logo, sch.sch_address, sch.sch_phone, sch.sch_email
             FROM classroom c INNER JOIN stream s ON s.stream_id = c.stream_id_fk
             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
             INNER JOIN school sch ON sch.sch_id = sl.sch_id_fk
@@ -6056,7 +6215,19 @@ class ClassroomController extends BaseController
         $pdf->SetTextColor(100, 100, 100);
         $pdf->Cell($centerW, 4, $classroom['class_name'] . ' - ' . $classroom['class_year'], 0, 1, 'C');
 
-        $y += 26;
+        $contactParts = array_filter([
+            $classroom['sch_address'] ?? '',
+            !empty($classroom['sch_phone']) ? 'Ph: ' . $classroom['sch_phone'] : '',
+            $classroom['sch_email'] ?? '',
+        ]);
+        if (!empty($contactParts)) {
+            $pdf->SetXY($centerX, $y + 18);
+            $pdf->SetFont('helvetica', '', 6.5);
+            $pdf->SetTextColor(150, 150, 150);
+            $pdf->Cell($centerW, 4, implode('  |  ', $contactParts), 0, 1, 'C');
+        }
+
+        $y += 30;
 
         // Double divider
         $pdf->SetLineStyle(['width' => 0.7, 'color' => [26, 86, 219]]);

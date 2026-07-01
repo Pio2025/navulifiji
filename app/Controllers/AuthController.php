@@ -275,7 +275,36 @@ class AuthController extends BaseController
             ];
 
             $this->session->set($sessionData);
-            
+
+            // Store school category term config for dynamic term-based UI rendering
+            if ($schID > 0) {
+                $db     = \Config\Database::connect();
+                $school = $db->table('school')
+                    ->select('sch_cat_id_fk')
+                    ->where('sch_id', $schID)
+                    ->get()->getRowArray();
+                if ($school && !empty($school['sch_cat_id_fk'])) {
+                    $catCfg = $this->schoolCategoryConfigModel->getByCategoryId((int) $school['sch_cat_id_fk']);
+                    if ($catCfg) {
+                        $catTerms = $this->schoolCategoryTermModel->getByConfigId((int) $catCfg['sch_cat_con_id']);
+                        $termData = [];
+                        foreach ($catTerms as $t) {
+                            $termData[(int) $t['term_num']] = [
+                                'num_of_week'      => (int) $t['num_of_week'],
+                                'term_start_day'   => (int) $t['term_start_day'],
+                                'term_start_month' => (int) $t['term_start_month'],
+                                'term_end_day'     => (int) $t['term_end_day'],
+                                'term_end_month'   => (int) $t['term_end_month'],
+                            ];
+                        }
+                        $this->session->set('sch_cat_data', [
+                            'label' => $catCfg['label_for_term'],
+                            'terms' => $termData,
+                        ]);
+                    }
+                }
+            }
+
             // ── Create user session record ────────────────────────────────────────
             $sessionToken = bin2hex(random_bytes(32));
             $this->session->set('sessionToken', $sessionToken);

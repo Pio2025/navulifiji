@@ -92,13 +92,14 @@ class RoleController extends BaseController
                 ? $orderData[0]['dir'] 
                 : 'asc';
             
-            // Map column index to database column name
-            $columns = ['role_name', 'role_desc', null]; // null for actions column
-            $orderColumn = $columns[$orderColumnIndex] ?? 'role_name';
-            
+            // Map column index to database column name (matches columns[] in DataTable JS)
+            // 0 = role_name, 1 = role_rank, 2 = actions
+            $columns = ['role_name', 'role_rank', null];
+            $orderColumn = $columns[$orderColumnIndex] ?? 'role_rank';
+
             // Prevent sorting on actions column
             if ($orderColumn === null || $orderColumnIndex === 2) {
-                $orderColumn = 'role_name';
+                $orderColumn = 'role_rank';
             }
             
             // Validate sort direction
@@ -260,11 +261,13 @@ class RoleController extends BaseController
             $view = 'app/role/add';
         }
         
+        $data['roleCategories'] = \Config\Database::connect()
+            ->table('role_category')->orderBy('role_cat_name', 'ASC')->get()->getResultArray();
         $data['_view'] = $view;
-        
+
         return view('app/layouts/main', $data);
     }
-    
+
     public function store()
     {
         $this->session->set('prevUrl',$this->session->get('url'));
@@ -301,6 +304,14 @@ class RoleController extends BaseController
                     'less_than' => 'Role rank must be less than 1000'
                 ]
             ],
+            'role_cat_id_fk' => [
+                'rules' => 'required|integer|greater_than[0]',
+                'errors' => [
+                    'required'     => 'Role category is required.',
+                    'integer'      => 'Invalid role category.',
+                    'greater_than' => 'Please select a role category.',
+                ]
+            ],
             'role_desc' => [
                 'rules' => 'required|min_length[3]|max_length[1000]',
                 'errors' => [
@@ -322,10 +333,11 @@ class RoleController extends BaseController
         try {
             // Prepare data
             $data = [
-                'role_name' => $this->request->getPost('role_name'),
-                'role_rank' => $this->request->getPost('role_rank') ?: null,
-                'role_desc' => $this->request->getPost('role_desc') ?: null,
-                'created_at' => date('Y-m-d')
+                'role_name'      => $this->request->getPost('role_name'),
+                'role_rank'      => $this->request->getPost('role_rank') ?: null,
+                'role_desc'      => $this->request->getPost('role_desc') ?: null,
+                'role_cat_id_fk' => (int) $this->request->getPost('role_cat_id_fk'),
+                'created_at'     => date('Y-m-d'),
             ];
             
             // Insert role

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jun 03, 2026 at 10:58 AM
+-- Generation Time: Jul 01, 2026 at 02:57 AM
 -- Server version: 9.1.0
 -- PHP Version: 8.3.14
 
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `admission` (
   PRIMARY KEY (`admission_id`),
   KEY `fk_admission_school` (`sch_id_fk`),
   KEY `fk_admission_users` (`user_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=60 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `admission`
@@ -55,7 +55,7 @@ INSERT INTO `admission` (`admission_id`, `user_id_fk`, `sch_id_fk`, `admission_d
 (16, 35, 12, '2026-05-27', 1779834195, NULL, 'Active'),
 (17, 36, 12, '2026-05-27', 1779836663, NULL, 'Active'),
 (18, 37, 12, '2026-05-27', 1779838403, NULL, 'Active'),
-(19, 38, 12, '2026-05-28', 1779913023, NULL, 'Active'),
+(19, 38, 12, '2026-05-28', 1779913023, NULL, 'Completed'),
 (20, 39, 12, '2026-05-28', 1779913079, NULL, 'Active'),
 (21, 40, 12, '2026-05-28', 1779913118, NULL, 'Active'),
 (22, 41, 12, '2026-05-28', 1779913168, NULL, 'Active'),
@@ -64,7 +64,38 @@ INSERT INTO `admission` (`admission_id`, `user_id_fk`, `sch_id_fk`, `admission_d
 (25, 44, 12, '2026-06-01', 1780264419, NULL, 'Active'),
 (26, 45, 12, '2026-06-02', 1780342192, NULL, 'Active'),
 (27, 34, 29, '2026-06-02', 1780346508, NULL, 'Active'),
-(28, 27, 12, '2026-06-03', 1780440806, NULL, 'Active');
+(28, 27, 12, '2026-06-03', 1780440806, NULL, 'Active'),
+(29, 51, 30, '2026-06-06', 1780724334, NULL, 'Active'),
+(30, 46, 30, '2026-06-06', 1780724358, NULL, 'Active'),
+(31, 59, 30, '2026-06-06', 1780724377, NULL, 'Active'),
+(32, 54, 30, '2026-06-06', 1780724395, NULL, 'Active'),
+(33, 55, 30, '2026-06-06', 1780724408, NULL, 'Active'),
+(34, 48, 30, '2026-06-06', 1780724421, NULL, 'Active'),
+(35, 60, 30, '2026-06-06', 1780724442, NULL, 'Active'),
+(36, 61, 30, '2026-06-06', 1780724454, NULL, 'Active'),
+(37, 58, 30, '2026-06-06', 1780724470, NULL, 'Active'),
+(38, 49, 30, '2026-06-06', 1780724482, NULL, 'Active'),
+(39, 53, 30, '2026-06-06', 1780724494, NULL, 'Active'),
+(40, 56, 30, '2026-06-06', 1780724506, NULL, 'Active'),
+(41, 57, 30, '2026-06-06', 1780724517, NULL, 'Active'),
+(42, 30, 30, '2026-06-06', 1780724531, NULL, 'Active'),
+(43, 52, 30, '2026-06-06', 1780724616, NULL, 'Active'),
+(44, 20, 30, '2026-06-06', 1780724628, NULL, 'Active'),
+(45, 62, 30, '2026-06-06', 1780724642, NULL, 'Active'),
+(46, 50, 30, '2026-06-06', 1780724656, NULL, 'Active'),
+(47, 47, 30, '2026-06-06', 1780724669, NULL, 'Active'),
+(48, 63, 30, '2026-06-06', 1780725345, NULL, 'Active'),
+(49, 64, 12, '2026-06-18', 1781731976, NULL, 'Active'),
+(50, 65, 12, '2026-06-18', 1781751375, NULL, 'Active'),
+(51, 66, 12, '2026-06-18', 1781752541, NULL, 'Active'),
+(52, 67, 12, '2026-06-18', 1781753182, NULL, 'Active'),
+(53, 68, 30, '2026-06-25', 1782344553, NULL, 'Active'),
+(54, 69, 30, '2026-06-25', 1782346401, NULL, 'Active'),
+(55, 70, 12, '2026-06-25', 1782356737, NULL, 'Active'),
+(56, 71, 30, '2026-06-25', 1782357199, NULL, 'Active'),
+(57, 72, 30, '2026-06-25', 1782358108, NULL, 'Active'),
+(58, 73, 30, '2026-06-25', 1782358573, NULL, 'Active'),
+(59, 74, 30, '2026-06-26', 1782402270, NULL, 'Active');
 
 -- --------------------------------------------------------
 
@@ -110,14 +141,14 @@ CREATE TABLE IF NOT EXISTS `admission_student_role` (
   PRIMARY KEY (`adm_student_role_id`),
   UNIQUE KEY `unique_adm_student_role` (`admission_id_fk`),
   KEY `fk_asr_admission` (`admission_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `admission_student_role`
 --
 
 INSERT INTO `admission_student_role` (`adm_student_role_id`, `admission_id_fk`, `leadership_role`, `created_date`, `created_time`, `adm_stud_role_status`) VALUES
-(1, 19, 'junior_prefect', '2026-06-02', 1780347986, 'Active');
+(3, 19, 'junior_prefect', '2026-06-29', 1782683215, 'Completed');
 
 -- --------------------------------------------------------
 
@@ -181,6 +212,71 @@ INSERT INTO `admission_teaching_subject` (`adm_teach_sub_id`, `admission_id_fk`,
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `assignment_plagiarism`
+--
+
+DROP TABLE IF EXISTS `assignment_plagiarism`;
+CREATE TABLE IF NOT EXISTS `assignment_plagiarism` (
+  `plagiarism_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `submission_id_fk` int NOT NULL,
+  `scan_id` varchar(128) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `score` decimal(5,2) DEFAULT NULL,
+  `identical_pct` decimal(5,2) DEFAULT NULL,
+  `minor_changed_pct` decimal(5,2) DEFAULT NULL,
+  `paraphrased_pct` decimal(5,2) DEFAULT NULL,
+  `sources_json` mediumtext COLLATE utf8mb4_unicode_ci,
+  `webhook_raw` mediumtext COLLATE utf8mb4_unicode_ci,
+  `error_message` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `completed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`plagiarism_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `assignment_plagiarism`
+--
+
+INSERT INTO `assignment_plagiarism` (`plagiarism_id`, `submission_id_fk`, `scan_id`, `status`, `score`, `identical_pct`, `minor_changed_pct`, `paraphrased_pct`, `sources_json`, `webhook_raw`, `error_message`, `submitted_at`, `completed_at`, `created_at`) VALUES
+(5, 2, 'sub2xb62247c015b1e05b68', 'completed', 0.20, 0.25, 0.00, 0.00, '[{\"type\":\"internet\",\"url\":\"http:\\/\\/example.com\\/\",\"title\":\"Example Domain\",\"words\":1}]', '{\"scannedDocument\":{\"scanId\":\"sub2xb62247c015b1e05b68\",\"totalWords\":405,\"totalExcluded\":0,\"credits\":0,\"expectedCredits\":2,\"creationTime\":\"2026-07-01T02:32:19.120871Z\",\"metadata\":{\"creationDate\":\"2026-04-15T09:54:59Z\",\"lastModificationDate\":\"2026-04-15T09:54:59Z\",\"author\":\"Emily McCarthy\",\"filename\":\"1782873134_cace0c9f65962dbabb0f.pdf\"},\"enabled\":{\"plagiarismDetection\":true,\"aiDetection\":false,\"explainableAi\":false,\"writingFeedback\":false,\"pdfReport\":false,\"cheatDetection\":false,\"aiSourceMatch\":false,\"internalAiSourceMatch\":false},\"detectedLanguage\":\"en\"},\"results\":{\"score\":{\"identicalWords\":1,\"minorChangedWords\":0,\"relatedMeaningWords\":0,\"aggregatedScore\":0.2},\"internet\":[{\"url\":\"http:\\/\\/example.com\\/\",\"id\":\"2a1b402420\",\"title\":\"Example Domain\",\"introduction\":\"Example Domain This domain is for use in documentation examples without needing permission. Avoid use in operations. Learn more\",\"matchedWords\":1,\"identicalWords\":1,\"similarWords\":0,\"paraphrasedWords\":0,\"totalWords\":19,\"metadata\":{\"authors\":[]},\"tags\":[]}],\"database\":[],\"batch\":[],\"repositories\":[],\"internalAIData\":[]},\"notifications\":{\"alerts\":[]},\"writingFeedback\":{\"textStatistics\":{\"sentenceCount\":5,\"averageWordLength\":4.7,\"averageSentenceLength\":12.8,\"readingTimeSeconds\":21,\"speakingTimeSeconds\":29.5},\"score\":{\"grammarCorrectionsCount\":1,\"grammarCorrectionsScore\":93,\"grammarScoreWeight\":1,\"mechanicsCorrectionsCount\":1,\"mechanicsCorrectionsScore\":93,\"mechanicsScoreWeight\":1,\"sentenceStructureCorrectionsCount\":1,\"sentenceStructureCorrectionsScore\":93,\"sentenceStructureScoreWeight\":1,\"wordChoiceCorrectionsCount\":0,\"wordChoiceCorrectionsScore\":100,\"wordChoiceScoreWeight\":1,\"overallScore\":94},\"readability\":{\"score\":95,\"readabilityLevel\":1,\"readabilityLevelText\":\"5th Grader\",\"readabilityLevelDescription\":\"Very easy to read\"}},\"status\":0,\"developerPayload\":\"\"}', NULL, '2026-07-01 14:32:24', '2026-07-01 14:32:24', '2026-07-01 14:32:14');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `assignment_submission`
+--
+
+DROP TABLE IF EXISTS `assignment_submission`;
+CREATE TABLE IF NOT EXISTS `assignment_submission` (
+  `submission_id` int NOT NULL AUTO_INCREMENT,
+  `assignment_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `submission_file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `submission_file_type` varchar(10) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `submission_note` text COLLATE utf8mb4_unicode_ci,
+  `submission_status` enum('Submitted','Late','Graded') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Submitted',
+  `grade` decimal(5,2) DEFAULT NULL,
+  `feedback` text COLLATE utf8mb4_unicode_ci,
+  `submitted_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `graded_at` datetime DEFAULT NULL,
+  `graded_by` int DEFAULT NULL,
+  PRIMARY KEY (`submission_id`),
+  UNIQUE KEY `unique_submission` (`assignment_id_fk`,`user_id_fk`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `assignment_submission`
+--
+
+INSERT INTO `assignment_submission` (`submission_id`, `assignment_id_fk`, `user_id_fk`, `submission_file`, `submission_file_type`, `submission_note`, `submission_status`, `grade`, `feedback`, `submitted_at`, `updated_at`, `graded_at`, `graded_by`) VALUES
+(1, 3, 37, '1780527752_675e077a0c1bc1272f6b.pdf', 'pdf', NULL, 'Graded', NULL, NULL, '2026-06-04 11:02:32', '2026-06-04 11:30:10', NULL, NULL),
+(2, 7, 48, '1782873134_cace0c9f65962dbabb0f.pdf', 'pdf', NULL, 'Submitted', NULL, NULL, '2026-07-01 14:32:14', '2026-07-01 14:32:14', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `chat_conversations`
 --
 
@@ -195,17 +291,43 @@ CREATE TABLE IF NOT EXISTS `chat_conversations` (
   PRIMARY KEY (`id`),
   KEY `idx_created_by` (`created_by`),
   KEY `idx_updated_at` (`updated_at`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chat_conversations`
 --
 
 INSERT INTO `chat_conversations` (`id`, `type`, `name`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'direct', NULL, 33, '2026-05-27 15:55:32', '2026-05-28 07:05:21'),
+(1, 'direct', NULL, 33, '2026-05-27 15:55:32', '2026-06-06 06:13:19'),
 (2, 'direct', NULL, 1, '2026-06-02 12:41:05', '2026-06-02 12:41:05'),
 (3, 'direct', NULL, 1, '2026-06-02 12:41:13', '2026-06-02 12:41:13'),
-(4, 'direct', NULL, 12, '2026-06-03 08:16:51', '2026-06-03 08:16:51');
+(4, 'direct', NULL, 12, '2026-06-03 08:16:51', '2026-06-05 22:47:54'),
+(5, 'direct', NULL, 37, '2026-06-04 07:21:06', '2026-06-04 07:21:06'),
+(6, 'direct', NULL, 12, '2026-06-05 22:48:02', '2026-06-06 15:04:14'),
+(7, 'direct', NULL, 12, '2026-06-06 06:03:12', '2026-06-06 06:03:12'),
+(8, 'direct', NULL, 12, '2026-06-06 06:03:37', '2026-06-06 06:03:37'),
+(9, 'direct', NULL, 37, '2026-06-06 06:08:05', '2026-06-06 15:05:21'),
+(10, 'direct', NULL, 42, '2026-06-06 06:10:32', '2026-06-06 06:18:41'),
+(11, 'direct', NULL, 12, '2026-06-06 06:55:18', '2026-06-06 08:01:31'),
+(12, 'direct', NULL, 12, '2026-06-06 06:55:26', '2026-06-06 06:55:26'),
+(13, 'direct', NULL, 12, '2026-06-06 06:55:39', '2026-06-06 06:55:39'),
+(14, 'direct', NULL, 12, '2026-06-06 06:55:46', '2026-06-06 06:55:46'),
+(15, 'direct', NULL, 12, '2026-06-06 06:55:59', '2026-06-06 06:55:59'),
+(16, 'direct', NULL, 12, '2026-06-06 06:56:04', '2026-06-06 06:56:04'),
+(17, 'direct', NULL, 12, '2026-06-06 07:10:54', '2026-06-06 07:10:54'),
+(18, 'direct', NULL, 12, '2026-06-06 07:32:01', '2026-06-06 07:32:01'),
+(19, 'direct', NULL, 12, '2026-06-06 07:34:48', '2026-06-06 07:34:48'),
+(20, 'direct', NULL, 42, '2026-06-06 08:44:13', '2026-06-06 08:44:13'),
+(21, 'direct', NULL, 42, '2026-06-06 08:45:28', '2026-06-06 08:45:28'),
+(22, 'direct', NULL, 1, '2026-06-06 17:02:02', '2026-06-06 17:02:09'),
+(23, 'direct', NULL, 48, '2026-06-06 19:06:15', '2026-07-01 07:39:54'),
+(24, 'direct', NULL, 63, '2026-06-22 16:07:50', '2026-06-22 16:08:01'),
+(25, 'direct', NULL, 63, '2026-06-22 16:08:08', '2026-06-22 16:08:11'),
+(26, 'direct', NULL, 48, '2026-06-30 19:10:43', '2026-06-30 19:11:22'),
+(27, 'direct', NULL, 1, '2026-06-30 19:26:33', '2026-06-30 19:26:37'),
+(28, 'direct', NULL, 63, '2026-06-30 19:52:18', '2026-06-30 19:52:18'),
+(29, 'direct', NULL, 63, '2026-06-30 19:52:21', '2026-06-30 19:52:21'),
+(30, 'direct', NULL, 48, '2026-07-01 07:40:48', '2026-07-01 07:41:47');
 
 -- --------------------------------------------------------
 
@@ -218,14 +340,14 @@ CREATE TABLE IF NOT EXISTS `chat_messages` (
   `id` int NOT NULL AUTO_INCREMENT,
   `conversation_id` int NOT NULL,
   `sender_id` int NOT NULL,
-  `message_type` enum('text','image','file') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'text',
+  `message_type` enum('text','image','file','call') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'text',
   `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `deleted_at` datetime DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_conversation_created` (`conversation_id`,`created_at`),
   KEY `idx_sender_id` (`sender_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=134 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chat_messages`
@@ -250,7 +372,157 @@ INSERT INTO `chat_messages` (`id`, `conversation_id`, `sender_id`, `message_type
 (16, 1, 12, 'text', 'set', '2026-05-27 19:10:18', NULL),
 (17, 1, 12, 'text', 'to do', '2026-05-27 19:10:29', NULL),
 (18, 1, 33, 'text', '7.09', '2026-05-28 07:03:09', NULL),
-(19, 1, 33, 'text', 'hiu', '2026-05-28 07:05:21', NULL);
+(19, 1, 33, 'text', 'hiu', '2026-05-28 07:05:21', NULL),
+(20, 4, 12, 'text', 'hi', '2026-06-05 22:47:54', NULL),
+(21, 6, 12, 'text', 'hu', '2026-06-05 22:48:06', NULL),
+(22, 6, 12, 'text', 'hi there', '2026-06-05 22:56:41', NULL),
+(23, 6, 12, 'text', 'did u see my message', '2026-06-05 22:58:57', NULL),
+(24, 6, 42, 'text', 'yes it is coming now instantly', '2026-06-05 22:59:22', NULL),
+(25, 6, 12, 'text', 'great thats great news', '2026-06-05 22:59:46', NULL),
+(26, 6, 12, 'image', NULL, '2026-06-05 23:00:07', NULL),
+(27, 6, 42, 'text', 'this is great', '2026-06-05 23:07:08', NULL),
+(28, 6, 12, 'text', 'yes i know', '2026-06-05 23:07:25', NULL),
+(29, 6, 42, 'image', NULL, '2026-06-05 23:12:30', NULL),
+(30, 6, 12, 'text', 'man this is really awesome', '2026-06-05 23:15:53', NULL),
+(31, 6, 12, 'text', 'testing with chat drawer close', '2026-06-05 23:16:18', '2026-06-06 00:07:24'),
+(32, 6, 12, 'text', 'Hi there i am typing but it is not showing', '2026-06-05 23:25:25', '2026-06-06 05:53:29'),
+(33, 6, 12, 'text', 'delete', '2026-06-06 05:45:35', '2026-06-06 05:52:53'),
+(34, 6, 42, 'text', 'set', '2026-06-06 05:45:43', '2026-06-06 05:46:58'),
+(35, 6, 12, 'text', 'hi there', '2026-06-06 05:54:11', NULL),
+(36, 7, 12, 'text', 'hi there', '2026-06-06 06:03:12', NULL),
+(37, 6, 12, 'text', 'hi there', '2026-06-06 06:03:23', NULL),
+(38, 8, 12, 'text', 'hi there', '2026-06-06 06:03:37', NULL),
+(39, 6, 12, 'text', 'yes it is coming now instantly', '2026-06-06 06:04:33', NULL),
+(40, 1, 12, 'text', 'yes it is coming now instantly', '2026-06-06 06:13:19', NULL),
+(41, 9, 12, 'text', 'yes it is coming now instantly', '2026-06-06 06:14:01', NULL),
+(42, 10, 42, 'text', 'io', '2026-06-06 06:18:41', NULL),
+(43, 9, 12, 'text', 'hi', '2026-06-06 06:21:14', NULL),
+(44, 9, 37, 'text', 'io', '2026-06-06 06:21:44', NULL),
+(45, 9, 37, 'text', 'received', '2026-06-06 06:22:03', NULL),
+(46, 6, 12, 'text', 'received', '2026-06-06 06:22:31', NULL),
+(47, 9, 12, 'image', NULL, '2026-06-06 06:23:17', NULL),
+(48, 6, 12, 'file', NULL, '2026-06-06 06:27:05', NULL),
+(49, 6, 12, 'file', NULL, '2026-06-06 06:27:57', NULL),
+(50, 6, 12, 'file', NULL, '2026-06-06 06:28:08', NULL),
+(51, 9, 12, 'file', NULL, '2026-06-06 06:38:05', NULL),
+(52, 11, 12, 'text', 'hi', '2026-06-06 08:01:31', NULL),
+(53, 9, 12, 'text', 'hit', '2026-06-06 08:05:48', NULL),
+(54, 6, 42, 'text', 'received', '2026-06-06 08:06:19', NULL),
+(55, 6, 12, 'text', 'ok', '2026-06-06 08:06:36', NULL),
+(56, 6, 42, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":15}', '2026-06-06 10:54:15', NULL),
+(57, 6, 42, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 10:57:15', NULL),
+(58, 6, 12, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":23}', '2026-06-06 10:57:56', '2026-06-06 14:18:05'),
+(59, 6, 12, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 11:14:33', NULL),
+(60, 6, 12, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":6}', '2026-06-06 11:14:50', NULL),
+(61, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":33}', '2026-06-06 11:29:20', NULL),
+(62, 6, 42, 'text', 'hi sir', '2026-06-06 14:20:05', NULL),
+(63, 6, 12, 'text', 'io', '2026-06-06 14:20:16', NULL),
+(64, 6, 42, 'text', 'did u get my message', '2026-06-06 14:20:31', NULL),
+(65, 6, 12, 'text', 'yr', '2026-06-06 14:20:38', NULL),
+(66, 6, 12, 'text', 'yes but after refresh', '2026-06-06 14:21:09', NULL),
+(67, 6, 42, 'text', 'what about now', '2026-06-06 14:21:18', NULL),
+(68, 6, 12, 'text', 'ok now i get it', '2026-06-06 14:21:27', NULL),
+(69, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"missed\",\"duration\":0}', '2026-06-06 14:32:43', NULL),
+(70, 6, 12, '', '{\"call_type\":\"voice\",\"status\":\"missed\",\"duration\":0}', '2026-06-06 14:34:24', NULL),
+(71, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-06 14:55:36', NULL),
+(72, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-06 14:55:52', NULL),
+(73, 6, 12, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":11}', '2026-06-06 14:56:15', NULL),
+(74, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-06 14:56:23', NULL),
+(75, 6, 42, '', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":38}', '2026-06-06 14:59:00', NULL),
+(76, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-06 14:59:13', NULL),
+(77, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-06 15:02:58', NULL),
+(78, 6, 12, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 15:04:14', NULL),
+(79, 9, 37, 'text', 'hi', '2026-06-06 15:05:02', NULL),
+(80, 9, 12, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 15:05:06', NULL),
+(81, 9, 12, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 15:05:21', NULL),
+(82, 22, 1, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 17:02:09', NULL),
+(83, 23, 63, 'text', 'bula', '2026-06-06 19:06:24', NULL),
+(84, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 19:07:56', NULL),
+(85, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-06 19:08:19', NULL),
+(86, 23, 48, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-08 07:47:09', NULL),
+(87, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-08 07:48:41', NULL),
+(88, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-08 07:48:45', NULL),
+(89, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"missed\",\"duration\":0}', '2026-06-08 08:17:46', NULL),
+(90, 23, 48, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-18 19:34:25', NULL),
+(91, 23, 48, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-18 19:34:41', NULL),
+(92, 23, 63, 'text', 'hi', '2026-06-22 15:29:44', NULL),
+(93, 23, 48, 'text', 'io sir', '2026-06-22 15:29:50', NULL),
+(94, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-22 15:30:29', NULL),
+(95, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"missed\",\"duration\":0}', '2026-06-22 15:33:40', NULL),
+(96, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-22 16:00:45', NULL),
+(97, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-22 16:00:55', NULL),
+(98, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-22 16:07:32', NULL),
+(99, 23, 48, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-22 16:07:44', NULL),
+(100, 24, 63, 'text', 'vcbvbcvb', '2026-06-22 16:08:01', NULL),
+(101, 25, 63, 'text', 'bcvbcvb', '2026-06-22 16:08:11', NULL),
+(102, 23, 48, 'text', 'dfgdfg', '2026-06-22 16:28:16', NULL),
+(103, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":111}', '2026-06-23 00:08:54', NULL),
+(104, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":23}', '2026-06-23 00:14:39', NULL),
+(105, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-23 00:14:53', NULL),
+(106, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-23 00:15:04', NULL),
+(107, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"declined\",\"duration\":0}', '2026-06-23 00:27:38', NULL),
+(108, 23, 63, '', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":51}', '2026-06-23 00:48:19', NULL),
+(109, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":9}', '2026-06-23 00:59:16', NULL),
+(110, 23, 48, '', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":12}', '2026-06-23 01:00:23', NULL),
+(111, 23, 63, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-23 07:16:46', NULL),
+(112, 23, 48, '', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-23 16:28:05', NULL),
+(113, 23, 63, 'call', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":7}', '2026-06-30 17:15:42', NULL),
+(114, 23, 63, 'call', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":7}', '2026-06-30 17:16:04', NULL),
+(115, 23, 48, 'image', NULL, '2026-06-30 17:17:01', NULL),
+(116, 23, 48, 'call', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":16}', '2026-06-30 17:44:18', NULL),
+(117, 26, 48, 'text', '💘test', '2026-06-30 19:11:22', NULL),
+(118, 23, 48, 'text', 'ioooo', '2026-06-30 19:12:46', NULL),
+(119, 23, 48, 'call', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-30 19:22:25', NULL),
+(120, 27, 1, 'text', 'io', '2026-06-30 19:26:37', NULL),
+(121, 23, 48, 'call', '{\"call_type\":\"voice\",\"status\":\"cancelled\",\"duration\":0}', '2026-06-30 19:37:44', NULL),
+(122, 23, 63, 'call', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":4}', '2026-06-30 20:16:01', NULL),
+(123, 23, 48, 'call', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":5}', '2026-06-30 20:49:18', NULL),
+(124, 23, 63, 'call', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":18}', '2026-06-30 20:49:47', NULL),
+(125, 23, 48, 'call', '{\"call_type\":\"voice\",\"status\":\"ended\",\"duration\":7}', '2026-07-01 07:36:09', NULL),
+(126, 23, 48, 'call', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":52}', '2026-07-01 07:37:08', NULL),
+(127, 23, 63, 'call', '{\"call_type\":\"video\",\"status\":\"ended\",\"duration\":120}', '2026-07-01 07:39:29', NULL),
+(128, 23, 63, 'text', 'io', '2026-07-01 07:39:34', NULL),
+(129, 23, 48, 'text', 'hghgghghghghgh', '2026-07-01 07:39:41', NULL),
+(130, 23, 63, 'text', 'ghghghghghghg', '2026-07-01 07:39:47', NULL),
+(131, 23, 48, 'text', 'nml,nm,nm,n mmm', '2026-07-01 07:39:54', NULL),
+(132, 30, 48, 'call', '{\"call_type\":\"voice\",\"status\":\"missed\",\"duration\":0}', '2026-07-01 07:41:22', NULL),
+(133, 30, 48, 'call', '{\"call_type\":\"video\",\"status\":\"cancelled\",\"duration\":0}', '2026-07-01 07:41:47', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_message_deletions`
+--
+
+DROP TABLE IF EXISTS `chat_message_deletions`;
+CREATE TABLE IF NOT EXISTS `chat_message_deletions` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `message_id` int UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL,
+  `deleted_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `message_id_user_id` (`message_id`,`user_id`),
+  KEY `message_id` (`message_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `chat_message_deletions`
+--
+
+INSERT INTO `chat_message_deletions` (`id`, `message_id`, `user_id`, `deleted_at`) VALUES
+(1, 30, 12, '2026-06-06 00:07:18'),
+(2, 31, 12, '2026-06-06 05:43:38'),
+(3, 34, 12, '2026-06-06 05:47:13'),
+(4, 33, 42, '2026-06-06 05:53:11'),
+(5, 34, 42, '2026-06-06 05:53:17'),
+(6, 33, 12, '2026-06-06 05:53:20'),
+(7, 31, 42, '2026-06-06 05:53:48'),
+(8, 32, 42, '2026-06-06 05:53:56'),
+(9, 32, 12, '2026-06-06 05:54:04'),
+(10, 115, 48, '2026-06-30 17:29:43'),
+(11, 117, 48, '2026-06-30 19:11:45'),
+(12, 119, 48, '2026-06-30 19:33:52'),
+(14, 120, 48, '2026-06-30 20:09:13');
 
 -- --------------------------------------------------------
 
@@ -270,7 +542,57 @@ CREATE TABLE IF NOT EXISTS `chat_message_files` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_message_id` (`message_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `chat_message_files`
+--
+
+INSERT INTO `chat_message_files` (`id`, `message_id`, `original_name`, `stored_name`, `file_path`, `file_type`, `file_size`, `created_at`) VALUES
+(1, 26, '121327289_106514751234980_5375803299248619825_n.png', '93458acb793df1b3761ed3fd47ee4012.png', 'uploads/chat/2026-06/93458acb793df1b3761ed3fd47ee4012.png', 'image/png', 15922, '2026-06-05 23:00:07'),
+(2, 29, 'application.png', '2a4380025fa090eef572e6274ac783a9.png', 'uploads/chat/2026-06/2a4380025fa090eef572e6274ac783a9.png', 'image/png', 18745, '2026-06-05 23:12:30'),
+(3, 29, 'dashboard.png', '3b496acad0cc3e9889bde3b6236bad16.png', 'uploads/chat/2026-06/3b496acad0cc3e9889bde3b6236bad16.png', 'image/png', 54805, '2026-06-05 23:12:30'),
+(4, 29, 'landing.png', '4ddb9bebbc816a9d50bbe47c4b061dd0.png', 'uploads/chat/2026-06/4ddb9bebbc816a9d50bbe47c4b061dd0.png', 'image/png', 122500, '2026-06-05 23:12:30'),
+(5, 29, 'login.png', '8d3db484096faf0ff56002076e21ee68.png', 'uploads/chat/2026-06/8d3db484096faf0ff56002076e21ee68.png', 'image/png', 26760, '2026-06-05 23:12:30'),
+(6, 29, 'members.png', 'b2c687fd1462b2297d6482be82ab0c7f.png', 'uploads/chat/2026-06/b2c687fd1462b2297d6482be82ab0c7f.png', 'image/png', 132801, '2026-06-05 23:12:30'),
+(7, 47, 'application.png', 'e064f1bcd080673678f6cd62ad983074.png', 'uploads/chat/2026-06/e064f1bcd080673678f6cd62ad983074.png', 'image/png', 18745, '2026-06-06 06:23:17'),
+(8, 47, 'dashboard.png', '2be0be7b75d0d59eaf55060b462619b1.png', 'uploads/chat/2026-06/2be0be7b75d0d59eaf55060b462619b1.png', 'image/png', 54805, '2026-06-06 06:23:17'),
+(9, 47, 'landing.png', 'd902df10e9472fb7502836e84bb86082.png', 'uploads/chat/2026-06/d902df10e9472fb7502836e84bb86082.png', 'image/png', 122500, '2026-06-06 06:23:17'),
+(10, 47, 'login.png', 'a6de6b75848978f314366a01733adf39.png', 'uploads/chat/2026-06/a6de6b75848978f314366a01733adf39.png', 'image/png', 26760, '2026-06-06 06:23:17'),
+(11, 47, 'members.png', '2dbdf46881b61bfcbba8b5be5e5ad47b.png', 'uploads/chat/2026-06/2dbdf46881b61bfcbba8b5be5e5ad47b.png', 'image/png', 132801, '2026-06-06 06:23:17'),
+(12, 48, 'Agent Access Form_020321.pdf', '223c7d3839fe7dbec1e55bc8e1496801.pdf', 'uploads/chat/2026-06/223c7d3839fe7dbec1e55bc8e1496801.pdf', 'application/pdf', 78170, '2026-06-06 06:27:05'),
+(13, 49, 'Creditor Vendor Setup Form - EFT.docx', 'ca7a1d96c728512fbc98411fa4ed8931.docx', 'uploads/chat/2026-06/ca7a1d96c728512fbc98411fa4ed8931.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 50094, '2026-06-06 06:27:57'),
+(14, 50, 'BBQ Orders 2025.xlsx', '3f7b7ab2312480503bc373e3473ae19e.xlsx', 'uploads/chat/2026-06/3f7b7ab2312480503bc373e3473ae19e.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 9973, '2026-06-06 06:28:08'),
+(15, 51, 'BBQ Orders 2025.xlsx', '1c7a6eb418df7fd1da68f98ae5245b64.xlsx', 'uploads/chat/2026-06/1c7a6eb418df7fd1da68f98ae5245b64.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 9973, '2026-06-06 06:38:05'),
+(16, 115, 'Liga Ni Lawa Cover.jpg', '69aeb012d57625060834bcb775744fc8.jpg', 'uploads/chat/2026-06/69aeb012d57625060834bcb775744fc8.jpg', 'image/jpeg', 2521822, '2026-06-30 17:17:01');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_message_reactions`
+--
+
+DROP TABLE IF EXISTS `chat_message_reactions`;
+CREATE TABLE IF NOT EXISTS `chat_message_reactions` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `message_id` int UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL,
+  `emoji` varchar(16) COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `message_id_user_id` (`message_id`,`user_id`),
+  KEY `message_id` (`message_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `chat_message_reactions`
+--
+
+INSERT INTO `chat_message_reactions` (`id`, `message_id`, `user_id`, `emoji`, `created_at`) VALUES
+(1, 107, 48, '👍', '2026-06-30 19:07:47'),
+(2, 118, 48, '❤️', '2026-06-30 19:34:01'),
+(3, 118, 63, '👍', '2026-06-30 20:15:20'),
+(6, 130, 63, '❤️', '2026-07-01 09:27:34');
 
 -- --------------------------------------------------------
 
@@ -288,7 +610,7 @@ CREATE TABLE IF NOT EXISTS `chat_participants` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_participant` (`conversation_id`,`user_id`),
   KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `chat_participants`
@@ -296,13 +618,82 @@ CREATE TABLE IF NOT EXISTS `chat_participants` (
 
 INSERT INTO `chat_participants` (`id`, `conversation_id`, `user_id`, `joined_at`, `last_read_at`) VALUES
 (1, 1, 33, '2026-05-27 15:55:32', '2026-06-01 16:20:24'),
-(2, 1, 12, '2026-05-27 15:55:32', '2026-05-28 07:03:19'),
+(2, 1, 12, '2026-05-27 15:55:32', '2026-06-06 07:17:42'),
 (3, 2, 1, '2026-06-02 12:41:05', '2026-06-02 12:41:06'),
 (4, 2, 33, '2026-06-02 12:41:05', NULL),
 (5, 3, 1, '2026-06-02 12:41:13', '2026-06-02 12:41:13'),
 (6, 3, 12, '2026-06-02 12:41:13', NULL),
-(7, 4, 12, '2026-06-03 08:16:51', '2026-06-03 08:16:51'),
-(8, 4, 43, '2026-06-03 08:16:51', NULL);
+(7, 4, 12, '2026-06-03 08:16:51', '2026-06-06 14:41:11'),
+(8, 4, 43, '2026-06-03 08:16:51', NULL),
+(9, 5, 37, '2026-06-04 07:21:06', '2026-06-04 07:27:37'),
+(10, 5, 43, '2026-06-04 07:21:06', NULL),
+(11, 6, 12, '2026-06-05 22:48:02', '2026-06-06 15:04:04'),
+(12, 6, 42, '2026-06-05 22:48:02', '2026-06-06 15:03:14'),
+(13, 7, 12, '2026-06-06 06:03:12', '2026-06-06 07:32:59'),
+(14, 7, 27, '2026-06-06 06:03:12', NULL),
+(15, 8, 12, '2026-06-06 06:03:37', NULL),
+(16, 8, 36, '2026-06-06 06:03:37', NULL),
+(17, 9, 37, '2026-06-06 06:08:05', '2026-06-06 15:05:06'),
+(18, 9, 12, '2026-06-06 06:08:05', '2026-06-06 15:04:47'),
+(19, 10, 42, '2026-06-06 06:10:32', '2026-06-06 06:20:33'),
+(20, 10, 37, '2026-06-06 06:10:32', NULL),
+(21, 11, 12, '2026-06-06 06:55:18', '2026-06-06 08:01:28'),
+(22, 11, 45, '2026-06-06 06:55:18', NULL),
+(23, 12, 12, '2026-06-06 06:55:26', '2026-06-06 08:07:04'),
+(24, 12, 18, '2026-06-06 06:55:26', NULL),
+(25, 13, 12, '2026-06-06 06:55:39', '2026-06-06 08:07:09'),
+(26, 13, 35, '2026-06-06 06:55:39', NULL),
+(27, 14, 12, '2026-06-06 06:55:46', '2026-06-06 08:06:56'),
+(28, 14, 40, '2026-06-06 06:55:46', NULL),
+(29, 15, 12, '2026-06-06 06:55:59', '2026-06-06 06:55:59'),
+(30, 15, 39, '2026-06-06 06:55:59', NULL),
+(31, 16, 12, '2026-06-06 06:56:04', '2026-06-06 06:56:05'),
+(32, 16, 44, '2026-06-06 06:56:04', NULL),
+(33, 17, 12, '2026-06-06 07:10:54', '2026-06-06 07:33:08'),
+(34, 17, 32, '2026-06-06 07:10:54', NULL),
+(35, 18, 12, '2026-06-06 07:32:01', '2026-06-06 07:32:01'),
+(36, 18, 41, '2026-06-06 07:32:01', NULL),
+(37, 19, 12, '2026-06-06 07:34:48', '2026-06-06 08:09:17'),
+(38, 19, 38, '2026-06-06 07:34:48', NULL),
+(39, 20, 42, '2026-06-06 08:44:13', '2026-06-06 08:44:13'),
+(40, 20, 43, '2026-06-06 08:44:13', NULL),
+(41, 21, 42, '2026-06-06 08:45:28', '2026-06-06 08:45:39'),
+(42, 21, 27, '2026-06-06 08:45:28', NULL),
+(43, 22, 1, '2026-06-06 17:02:02', '2026-06-06 17:02:03'),
+(44, 22, 37, '2026-06-06 17:02:02', NULL),
+(45, 23, 48, '2026-06-06 19:06:15', '2026-07-01 07:39:47'),
+(46, 23, 63, '2026-06-06 19:06:15', '2026-07-01 09:29:11'),
+(47, 24, 63, '2026-06-22 16:07:50', '2026-06-22 16:07:58'),
+(48, 24, 51, '2026-06-22 16:07:50', NULL),
+(49, 25, 63, '2026-06-22 16:08:08', '2026-06-22 16:08:08'),
+(50, 25, 60, '2026-06-22 16:08:08', NULL),
+(51, 26, 48, '2026-06-30 19:10:43', '2026-06-30 19:11:38'),
+(52, 26, 49, '2026-06-30 19:10:43', NULL),
+(53, 27, 1, '2026-06-30 19:26:33', '2026-06-30 19:26:33'),
+(54, 27, 48, '2026-06-30 19:26:33', '2026-06-30 20:09:18'),
+(55, 28, 63, '2026-06-30 19:52:18', '2026-06-30 19:52:19'),
+(56, 28, 56, '2026-06-30 19:52:18', NULL),
+(57, 29, 63, '2026-06-30 19:52:21', '2026-06-30 19:52:21'),
+(58, 29, 49, '2026-06-30 19:52:21', NULL),
+(59, 30, 48, '2026-07-01 07:40:48', '2026-07-01 07:40:49'),
+(60, 30, 51, '2026-07-01 07:40:48', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `chat_user_blocks`
+--
+
+DROP TABLE IF EXISTS `chat_user_blocks`;
+CREATE TABLE IF NOT EXISTS `chat_user_blocks` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `blocker_id` int UNSIGNED NOT NULL,
+  `blocked_id` int UNSIGNED NOT NULL,
+  `created_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `blocker_id_blocked_id` (`blocker_id`,`blocked_id`),
+  KEY `blocked_id` (`blocked_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -323,14 +714,17 @@ CREATE TABLE IF NOT EXISTS `classroom` (
   `class_status` varchar(60) NOT NULL,
   PRIMARY KEY (`class_id`),
   KEY `stream_id_fk` (`stream_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `classroom`
 --
 
 INSERT INTO `classroom` (`class_id`, `stream_id_fk`, `class_name`, `class_year`, `class_created_at`, `class_updated_at`, `class_created_by`, `class_updated_by`, `class_status`) VALUES
-(3, 91, 'Year 9A 2026', 2026, '2026-05-27 08:19:18', '2026-05-27 08:19:18', 1, 1, 'Active');
+(3, 91, 'Year 9A 2026', 2026, '2026-05-27 08:19:18', '2026-05-27 08:19:18', 1, 1, 'Active'),
+(4, 124, 'Year 13A 2026', 2025, '2026-06-06 17:53:48', '2026-06-19 11:11:14', 1, 1, 'Completed'),
+(5, 125, 'Year 13B 2026', 2026, '2026-06-19 12:22:38', '2026-06-19 12:22:38', 1, 1, 'Active'),
+(6, 123, 'Year 12B 2026', 2026, '2026-06-19 14:47:58', '2026-06-19 14:47:58', 1, 1, 'Active');
 
 -- --------------------------------------------------------
 
@@ -352,17 +746,19 @@ CREATE TABLE IF NOT EXISTS `classroom_lesson` (
   `created_by` int NOT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime DEFAULT NULL,
+  `lesson_day` tinyint DEFAULT NULL COMMENT '1=Monday 2=Tuesday 3=Wednesday 4=Thursday 5=Friday',
+  `lesson_year` int DEFAULT NULL,
   PRIMARY KEY (`lesson_id`),
   KEY `fk_lesson_class_sub` (`class_sub_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `classroom_lesson`
 --
 
-INSERT INTO `classroom_lesson` (`lesson_id`, `class_sub_id_fk`, `lesson_title`, `lesson_desc`, `lesson_term`, `lesson_week`, `lesson_order`, `lesson_duration`, `lesson_status`, `created_by`, `created_at`, `updated_at`) VALUES
-(3, 7, 'Introduction To Social Science', 'This sets the stage for the lesson. It usually includes a welcome message, the learning objectives (what students should know by the end), and any necessary prerequisites or instructions', 1, 1, 1, NULL, 'Published', 12, '2026-06-03 15:33:24', NULL),
-(4, 7, 'Test Lesson', 'Test desc', 2, 1, 1, NULL, 'Draft', 12, '2026-06-03 16:11:00', NULL);
+INSERT INTO `classroom_lesson` (`lesson_id`, `class_sub_id_fk`, `lesson_title`, `lesson_desc`, `lesson_term`, `lesson_week`, `lesson_order`, `lesson_duration`, `lesson_status`, `created_by`, `created_at`, `updated_at`, `lesson_day`, `lesson_year`) VALUES
+(10, 40, 'Na Vakacacabo', '“Na Vakacacabo” e dua na itovo vakavanua e vakarokorokotaki, e vakayagataki ena soqo ni lewenivanua, ena lotu (me vaka na magiti ni mate, vaka.mau, se veisusu), se ena kerea e dua na kerekere bibi vei turaga i taukei se vei koro.', 2, 4, 1, NULL, 'Published', 63, '2026-06-09 08:25:24', NULL, 2, 2026),
+(11, 40, 'Na i tovo', 'nai tovo', 2, 5, 1, NULL, 'Published', 63, '2026-06-19 09:04:21', NULL, 5, 2026);
 
 -- --------------------------------------------------------
 
@@ -382,7 +778,7 @@ CREATE TABLE IF NOT EXISTS `classroom_role` (
   PRIMARY KEY (`cs_id`),
   KEY `fk_classroom_staff_class` (`class_id_fk`),
   KEY `fk_classroom_staff_user` (`user_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `classroom_role`
@@ -394,7 +790,12 @@ INSERT INTO `classroom_role` (`cs_id`, `class_id_fk`, `user_id_fk`, `cs_role`, `
 (3, 3, 34, 'Class Teacher', 'Inactive', '2026-05-27', 1),
 (4, 3, 12, 'Class Teacher', 'Active', '2026-05-27', 1),
 (5, 3, 37, 'Class Captain', 'Active', '2026-05-27', 1),
-(6, 3, 30, 'Assistant Class Captain', 'Active', '2026-05-27', 1);
+(6, 3, 30, 'Assistant Class Captain', 'Active', '2026-05-27', 1),
+(7, 4, 63, 'Class Teacher', 'Completed', '2026-06-06', 1),
+(8, 4, 49, 'Class Captain', 'Completed', '2026-06-06', 1),
+(9, 4, 58, 'Assistant Class Captain', 'Completed', '2026-06-06', 1),
+(10, 6, 63, 'Class Teacher', 'Active', '2026-06-19', 1),
+(11, 5, 63, 'Class Teacher', 'Active', '2026-06-19', 1);
 
 -- --------------------------------------------------------
 
@@ -412,7 +813,7 @@ CREATE TABLE IF NOT EXISTS `classroom_student` (
   `class_stud_status` varchar(60) NOT NULL,
   PRIMARY KEY (`class_stud_id`),
   KEY `fk_classroom_student_user` (`user_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `classroom_student`
@@ -425,7 +826,27 @@ INSERT INTO `classroom_student` (`class_stud_id`, `class_id_fk`, `user_id_fk`, `
 (4, 3, 37, '2026-06-03 00:00:00', 12, 'Active'),
 (5, 3, 39, '2026-06-03 00:00:00', 12, 'Active'),
 (6, 3, 36, '2026-06-03 00:00:00', 12, 'Active'),
-(7, 3, 42, '2026-06-03 00:00:00', 12, 'Active');
+(7, 3, 42, '2026-06-03 00:00:00', 12, 'Active'),
+(8, 4, 59, '2026-06-06 00:00:00', 1, 'Completed'),
+(9, 4, 54, '2026-06-06 00:00:00', 1, 'Completed'),
+(10, 4, 60, '2026-06-06 00:00:00', 1, 'Completed'),
+(11, 4, 47, '2026-06-06 00:00:00', 1, 'Completed'),
+(12, 4, 50, '2026-06-06 00:00:00', 1, 'Completed'),
+(13, 4, 48, '2026-06-06 00:00:00', 1, 'Completed'),
+(14, 4, 62, '2026-06-06 00:00:00', 1, 'Completed'),
+(15, 4, 61, '2026-06-06 00:00:00', 1, 'Completed'),
+(16, 4, 58, '2026-06-06 00:00:00', 1, 'Completed'),
+(17, 4, 49, '2026-06-06 00:00:00', 1, 'Completed'),
+(18, 4, 53, '2026-06-06 00:00:00', 1, 'Completed'),
+(19, 4, 56, '2026-06-06 00:00:00', 1, 'Completed'),
+(20, 4, 57, '2026-06-06 00:00:00', 1, 'Completed'),
+(21, 4, 30, '2026-06-06 00:00:00', 1, 'Completed'),
+(22, 4, 52, '2026-06-06 00:00:00', 1, 'Completed'),
+(23, 4, 20, '2026-06-06 00:00:00', 1, 'Completed'),
+(24, 5, 51, '2026-06-19 00:00:00', 63, 'Active'),
+(25, 5, 46, '2026-06-19 00:00:00', 63, 'Active'),
+(26, 5, 55, '2026-06-19 00:00:00', 63, 'Active'),
+(28, 5, 48, '2026-07-01 00:00:00', 63, 'Active');
 
 -- --------------------------------------------------------
 
@@ -441,7 +862,7 @@ CREATE TABLE IF NOT EXISTS `classroom_subject` (
   PRIMARY KEY (`class_sub_id`),
   KEY `fk_classroom_subject_class` (`class_id_fk`),
   KEY `fk_classroom_subject_sub` (`sub_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `classroom_subject`
@@ -461,7 +882,19 @@ INSERT INTO `classroom_subject` (`class_sub_id`, `class_id_fk`, `sub_id_fk`) VAL
 (11, 3, 31),
 (12, 3, 36),
 (13, 3, 32),
-(14, 3, 35);
+(14, 3, 35),
+(47, 5, 89),
+(46, 5, 25),
+(45, 5, 90),
+(44, 5, 86),
+(43, 5, 87),
+(42, 5, 88),
+(41, 4, 212),
+(40, 4, 208),
+(39, 4, 201),
+(38, 4, 200),
+(37, 4, 195),
+(36, 4, 192);
 
 -- --------------------------------------------------------
 
@@ -478,7 +911,7 @@ CREATE TABLE IF NOT EXISTS `classroom_subject_teacher` (
   PRIMARY KEY (`class_sub_teacher_id`),
   KEY `fk_cst_class_sub` (`class_sub_id_fk`),
   KEY `fk_cst_user` (`user_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `classroom_subject_teacher`
@@ -486,8 +919,452 @@ CREATE TABLE IF NOT EXISTS `classroom_subject_teacher` (
 
 INSERT INTO `classroom_subject_teacher` (`class_sub_teacher_id`, `class_sub_id_fk`, `user_id_fk`, `class_sub_teacher_status`) VALUES
 (1, 11, 12, 'Active'),
-(2, 7, 12, 'Active'),
-(3, 1, 12, 'Active');
+(2, 7, 12, 'Inactive'),
+(3, 1, 12, 'Active'),
+(4, 2, 32, 'Inactive'),
+(5, 2, 12, 'Active'),
+(6, 3, 12, 'Active'),
+(7, 4, 12, 'Active'),
+(8, 5, 12, 'Active'),
+(9, 7, 12, 'Active'),
+(10, 10, 12, 'Active'),
+(11, 8, 12, 'Active'),
+(12, 9, 12, 'Active'),
+(13, 12, 12, 'Active'),
+(14, 13, 12, 'Active'),
+(15, 14, 12, 'Active'),
+(16, 6, 12, 'Active'),
+(17, 15, 63, 'Completed'),
+(18, 36, 63, 'Completed'),
+(19, 38, 63, 'Completed'),
+(20, 39, 63, 'Completed'),
+(21, 40, 63, 'Completed'),
+(22, 41, 63, 'Completed'),
+(23, 42, 63, 'Active'),
+(24, 43, 63, 'Active'),
+(25, 47, 63, 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion`
+--
+
+DROP TABLE IF EXISTS `class_discussion`;
+CREATE TABLE IF NOT EXISTS `class_discussion` (
+  `cd_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_id_fk` int NOT NULL,
+  `author` int NOT NULL,
+  `message` longtext COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT NULL,
+  `post_status` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`cd_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_discussion`
+--
+
+INSERT INTO `class_discussion` (`cd_id`, `class_id_fk`, `author`, `message`, `created_at`, `post_status`) VALUES
+(1, 3, 42, 'Test class discussion features', '2026-06-05 09:04:18', 1),
+(2, 3, 42, 'test', '2026-06-05 09:16:32', 1),
+(3, 4, 63, 'DOu qai irova tu mada yani nai taba ni yaya ni veiqaravi vaka vanua', '2026-06-06 18:29:20', 1),
+(4, 5, 63, 'zcvxcvxcvxcvxcvxc', '2026-06-19 15:45:01', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion_comment`
+--
+
+DROP TABLE IF EXISTS `class_discussion_comment`;
+CREATE TABLE IF NOT EXISTS `class_discussion_comment` (
+  `cdc_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cd_id_fk` int NOT NULL,
+  `author` int NOT NULL,
+  `comment` longtext COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `comment_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Active',
+  PRIMARY KEY (`cdc_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_discussion_comment`
+--
+
+INSERT INTO `class_discussion_comment` (`cdc_id`, `cd_id_fk`, `author`, `comment`, `created_at`, `comment_status`) VALUES
+(1, 1, 12, 'great to have this features here', '2026-06-05 10:32:31', 'Active'),
+(2, 1, 12, 'set', '2026-06-05 10:40:48', 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion_comment_like`
+--
+
+DROP TABLE IF EXISTS `class_discussion_comment_like`;
+CREATE TABLE IF NOT EXISTS `class_discussion_comment_like` (
+  `clike_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cdc_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'like',
+  PRIMARY KEY (`clike_id`),
+  UNIQUE KEY `cdc_id_fk_user_id_fk` (`cdc_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_discussion_comment_like`
+--
+
+INSERT INTO `class_discussion_comment_like` (`clike_id`, `cdc_id_fk`, `user_id_fk`, `like_type`) VALUES
+(1, 1, 12, 'like');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion_comment_reply`
+--
+
+DROP TABLE IF EXISTS `class_discussion_comment_reply`;
+CREATE TABLE IF NOT EXISTS `class_discussion_comment_reply` (
+  `cdcr_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cdc_id_fk` int NOT NULL,
+  `author` int NOT NULL,
+  `reply` longtext COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `reply_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Active',
+  PRIMARY KEY (`cdcr_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_discussion_comment_reply`
+--
+
+INSERT INTO `class_discussion_comment_reply` (`cdcr_id`, `cdc_id_fk`, `author`, `reply`, `created_at`, `reply_status`) VALUES
+(1, 1, 12, 'good', '2026-06-05 10:40:23', 'Active'),
+(2, 1, 12, 'ok', '2026-06-05 10:40:39', 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion_comment_reply_like`
+--
+
+DROP TABLE IF EXISTS `class_discussion_comment_reply_like`;
+CREATE TABLE IF NOT EXISTS `class_discussion_comment_reply_like` (
+  `rlike_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cdcr_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'like',
+  PRIMARY KEY (`rlike_id`),
+  UNIQUE KEY `cdcr_id_fk_user_id_fk` (`cdcr_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion_like`
+--
+
+DROP TABLE IF EXISTS `class_discussion_like`;
+CREATE TABLE IF NOT EXISTS `class_discussion_like` (
+  `like_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cd_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`like_id`),
+  UNIQUE KEY `cd_id_fk_user_id_fk` (`cd_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_discussion_like`
+--
+
+INSERT INTO `class_discussion_like` (`like_id`, `cd_id_fk`, `user_id_fk`, `like_type`) VALUES
+(1, 1, 12, 'like'),
+(2, 2, 12, 'dislike'),
+(3, 3, 63, 'like');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `class_discussion_photo`
+--
+
+DROP TABLE IF EXISTS `class_discussion_photo`;
+CREATE TABLE IF NOT EXISTS `class_discussion_photo` (
+  `photo_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `cd_id_fk` int NOT NULL,
+  `photo_path` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `photo_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`photo_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `class_discussion_photo`
+--
+
+INSERT INTO `class_discussion_photo` (`photo_id`, `cd_id_fk`, `photo_path`, `photo_order`) VALUES
+(1, 1, 'cdp_1780607058_7078.png', 0),
+(2, 1, 'cdp_1780607058_4294.png', 1),
+(3, 1, 'cdp_1780607058_3220.png', 2),
+(4, 1, 'cdp_1780607058_1313.png', 3),
+(5, 1, 'cdp_1780607058_9139.png', 4),
+(6, 3, 'cdp_1780727360_3555.jpg', 0),
+(7, 3, 'cdp_1780727360_7059.jpg', 1),
+(8, 3, 'cdp_1780727360_1092.jpg', 2),
+(9, 3, 'cdp_1780727360_9062.jpg', 3),
+(10, 3, 'cdp_1780727360_5480.jpg', 4),
+(11, 4, 'cdp_1781840701_3894.jpg', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_actions`
+--
+
+DROP TABLE IF EXISTS `conduct_actions`;
+CREATE TABLE IF NOT EXISTS `conduct_actions` (
+  `action_id` int NOT NULL AUTO_INCREMENT,
+  `incident_id` int DEFAULT NULL,
+  `action_type` varchar(50) DEFAULT NULL,
+  `action_date` date DEFAULT NULL,
+  `duration_hours` decimal(5,2) DEFAULT NULL,
+  `is_completed` tinyint(1) DEFAULT '0',
+  `notes` text,
+  PRIMARY KEY (`action_id`),
+  KEY `incident_id` (`incident_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_appeals`
+--
+
+DROP TABLE IF EXISTS `conduct_appeals`;
+CREATE TABLE IF NOT EXISTS `conduct_appeals` (
+  `appeal_id` int NOT NULL AUTO_INCREMENT,
+  `incident_id` int DEFAULT NULL,
+  `student_id` int DEFAULT NULL,
+  `appeal_reason` text COLLATE utf8mb4_general_ci,
+  `appeal_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Pending',
+  `submitted_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `reviewed_by` int DEFAULT NULL,
+  `reviewed_date` datetime DEFAULT NULL,
+  `review_notes` text COLLATE utf8mb4_general_ci,
+  `points_restored` int DEFAULT '0',
+  PRIMARY KEY (`appeal_id`),
+  KEY `incident_id` (`incident_id`),
+  KEY `student_id` (`student_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `conduct_appeals`
+--
+
+INSERT INTO `conduct_appeals` (`appeal_id`, `incident_id`, `student_id`, `appeal_reason`, `appeal_status`, `submitted_date`, `reviewed_by`, `reviewed_date`, `review_notes`, `points_restored`) VALUES
+(1, 2, 34, 'This is a mistake. I did not commit this offence.', 'Pending', '2026-06-30 18:32:04', NULL, NULL, NULL, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_appeal_files`
+--
+
+DROP TABLE IF EXISTS `conduct_appeal_files`;
+CREATE TABLE IF NOT EXISTS `conduct_appeal_files` (
+  `appeal_file_id` int NOT NULL AUTO_INCREMENT,
+  `appeal_id` int DEFAULT NULL,
+  `file_src` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `file_type` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`appeal_file_id`),
+  KEY `appeal_id` (`appeal_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_incidents`
+--
+
+DROP TABLE IF EXISTS `conduct_incidents`;
+CREATE TABLE IF NOT EXISTS `conduct_incidents` (
+  `incident_id` int NOT NULL AUTO_INCREMENT,
+  `student_id` int DEFAULT NULL,
+  `staff_id` int DEFAULT NULL,
+  `type_id_fk` int DEFAULT NULL,
+  `points_awarded` int DEFAULT NULL,
+  `incident_description` text,
+  `incident_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `location` varchar(100) DEFAULT NULL,
+  `is_resolved` tinyint(1) DEFAULT '0',
+  PRIMARY KEY (`incident_id`),
+  KEY `student_id` (`student_id`),
+  KEY `staff_id` (`staff_id`),
+  KEY `type_id_fk` (`type_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `conduct_incidents`
+--
+
+INSERT INTO `conduct_incidents` (`incident_id`, `student_id`, `staff_id`, `type_id_fk`, `points_awarded`, `incident_description`, `incident_date`, `location`, `is_resolved`) VALUES
+(1, 30, 63, 37, -20, 'test description', '2026-06-30 17:45:00', 'Room 5B', 1),
+(2, 34, 63, 39, -15, 'Regular exercise provides numerous benefits for both physical and mental health. Physically, frequent movement strengthens the cardiovascular system, increases muscle tone, and helps maintain a healthy weight. Mentally, physical activity triggers the release of endorphins, which are natural chemicals in the brain that actively reduce stress and elevate mood. For instance, a simple thirty-minute daily walk can significantly lower the risk of chronic illnesses while simultaneously sharpening focus and improving sleep quality. Ultimately, integrating consistent exercise into a daily routine serves as an essential foundation for a longer, healthier life.', '2026-06-30 18:12:00', 'Home', 0),
+(3, 34, 63, 38, -20, '', '2026-06-30 19:35:00', '', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_incident_file`
+--
+
+DROP TABLE IF EXISTS `conduct_incident_file`;
+CREATE TABLE IF NOT EXISTS `conduct_incident_file` (
+  `conduct_file_id` int NOT NULL AUTO_INCREMENT,
+  `incident_id_fk` int DEFAULT NULL,
+  `file_src` varchar(260) DEFAULT NULL,
+  `file_type` varchar(10) DEFAULT NULL,
+  PRIMARY KEY (`conduct_file_id`),
+  KEY `incident_id_fk` (`incident_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `conduct_incident_file`
+--
+
+INSERT INTO `conduct_incident_file` (`conduct_file_id`, `incident_id_fk`, `file_src`, `file_type`) VALUES
+(1, 1, 'conduct_1_1782841600_9026.png', 'image/png'),
+(2, 1, 'conduct_1_1782841600_4564.jpg', 'image/jpeg'),
+(3, 1, 'conduct_1_1782841600_3493.jpg', 'image/jpeg'),
+(4, 1, 'conduct_1_1782841600_9396.jpg', 'image/jpeg'),
+(5, 2, 'conduct_2_1782843227_6059.png', 'image/png'),
+(6, 2, 'conduct_2_1782843227_1588.png', 'image/png'),
+(7, 2, 'conduct_2_1782843227_3418.png', 'image/png'),
+(8, 2, 'conduct_2_1782843227_2915.png', 'image/png'),
+(9, 2, 'conduct_2_1782843227_3856.png', 'image/png'),
+(10, 2, 'conduct_2_1782843227_8861.png', 'image/png'),
+(11, 2, 'conduct_2_1782843227_9241.png', 'image/png'),
+(12, 2, 'conduct_2_1782843227_9268.png', 'image/png'),
+(13, 2, 'conduct_2_1782843227_6807.png', 'image/png'),
+(14, 2, 'conduct_2_1782843227_8232.png', 'image/png'),
+(15, 2, 'conduct_2_1782843227_6930.png', 'image/png'),
+(16, 2, 'conduct_2_1782843227_3726.png', 'image/png'),
+(17, 2, 'conduct_2_1782843227_6766.png', 'image/png'),
+(18, 2, 'conduct_2_1782843227_1600.png', 'image/png'),
+(19, 2, 'conduct_2_1782843227_6602.png', 'image/png'),
+(20, 2, 'conduct_2_1782843227_2959.png', 'image/png'),
+(21, 2, 'conduct_2_1782843227_8021.png', 'image/png'),
+(22, 2, 'conduct_2_1782843227_3571.png', 'image/png'),
+(23, 2, 'conduct_2_1782843227_6654.png', 'image/png'),
+(24, 2, 'conduct_2_1782843227_4605.pdf', 'applicatio'),
+(25, 3, 'conduct_3_1782848129_7057.jpg', 'image/jpeg');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_notifications`
+--
+
+DROP TABLE IF EXISTS `conduct_notifications`;
+CREATE TABLE IF NOT EXISTS `conduct_notifications` (
+  `notification_id` int NOT NULL AUTO_INCREMENT,
+  `incident_id` int DEFAULT NULL,
+  `recipient_type` varchar(20) DEFAULT NULL,
+  `sent_via` varchar(20) DEFAULT NULL,
+  `sent_timestamp` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `message_preview` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`notification_id`),
+  KEY `incident_id` (`incident_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conduct_types`
+--
+
+DROP TABLE IF EXISTS `conduct_types`;
+CREATE TABLE IF NOT EXISTS `conduct_types` (
+  `type_id` int NOT NULL AUTO_INCREMENT,
+  `type_name` varchar(100) DEFAULT NULL,
+  `category` varchar(60) NOT NULL,
+  `is_positive` tinyint(1) DEFAULT '0',
+  `default_points` int DEFAULT NULL,
+  `severity_level` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`type_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=65 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `conduct_types`
+--
+
+INSERT INTO `conduct_types` (`type_id`, `type_name`, `category`, `is_positive`, `default_points`, `severity_level`) VALUES
+(1, 'Excellent Class Participation', 'Academic', 1, 5, 'Positive'),
+(2, 'Significant Academic Improvement', 'Academic', 1, 10, 'Positive'),
+(3, 'Outstanding Homework/Project Submission', 'Academic', 1, 5, 'Positive'),
+(4, 'Perfect Attendance (Weekly/Monthly)', 'Academic', 1, 10, 'Positive'),
+(5, 'Academic Excellence (Top Score in Test/Quiz)', 'Academic', 1, 15, 'Positive'),
+(6, 'Showing Strong Critical Thinking', 'Academic', 1, 5, 'Positive'),
+(7, 'Consistently Prepared for Class', 'Academic', 1, 3, 'Positive'),
+(8, 'Helping a Peer with Classwork', 'Social', 1, 5, 'Positive'),
+(9, 'Demonstrating Excellent Teamwork/Collaboration', 'Social', 1, 5, 'Positive'),
+(10, 'Showing Kindness to a Fellow Student', 'Social', 1, 5, 'Positive'),
+(11, 'Mediating a Conflict Peacefully', 'Social', 1, 10, 'Positive'),
+(12, 'Including an Excluded Student', 'Social', 1, 10, 'Positive'),
+(13, 'Demonstrating Outstanding Leadership', 'Social', 1, 10, 'Positive'),
+(14, 'Being a Positive Role Model', 'Social', 1, 5, 'Positive'),
+(15, 'Exceptional Honesty/Integrity', 'Personal', 1, 10, 'Positive'),
+(16, 'Demonstrating Strong Perseverance/Resilience', 'Personal', 1, 5, 'Positive'),
+(17, 'Taking Initiative Without Being Asked', 'Personal', 1, 5, 'Positive'),
+(18, 'Showing Outstanding Effort', 'Personal', 1, 5, 'Positive'),
+(19, 'Excellent Self-Regulation', 'Personal', 1, 5, 'Positive'),
+(20, 'Demonstrating a Growth Mindset', 'Personal', 1, 5, 'Positive'),
+(21, 'Outstanding Contribution to a School Event', 'Community', 1, 10, 'Positive'),
+(22, 'Excellent Service to the School Community', 'Community', 1, 10, 'Positive'),
+(23, 'Representing the School in Sports/Arts/Academics', 'Community', 1, 15, 'Positive'),
+(24, 'Excellent Stewardship', 'Community', 1, 5, 'Positive'),
+(25, 'Exceptional School Spirit', 'Community', 1, 3, 'Positive'),
+(26, 'Tardiness (Unexcused)', 'Attendance', 0, -2, 'Minor'),
+(27, 'Truancy/Cutting Class', 'Attendance', 0, -15, 'Major'),
+(28, 'Leaving School Without Permission', 'Attendance', 0, -15, 'Major'),
+(29, 'Excessive Absenteeism', 'Attendance', 0, -20, 'Major'),
+(30, 'Skipping Detention', 'Attendance', 0, -10, 'Major'),
+(31, 'Disruptive Classroom Behavior', 'Disrespect', 0, -3, 'Minor'),
+(32, 'Insubordination/Defiance', 'Disrespect', 0, -5, 'Minor'),
+(33, 'Inappropriate Language/Profanity', 'Disrespect', 0, -5, 'Minor'),
+(34, 'Disrespect Toward Staff', 'Disrespect', 0, -10, 'Major'),
+(35, 'Disrespect Toward Students', 'Disrespect', 0, -5, 'Minor'),
+(36, 'Horseplay/Reckless Behavior', 'Disrespect', 0, -3, 'Minor'),
+(37, 'Cheating on Tests/Assignments', 'Academic', 0, -20, 'Major'),
+(38, 'Plagiarism', 'Academic', 0, -20, 'Major'),
+(39, 'Forgery/Falsifying Documents', 'Academic', 0, -15, 'Major'),
+(40, 'Lying to School Personnel', 'Academic', 0, -10, 'Major'),
+(41, 'Sharing Homework Inappropriately', 'Academic', 0, -5, 'Minor'),
+(42, 'Physical Fighting', 'Conflict', 0, -30, 'Critical'),
+(43, 'Verbal Altercation/Threats', 'Conflict', 0, -20, 'Major'),
+(44, 'Bullying (Physical, Verbal, Social)', 'Conflict', 0, -30, 'Critical'),
+(45, 'Cyberbullying', 'Conflict', 0, -30, 'Critical'),
+(46, 'Intimidation/Harassment', 'Conflict', 0, -25, 'Critical'),
+(47, 'Throwing Objects in Anger', 'Conflict', 0, -20, 'Major'),
+(48, 'Theft', 'Property', 0, -30, 'Critical'),
+(49, 'Vandalism/Damaging Property', 'Property', 0, -25, 'Critical'),
+(50, 'Graffiti', 'Property', 0, -20, 'Major'),
+(51, 'Misuse of School Equipment', 'Property', 0, -10, 'Major'),
+(52, 'Unauthorized Use of Personal Devices in Class', 'Property', 0, -5, 'Minor'),
+(53, 'Vaping/Smoking on Campus', 'Safety', 0, -25, 'Critical'),
+(54, 'Possession of Alcohol/Illegal Substances', 'Safety', 0, -35, 'Critical'),
+(55, 'Possession of Weapons/Dangerous Objects', 'Safety', 0, -40, 'Critical'),
+(56, 'Violating Fire/Safety Drills', 'Safety', 0, -15, 'Major'),
+(57, 'Endangering Others', 'Safety', 0, -25, 'Critical'),
+(58, 'Dress Code Violation (Minor)', 'Uniform', 0, -2, 'Minor'),
+(59, 'Dress Code Violation (Repeated)', 'Uniform', 0, -5, 'Minor'),
+(60, 'Wearing Inappropriate Accessories', 'Uniform', 0, -2, 'Minor'),
+(61, 'Unauthorized Recording/Photography', 'Technology', 0, -10, 'Major'),
+(62, 'Inappropriate Internet Use', 'Technology', 0, -15, 'Major'),
+(63, 'Accessing Prohibited Websites', 'Technology', 0, -10, 'Major'),
+(64, 'Sharing Passwords/Account Misuse', 'Technology', 0, -10, 'Major');
 
 -- --------------------------------------------------------
 
@@ -782,7 +1659,7 @@ CREATE TABLE IF NOT EXISTS `enrolment` (
   PRIMARY KEY (`enrol_id`),
   KEY `fk_enrolment_admission` (`admission_id_fk`),
   KEY `stream_id_fk` (`stream_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=54 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `enrolment`
@@ -791,14 +1668,164 @@ CREATE TABLE IF NOT EXISTS `enrolment` (
 INSERT INTO `enrolment` (`enrol_id`, `admission_id_fk`, `stream_id_fk`, `enrol_date`, `enrol_time`, `enrol_term`, `enrol_year`, `enrol_note`, `enrol_status`) VALUES
 (8, 12, 100, '2026-05-12', NULL, 1, 2026, NULL, 'Completed'),
 (9, 10, 91, '2026-05-26', 1779756947, 2, 2026, NULL, 'Completed'),
-(10, 17, 91, '2026-05-27', 1779836663, 2, 2026, '', 'Active'),
-(11, 18, 91, '2026-05-27', 1779838403, 2, 2026, '', 'Active'),
-(12, 19, 91, '2026-05-28', 1779913023, 2, 2026, '', 'Active'),
+(10, 17, 91, '2026-05-27', 1779836663, 2, 2026, '', 'Completed'),
+(11, 18, 91, '2026-05-27', 1779838403, 2, 2026, '', 'Completed'),
+(12, 19, 91, '2026-05-28', 1779913023, 2, 2026, '', 'Completed'),
 (13, 20, 91, '2026-05-28', 1779913079, 2, 2026, '', 'Active'),
 (14, 21, 91, '2026-05-28', 1779913118, 2, 2026, '', 'Active'),
 (15, 22, 91, '2026-05-28', 1779913168, 2, 2026, '', 'Active'),
 (16, 23, 91, '2026-05-28', 1779913233, 2, 2026, '', 'Active'),
-(17, 16, 95, '2026-06-03', 1780435522, 2, 2026, NULL, 'Active');
+(17, 16, 95, '2026-06-03', 1780435522, 2, 2026, NULL, 'Active'),
+(18, 31, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Completed'),
+(19, 32, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(20, 32, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(21, 34, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Completed'),
+(22, 35, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(23, 36, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(24, 37, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(25, 38, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(26, 39, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(27, 40, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(28, 41, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(29, 42, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(30, 43, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(31, 44, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(32, 45, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(33, 46, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(34, 47, 124, '2026-06-06', NULL, 2, 2026, NULL, 'Active'),
+(35, 49, 91, '2026-06-18', 1781731976, 2, 2026, '', 'Active'),
+(36, 50, 91, '2026-06-18', 1781751375, 2, 2026, '', 'Active'),
+(37, 51, 91, '2026-06-18', 1781752541, 2, 2026, '', 'Completed'),
+(38, 52, 91, '2026-06-18', 1781753182, 2, 2026, '', 'Completed'),
+(39, 29, 125, '2026-06-19', 1781830395, 2, 2026, NULL, 'Active'),
+(40, 30, 125, '2026-06-19', 1781830420, 2, 2026, NULL, 'Active'),
+(41, 33, 125, '2026-06-19', 1781830435, 2, 2026, NULL, 'Active'),
+(42, 34, 125, '2026-06-19', 1781832435, 2, 2026, NULL, 'Completed'),
+(43, 34, 125, '2026-06-19', 1781836751, 2, 2026, NULL, 'Active'),
+(44, 53, 125, '2026-06-25', 1782344553, 2, 2026, '', 'Active'),
+(45, 54, 125, '2026-06-25', 1782346401, 2, 2026, '', 'Active'),
+(46, 55, 99, '2026-06-25', 1782356737, 2, 2026, '', 'Active'),
+(47, 56, 125, '2026-06-25', 1782357199, 1, 2026, '', 'Active'),
+(48, 57, 125, '2026-06-25', 1782358108, 1, 2026, '', 'Active'),
+(49, 58, 125, '2026-06-25', 1782358573, 1, 2026, '', 'Active'),
+(50, 59, 125, '2026-06-26', 1782402270, 2, 2026, '', 'Active'),
+(51, 31, 125, '2026-06-26', 1782418149, 2, 2026, NULL, 'Completed'),
+(53, 31, 125, '2026-06-26', 1782418554, 2, 2026, NULL, 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exam`
+--
+
+DROP TABLE IF EXISTS `exam`;
+CREATE TABLE IF NOT EXISTS `exam` (
+  `exam_id` int NOT NULL AUTO_INCREMENT,
+  `exam_name` varchar(260) NOT NULL,
+  `level_id_fk` int NOT NULL,
+  `exam_status` varchar(60) NOT NULL,
+  PRIMARY KEY (`exam_id`),
+  KEY `level_id_fk` (`level_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `exam`
+--
+
+INSERT INTO `exam` (`exam_id`, `exam_name`, `level_id_fk`, `exam_status`) VALUES
+(1, 'Fiji Intermediate Examination', 8, 'Active'),
+(2, 'Fiji Eighth Year Examinination', 10, 'Active'),
+(3, 'Fiji Junior Examination', 12, 'Active'),
+(4, 'Fiji School Leaving Certificate', 14, 'Active'),
+(5, 'Fiji Year 13 Certificate Examination', 15, 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exam_mark`
+--
+
+DROP TABLE IF EXISTS `exam_mark`;
+CREATE TABLE IF NOT EXISTS `exam_mark` (
+  `exam_sub_id` int NOT NULL AUTO_INCREMENT,
+  `exam_reg_id_fk` int NOT NULL,
+  `stud_sub_id_fk` int NOT NULL,
+  `exam_mark` int NOT NULL,
+  PRIMARY KEY (`exam_sub_id`),
+  KEY `fk_exam_reg_id` (`exam_reg_id_fk`),
+  KEY `fk_stud_sub_id` (`stud_sub_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `exam_mark`
+--
+
+INSERT INTO `exam_mark` (`exam_sub_id`, `exam_reg_id_fk`, `stud_sub_id_fk`, `exam_mark`) VALUES
+(6, 27, 82, 59),
+(7, 27, 83, 66),
+(8, 27, 84, 75),
+(9, 27, 86, 65),
+(10, 27, 85, 70),
+(11, 25, 93, 60),
+(12, 25, 94, 79),
+(13, 25, 95, 69),
+(14, 25, 96, 80),
+(15, 9, 110, 78),
+(16, 9, 111, 65),
+(17, 9, 112, 70),
+(18, 9, 114, 80),
+(19, 9, 113, 68);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `exam_registration`
+--
+
+DROP TABLE IF EXISTS `exam_registration`;
+CREATE TABLE IF NOT EXISTS `exam_registration` (
+  `exam_reg_id` int NOT NULL AUTO_INCREMENT,
+  `exam_id_fk` int NOT NULL,
+  `admission_id_fk` int NOT NULL,
+  `exam_year` int NOT NULL,
+  `stud_index_num` int NOT NULL,
+  PRIMARY KEY (`exam_reg_id`),
+  UNIQUE KEY `uk_stud_index_num` (`stud_index_num`),
+  KEY `fk_exam_id` (`exam_id_fk`),
+  KEY `fk_admission_id` (`admission_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=28 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `exam_registration`
+--
+
+INSERT INTO `exam_registration` (`exam_reg_id`, `exam_id_fk`, `admission_id_fk`, `exam_year`, `stud_index_num`) VALUES
+(1, 5, 29, 2026, 49160521),
+(2, 5, 30, 2026, 78806318),
+(3, 5, 31, 2026, 80120954),
+(4, 5, 32, 2026, 20000161),
+(5, 5, 33, 2026, 88738429),
+(6, 5, 35, 2026, 19342829),
+(7, 5, 47, 2026, 98688244),
+(8, 5, 46, 2026, 88486279),
+(9, 5, 34, 2026, 34040855),
+(10, 5, 45, 2026, 70459084),
+(11, 5, 36, 2026, 16249148),
+(12, 5, 37, 2026, 75682095),
+(13, 5, 38, 2026, 76037528),
+(14, 5, 39, 2026, 62399170),
+(15, 5, 40, 2026, 19910657),
+(16, 5, 41, 2026, 51988862),
+(17, 5, 42, 2026, 36344153),
+(18, 5, 43, 2026, 96838127),
+(19, 5, 53, 2026, 64744990),
+(20, 5, 44, 2026, 60113315),
+(22, 5, 54, 2026, 40349587),
+(23, 5, 55, 2026, 28758680),
+(24, 5, 56, 2026, 38271454),
+(25, 5, 57, 2026, 88951861),
+(26, 5, 58, 2026, 47762684),
+(27, 5, 59, 2026, 38679208);
 
 -- --------------------------------------------------------
 
@@ -891,6 +1918,91 @@ INSERT INTO `launch_notification` (`id`, `email`, `date`, `ip_address`, `user_ag
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `lesson_assignment`
+--
+
+DROP TABLE IF EXISTS `lesson_assignment`;
+CREATE TABLE IF NOT EXISTS `lesson_assignment` (
+  `assignment_id` int NOT NULL AUTO_INCREMENT,
+  `class_sub_id_fk` int NOT NULL,
+  `class_id_fk` int DEFAULT NULL,
+  `assignment_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `assignment_file` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `assignment_due_date` datetime DEFAULT NULL,
+  `assignment_total_score` decimal(5,2) NOT NULL DEFAULT '100.00',
+  `assignment_status` enum('Draft','Published','Archived') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Draft',
+  `created_at` datetime DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  `updated_by` int DEFAULT NULL,
+  PRIMARY KEY (`assignment_id`),
+  KEY `idx_class_sub` (`class_sub_id_fk`)
+) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `lesson_assignment`
+--
+
+INSERT INTO `lesson_assignment` (`assignment_id`, `class_sub_id_fk`, `class_id_fk`, `assignment_name`, `assignment_file`, `assignment_due_date`, `assignment_total_score`, `assignment_status`, `created_at`, `created_by`, `updated_at`, `updated_by`) VALUES
+(1, 7, 3, 'Lesson 1 Assignment', '1780524090_d8c25973abec82d749a9.pdf', '2026-06-05 11:00:00', 100.00, 'Draft', '2026-06-04 10:01:30', 12, NULL, NULL),
+(2, 7, 3, 'Assignment 2', '1780524214_101a59617563034d0b84.pdf', '2026-06-30 12:00:00', 100.00, 'Draft', '2026-06-04 10:03:34', 12, NULL, NULL),
+(3, 7, 3, 'Assignment 3', '1780526161_98db769cb8cd62ff6f2d.pdf', '2026-07-31 12:00:00', 100.00, 'Published', '2026-06-04 10:04:08', 12, '2026-06-04 10:36:27', 12),
+(4, 4, 3, 'Assignment 1', '1780653943_4f3a029fde5b58a7257a.pdf', '2026-07-03 12:00:00', 100.00, 'Draft', '2026-06-05 22:05:43', 12, NULL, NULL),
+(5, 47, 5, 'Assignment 1', NULL, '2026-08-08 12:00:00', 100.00, 'Published', '2026-07-01 09:44:28', 63, '2026-07-01 09:47:26', 63),
+(6, 47, 5, 'Assignment 2', NULL, '2026-08-07 12:00:00', 100.00, 'Published', '2026-07-01 09:51:34', 63, '2026-07-01 09:53:25', 63),
+(7, 47, 5, 'Assignment 3', NULL, '2026-08-07 12:00:00', 100.00, 'Published', '2026-07-01 10:24:17', 63, '2026-07-01 10:24:30', 63),
+(8, 47, 5, 'Assigment 4', NULL, '2026-08-06 12:00:00', 100.00, 'Draft', '2026-07-01 10:24:57', 63, NULL, NULL),
+(9, 47, 5, 'adfadfsdf', NULL, '2026-07-15 12:00:00', 100.00, 'Draft', '2026-07-01 10:55:51', 63, NULL, NULL),
+(10, 47, 5, 'fgdfgfg', NULL, '2026-08-06 12:00:00', 100.00, 'Draft', '2026-07-01 10:56:06', 63, NULL, NULL),
+(11, 47, 5, 'gfsgsfgsfdg', NULL, '2026-08-06 12:00:00', 100.00, 'Draft', '2026-07-01 10:56:19', 63, NULL, NULL),
+(12, 47, 5, 'sfgfgsdgsdg', NULL, '2026-08-07 12:00:00', 100.00, 'Draft', '2026-07-01 10:56:37', 63, NULL, NULL),
+(13, 47, 5, 'sfgsgsdg', NULL, '2026-07-30 12:00:00', 100.00, 'Draft', '2026-07-01 10:56:46', 63, NULL, NULL),
+(14, 47, 5, 'sdgsdgsdg', NULL, '2026-07-28 12:00:00', 100.00, 'Draft', '2026-07-01 10:56:55', 63, NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_assignment_file`
+--
+
+DROP TABLE IF EXISTS `lesson_assignment_file`;
+CREATE TABLE IF NOT EXISTS `lesson_assignment_file` (
+  `assign_file_id` int NOT NULL AUTO_INCREMENT,
+  `assignment_id_fk` int NOT NULL,
+  `file_src` varchar(260) NOT NULL,
+  `file_type` varchar(20) NOT NULL DEFAULT '',
+  PRIMARY KEY (`assign_file_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_assignment_file`
+--
+
+INSERT INTO `lesson_assignment_file` (`assign_file_id`, `assignment_id_fk`, `file_src`, `file_type`) VALUES
+(1, 5, '1782855868_de4bfe0b2b4690d0ecdb.png', '.png'),
+(2, 5, '1782855868_ce246895e5511e45732b.png', '.png'),
+(3, 5, '1782855868_180d488f526dc5608b94.docx', '.docx'),
+(4, 5, '1782855868_4948aa90f839e60fed14.pdf', '.pdf'),
+(5, 5, '1782855868_f475ae207f1335bd6c24.txt', '.txt'),
+(6, 6, '1782856294_92640ca065da7368eba3.pdf', '1'),
+(7, 6, '1782856294_17112530db435358fad5.pdf', '1'),
+(8, 6, '1782856294_f89039c8cfeda237780b.docx', '1'),
+(9, 6, '1782856294_b8af265428fd8241e562.png', '2'),
+(10, 6, '1782856294_1bac131e749b6ff0449f.jpg', '2'),
+(11, 6, '1782856294_b920878909e07302ce6d.xlsx', '3'),
+(12, 7, '1782858257_960e909695afd36c7b27.pdf', 'pdf'),
+(13, 7, '1782858257_308c05a17712793b6d23.pdf', 'pdf'),
+(14, 7, '1782858257_0e50bcf01860e5b30d31.pdf', 'pdf'),
+(15, 8, '1782858297_f2d080e3321246d4c2ad.pdf', 'pdf'),
+(16, 9, '1782860151_cf3d2d0fa2559863fe38.pdf', 'pdf'),
+(17, 10, '1782860166_4171210d0568d664ef5e.docx', 'docx'),
+(18, 11, '1782860179_352c9668bdb48d00d237.pdf', 'pdf'),
+(19, 12, '1782860197_29a2c38c02537b4425c2.docx', 'docx'),
+(20, 13, '1782860206_a2fde064f176b3ef2263.pdf', 'pdf');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `lesson_discussion`
 --
 
@@ -905,15 +2017,16 @@ CREATE TABLE IF NOT EXISTS `lesson_discussion` (
   `created_time` int NOT NULL,
   `message_status` int NOT NULL,
   PRIMARY KEY (`lesson_discussion_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `lesson_discussion`
 --
 
 INSERT INTO `lesson_discussion` (`lesson_discussion_id`, `lesson_id_fk`, `author`, `message`, `created_at`, `updated_at`, `created_time`, `message_status`) VALUES
-(1, 3, 12, 'Hi there everyone, first of all i want to welcome everyone into this class and hope that our journey throughout the duration of the course will be a contructive and a fruitful one.', '2026-06-03 21:43:38', '2026-06-03 21:43:38', 1780479818, 1),
-(2, 3, 12, 'Social studies is an interdisciplinary subject that explores the complexities of human society by weaving together elements of history, geography, economics, political science, and sociology to help students understand how the world works and their place within it. Far more than just memorizing dates and names, social studies encourages critical thinking about past events, cultural traditions, governance systems, and economic forces, all while fostering civic awareness and responsibility. Through its lens, students examine how communities form and change, how resources and power are distributed, how conflicts arise and are resolved, and how geography shapes human behavior and development. This subject empowers learners to analyze current issues—from climate change and migration to social justice and global trade—by drawing connections across time and place, recognizing patterns, and appreciating diverse perspectives. Ultimately, social studies aims to cultivate informed, empathetic, and active citizens who can participate thoughtfully in democratic processes, respect cultural differences, and contribute meaningfully to an interconnected and rapidly evolving world.\r\n\r\nOf course. Here is another paragraph that captures a different angle on the social studies subject.\r\n\r\nSocial studies is fundamentally the study of how people live together, and it serves as a vital bridge between the individual and the vast, often overwhelming machinery of society. Rather than isolating facts into separate silos, the subject invites students to investigate real-world issues through an integrated lens, asking questions like: Why do people move from place to place? How do scarcity and choice shape our daily lives? What does it mean to be a member of a community, a nation, or a global population? Through inquiry-based learning, students analyze primary sources, debate historical decisions, interpret economic charts, and map human-environment interactions, all while developing essential skills like evidence-based reasoning, media literacy, and respectful discourse. In doing so, social studies transforms abstract concepts like democracy, culture, or supply and demand into tangible ideas that students can see reflected in their own neighborhoods and news feeds. By nurturing both intellectual curiosity and a sense of ethical responsibility, the subject prepares young people not merely to pass tests, but to navigate complexity, challenge injustice, advocate for change, and ultimately, to become the thoughtful architects of our collective future.', '2026-06-03 22:39:39', '2026-06-03 22:39:39', 1780483179, 1);
+(7, 11, 63, 'dddddd', '2026-06-19 15:24:36', '2026-06-19 15:24:36', 1781839476, 1),
+(8, 10, 48, 'test', '2026-07-01 03:53:05', '2026-07-01 03:53:05', 1782834785, 1),
+(6, 10, 63, 'Dou bula ragone, welcome to navuli e learning module called My Classroom.', '2026-06-09 09:23:55', '2026-06-09 09:23:55', 1780953835, 1);
 
 -- --------------------------------------------------------
 
@@ -930,14 +2043,14 @@ CREATE TABLE IF NOT EXISTS `lesson_discussion_comment` (
   `created_at` datetime DEFAULT NULL,
   `comment_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Active',
   PRIMARY KEY (`comment_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `lesson_discussion_comment`
 --
 
 INSERT INTO `lesson_discussion_comment` (`comment_id`, `discussion_id_fk`, `author`, `comment`, `created_at`, `comment_status`) VALUES
-(1, 1, 12, 'ok this is the first comment', '2026-06-03 21:50:16', 'Active');
+(8, 6, 48, 'ok sir nnnnn', '2026-06-18 19:33:19', 'Active');
 
 -- --------------------------------------------------------
 
@@ -953,14 +2066,7 @@ CREATE TABLE IF NOT EXISTS `lesson_discussion_comment_like` (
   `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'like',
   PRIMARY KEY (`clike_id`),
   UNIQUE KEY `comment_id_fk_user_id_fk` (`comment_id_fk`,`user_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Dumping data for table `lesson_discussion_comment_like`
---
-
-INSERT INTO `lesson_discussion_comment_like` (`clike_id`, `comment_id_fk`, `user_id_fk`, `like_type`) VALUES
-(2, 1, 12, 'like');
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -976,14 +2082,139 @@ CREATE TABLE IF NOT EXISTS `lesson_discussion_like` (
   `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL,
   PRIMARY KEY (`like_id`),
   UNIQUE KEY `discussion_id_fk_user_id_fk` (`discussion_id_fk`,`user_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
 
 --
--- Dumping data for table `lesson_discussion_like`
+-- Table structure for table `lesson_dragdrop_answer`
 --
 
-INSERT INTO `lesson_discussion_like` (`like_id`, `discussion_id_fk`, `user_id_fk`, `like_type`) VALUES
-(5, 1, 12, 'like');
+DROP TABLE IF EXISTS `lesson_dragdrop_answer`;
+CREATE TABLE IF NOT EXISTS `lesson_dragdrop_answer` (
+  `answer_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `item_id_fk` int UNSIGNED NOT NULL,
+  `zone_id_fk` int UNSIGNED NOT NULL,
+  PRIMARY KEY (`answer_id`),
+  UNIQUE KEY `item_id_fk` (`item_id_fk`),
+  KEY `quizze_id_fk` (`quizze_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_dragdrop_answer`
+--
+
+INSERT INTO `lesson_dragdrop_answer` (`answer_id`, `quizze_id_fk`, `item_id_fk`, `zone_id_fk`) VALUES
+(15, 11, 15, 15),
+(14, 11, 14, 14),
+(13, 11, 13, 13);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_dragdrop_attempt`
+--
+
+DROP TABLE IF EXISTS `lesson_dragdrop_attempt`;
+CREATE TABLE IF NOT EXISTS `lesson_dragdrop_attempt` (
+  `attempt_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `lesson_id_fk` int UNSIGNED NOT NULL,
+  `user_id_fk` int UNSIGNED NOT NULL,
+  `started_at` datetime NOT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `status` varchar(60) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'in_progress',
+  `score` decimal(5,2) DEFAULT NULL,
+  `total_items` int DEFAULT NULL,
+  `correct_items` int DEFAULT NULL,
+  PRIMARY KEY (`attempt_id`),
+  KEY `quizze_id_fk_user_id_fk` (`quizze_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_dragdrop_attempt`
+--
+
+INSERT INTO `lesson_dragdrop_attempt` (`attempt_id`, `quizze_id_fk`, `lesson_id_fk`, `user_id_fk`, `started_at`, `submitted_at`, `status`, `score`, `total_items`, `correct_items`) VALUES
+(4, 11, 10, 48, '2026-06-19 09:05:00', '2026-06-19 09:05:17', 'submitted', 33.33, 3, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_dragdrop_attempt_item`
+--
+
+DROP TABLE IF EXISTS `lesson_dragdrop_attempt_item`;
+CREATE TABLE IF NOT EXISTS `lesson_dragdrop_attempt_item` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id_fk` int UNSIGNED NOT NULL,
+  `item_id_fk` int UNSIGNED NOT NULL,
+  `zone_id_fk` int UNSIGNED DEFAULT NULL,
+  `is_correct` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `attempt_id_fk` (`attempt_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_dragdrop_attempt_item`
+--
+
+INSERT INTO `lesson_dragdrop_attempt_item` (`id`, `attempt_id_fk`, `item_id_fk`, `zone_id_fk`, `is_correct`) VALUES
+(15, 4, 15, 14, 0),
+(14, 4, 14, 15, 0),
+(13, 4, 13, 13, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_dragdrop_item`
+--
+
+DROP TABLE IF EXISTS `lesson_dragdrop_item`;
+CREATE TABLE IF NOT EXISTS `lesson_dragdrop_item` (
+  `item_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `item_text` varchar(500) COLLATE utf8mb4_general_ci NOT NULL,
+  `item_image` varchar(260) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `item_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`item_id`),
+  KEY `quizze_id_fk` (`quizze_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_dragdrop_item`
+--
+
+INSERT INTO `lesson_dragdrop_item` (`item_id`, `quizze_id_fk`, `item_text`, `item_image`, `item_order`) VALUES
+(13, 11, 'Nai yau cava e dau vakayagataki ena i qaloqalovi?', NULL, 1),
+(14, 11, 'Nai yau cava e dau vakayagataki e na i sevusevu?', NULL, 2),
+(15, 11, 'Na cava e da dau cavuta ni da tama?', NULL, 3);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_dragdrop_zone`
+--
+
+DROP TABLE IF EXISTS `lesson_dragdrop_zone`;
+CREATE TABLE IF NOT EXISTS `lesson_dragdrop_zone` (
+  `zone_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `zone_label` varchar(500) COLLATE utf8mb4_general_ci NOT NULL,
+  `zone_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`zone_id`),
+  KEY `quizze_id_fk` (`quizze_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_dragdrop_zone`
+--
+
+INSERT INTO `lesson_dragdrop_zone` (`zone_id`, `quizze_id_fk`, `zone_label`, `zone_order`) VALUES
+(15, 11, 'Ua...oi..oi..oi', 3),
+(14, 11, 'Yaqona', 2),
+(13, 11, 'Tabua', 1);
 
 -- --------------------------------------------------------
 
@@ -1003,22 +2234,111 @@ CREATE TABLE IF NOT EXISTS `lesson_file` (
   `uploaded_by` int NOT NULL,
   PRIMARY KEY (`file_id`),
   KEY `fk_file_lesson` (`lesson_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `lesson_file`
 --
 
 INSERT INTO `lesson_file` (`file_id`, `lesson_id_fk`, `file_path`, `file_name`, `file_type`, `file_size`, `uploaded_at`, `uploaded_by`) VALUES
-(1, 3, 'lesson_3_1780458814_7718.pdf', 'Bluehost Hand Over Minute.pdf', 'pdf', 135821, '2026-06-03 15:53:34', 12),
-(2, 3, 'lesson_3_1780458814_6874.pdf', 'Bluehost Memo Signed.pdf', 'pdf', 174855, '2026-06-03 15:53:34', 12),
-(3, 3, 'lesson_3_1780458814_8214.docx', 'Chat GPT Plan.docx', 'docx', 17476, '2026-06-03 15:53:34', 12),
-(4, 3, 'lesson_3_1780458814_4584.pdf', 'Software and Themes Purchase.pdf', 'pdf', 176841, '2026-06-03 15:53:34', 12),
-(5, 3, 'lesson_3_1780459489_9654.png', 'tagimoucia prod logo.png', 'png', 4917, '2026-06-03 16:04:49', 12),
-(6, 3, 'lesson_3_1780459489_3722.jpg', 'tapa.jpg', 'jpg', 443488, '2026-06-03 16:04:49', 12),
-(7, 3, 'lesson_3_1780459489_7889.jpg', 'UMC.jpg', 'jpg', 97059, '2026-06-03 16:04:49', 12),
-(8, 3, 'lesson_3_1780459489_6307.jpg', 'Youtube Banner 3.jpg', 'jpg', 59811, '2026-06-03 16:04:49', 12),
-(12, 3, 'lesson_3_1780473365_2083.jpg', 'Gerby Kindy Photos.jpg', 'jpg', 663207, '2026-06-03 19:56:05', 12);
+(20, 10, 'lesson_10_1780952080_4181.xlsx', 'Bbq Orders 2025', 'xlsx', 9973, '2026-06-09 08:54:40', 63),
+(21, 10, 'lesson_10_1780952080_1551.docx', 'Betty Kava Barrel Ticket', 'docx', 32199, '2026-06-09 08:54:40', 63),
+(22, 10, 'lesson_10_1780952080_1129.pdf', 'Betty Kava Barrel Ticket', 'pdf', 48737, '2026-06-09 08:54:40', 63),
+(23, 10, 'lesson_10_1780952090_3043.png', 'Delete May Fb Email', 'png', 34679, '2026-06-09 08:54:50', 63),
+(24, 10, 'lesson_10_1780952090_4715.png', 'Dns', 'png', 52650, '2026-06-09 08:54:50', 63),
+(25, 10, 'lesson_10_1780952090_5791.png', 'Domain', 'png', 106701, '2026-06-09 08:54:50', 63),
+(26, 10, 'lesson_10_1780952090_4940.png', 'Email 1', 'png', 331333, '2026-06-09 08:54:50', 63),
+(27, 10, 'lesson_10_1780952090_8108.png', 'Eoi Email', 'png', 53846, '2026-06-09 08:54:50', 63),
+(28, 11, 'lesson_11_1781839405_4009.docx', 'Creditor Vendor Setup Form Eft', 'docx', 50094, '2026-06-19 15:23:25', 63);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_label_attempt`
+--
+
+DROP TABLE IF EXISTS `lesson_label_attempt`;
+CREATE TABLE IF NOT EXISTS `lesson_label_attempt` (
+  `attempt_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `lesson_id_fk` int UNSIGNED NOT NULL,
+  `user_id_fk` int UNSIGNED NOT NULL,
+  `started_at` datetime NOT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `status` varchar(60) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'in_progress',
+  `score` decimal(5,2) DEFAULT NULL,
+  `total_markers` int DEFAULT NULL,
+  `correct_markers` int DEFAULT NULL,
+  PRIMARY KEY (`attempt_id`),
+  KEY `quizze_id_fk_user_id_fk` (`quizze_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_label_attempt_answer`
+--
+
+DROP TABLE IF EXISTS `lesson_label_attempt_answer`;
+CREATE TABLE IF NOT EXISTS `lesson_label_attempt_answer` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id_fk` int UNSIGNED NOT NULL,
+  `marker_id_fk` int UNSIGNED NOT NULL,
+  `student_label` varchar(300) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `is_correct` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `attempt_id_fk` (`attempt_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_label_marker`
+--
+
+DROP TABLE IF EXISTS `lesson_label_marker`;
+CREATE TABLE IF NOT EXISTS `lesson_label_marker` (
+  `marker_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `label_question_id_fk` int UNSIGNED NOT NULL,
+  `marker_x` decimal(5,2) NOT NULL,
+  `marker_y` decimal(5,2) NOT NULL,
+  `correct_label` varchar(300) COLLATE utf8mb4_general_ci NOT NULL,
+  `marker_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`marker_id`),
+  KEY `label_question_id_fk` (`label_question_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_label_marker`
+--
+
+INSERT INTO `lesson_label_marker` (`marker_id`, `label_question_id_fk`, `marker_x`, `marker_y`, `correct_label`, `marker_order`) VALUES
+(9, 3, 48.79, 86.65, 'Batini tovuto', 2),
+(8, 3, 50.50, 20.36, 'Magimagi', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_label_question`
+--
+
+DROP TABLE IF EXISTS `lesson_label_question`;
+CREATE TABLE IF NOT EXISTS `lesson_label_question` (
+  `label_question_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `question_text` varchar(500) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
+  `bg_image` varchar(260) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `question_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`label_question_id`),
+  KEY `quizze_id_fk` (`quizze_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `lesson_label_question`
+--
+
+INSERT INTO `lesson_label_question` (`label_question_id`, `quizze_id_fk`, `question_text`, `bg_image`, `question_order`) VALUES
+(3, 12, 'Volavola', 'lbl_12_q_1780952878_542.jpg', 1);
 
 -- --------------------------------------------------------
 
@@ -1035,14 +2355,14 @@ CREATE TABLE IF NOT EXISTS `lesson_link` (
   `link_order` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`link_id`),
   KEY `fk_link_lesson` (`lesson_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `lesson_link`
 --
 
 INSERT INTO `lesson_link` (`link_id`, `lesson_id_fk`, `link_url`, `link_title`, `link_order`) VALUES
-(1, 3, 'https://www.fiji.travel/', 'Tourism Fiji', 1);
+(3, 10, 'https://www.vinodpatel.com.fj/', NULL, 1);
 
 -- --------------------------------------------------------
 
@@ -1054,11 +2374,22 @@ DROP TABLE IF EXISTS `lesson_quizze`;
 CREATE TABLE IF NOT EXISTS `lesson_quizze` (
   `lesson_quizze_id` int NOT NULL AUTO_INCREMENT,
   `lesson_id_fk` int NOT NULL,
+  `assessment_type` varchar(60) DEFAULT 'quiz',
   `quizze_name` varchar(260) NOT NULL,
   `quizze_duration` int NOT NULL COMMENT 'time in minutes',
   `quizze_status` varchar(60) NOT NULL,
   PRIMARY KEY (`lesson_quizze_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_quizze`
+--
+
+INSERT INTO `lesson_quizze` (`lesson_quizze_id`, `lesson_id_fk`, `assessment_type`, `quizze_name`, `quizze_duration`, `quizze_status`) VALUES
+(18, 11, 'quiz', 'Test time', 1, 'Published'),
+(12, 10, 'labelling', 'Kamunaga', 5, 'Published'),
+(11, 10, 'drag_drop', 'Na Vakacacabo', 5, 'Published'),
+(10, 10, 'quiz', 'Vakacacabo', 5, 'Published');
 
 -- --------------------------------------------------------
 
@@ -1068,11 +2399,68 @@ CREATE TABLE IF NOT EXISTS `lesson_quizze` (
 
 DROP TABLE IF EXISTS `lesson_quizze_answer`;
 CREATE TABLE IF NOT EXISTS `lesson_quizze_answer` (
-  `lesson_quizze_answer_id` int DEFAULT NULL,
+  `lesson_quizze_answer_id` int NOT NULL AUTO_INCREMENT,
   `quizze_quest_id_fk` int NOT NULL,
   `answer` varchar(260) NOT NULL,
-  `is_correct_answer` tinyint(1) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `is_correct_answer` tinyint(1) NOT NULL,
+  PRIMARY KEY (`lesson_quizze_answer_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=65 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_quizze_answer`
+--
+
+INSERT INTO `lesson_quizze_answer` (`lesson_quizze_answer_id`, `quizze_quest_id_fk`, `answer`, `is_correct_answer`) VALUES
+(64, 16, 'i don\'t know', 0),
+(63, 16, 'Tapa design', 1),
+(62, 16, 'Water', 0),
+(61, 16, 'Cloth', 0),
+(60, 15, 'James', 0),
+(59, 15, 'Paul', 0),
+(58, 15, 'Peter', 0),
+(57, 15, 'John', 1),
+(56, 14, 'Ua...oi..oi..oi', 1),
+(55, 14, 'Bogi', 0),
+(54, 14, 'Moce', 0),
+(53, 14, 'Bula', 0),
+(52, 13, 'Magiti', 0),
+(51, 13, 'I lavo', 0),
+(50, 13, 'Tabua', 0),
+(49, 13, 'Yaqona', 1),
+(48, 12, 'I lavo', 0),
+(47, 12, 'Tabua', 1),
+(46, 12, 'Karasini', 0),
+(45, 12, 'Yaqona', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_quizze_attempt`
+--
+
+DROP TABLE IF EXISTS `lesson_quizze_attempt`;
+CREATE TABLE IF NOT EXISTS `lesson_quizze_attempt` (
+  `attempt_id` int NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int NOT NULL,
+  `lesson_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `started_at` datetime NOT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `status` enum('in_progress','submitted','timed_out') NOT NULL DEFAULT 'in_progress',
+  `score` decimal(5,2) NOT NULL DEFAULT '0.00',
+  `total_questions` int NOT NULL DEFAULT '0',
+  `correct_answers` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`attempt_id`),
+  UNIQUE KEY `unique_student_quiz` (`quizze_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_quizze_attempt`
+--
+
+INSERT INTO `lesson_quizze_attempt` (`attempt_id`, `quizze_id_fk`, `lesson_id_fk`, `user_id_fk`, `started_at`, `submitted_at`, `status`, `score`, `total_questions`, `correct_answers`) VALUES
+(7, 18, 11, 48, '2026-06-19 09:08:56', '2026-06-19 09:09:59', 'timed_out', 50.00, 2, 1),
+(6, 10, 10, 48, '2026-06-18 19:31:51', '2026-06-18 19:32:15', 'submitted', 100.00, 3, 3);
 
 -- --------------------------------------------------------
 
@@ -1087,7 +2475,18 @@ CREATE TABLE IF NOT EXISTS `lesson_quizze_question` (
   `question` longtext NOT NULL,
   `status` varchar(60) NOT NULL,
   PRIMARY KEY (`quizze_quest_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_quizze_question`
+--
+
+INSERT INTO `lesson_quizze_question` (`quizze_quest_id`, `lesson_quizze_id_fk`, `question`, `status`) VALUES
+(16, 18, 'What is the image shown?', 'Active'),
+(15, 18, 'What is your name?', 'Active'),
+(14, 10, 'Na cava eda dau cavuta ni da dau tama?', 'Active'),
+(13, 10, 'Nai yau cava e day vakayagataki ena i sevisevu?', 'Active'),
+(12, 10, 'Nai yau cava e dau vakayagataki e na i qaloalovi?', 'Active');
 
 -- --------------------------------------------------------
 
@@ -1102,7 +2501,131 @@ CREATE TABLE IF NOT EXISTS `lesson_quizze_question_file` (
   `file_src` varchar(260) NOT NULL,
   `status` varchar(60) NOT NULL,
   PRIMARY KEY (`lesson_quizze_quest_file_id`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_quizze_question_file`
+--
+
+INSERT INTO `lesson_quizze_question_file` (`lesson_quizze_quest_file_id`, `quizze_quest_id_fk`, `file_src`, `status`) VALUES
+(6, 16, 'quiz_18_q16_1781816865_332.jpg', 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_quizze_response`
+--
+
+DROP TABLE IF EXISTS `lesson_quizze_response`;
+CREATE TABLE IF NOT EXISTS `lesson_quizze_response` (
+  `response_id` int NOT NULL AUTO_INCREMENT,
+  `attempt_id_fk` int NOT NULL,
+  `question_id_fk` int NOT NULL,
+  `answer_id_fk` int NOT NULL,
+  `is_correct` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`response_id`),
+  UNIQUE KEY `unique_response` (`attempt_id_fk`,`question_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `lesson_quizze_response`
+--
+
+INSERT INTO `lesson_quizze_response` (`response_id`, `attempt_id_fk`, `question_id_fk`, `answer_id_fk`, `is_correct`) VALUES
+(18, 7, 16, 63, 1),
+(17, 6, 14, 56, 1),
+(16, 6, 13, 49, 1),
+(15, 6, 12, 47, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_simulation_attempt`
+--
+
+DROP TABLE IF EXISTS `lesson_simulation_attempt`;
+CREATE TABLE IF NOT EXISTS `lesson_simulation_attempt` (
+  `attempt_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `lesson_id_fk` int UNSIGNED NOT NULL,
+  `user_id_fk` int UNSIGNED NOT NULL,
+  `started_at` datetime NOT NULL,
+  `submitted_at` datetime DEFAULT NULL,
+  `status` varchar(60) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'in_progress',
+  `score` decimal(5,2) DEFAULT NULL,
+  `total_steps` int DEFAULT NULL,
+  `correct_steps` int DEFAULT NULL,
+  PRIMARY KEY (`attempt_id`),
+  KEY `quizze_id_fk_user_id_fk` (`quizze_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_simulation_attempt_response`
+--
+
+DROP TABLE IF EXISTS `lesson_simulation_attempt_response`;
+CREATE TABLE IF NOT EXISTS `lesson_simulation_attempt_response` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `attempt_id_fk` int UNSIGNED NOT NULL,
+  `step_id_fk` int UNSIGNED NOT NULL,
+  `choice_id_fk` int UNSIGNED DEFAULT NULL,
+  `is_correct` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `attempt_id_fk` (`attempt_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_simulation_choice`
+--
+
+DROP TABLE IF EXISTS `lesson_simulation_choice`;
+CREATE TABLE IF NOT EXISTS `lesson_simulation_choice` (
+  `choice_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `step_id_fk` int UNSIGNED NOT NULL,
+  `choice_text` varchar(500) COLLATE utf8mb4_general_ci NOT NULL,
+  `is_correct` tinyint(1) NOT NULL DEFAULT '0',
+  `feedback_text` varchar(600) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `choice_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`choice_id`),
+  KEY `step_id_fk` (`step_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_simulation_scenario`
+--
+
+DROP TABLE IF EXISTS `lesson_simulation_scenario`;
+CREATE TABLE IF NOT EXISTS `lesson_simulation_scenario` (
+  `scenario_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `quizze_id_fk` int UNSIGNED NOT NULL,
+  `scenario_intro` text COLLATE utf8mb4_general_ci,
+  `intro_image` varchar(260) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`scenario_id`),
+  UNIQUE KEY `quizze_id_fk` (`quizze_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `lesson_simulation_step`
+--
+
+DROP TABLE IF EXISTS `lesson_simulation_step`;
+CREATE TABLE IF NOT EXISTS `lesson_simulation_step` (
+  `step_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `scenario_id_fk` int UNSIGNED NOT NULL,
+  `step_number` int NOT NULL DEFAULT '1',
+  `situation_text` text COLLATE utf8mb4_general_ci NOT NULL,
+  `step_image` varchar(260) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  PRIMARY KEY (`step_id`),
+  KEY `scenario_id_fk` (`scenario_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -1119,15 +2642,15 @@ CREATE TABLE IF NOT EXISTS `lesson_video` (
   `video_order` int NOT NULL DEFAULT '1',
   PRIMARY KEY (`video_id`),
   KEY `fk_video_lesson` (`lesson_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `lesson_video`
 --
 
 INSERT INTO `lesson_video` (`video_id`, `lesson_id_fk`, `video_url`, `video_title`, `video_order`) VALUES
-(1, 3, 'https://youtu.be/GWhUuGN59Nk?si=1WvIcgRtES-cguh9', 'Gather Song Sample', 1),
-(2, 3, 'https://youtu.be/ndDpjT0_IM0?si=u-XtmsEZitQLphC1', 'How Your Brain Works', 2);
+(5, 10, 'https://youtu.be/_3pijyWUXYg?si=3k7zDn4gyQstynuX', NULL, 1),
+(6, 10, 'https://youtu.be/_3pijyWUXYg?si=t2xvmkYd8T4PuQ2r', 'Inside Taliban', 2);
 
 -- --------------------------------------------------------
 
@@ -1168,6 +2691,43 @@ INSERT INTO `level` (`level_id`, `sch_cat_id_fk`, `level_name`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `migrations`
+--
+
+DROP TABLE IF EXISTS `migrations`;
+CREATE TABLE IF NOT EXISTS `migrations` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `version` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `class` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `group` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `namespace` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `time` int NOT NULL,
+  `batch` int UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=MyISAM AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `migrations`
+--
+
+INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`, `batch`) VALUES
+(1, '2026-06-24-000000', 'App\\Database\\Migrations\\CreateChatTables', 'default', 'App', 1782245458, 1),
+(2, '2026-06-25-000001', 'App\\Database\\Migrations\\CreateStudentExamTables', 'default', 'App', 1782341788, 2),
+(3, '2026-06-25-000002', 'App\\Database\\Migrations\\AddEnrolIdToStudentSubject', 'default', 'App', 1782346228, 3),
+(4, '2026-06-25-000003', 'App\\Database\\Migrations\\AddUniqueToExamRegistrationIndexNum', 'default', 'App', 1782349222, 4),
+(5, '2026-06-25-000004', 'App\\Database\\Migrations\\CreateExamSubjectTable', 'default', 'App', 1782350520, 5),
+(6, '2026-06-25-033028', 'App\\Database\\Migrations\\AddSubTypeToExamSubject', 'default', 'App', 1782358261, 6),
+(7, '2026-06-30-000001', 'App\\Database\\Migrations\\CreateChatMessageReactionsTable', 'default', 'App', 1782843648, 7),
+(8, '2026-06-30-000002', 'App\\Database\\Migrations\\CreateChatUserBlocksTable', 'default', 'App', 1782843648, 7),
+(9, '2026-07-01-000001', 'App\\Database\\Migrations\\CreateConductAppealsTable', 'default', 'App', 1782843690, 8),
+(10, '2026-07-01-000002', 'App\\Database\\Migrations\\CreateConductAppealFilesTable', 'default', 'App', 1782844786, 9),
+(11, '2026-07-01-000003', 'App\\Database\\Migrations\\CreateLessonAssignmentFileTable', 'default', 'App', 1782854718, 10),
+(12, '2026-07-01-000004', 'App\\Database\\Migrations\\AlterLessonAssignmentFileTypeToVarchar', 'default', 'App', 1782857848, 11),
+(13, '2026-07-01-000005', 'App\\Database\\Migrations\\CreateAssignmentPlagiarismTable', 'default', 'App', 1782864403, 12);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `modules`
 --
 
@@ -1193,7 +2753,7 @@ INSERT INTO `modules` (`module_id`, `module_name`, `module_icon`, `module_svg`) 
 (6, 'Enrolment', '<i class=\"ki-duotone ki-abstract-28 fs-2\"><span class=\"path1\"/><span class=\"path2\"/></i>', ''),
 (7, 'Classroom', '<i class=\"ki-duotone ki-element-7 fs-2\"><span class=\"path1\"/><span class=\"path2\"/></i>', ''),
 (8, 'Attendance', '<i class=\"ki-duotone ki-bookmark\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', NULL),
-(9, 'Exam', '<i class=\"ki-duotone ki-chart-pie-3 fs-2\"><span class=\"path1\"/><span class=\"path2\"/><span class=\"path3\"/></i>', ''),
+(9, 'External Exam', '<i class=\"ki-duotone ki-chart-pie-3 fs-2\"><span class=\"path1\"/><span class=\"path2\"/><span class=\"path3\"/></i>', ''),
 (10, 'Conduct', '<i class=\"ki-duotone ki-bucket fs-2\"><span class=\"path1\"/><span class=\"path2\"/><span class=\"path3\"/><span class=\"path4\"/></i>', ''),
 (11, 'Timetable', '<i class=\"ki-duotone ki-calendar-8 fs-2\"><span class=\"path1\"/><span class=\"path2\"/><span class=\"path3\"/><span class=\"path4\"/><span class=\"path5\"/><span class=\"path6\"/></i>', ''),
 (12, 'Event', '<i class=\"ki-duotone ki-calendar-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span><span class=\"path6\"></span></i>', ''),
@@ -1272,7 +2832,7 @@ CREATE TABLE IF NOT EXISTS `permission` (
   `updated_at` date DEFAULT NULL,
   PRIMARY KEY (`perm_id`),
   KEY `fk_permission_modules` (`module_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=99 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=101 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `permission`
@@ -1344,7 +2904,7 @@ INSERT INTO `permission` (`perm_id`, `module_id_fk`, `perm_name`, `perm_desc`, `
 (64, 10, 'Delete Conduct', '', 'conduct/remove', '_remove_conduct', 0, 'Active', NULL, NULL),
 (65, 10, 'View Conduct Detail', '', 'conduct/detail/', '_conduct_detail', 0, 'Active', NULL, NULL),
 (66, 10, 'Generate Conduct Report', '', 'conduct/report/', '_conduct_report', 0, 'Active', NULL, NULL),
-(67, 10, 'My Conduct', '', 'conduct/my/', '_my_conduct', 0, 'Active', NULL, NULL),
+(67, 10, 'My Conduct', '', 'conduct/my/', '_my_conduct', 1, 'Active', NULL, NULL),
 (68, 11, 'Add Timetable', '', 'timetable/add/', '_add_timetable', 1, 'Active', NULL, NULL),
 (69, 11, 'Timetable Listing', '', 'timetable', '_timetable_listing', 1, 'Active', NULL, NULL),
 (70, 11, 'Edit Timetable', '', 'timetable/edit/', '_edit_timetable', 0, 'Active', NULL, NULL),
@@ -1372,7 +2932,9 @@ INSERT INTO `permission` (`perm_id`, `module_id_fk`, `perm_name`, `perm_desc`, `
 (95, 8, 'Add Student Daily', 'Add student daily attendance', 'attendance/add', '_add_student_daily_attendance', 1, 'Active', '2026-05-28', '2026-05-28'),
 (96, 8, 'View Student Daily', 'View student daily attendance', 'attendance', '_view_student_daily_attendance', 1, 'Active', '2026-05-28', '2026-05-28'),
 (97, 8, 'Add Student Subject', 'Add student subject or class period attendance', 'attendance/subject/add', '_add_student_subject', 1, 'Active', '2026-05-28', '2026-05-28'),
-(98, 8, 'View Student Subject', 'View student subject or class reriod attendance', 'attendance/subject', '_view_student_subject', 1, 'Active', '2026-05-28', '2026-05-28');
+(98, 8, 'View Student Subject', 'View student subject or class reriod attendance', 'attendance/subject', '_view_student_subject', 1, 'Active', '2026-05-28', '2026-05-28'),
+(99, 9, 'My Exam', 'This is where student can view their external exam results and also where parents can view their childrens exam results as well', 'exam/my/', '_my_exam', 1, 'Active', '2026-06-25', '2026-06-25'),
+(100, 10, 'Process Conduct Appeals', 'Review and process student conduct appeals', 'conduct/appeals', '_process_conduct_appeal', 1, 'Active', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1438,6 +3000,40 @@ INSERT INTO `province` (`province_id`, `division_id_fk`, `province_name`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `public_holiday`
+--
+
+DROP TABLE IF EXISTS `public_holiday`;
+CREATE TABLE IF NOT EXISTS `public_holiday` (
+  `holiday_id` int NOT NULL AUTO_INCREMENT,
+  `holiday_name` varchar(150) NOT NULL,
+  `holiday_date` date NOT NULL,
+  `observed_date` date DEFAULT NULL,
+  `holiday_year` year NOT NULL,
+  PRIMARY KEY (`holiday_id`),
+  UNIQUE KEY `uq_holiday_date` (`holiday_date`)
+) ENGINE=InnoDB AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+--
+-- Dumping data for table `public_holiday`
+--
+
+INSERT INTO `public_holiday` (`holiday_id`, `holiday_name`, `holiday_date`, `observed_date`, `holiday_year`) VALUES
+(1, 'New Year\'s Day', '2026-01-01', NULL, '2026'),
+(2, 'National Youth Day', '2026-03-27', NULL, '2026'),
+(3, 'Good Friday', '2026-04-03', NULL, '2026'),
+(4, 'Holy Saturday', '2026-04-04', '2026-04-02', '2026'),
+(5, 'Easter Monday', '2026-04-06', NULL, '2026'),
+(6, 'Ratu Sir Lala Sukuna Day', '2026-05-25', NULL, '2026'),
+(7, 'Prophet Mohammed\'s Birthday', '2026-09-17', NULL, '2026'),
+(8, 'Fiji Day', '2026-10-10', '2026-10-09', '2026'),
+(9, 'Diwali', '2026-11-08', '2026-11-09', '2026'),
+(10, 'Christmas Day', '2026-12-25', NULL, '2026'),
+(11, 'Boxing Day', '2026-12-26', '2026-12-28', '2026');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `reference_category`
 --
 
@@ -1482,7 +3078,7 @@ CREATE TABLE IF NOT EXISTS `role` (
   `updated_at` date DEFAULT NULL,
   PRIMARY KEY (`role_id`),
   KEY `role_cat_id_fk` (`role_cat_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=13 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `role`
@@ -1491,12 +3087,13 @@ CREATE TABLE IF NOT EXISTS `role` (
 INSERT INTO `role` (`role_id`, `role_cat_id_fk`, `role_name`, `role_desc`, `role_rank`, `created_at`, `updated_at`) VALUES
 (1, 1, 'Super Admin', 'The ultimate authority in the system. The Super Admin possesses full, unrestricted access to configure the platform, manage all user accounts, and oversee every aspect of the system\'s data and functionality.', 1, '2026-01-22', '2026-01-22'),
 (2, 2, 'School Admin', 'The School Administrator serves as the primary manager of the institution\'s digital ecosystem, overseeing platform configuration, user access, and subscription services. This role is responsible for maintaining the operational integrity of the school\'s account, ensuring seamless access to tools and resources for faculty, staff, and students.', 3, '2026-01-22', '2026-01-22'),
-(3, 3, 'Principal', 'The Principal serves as the chief operational leader of the school, responsible for overseeing day-to-day academic and administrative functions while shaping the institution’s educational environment. This role goes beyond administration to directly impact teaching effectiveness, student development, and operational efficiency.', 2, '2026-01-22', '2026-01-22'),
+(3, 3, 'Principal', 'The Principal serves as the chief operational leader of the school, responsible for overseeing day-to-day academic and administrative functions while shaping the institution’s educational environment. This role goes beyond administration to directly impact teaching effectiveness, student development, and operational efficiency.', 3, '2026-01-22', '2026-01-22'),
 (4, 3, 'HOD', 'A Head of Department is a specialist leader and middle manager focused on a specific academic area (e.g., Math, Science, Industrial Arts). They are responsible for the quality, consistency, and innovation within their subject domain.', 4, '2026-01-28', '2026-01-28'),
 (5, 3, 'Assistant Teacher', 'An Assistant Teacher is a vital support professional within the classroom, working under the guidance of the HOD or Principal to facilitate student learning and well-being. This role focuses on implementing, assisting, and reinforcing the educational environment to ensure all students receive individualized attention and support.', 4, '2026-01-28', '2026-01-29'),
 (6, 6, 'Parent', 'The Parent role is a dedicated portal that provides real-time access to their child\'s academic and school life, transforming them from passive observers into active, informed participants in the educational process.', 5, '2026-02-03', '2026-02-03'),
 (7, 4, 'Student', 'The Student role is a personalized digital dashboard that centralizes a student\'s academic life, fostering independence, organization, and active engagement with their own learning process.', 6, '2026-02-03', '2026-02-03'),
-(8, 5, 'Support Staff', 'Support Staff are frontline operational specialists responsible for facilitating seamless technical assistance, user issue resolution, and day-to-day system support to maintain service excellence and client satisfaction.', 4, '2026-01-23', '2026-01-29');
+(8, 5, 'Support Staff', 'Support Staff are frontline operational specialists responsible for facilitating seamless technical assistance, user issue resolution, and day-to-day system support to maintain service excellence and client satisfaction.', 4, '2026-01-23', '2026-01-29'),
+(16, 7, 'Admin', 'Navuli Fiji Administrator', 2, '2026-06-26', '2026-06-26');
 
 -- --------------------------------------------------------
 
@@ -1509,7 +3106,7 @@ CREATE TABLE IF NOT EXISTS `role_category` (
   `role_cat_id` int NOT NULL AUTO_INCREMENT,
   `role_cat_name` varchar(260) NOT NULL,
   PRIMARY KEY (`role_cat_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `role_category`
@@ -1521,7 +3118,8 @@ INSERT INTO `role_category` (`role_cat_id`, `role_cat_name`) VALUES
 (3, 'Teacher'),
 (4, 'Student'),
 (5, 'Support Staff'),
-(6, 'Parent or Guardian\r\n');
+(6, 'Parent or Guardian\r\n'),
+(7, 'Admin');
 
 -- --------------------------------------------------------
 
@@ -1539,7 +3137,7 @@ CREATE TABLE IF NOT EXISTS `role_permission` (
   PRIMARY KEY (`role_perm_id`),
   KEY `fk_role_perm_permission` (`perm_id_fk`),
   KEY `fk_role_perm_role` (`role_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=482 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=743 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `role_permission`
@@ -1644,74 +3242,163 @@ INSERT INTO `role_permission` (`role_perm_id`, `perm_id_fk`, `role_id_fk`, `crea
 (345, 94, 1, '2026-05-28 07:45:28', '2026-05-28 07:45:28'),
 (346, 95, 1, '2026-05-28 07:45:28', '2026-05-28 07:45:28'),
 (347, 96, 1, '2026-05-28 07:45:28', '2026-05-28 07:45:28'),
-(414, 1, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(415, 2, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(416, 3, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(417, 14, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(418, 15, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(419, 16, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(420, 18, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(421, 20, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(422, 23, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(423, 24, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(424, 25, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(425, 26, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(426, 27, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(427, 29, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(428, 30, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(429, 32, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(430, 33, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(431, 35, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(432, 37, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(433, 40, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(434, 41, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(435, 42, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(436, 43, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(437, 44, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(438, 45, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(439, 46, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(440, 47, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(441, 48, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(442, 49, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(443, 51, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(444, 52, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(445, 53, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(446, 54, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(447, 55, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(448, 56, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(449, 57, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(450, 58, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(451, 59, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(452, 60, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(453, 61, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(454, 62, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(455, 63, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(456, 65, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(457, 66, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(458, 67, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(459, 69, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(460, 72, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(461, 73, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(462, 74, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(463, 75, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(464, 76, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(465, 77, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(466, 78, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(467, 79, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(468, 80, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(469, 81, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(470, 82, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(471, 83, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(472, 84, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(473, 85, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(474, 86, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(475, 87, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(476, 88, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(477, 89, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(478, 95, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(479, 96, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(480, 97, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22'),
-(481, 98, 5, '2026-05-28 10:58:22', '2026-05-28 10:58:22');
+(492, 1, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(493, 2, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(494, 3, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(495, 14, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(496, 15, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(497, 16, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(498, 18, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(499, 20, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(500, 23, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(501, 24, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(502, 25, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(503, 26, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(504, 27, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(505, 28, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(506, 29, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(507, 30, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(508, 32, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(509, 33, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(510, 34, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(511, 35, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(512, 36, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(513, 37, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(514, 38, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(515, 39, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(516, 40, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(517, 41, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(518, 42, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(519, 43, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(520, 44, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(521, 45, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(522, 46, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(523, 47, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(524, 48, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(525, 49, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(526, 50, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(527, 51, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(528, 52, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(529, 53, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(530, 54, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(531, 55, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(532, 56, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(533, 57, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(534, 58, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(535, 59, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(536, 60, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(537, 61, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(538, 62, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(539, 63, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(540, 64, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(541, 65, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(542, 66, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(543, 67, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(544, 68, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(545, 69, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(546, 70, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(547, 71, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(548, 72, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(549, 73, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(550, 74, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(551, 75, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(552, 76, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(553, 77, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(554, 78, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(555, 79, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(556, 80, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(557, 81, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(558, 83, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(559, 84, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(560, 85, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(561, 87, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(562, 88, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(563, 89, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(564, 95, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(565, 96, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(566, 97, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(567, 98, 3, '2026-06-04 15:32:37', '2026-06-04 15:32:37'),
+(576, 99, 6, '2026-06-25 10:14:40', '2026-06-25 10:14:40'),
+(654, 1, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(655, 2, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(656, 3, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(657, 14, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(658, 15, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(659, 16, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(660, 18, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(661, 20, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(662, 23, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(663, 24, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(664, 25, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(665, 26, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(666, 27, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(667, 29, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(668, 30, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(669, 32, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(670, 33, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(671, 35, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(672, 37, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(673, 40, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(674, 41, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(675, 42, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(676, 43, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(677, 44, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(678, 45, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(679, 46, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(680, 47, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(681, 48, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(682, 49, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(683, 51, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(684, 52, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(685, 53, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(686, 54, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(687, 55, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(688, 56, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(689, 57, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(690, 58, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(691, 59, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(692, 60, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(693, 61, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(694, 62, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(695, 63, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(696, 65, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(697, 66, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(698, 67, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(699, 69, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(700, 72, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(701, 73, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(702, 74, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(703, 75, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(704, 76, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(705, 77, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(706, 78, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(707, 79, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(708, 80, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(709, 81, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(710, 82, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(711, 83, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(712, 84, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(713, 85, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(714, 86, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(715, 87, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(716, 88, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(717, 89, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(718, 95, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(719, 96, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(720, 97, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(721, 98, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(722, 99, 5, '2026-06-25 10:15:17', '2026-06-25 10:15:17'),
+(732, 1, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(733, 2, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(734, 3, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(735, 18, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(736, 41, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(737, 57, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(738, 60, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(739, 65, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(740, 66, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(741, 67, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07'),
+(742, 99, 7, '2026-07-01 05:52:07', '2026-07-01 05:52:07');
 
 -- --------------------------------------------------------
 
@@ -1740,7 +3427,7 @@ CREATE TABLE IF NOT EXISTS `school` (
   PRIMARY KEY (`sch_id`),
   KEY `fk_school_sch_category` (`sch_cat_id_fk`),
   KEY `fk_school_ditrict` (`district_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=30 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `school`
@@ -1750,7 +3437,24 @@ INSERT INTO `school` (`sch_id`, `sch_cat_id_fk`, `district_id_fk`, `sch_name`, `
 (12, 4, 89, 'Suva Secondary School', 'Lot 345, Straight Street, Labasa', 9807645, 'piobaleicoqe@yahoo.com', '$2y$10$tJxHFuOF4CLv.JmHZHejfeKiNXq9M1tNsReqwMFpIkwLdKXDQkMSq', '178.440609', '-18.134809', 'Enter To Learn', 'logo_12_893140.png', '', '', '2025-11-05 12:01:19', 'Active'),
 (21, 4, 159, 'Lami High School', '6 Miles', 1234567, 'sch@yahoo.com', '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', NULL, NULL, 'Enter to Learn', '', '#3498db', '#ecf0f1', '2026-01-14 16:12:02', 'Step 1 Configured'),
 (26, 4, 46, 'Nasinu Secondary School 6', '6 Miles, Tacirua', 9896700, 'piobaleicoqe92@gmail.com', NULL, NULL, NULL, 'Enter to learn', '', '', '', NULL, 'Step 1 Configured'),
-(29, 4, 193, 'Rotuma High School', 'Rotuma island', 9987678, 'pio@baleicoqe.com', NULL, '177.081499', '-12.519626', 'Enter to learn', 'logo_29_883917.jpg', '#0080ff', '#ff0000', NULL, 'Active');
+(29, 4, 193, 'Rotuma High School', 'Rotuma island', 9987678, 'pio@baleicoqe.com', NULL, '177.081499', '-12.519626', 'Enter to learn', 'logo_29_883917.jpg', '#0080ff', '#ff0000', NULL, 'Active'),
+(30, 4, 114, 'William Cross College', 'Vula Street, Nasinu', 2148885, 'uwatevakaloloma1987@gmail.com', NULL, NULL, NULL, 'Go Forth To Learn', 'logo_30_699279.jpg', '#000000', '#000000', NULL, 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `school_category_config`
+--
+
+DROP TABLE IF EXISTS `school_category_config`;
+CREATE TABLE IF NOT EXISTS `school_category_config` (
+  `sch_cat_con_id` int NOT NULL AUTO_INCREMENT,
+  `sch_cat_id_fk` int NOT NULL,
+  `num_of_term_in_year` int NOT NULL,
+  `label_for_term` varchar(60) NOT NULL,
+  `num_of_week_in_a_term` int NOT NULL,
+  PRIMARY KEY (`sch_cat_con_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -1761,10 +3465,14 @@ INSERT INTO `school` (`sch_id`, `sch_cat_id_fk`, `district_id_fk`, `sch_name`, `
 DROP TABLE IF EXISTS `school_config`;
 CREATE TABLE IF NOT EXISTS `school_config` (
   `sch_config_id` int NOT NULL AUTO_INCREMENT,
+  `sch_year` int NOT NULL DEFAULT '2026',
   `num_of_term` int NOT NULL,
-  `sch_start_month` int NOT NULL,
-  `start_day` int NOT NULL,
-  `num_of_weeks_in_wone_term` int NOT NULL,
+  `term_1_start_date` date DEFAULT NULL,
+  `term_1_end_date` date DEFAULT NULL,
+  `term_2_start_date` date DEFAULT NULL,
+  `term_2_end_date` date DEFAULT NULL,
+  `term_3_start_date` date DEFAULT NULL,
+  `term_3_end_date` date DEFAULT NULL,
   PRIMARY KEY (`sch_config_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
@@ -1772,8 +3480,8 @@ CREATE TABLE IF NOT EXISTS `school_config` (
 -- Dumping data for table `school_config`
 --
 
-INSERT INTO `school_config` (`sch_config_id`, `num_of_term`, `sch_start_month`, `start_day`, `num_of_weeks_in_wone_term`) VALUES
-(1, 3, 26, 1, 13);
+INSERT INTO `school_config` (`sch_config_id`, `sch_year`, `num_of_term`, `term_1_start_date`, `term_1_end_date`, `term_2_start_date`, `term_2_end_date`, `term_3_start_date`, `term_3_end_date`) VALUES
+(1, 2026, 3, '2026-01-26', '2026-05-01', '2026-05-18', '2026-08-21', '2026-09-07', '2026-12-04');
 
 -- --------------------------------------------------------
 
@@ -1803,6 +3511,22 @@ INSERT INTO `sch_category` (`sch_cat_id`, `sch_cat_initial`, `sch_cat_name`) VAL
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `sch_cat_term_entry`
+--
+
+DROP TABLE IF EXISTS `sch_cat_term_entry`;
+CREATE TABLE IF NOT EXISTS `sch_cat_term_entry` (
+  `sch_cat_term_id` int NOT NULL AUTO_INCREMENT,
+  `sch_cat_con_id_fk` int NOT NULL,
+  `term_num` int NOT NULL,
+  `term_start_date` date NOT NULL,
+  `term_end_date` int NOT NULL,
+  PRIMARY KEY (`sch_cat_term_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `sch_department`
 --
 
@@ -1816,7 +3540,7 @@ CREATE TABLE IF NOT EXISTS `sch_department` (
   PRIMARY KEY (`sch_dept_id`),
   KEY `fk_sch_department_school` (`sch_id_fk`),
   KEY `fk_sch_department_department` (`dept_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=48 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=59 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sch_department`
@@ -1844,7 +3568,18 @@ INSERT INTO `sch_department` (`sch_dept_id`, `sch_id_fk`, `dept_id_fk`, `dept_he
 (41, 29, 8, NULL, 'Established'),
 (42, 29, 9, NULL, 'Established'),
 (43, 29, 10, NULL, 'Established'),
-(47, 29, 11, NULL, 'Established');
+(47, 29, 11, NULL, 'Established'),
+(48, 30, 1, NULL, 'Established'),
+(49, 30, 2, NULL, 'Established'),
+(50, 30, 3, NULL, 'Established'),
+(51, 30, 4, NULL, 'Established'),
+(52, 30, 5, NULL, 'Established'),
+(53, 30, 6, NULL, 'Established'),
+(54, 30, 7, NULL, 'Established'),
+(55, 30, 8, NULL, 'Established'),
+(56, 30, 9, NULL, 'Established'),
+(57, 30, 10, NULL, 'Established'),
+(58, 30, 11, NULL, 'Established');
 
 -- --------------------------------------------------------
 
@@ -1860,7 +3595,7 @@ CREATE TABLE IF NOT EXISTS `sch_level` (
   PRIMARY KEY (`sch_level_id`),
   KEY `fk_sch_level_school` (`sch_id_fk`),
   KEY `fk_sch_level_level` (`level_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=37 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sch_level`
@@ -1876,7 +3611,12 @@ INSERT INTO `sch_level` (`sch_level_id`, `sch_id_fk`, `level_id_fk`) VALUES
 (28, 29, 13),
 (29, 29, 14),
 (30, 29, 15),
-(31, 29, 11);
+(31, 29, 11),
+(32, 30, 11),
+(33, 30, 12),
+(34, 30, 13),
+(35, 30, 14),
+(36, 30, 15);
 
 -- --------------------------------------------------------
 
@@ -1895,7 +3635,7 @@ CREATE TABLE IF NOT EXISTS `sch_subject` (
   KEY `fk_sch_subject_school` (`sch_id_fk`),
   KEY `fk_sch_subject_subject` (`subject_id_fk`),
   KEY `sch_dept_id_fk` (`sch_dept_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=179 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=216 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `sch_subject`
@@ -2053,7 +3793,44 @@ INSERT INTO `sch_subject` (`sch_sub_id`, `sch_id_fk`, `subject_id_fk`, `sch_dept
 (175, 29, 215, 34, 'Active'),
 (176, 29, 155, 41, 'Active'),
 (177, 29, 157, 34, 'Active'),
-(178, 12, 174, 1, 'Active');
+(178, 12, 174, 1, 'Active'),
+(179, 30, 132, 49, 'Active'),
+(180, 30, 141, 52, 'Active'),
+(181, 30, 130, 48, 'Active'),
+(182, 30, 131, 51, 'Active'),
+(183, 30, 146, 50, 'Active'),
+(184, 30, 138, 55, 'Active'),
+(185, 30, 144, 53, 'Active'),
+(186, 30, 133, 48, 'Active'),
+(187, 30, 139, 56, 'Active'),
+(188, 30, 143, 54, 'Active'),
+(189, 30, 137, 57, 'Active'),
+(190, 30, 242, 57, 'Active'),
+(191, 30, 237, 57, 'Active'),
+(192, 30, 206, 48, 'Active'),
+(193, 30, 241, 57, 'Active'),
+(194, 30, 251, 48, 'Active'),
+(195, 30, 207, 51, 'Active'),
+(196, 30, 231, 57, 'Active'),
+(197, 30, 223, 57, 'Active'),
+(198, 30, 236, 58, 'Active'),
+(199, 30, 218, 55, 'Active'),
+(200, 30, 226, 53, 'Active'),
+(201, 30, 211, 50, 'Active'),
+(202, 30, 224, 54, 'Active'),
+(203, 30, 210, 51, 'Active'),
+(204, 30, 209, 49, 'Active'),
+(205, 30, 225, 53, 'Active'),
+(206, 30, 221, 52, 'Active'),
+(207, 30, 219, 56, 'Active'),
+(208, 30, 213, 48, 'Active'),
+(209, 30, 254, 52, 'Active'),
+(210, 30, 220, 56, 'Active'),
+(211, 30, 208, 49, 'Active'),
+(212, 30, 212, 50, 'Active'),
+(213, 30, 222, 52, 'Active'),
+(214, 30, 217, 57, 'Active'),
+(215, 30, 246, 57, 'Active');
 
 -- --------------------------------------------------------
 
@@ -2094,7 +3871,7 @@ CREATE TABLE IF NOT EXISTS `stream` (
   `stream_name` varchar(100) DEFAULT NULL,
   PRIMARY KEY (`stream_id`),
   KEY `fk_stream_level` (`sch_level_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=114 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=128 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `stream`
@@ -2119,7 +3896,17 @@ INSERT INTO `stream` (`stream_id`, `sch_level_id_fk`, `stream_name`) VALUES
 (110, 27, '1003'),
 (111, 28, '1101'),
 (112, 29, '1201'),
-(113, 30, '1301');
+(113, 30, '1301'),
+(116, 32, 'Year 9A'),
+(117, 32, 'Year 9B'),
+(118, 33, 'Year 10A'),
+(119, 33, 'Year 10B'),
+(120, 34, 'Year 11A'),
+(121, 34, 'Year 11B'),
+(122, 35, 'Year 12A'),
+(123, 35, 'Year 12B'),
+(124, 36, 'Year 13A'),
+(125, 36, 'Year 13B');
 
 -- --------------------------------------------------------
 
@@ -2135,7 +3922,7 @@ CREATE TABLE IF NOT EXISTS `stream_core_subject` (
   PRIMARY KEY (`stream_core_sub_id`),
   KEY `fk_stream_core_subject_stream` (`stream_id_fk`),
   KEY `sch_sub_id_fk` (`sch_sub_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=211 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=241 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `stream_core_subject`
@@ -2243,7 +4030,24 @@ INSERT INTO `stream_core_subject` (`stream_core_sub_id`, `sch_sub_id_fk`, `strea
 (207, 130, 107),
 (208, 131, 107),
 (209, 132, 107),
-(210, 139, 107);
+(210, 139, 107),
+(224, 179, 116),
+(225, 180, 116),
+(226, 181, 116),
+(227, 182, 116),
+(228, 183, 116),
+(229, 189, 116),
+(230, 190, 116),
+(231, 191, 116),
+(232, 192, 124),
+(233, 193, 124),
+(234, 194, 124),
+(235, 195, 124),
+(236, 196, 124),
+(237, 197, 124),
+(238, 198, 124),
+(239, 192, 125),
+(240, 195, 125);
 
 -- --------------------------------------------------------
 
@@ -2260,7 +4064,7 @@ CREATE TABLE IF NOT EXISTS `stream_optional_subject` (
   PRIMARY KEY (`stream_opt_sub_id`),
   KEY `fk_stream_optional_subject_stream` (`stream_id_fk`),
   KEY `sch_sub_id_fk` (`sch_sub_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=102 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=136 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `stream_optional_subject`
@@ -2355,7 +4159,66 @@ INSERT INTO `stream_optional_subject` (`stream_opt_sub_id`, `sch_sub_id_fk`, `st
 (98, 56, 95, 2),
 (99, 67, 95, 3),
 (100, 54, 95, 3),
-(101, 66, 95, 3);
+(101, 66, 95, 3),
+(102, 184, 116, 1),
+(103, 185, 116, 1),
+(104, 186, 116, 1),
+(105, 187, 116, 2),
+(106, 188, 116, 2),
+(107, 199, 124, 1),
+(108, 200, 124, 1),
+(109, 201, 124, 1),
+(110, 202, 124, 1),
+(111, 203, 124, 1),
+(112, 204, 124, 2),
+(113, 205, 124, 2),
+(114, 206, 124, 2),
+(115, 207, 124, 2),
+(116, 208, 124, 2),
+(117, 209, 124, 3),
+(118, 210, 124, 3),
+(119, 211, 124, 3),
+(120, 212, 124, 3),
+(124, 204, 125, 2),
+(125, 205, 125, 2),
+(126, 206, 125, 2),
+(127, 212, 125, 3),
+(128, 203, 125, 3),
+(129, 207, 125, 3),
+(130, 209, 125, 4),
+(131, 199, 125, 4),
+(132, 211, 125, 4),
+(133, 214, 125, 5),
+(134, 215, 125, 5),
+(135, 193, 125, 5);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_assignment_score`
+--
+
+DROP TABLE IF EXISTS `student_assignment_score`;
+CREATE TABLE IF NOT EXISTS `student_assignment_score` (
+  `score_id` int NOT NULL AUTO_INCREMENT,
+  `assignment_id_fk` int NOT NULL,
+  `submission_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `assignment_mark` decimal(5,2) DEFAULT NULL,
+  `feedback` text COLLATE utf8mb4_unicode_ci,
+  `graded_at` datetime DEFAULT NULL,
+  `graded_by` int DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`score_id`),
+  UNIQUE KEY `unique_score` (`assignment_id_fk`,`user_id_fk`)
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `student_assignment_score`
+--
+
+INSERT INTO `student_assignment_score` (`score_id`, `assignment_id_fk`, `submission_id_fk`, `user_id_fk`, `assignment_mark`, `feedback`, `graded_at`, `graded_by`, `updated_at`) VALUES
+(1, 3, 1, 37, 75.00, 'Student can still do better. Need a little more research work.', '2026-06-04 11:30:10', 12, '2026-06-04 11:30:10');
 
 -- --------------------------------------------------------
 
@@ -2378,7 +4241,7 @@ CREATE TABLE IF NOT EXISTS `student_attendance` (
   KEY `fk_attendance_stream` (`stream_id_fk`),
   KEY `fk_attendance_enrol` (`enrol_id_fk`),
   KEY `fk_attendance_admission` (`admission_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=201 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=264 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `student_attendance`
@@ -2560,7 +4423,59 @@ INSERT INTO `student_attendance` (`stud_att_id`, `enrol_id_fk`, `stream_id_fk`, 
 (197, 12, 91, 14, 26, '2026-04-30', '', 'Subject', 'Present'),
 (198, 15, 91, 14, 26, '2026-04-30', '', 'Subject', 'Present'),
 (199, 9, 91, 14, 26, '2026-04-30', '', 'Subject', 'Present'),
-(200, 13, 91, 14, 26, '2026-04-30', '', 'Subject', 'Present');
+(200, 13, 91, 14, 26, '2026-04-30', '', 'Subject', 'Present'),
+(201, 10, 91, 13, NULL, '2026-06-05', 'Call in sick', 'Daily', 'Absent'),
+(202, 16, 91, 13, NULL, '2026-06-05', '', 'Daily', 'Present'),
+(203, 11, 91, 13, NULL, '2026-06-05', '', 'Daily', 'Present'),
+(204, 14, 91, 13, NULL, '2026-06-05', '', 'Daily', 'Present'),
+(205, 12, 91, 13, NULL, '2026-06-05', '', 'Daily', 'Present'),
+(206, 15, 91, 13, NULL, '2026-06-05', '', 'Daily', 'Present'),
+(207, 13, 91, 13, NULL, '2026-06-05', '', 'Daily', 'Present'),
+(208, 34, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Sick'),
+(209, 21, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(210, 25, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(211, 33, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(212, 30, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(213, 26, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(214, 19, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(215, 20, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(216, 27, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(217, 28, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(218, 24, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(219, 18, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(220, 31, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(221, 22, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(222, 29, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(223, 23, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(224, 32, 124, 48, NULL, '2026-06-06', '', 'Daily', 'Present'),
+(225, 34, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(226, 21, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(227, 25, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(228, 33, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(229, 30, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(230, 26, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(231, 19, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(232, 20, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(233, 27, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(234, 28, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(235, 24, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(236, 18, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(237, 31, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(238, 22, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(239, 29, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(240, 23, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(241, 32, 124, 48, 192, '2026-06-06', '', 'Subject', 'Present'),
+(263, 48, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(262, 47, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(261, 49, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(260, 44, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(259, 53, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(258, 45, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(257, 41, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(256, 39, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(255, 50, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(254, 43, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Present'),
+(253, 40, 125, 48, NULL, '2026-07-01', '', 'Daily', 'Absent');
 
 -- --------------------------------------------------------
 
@@ -2576,7 +4491,7 @@ CREATE TABLE IF NOT EXISTS `student_attendance_file` (
   `stud_att_file_type` varchar(10) NOT NULL,
   PRIMARY KEY (`stud_att_file_id`),
   KEY `fk_stud_att_id` (`stud_att_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=12 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `student_attendance_file`
@@ -2592,7 +4507,93 @@ INSERT INTO `student_attendance_file` (`stud_att_file_id`, `stud_att_id_fk`, `st
 (7, 35, '1779919118_3d0bc88ba833.png', 'png'),
 (8, 35, '1779919118_8b96167195d8.png', 'png'),
 (9, 81, '1779920531_3bc8e2bd1680.png', 'png'),
-(11, 193, '1779924858_47864eee0f11.png', 'png');
+(11, 193, '1779924858_47864eee0f11.png', 'png'),
+(12, 201, '1780643170_c964c79ad8df.jpg', 'jpg'),
+(13, 201, '1780643170_9d27cd5e5d2d.jpg', 'jpg'),
+(14, 201, '1780643170_b28bffbcaf5c.jpg', 'jpg'),
+(15, 201, '1780643170_8428b375329e.jpg', 'jpg'),
+(16, 208, '1780729099_995b313e5900.pdf', 'pdf'),
+(17, 253, '1782872110_cf1062a9adc4.pdf', 'pdf'),
+(18, 253, '1782872110_2d3a354cc9e9.pdf', 'pdf');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_exam`
+--
+
+DROP TABLE IF EXISTS `student_exam`;
+CREATE TABLE IF NOT EXISTS `student_exam` (
+  `student_exam_id` int NOT NULL AUTO_INCREMENT,
+  `exam_id_fk` int NOT NULL,
+  `enrol_id_fk` int NOT NULL,
+  `exam_year` int NOT NULL,
+  `exam_term` int NOT NULL DEFAULT '1',
+  `student_exam_status` varchar(60) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Active',
+  `created_by_fk` int DEFAULT NULL,
+  `created_date` date DEFAULT NULL,
+  `created_time` int DEFAULT NULL,
+  PRIMARY KEY (`student_exam_id`),
+  UNIQUE KEY `uniq_student_exam` (`exam_id_fk`,`enrol_id_fk`,`exam_year`,`exam_term`),
+  KEY `exam_id_fk` (`exam_id_fk`),
+  KEY `enrol_id_fk` (`enrol_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=50 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `student_exam`
+--
+
+INSERT INTO `student_exam` (`student_exam_id`, `exam_id_fk`, `enrol_id_fk`, `exam_year`, `exam_term`, `student_exam_status`, `created_by_fk`, `created_date`, `created_time`) VALUES
+(45, 5, 45, 2026, 1, 'Active', 1, '2026-06-25', 1782349474),
+(43, 5, 31, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(42, 5, 44, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(41, 5, 30, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(40, 5, 29, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(39, 5, 28, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(38, 5, 27, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(37, 5, 26, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(36, 5, 25, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(35, 5, 24, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(34, 5, 23, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(33, 5, 32, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(32, 5, 43, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(31, 5, 33, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(30, 5, 34, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(29, 5, 22, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(28, 5, 41, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(27, 5, 20, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(26, 5, 19, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(25, 5, 18, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(24, 5, 40, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(23, 5, 39, 2026, 1, 'Active', 1, '2026-06-25', 1782349309),
+(46, 5, 49, 2026, 1, 'Active', 63, '2026-06-25', 1782358657),
+(47, 5, 47, 2026, 1, 'Active', 63, '2026-06-25', 1782358834),
+(48, 5, 48, 2026, 1, 'Active', 63, '2026-06-25', 1782358834),
+(49, 5, 50, 2026, 1, 'Active', 1, '2026-06-26', 1782403856);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_exam_mark`
+--
+
+DROP TABLE IF EXISTS `student_exam_mark`;
+CREATE TABLE IF NOT EXISTS `student_exam_mark` (
+  `mark_id` int NOT NULL AUTO_INCREMENT,
+  `student_exam_id_fk` int NOT NULL,
+  `stud_sub_id_fk` int NOT NULL,
+  `mark` decimal(5,2) DEFAULT NULL,
+  `grade` varchar(10) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `teacher_id_fk` int DEFAULT NULL,
+  `mark_status` varchar(60) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Draft',
+  `created_date` date DEFAULT NULL,
+  `created_time` int DEFAULT NULL,
+  `updated_time` int DEFAULT NULL,
+  PRIMARY KEY (`mark_id`),
+  UNIQUE KEY `uniq_mark` (`student_exam_id_fk`,`stud_sub_id_fk`),
+  KEY `student_exam_id_fk` (`student_exam_id_fk`),
+  KEY `stud_sub_id_fk` (`stud_sub_id_fk`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -2603,101 +4604,55 @@ INSERT INTO `student_attendance_file` (`stud_att_file_id`, `stud_att_id_fk`, `st
 DROP TABLE IF EXISTS `student_subject`;
 CREATE TABLE IF NOT EXISTS `student_subject` (
   `stud_sub_id` int NOT NULL AUTO_INCREMENT,
+  `admission_id_fk` int NOT NULL DEFAULT '0',
   `class_id_fk` int NOT NULL,
-  `user_id_fk` int NOT NULL,
   `sch_sub_id_fk` int NOT NULL,
   `stud_sub_status` varchar(60) NOT NULL,
   PRIMARY KEY (`stud_sub_id`),
   KEY `fk_student_subject_sch_sub` (`sch_sub_id_fk`),
   KEY `fk_student_classroom_class` (`class_id_fk`),
-  KEY `fk_student_classroom_user` (`user_id_fk`)
-) ENGINE=MyISAM AUTO_INCREMENT=82 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  KEY `idx_enrol_id_fk` (`admission_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=116 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `student_subject`
 --
 
-INSERT INTO `student_subject` (`stud_sub_id`, `class_id_fk`, `user_id_fk`, `sch_sub_id_fk`, `stud_sub_status`) VALUES
-(1, 0, 0, 52, 'Active'),
-(2, 0, 0, 51, 'Active'),
-(3, 0, 0, 50, 'Active'),
-(4, 0, 0, 23, 'Active'),
-(5, 0, 0, 64, 'Active'),
-(6, 0, 0, 53, 'Active'),
-(7, 0, 0, 59, 'Active'),
-(8, 0, 0, 56, 'Active'),
-(9, 0, 0, 67, 'Active'),
-(12, 0, 0, 30, 'Active'),
-(11, 0, 0, 109, 'Active'),
-(13, 0, 0, 27, 'Active'),
-(14, 0, 0, 33, 'Active'),
-(15, 0, 0, 26, 'Active'),
-(16, 0, 0, 21, 'Active'),
-(17, 0, 0, 34, 'Active'),
-(18, 0, 0, 37, 'Active'),
-(19, 0, 0, 28, 'Active'),
-(20, 0, 0, 36, 'Active'),
-(21, 0, 0, 32, 'Active'),
-(22, 0, 0, 30, 'Active'),
-(23, 0, 0, 27, 'Active'),
-(24, 0, 0, 33, 'Active'),
-(25, 0, 0, 26, 'Active'),
-(26, 0, 0, 21, 'Active'),
-(27, 0, 0, 34, 'Active'),
-(28, 0, 0, 37, 'Active'),
-(29, 0, 0, 28, 'Active'),
-(30, 0, 0, 31, 'Active'),
-(31, 0, 0, 35, 'Active'),
-(32, 0, 0, 30, 'Active'),
-(33, 0, 0, 27, 'Active'),
-(34, 0, 0, 33, 'Active'),
-(35, 0, 0, 26, 'Active'),
-(36, 0, 0, 21, 'Active'),
-(37, 0, 0, 34, 'Active'),
-(38, 0, 0, 37, 'Active'),
-(39, 0, 0, 28, 'Active'),
-(40, 0, 0, 31, 'Active'),
-(41, 0, 0, 32, 'Active'),
-(42, 0, 0, 30, 'Active'),
-(43, 0, 0, 27, 'Active'),
-(44, 0, 0, 33, 'Active'),
-(45, 0, 0, 26, 'Active'),
-(46, 0, 0, 21, 'Active'),
-(47, 0, 0, 34, 'Active'),
-(48, 0, 0, 37, 'Active'),
-(49, 0, 0, 28, 'Active'),
-(50, 0, 0, 31, 'Active'),
-(51, 0, 0, 32, 'Active'),
-(52, 0, 0, 30, 'Active'),
-(53, 0, 0, 27, 'Active'),
-(54, 0, 0, 33, 'Active'),
-(55, 0, 0, 26, 'Active'),
-(56, 0, 0, 21, 'Active'),
-(57, 0, 0, 34, 'Active'),
-(58, 0, 0, 37, 'Active'),
-(59, 0, 0, 28, 'Active'),
-(60, 0, 0, 31, 'Active'),
-(61, 0, 0, 35, 'Active'),
-(62, 0, 0, 30, 'Active'),
-(63, 0, 0, 27, 'Active'),
-(64, 0, 0, 33, 'Active'),
-(65, 0, 0, 26, 'Active'),
-(66, 0, 0, 21, 'Active'),
-(67, 0, 0, 34, 'Active'),
-(68, 0, 0, 37, 'Active'),
-(69, 0, 0, 28, 'Active'),
-(70, 0, 0, 31, 'Active'),
-(71, 0, 0, 32, 'Active'),
-(72, 0, 0, 30, 'Active'),
-(73, 0, 0, 27, 'Active'),
-(74, 0, 0, 33, 'Active'),
-(75, 0, 0, 26, 'Active'),
-(76, 0, 0, 21, 'Active'),
-(77, 0, 0, 34, 'Active'),
-(78, 0, 0, 37, 'Active'),
-(79, 0, 0, 29, 'Active'),
-(80, 0, 0, 31, 'Active'),
-(81, 0, 0, 35, 'Active');
+INSERT INTO `student_subject` (`stud_sub_id`, `admission_id_fk`, `class_id_fk`, `sch_sub_id_fk`, `stud_sub_status`) VALUES
+(82, 59, 5, 192, 'Active'),
+(83, 59, 5, 195, 'Active'),
+(84, 59, 5, 204, 'Active'),
+(85, 59, 5, 203, 'Active'),
+(86, 59, 5, 211, 'Active'),
+(87, 29, 5, 192, 'Active'),
+(88, 29, 5, 195, 'Active'),
+(89, 29, 5, 204, 'Active'),
+(90, 29, 5, 203, 'Active'),
+(91, 29, 5, 211, 'Active'),
+(92, 29, 5, 193, 'Active'),
+(93, 57, 5, 192, 'Active'),
+(94, 57, 5, 195, 'Active'),
+(95, 57, 5, 204, 'Active'),
+(96, 57, 5, 212, 'Active'),
+(97, 57, 5, 209, 'Active'),
+(98, 57, 5, 214, 'Active'),
+(99, 58, 5, 192, 'Active'),
+(100, 58, 5, 195, 'Active'),
+(101, 58, 5, 204, 'Active'),
+(102, 58, 5, 203, 'Active'),
+(103, 58, 5, 211, 'Active'),
+(104, 58, 5, 215, 'Active'),
+(105, 31, 5, 192, 'Active'),
+(106, 31, 5, 195, 'Active'),
+(107, 31, 5, 204, 'Active'),
+(108, 31, 5, 203, 'Active'),
+(109, 31, 5, 211, 'Active'),
+(110, 34, 5, 192, 'Active'),
+(111, 34, 5, 195, 'Active'),
+(112, 34, 5, 204, 'Active'),
+(113, 34, 5, 203, 'Active'),
+(114, 34, 5, 211, 'Active'),
+(115, 34, 5, 215, 'Active');
 
 -- --------------------------------------------------------
 
@@ -2711,241 +4666,496 @@ CREATE TABLE IF NOT EXISTS `subject` (
   `level_id_fk` int NOT NULL,
   `subject_name` varchar(60) DEFAULT NULL,
   `sub_image` varchar(260) NOT NULL,
+  `is_examinable` tinyint(1) NOT NULL,
   PRIMARY KEY (`subject_id`),
   KEY `fk_subject_level_level` (`level_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=227 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=258 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `subject`
 --
 
-INSERT INTO `subject` (`subject_id`, `level_id_fk`, `subject_name`, `sub_image`) VALUES
-(1, 1, 'Language, Literacy and Communication', ''),
-(2, 1, 'Mathematics and Numeracy', ''),
-(3, 1, 'Environmental Studies', ''),
-(4, 1, 'Creative Arts', ''),
-(5, 1, 'Physical Development', ''),
-(6, 1, 'Social and Emotional Development', ''),
-(7, 1, 'Spiritual and Moral Development', ''),
-(8, 2, 'Language, Literacy and Communication', ''),
-(9, 2, 'Mathematics and Numeracy', ''),
-(10, 2, 'Environmental Studies', ''),
-(11, 2, 'Creative Arts', ''),
-(12, 2, 'Physical Development', ''),
-(13, 2, 'Social and Emotional Development', ''),
-(14, 2, 'Spiritual and Moral Development', ''),
-(15, 3, 'Year 1 English', ''),
-(16, 3, 'Year 1 Mathematics', ''),
-(17, 3, 'Art Is Fun 1', ''),
-(18, 3, 'Year 1 Vosa VakaViti', ''),
-(19, 3, 'Year 1 Hindi', ''),
-(20, 3, 'Year 1 Rotuman', ''),
-(21, 3, 'Year 1 Urdu', ''),
-(22, 3, 'Year 1 Performing Arts', ''),
-(23, 3, 'Year 1 MCE', ''),
-(24, 3, 'Year 1 Nutrition', ''),
-(25, 3, 'Year 1 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(26, 4, 'Year 2 English', ''),
-(27, 4, 'Year 2 Mathematics', ''),
-(28, 4, 'Art Is Fun 2', ''),
-(29, 4, 'Year 2 Vosa VakaViti', ''),
-(30, 4, 'Year 2 Hindi', ''),
-(31, 4, 'Year 2 Rotuman', ''),
-(32, 4, 'Year 2 Urdu', ''),
-(33, 4, 'Year 2 Performing Arts', ''),
-(34, 4, 'Year 2 MCE', ''),
-(35, 4, 'Year 2 Nutrition', ''),
-(36, 4, 'Year 2 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(37, 5, 'Year 3 English', ''),
-(38, 5, 'Year 3 Mathematics', ''),
-(39, 5, 'Art Is Fun 3', ''),
-(40, 5, 'Year 3 Vosa VakaViti', ''),
-(41, 5, 'Year 3 Hindi', ''),
-(42, 5, 'Year 3 Rotuman', ''),
-(43, 5, 'Year 3 Urdu', ''),
-(44, 5, 'Year 3 Performing Arts', ''),
-(45, 5, 'Year 3 MCE', ''),
-(46, 5, 'Year 3 Nutrition', ''),
-(47, 5, 'Year 3 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(48, 5, 'PE Is Fun 3', ''),
-(49, 5, 'Year 3 Enterprise Education', ''),
-(50, 6, 'Year 4 English', ''),
-(51, 6, 'Year 4 Mathematics', ''),
-(52, 6, 'Art Is Fun 4', ''),
-(53, 6, 'Year 4 Vosa VakaViti', ''),
-(54, 6, 'Year 4 Hindi', ''),
-(55, 6, 'Year 4 Rotuman', ''),
-(56, 6, 'Year 4 Urdu', ''),
-(57, 6, 'Year 4 Performing Arts', ''),
-(58, 6, 'Year 4 MCE', ''),
-(59, 6, 'Year 4 Nutrition', ''),
-(60, 6, 'Year 4 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(61, 6, 'PE Is Fun 4', ''),
-(62, 6, 'Year 4 Enterprise Education', ''),
-(63, 6, 'Year 4 Social Studies', ''),
-(64, 6, 'Year 4 Elementary Science', ''),
-(65, 6, 'Year 4 Healthy Living', ''),
-(66, 7, 'Year 5 English', ''),
-(67, 7, 'Year 5 Mathematics', ''),
-(68, 7, 'Art Is Fun 5', ''),
-(69, 7, 'Year 5 Vosa VakaViti', ''),
-(70, 7, 'Year 5 Hindi', ''),
-(71, 7, 'Year 5 Rotuman', ''),
-(72, 7, 'Year 5 Urdu', ''),
-(73, 7, 'Year 5 Performing Arts', ''),
-(74, 7, 'Year 5 MCE', ''),
-(75, 7, 'Year 5 Nutrition', ''),
-(76, 7, 'Year 5 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(77, 7, 'PE Is Fun 5', ''),
-(78, 7, 'Year 5 Enterprise Education', ''),
-(79, 7, 'Year 5 Social Studies', ''),
-(80, 7, 'Year 5 Elementary Science', ''),
-(81, 7, 'Year 5 Healthy Living', ''),
-(82, 8, 'Year 6 English', ''),
-(83, 8, 'Year 6 Mathematics', ''),
-(84, 8, 'Art Is Fun 6', ''),
-(85, 8, 'Year 6 Vosa VakaViti', ''),
-(86, 8, 'Year 6 Hindi', ''),
-(87, 8, 'Year 6 Rotuman', ''),
-(88, 8, 'Year 6 Urdu', ''),
-(89, 8, 'Year 6 Performing Arts', ''),
-(90, 8, 'Year 6 MCE', ''),
-(91, 8, 'Year 6 Nutrition', ''),
-(92, 8, 'Year 6 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(93, 8, 'PE Is Fun 6', ''),
-(94, 8, 'Year 6 Enterprise Education', ''),
-(95, 8, 'Year 6 Social Studies', ''),
-(96, 8, 'Year 6 Elementary Science', ''),
-(97, 8, 'Year 6 Healthy Living', ''),
-(98, 9, 'Year 7 English', ''),
-(99, 9, 'Year 7 Mathematics', ''),
-(100, 9, 'Art Is Fun 7', ''),
-(101, 9, 'Year 7 Vosa VakaViti', ''),
-(102, 9, 'Year 7 Hindi', ''),
-(103, 9, 'Year 7 Rotuman', ''),
-(104, 9, 'Year 7 Urdu', ''),
-(105, 9, 'Year 7 Performing Arts', ''),
-(106, 9, 'Year 7 MCE', ''),
-(107, 9, 'Year 7 Nutrition', ''),
-(108, 9, 'Year 7 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(109, 9, 'PE Is Fun 7', ''),
-(110, 9, 'Year 7 Enterprise Education', ''),
-(111, 9, 'Year 7 Social Science', ''),
-(112, 9, 'Year 7 Basic Science', ''),
-(113, 9, 'Year 7 Healthy Living', ''),
-(114, 10, 'Year 8 English', ''),
-(115, 10, 'Year 8 Mathematics', ''),
-(116, 10, 'Art Is Fun 8', ''),
-(117, 10, 'Year 8 Vosa VakaViti', ''),
-(118, 10, 'Year 8 Hindi', ''),
-(119, 10, 'Year 8 Rotuman', ''),
-(120, 10, 'Year 8 Urdu', ''),
-(121, 10, 'Year 8 Performing Arts', ''),
-(122, 10, 'Year 8 MCE', ''),
-(123, 10, 'Year 8 Nutrition', ''),
-(124, 10, 'Year 8 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(125, 10, 'PE Is Fun 8', ''),
-(126, 10, 'Year 8 Enterprise Education', ''),
-(127, 10, 'Year 8 Social Science', ''),
-(128, 10, 'Year 8 Basic Science', ''),
-(129, 10, 'Year 8 Healthy Living', ''),
-(130, 11, 'Year 9 English', ''),
-(131, 11, 'Year 9 Mathematics', ''),
-(132, 11, 'Year 9 Basic Science', ''),
-(133, 11, 'Year 9 Vosa VakaViti', ''),
-(134, 11, 'Year 9 Hindi', ''),
-(135, 11, 'Year 9 Rotuman', ''),
-(136, 11, 'Year 9 Urdu', ''),
-(137, 11, 'Year 9 Art & Craft', ''),
-(138, 11, 'Year 9 Argriculture Science', ''),
-(139, 11, 'Year 9 BT & BGT', ''),
-(140, 11, 'Year 9 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(141, 11, 'Year 9 Commercial Studies', ''),
-(142, 11, 'Year 9 Physical Education', ''),
-(143, 11, 'Year 9 Home Economics', ''),
-(144, 11, 'Year 9 Office Technology', ''),
-(145, 11, 'Year 9 Performing Arts', ''),
-(146, 11, 'Year 9 Social Science', ''),
-(147, 12, 'Year 10 English', ''),
-(148, 12, 'Year 10 Mathematics', ''),
-(149, 12, 'Year 10 Basic Science', ''),
-(150, 12, 'Year 10 Vosa VakaViti', ''),
-(151, 12, 'Year 10 Hindi', ''),
-(152, 12, 'Year 10 Rotuman', ''),
-(153, 12, 'Year 10 Urdu', ''),
-(154, 12, 'Year 10 Art & Craft', ''),
-(155, 12, 'Year 10 Argriculture Science', ''),
-(156, 12, 'Year 10 BT & BGT', ''),
-(157, 12, 'Year 10 Conversational Vosa VakaViti & Fiji Hindi', ''),
-(158, 12, 'Year 10 Commercial Studies', ''),
-(159, 12, 'Year 10 Physical Education', ''),
-(160, 12, 'Year 10 Home Economics', ''),
-(161, 12, 'Year 10 Office Technology', ''),
-(162, 12, 'Year 10 Performing Arts', ''),
-(163, 12, 'Year 10 Social Science', ''),
-(164, 13, 'Year 11 English', ''),
-(165, 13, 'Year 11 Mathematics', ''),
-(166, 13, 'Year 11 Chemistry', ''),
-(167, 13, 'Year 11 Biology', ''),
-(168, 13, 'Year 11 Physics', ''),
-(169, 13, 'Year 11 History', ''),
-(170, 13, 'Year 11 Geography', ''),
-(171, 13, 'Year 11 Vosa VakaViti', ''),
-(172, 13, 'Year 11 Hindi', ''),
-(173, 13, 'Year 11 Rotuman', ''),
-(174, 13, 'Year 11 Urdu', ''),
-(175, 13, 'Year 11 Art & Craft', ''),
-(176, 13, 'Year 11 Argriculture Science', ''),
-(177, 13, 'Year 11 Technical Drawing', ''),
-(178, 13, 'Year 11 Applied Technology', ''),
-(179, 13, 'Year 11 Economic', ''),
-(180, 13, 'Year 11 Accounting', ''),
-(181, 13, 'Year 11 Physical Education', ''),
-(182, 13, 'Year 11 Home Economics', ''),
-(183, 13, 'Year 11 Office Technology', ''),
-(184, 13, 'Year 11 Computer Science', ''),
-(185, 14, 'Year 12 English', ''),
-(186, 14, 'Year 12 Mathematics', ''),
-(187, 14, 'Year 12 Chemistry', ''),
-(188, 14, 'Year 12 Biology', ''),
-(189, 14, 'Year 12 Physics', ''),
-(190, 14, 'Year 12 History', ''),
-(191, 14, 'Year 12 Geography', ''),
-(192, 14, 'Year 12 Vosa VakaViti', ''),
-(193, 14, 'Year 12 Hindi', ''),
-(194, 14, 'Year 12 Rotuman', ''),
-(195, 14, 'Year 12 Urdu', ''),
-(196, 14, 'Year 12 Art & Craft', ''),
-(197, 14, 'Year 12 Argriculture Science', ''),
-(198, 14, 'Year 12 Technical Drawing', ''),
-(199, 14, 'Year 12 Applied Technology', ''),
-(200, 14, 'Year 12 Economic', ''),
-(201, 14, 'Year 12 Accounting', ''),
-(202, 14, 'Year 12 Physical Education', ''),
-(203, 14, 'Year 12 Home Economics', ''),
-(204, 14, 'Year 12 Office Technology', ''),
-(205, 14, 'Year 12 Computer Science', ''),
-(206, 15, 'Year 13 English', ''),
-(207, 15, 'Year 13 Mathematics', ''),
-(208, 15, 'Year 13 Chemistry', ''),
-(209, 15, 'Year 13 Biology', ''),
-(210, 15, 'Year 13 Physics', ''),
-(211, 15, 'Year 13 History', ''),
-(212, 15, 'Year 13 Geography', ''),
-(213, 15, 'Year 13 Vosa VakaViti', ''),
-(214, 15, 'Year 13 Hindi', ''),
-(215, 15, 'Year 13 Rotuman', ''),
-(216, 15, 'Year 13 Urdu', ''),
-(217, 15, 'Year 13 Art & Craft', ''),
-(218, 15, 'Year 13 Argriculture Science', ''),
-(219, 15, 'Year 13 Technical Drawing', ''),
-(220, 15, 'Year 13 Applied Technology', ''),
-(221, 15, 'Year 13 Economic', ''),
-(222, 15, 'Year 13 Accounting', ''),
-(223, 15, 'Year 13 Physical Education', ''),
-(224, 15, 'Year 13 Home Economics', ''),
-(225, 15, 'Year 13 Office Technology', ''),
-(226, 15, 'Year 13 Computer Science', '');
+INSERT INTO `subject` (`subject_id`, `level_id_fk`, `subject_name`, `sub_image`, `is_examinable`) VALUES
+(1, 1, 'Language, Literacy and Communication', '', 0),
+(2, 1, 'Mathematics and Numeracy', '', 0),
+(3, 1, 'Environmental Studies', '', 0),
+(4, 1, 'Creative Arts', '', 0),
+(5, 1, 'Physical Development', '', 0),
+(6, 1, 'Social and Emotional Development', '', 0),
+(7, 1, 'Spiritual and Moral Development', '', 0),
+(8, 2, 'Language, Literacy and Communication', '', 0),
+(9, 2, 'Mathematics and Numeracy', '', 0),
+(10, 2, 'Environmental Studies', '', 0),
+(11, 2, 'Creative Arts', '', 0),
+(12, 2, 'Physical Development', '', 0),
+(13, 2, 'Social and Emotional Development', '', 0),
+(14, 2, 'Spiritual and Moral Development', '', 0),
+(15, 3, 'Year 1 English', '', 0),
+(16, 3, 'Year 1 Mathematics', '', 0),
+(17, 3, 'Art Is Fun 1', '', 0),
+(18, 3, 'Year 1 Vosa VakaViti', '', 0),
+(19, 3, 'Year 1 Hindi', '', 0),
+(20, 3, 'Year 1 Rotuman', '', 0),
+(21, 3, 'Year 1 Urdu', '', 0),
+(22, 3, 'Year 1 Performing Arts', '', 0),
+(23, 3, 'Year 1 MCE', '', 0),
+(24, 3, 'Year 1 Nutrition', '', 0),
+(25, 3, 'Year 1 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(26, 4, 'Year 2 English', '', 0),
+(27, 4, 'Year 2 Mathematics', '', 0),
+(28, 4, 'Art Is Fun 2', '', 0),
+(29, 4, 'Year 2 Vosa VakaViti', '', 0),
+(30, 4, 'Year 2 Hindi', '', 0),
+(31, 4, 'Year 2 Rotuman', '', 0),
+(32, 4, 'Year 2 Urdu', '', 0),
+(33, 4, 'Year 2 Performing Arts', '', 0),
+(34, 4, 'Year 2 MCE', '', 0),
+(35, 4, 'Year 2 Nutrition', '', 0),
+(36, 4, 'Year 2 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(37, 5, 'Year 3 English', '', 0),
+(38, 5, 'Year 3 Mathematics', '', 0),
+(39, 5, 'Art Is Fun 3', '', 0),
+(40, 5, 'Year 3 Vosa VakaViti', '', 0),
+(41, 5, 'Year 3 Hindi', '', 0),
+(42, 5, 'Year 3 Rotuman', '', 0),
+(43, 5, 'Year 3 Urdu', '', 0),
+(44, 5, 'Year 3 Performing Arts', '', 0),
+(45, 5, 'Year 3 MCE', '', 0),
+(46, 5, 'Year 3 Nutrition', '', 0),
+(47, 5, 'Year 3 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(48, 5, 'PE Is Fun 3', '', 0),
+(49, 5, 'Year 3 Enterprise Education', '', 0),
+(50, 6, 'Year 4 English', '', 0),
+(51, 6, 'Year 4 Mathematics', '', 0),
+(52, 6, 'Art Is Fun 4', '', 0),
+(53, 6, 'Year 4 Vosa VakaViti', '', 0),
+(54, 6, 'Year 4 Hindi', '', 0),
+(55, 6, 'Year 4 Rotuman', '', 0),
+(56, 6, 'Year 4 Urdu', '', 0),
+(57, 6, 'Year 4 Performing Arts', '', 0),
+(58, 6, 'Year 4 MCE', '', 0),
+(59, 6, 'Year 4 Nutrition', '', 0),
+(60, 6, 'Year 4 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(61, 6, 'PE Is Fun 4', '', 0),
+(62, 6, 'Year 4 Enterprise Education', '', 0),
+(63, 6, 'Year 4 Social Studies', '', 0),
+(64, 6, 'Year 4 Elementary Science', '', 0),
+(65, 6, 'Year 4 Healthy Living', '', 0),
+(66, 7, 'Year 5 English', '', 0),
+(67, 7, 'Year 5 Mathematics', '', 0),
+(68, 7, 'Art Is Fun 5', '', 0),
+(69, 7, 'Year 5 Vosa VakaViti', '', 0),
+(70, 7, 'Year 5 Hindi', '', 0),
+(71, 7, 'Year 5 Rotuman', '', 0),
+(72, 7, 'Year 5 Urdu', '', 0),
+(73, 7, 'Year 5 Performing Arts', '', 0),
+(74, 7, 'Year 5 MCE', '', 0),
+(75, 7, 'Year 5 Nutrition', '', 0),
+(76, 7, 'Year 5 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(77, 7, 'PE Is Fun 5', '', 0),
+(78, 7, 'Year 5 Enterprise Education', '', 0),
+(79, 7, 'Year 5 Social Studies', '', 0),
+(80, 7, 'Year 5 Elementary Science', '', 0),
+(81, 7, 'Year 5 Healthy Living', '', 0),
+(82, 8, 'Year 6 English', '', 1),
+(83, 8, 'Year 6 Mathematics', '', 1),
+(84, 8, 'Art Is Fun 6', '', 0),
+(85, 8, 'Year 6 Vosa VakaViti', '', 1),
+(86, 8, 'Year 6 Hindi', '', 1),
+(87, 8, 'Year 6 Rotuman', '', 1),
+(88, 8, 'Year 6 Urdu', '', 1),
+(89, 8, 'Year 6 Performing Arts', '', 0),
+(90, 8, 'Year 6 MCE', '', 0),
+(91, 8, 'Year 6 Nutrition', '', 0),
+(92, 8, 'Year 6 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(93, 8, 'PE Is Fun 6', '', 0),
+(94, 8, 'Year 6 Enterprise Education', '', 0),
+(95, 8, 'Year 6 Social Studies', '', 1),
+(96, 8, 'Year 6 Elementary Science', '', 1),
+(97, 8, 'Year 6 Healthy Living', '', 1),
+(98, 9, 'Year 7 English', '', 0),
+(99, 9, 'Year 7 Mathematics', '', 0),
+(100, 9, 'Art Is Fun 7', '', 0),
+(101, 9, 'Year 7 Vosa VakaViti', '', 0),
+(102, 9, 'Year 7 Hindi', '', 0),
+(103, 9, 'Year 7 Rotuman', '', 0),
+(104, 9, 'Year 7 Urdu', '', 0),
+(105, 9, 'Year 7 Performing Arts', '', 0),
+(106, 9, 'Year 7 MCE', '', 0),
+(107, 9, 'Year 7 Nutrition', '', 0),
+(108, 9, 'Year 7 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(109, 9, 'PE Is Fun 7', '', 0),
+(110, 9, 'Year 7 Enterprise Education', '', 0),
+(111, 9, 'Year 7 Social Science', '', 0),
+(112, 9, 'Year 7 Basic Science', '', 0),
+(113, 9, 'Year 7 Healthy Living', '', 0),
+(114, 10, 'Year 8 English', '', 1),
+(115, 10, 'Year 8 Mathematics', '', 1),
+(116, 10, 'Art Is Fun 8', '', 0),
+(117, 10, 'Year 8 Vosa VakaViti', '', 1),
+(118, 10, 'Year 8 Hindi', '', 1),
+(119, 10, 'Year 8 Rotuman', '', 1),
+(120, 10, 'Year 8 Urdu', '', 0),
+(121, 10, 'Year 8 Performing Arts', '', 0),
+(122, 10, 'Year 8 MCE', '', 0),
+(123, 10, 'Year 8 Nutrition', '', 0),
+(124, 10, 'Year 8 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(125, 10, 'PE Is Fun 8', '', 0),
+(126, 10, 'Year 8 Enterprise Education', '', 0),
+(127, 10, 'Year 8 Social Science', '', 1),
+(128, 10, 'Year 8 Basic Science', '', 1),
+(129, 10, 'Year 8 Healthy Living', '', 1),
+(130, 11, 'Year 9 English', '', 0),
+(131, 11, 'Year 9 Mathematics', '', 0),
+(132, 11, 'Year 9 Basic Science', '', 0),
+(133, 11, 'Year 9 Vosa VakaViti', '', 0),
+(134, 11, 'Year 9 Hindi', '', 0),
+(135, 11, 'Year 9 Rotuman', '', 0),
+(136, 11, 'Year 9 Urdu', '', 0),
+(137, 11, 'Year 9 Art & Craft', '', 0),
+(138, 11, 'Year 9 Argriculture Science', '', 0),
+(139, 11, 'Year 9 Basic Technology', '', 0),
+(140, 11, 'Year 9 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(141, 11, 'Year 9 Commercial Studies', '', 0),
+(142, 11, 'Year 9 Physical Education', '', 0),
+(143, 11, 'Year 9 Home Economics', '', 0),
+(144, 11, 'Year 9 Business Administration', '', 0),
+(145, 11, 'Year 9 Performing Arts', '', 0),
+(146, 11, 'Year 9 Social Science', '', 0),
+(147, 12, 'Year 10 English', '', 1),
+(148, 12, 'Year 10 Mathematics', '', 1),
+(149, 12, 'Year 10 Basic Science', '', 1),
+(150, 12, 'Year 10 Vosa VakaViti', '', 1),
+(151, 12, 'Year 10 Hindi', '', 1),
+(152, 12, 'Year 10 Rotuman', '', 1),
+(153, 12, 'Year 10 Urdu', '', 1),
+(154, 12, 'Year 10 Art & Craft', '', 0),
+(155, 12, 'Year 10 Argriculture Science', '', 1),
+(156, 12, 'Year 10 Basic Technology', '', 1),
+(157, 12, 'Year 10 Conversational Vosa VakaViti & Fiji Hindi', '', 0),
+(158, 12, 'Year 10 Commercial Studies', '', 1),
+(159, 12, 'Year 10 Physical Education', '', 0),
+(160, 12, 'Year 10 Home Economics', '', 1),
+(161, 12, 'Year 10 Business Administration', '', 1),
+(162, 12, 'Year 10 Performing Arts', '', 0),
+(163, 12, 'Year 10 Social Science', '', 1),
+(164, 13, 'Year 11 English', '', 0),
+(165, 13, 'Year 11 Mathematics', '', 0),
+(166, 13, 'Year 11 Chemistry', '', 0),
+(167, 13, 'Year 11 Biology', '', 0),
+(168, 13, 'Year 11 Physics', '', 0),
+(169, 13, 'Year 11 History', '', 0),
+(170, 13, 'Year 11 Geography', '', 0),
+(171, 13, 'Year 11 Vosa VakaViti', '', 0),
+(172, 13, 'Year 11 Hindi', '', 0),
+(173, 13, 'Year 11 Rotuman', '', 0),
+(174, 13, 'Year 11 Urdu', '', 0),
+(175, 13, 'Year 11 Art & Craft', '', 0),
+(176, 13, 'Year 11 Argriculture Science', '', 0),
+(177, 13, 'Year 11 Technical Drawing', '', 0),
+(178, 13, 'Year 11 Applied Technology', '', 0),
+(179, 13, 'Year 11 Economic', '', 0),
+(180, 13, 'Year 11 Accounting', '', 0),
+(181, 13, 'Year 11 Physical Education', '', 0),
+(182, 13, 'Year 11 Home Economics', '', 0),
+(183, 13, 'Year 11 Business Administration', '', 0),
+(184, 13, 'Year 11 Computer Science', '', 0),
+(185, 14, 'Year 12 English', '', 1),
+(186, 14, 'Year 12 Mathematics', '', 1),
+(187, 14, 'Year 12 Chemistry', '', 1),
+(188, 14, 'Year 12 Biology', '', 1),
+(189, 14, 'Year 12 Physics', '', 1),
+(190, 14, 'Year 12 History', '', 1),
+(191, 14, 'Year 12 Geography', '', 1),
+(192, 14, 'Year 12 Vosa VakaViti', '', 1),
+(193, 14, 'Year 12 Hindi', '', 1),
+(194, 14, 'Year 12 Rotuman', '', 1),
+(195, 14, 'Year 12 Urdu', '', 1),
+(196, 14, 'Year 12 Art & Craft', '', 0),
+(197, 14, 'Year 12 Argriculture Science', '', 1),
+(198, 14, 'Year 12 Technical Drawing', '', 1),
+(199, 14, 'Year 12 Applied Technology', '', 1),
+(200, 14, 'Year 12 Economic', '', 1),
+(201, 14, 'Year 12 Accounting', '', 1),
+(202, 14, 'Year 12 Physical Education', '', 0),
+(203, 14, 'Year 12 Home Economics', '', 1),
+(204, 14, 'Year 12 Business Administration', '', 1),
+(205, 14, 'Year 12 Computer Science', '', 1),
+(206, 15, 'Year 13 English', '', 1),
+(207, 15, 'Year 13 Mathematics', '', 1),
+(208, 15, 'Year 13 Chemistry', '', 1),
+(209, 15, 'Year 13 Biology', '', 1),
+(210, 15, 'Year 13 Physics', '', 1),
+(211, 15, 'Year 13 History', '', 1),
+(212, 15, 'Year 13 Geography', '', 1),
+(213, 15, 'Year 13 Vosa VakaViti', '', 1),
+(214, 15, 'Year 13 Hindi', '', 1),
+(215, 15, 'Year 13 Rotuman', '', 1),
+(216, 15, 'Year 13 Urdu', '', 1),
+(217, 15, 'Year 13 Art & Craft', '', 0),
+(218, 15, 'Year 13 Argriculture Science', '', 1),
+(219, 15, 'Year 13 Technical Drawing', '', 1),
+(220, 15, 'Year 13 Applied Technology', '', 1),
+(221, 15, 'Year 13 Economic', '', 1),
+(222, 15, 'Year 13 Accounting', '', 1),
+(223, 15, 'Year 13 Physical Education', '', 0),
+(224, 15, 'Year 13 Home Economics', '', 1),
+(225, 15, 'Year 13 Business Administration', '', 1),
+(226, 15, 'Year 13 Computer Science', '', 0),
+(227, 11, 'Year 9 Music', '', 0),
+(228, 12, 'Year 10 Music', '', 0),
+(229, 13, 'Year 11 Music', '', 0),
+(230, 14, 'Year 12 Music', '', 0),
+(231, 15, 'Year 13 Music', '', 0),
+(232, 11, 'Year 9 Religious Education', '', 0),
+(233, 12, 'Year 10 Religious Education', '', 0),
+(234, 13, 'Year 11 Religious Education', '', 0),
+(235, 14, 'Year 12 Religious Education', '', 0),
+(236, 15, 'Year 13 Religious Education', '', 0),
+(237, 11, 'Year 9 Family Life Education', '', 0),
+(238, 12, 'Year 10 Family Life Education', '', 0),
+(239, 13, 'Year 11 Family Life Education', '', 0),
+(240, 14, 'Year 12 Family Life Education', '', 0),
+(241, 15, 'Year 13 Family Life Education', '', 0),
+(242, 11, 'Year 9 Career Education', '', 0),
+(243, 12, 'Year 10 Career Education', '', 0),
+(244, 13, 'Year 11 Career Education', '', 0),
+(245, 14, 'Year 12 Career Education', '', 0),
+(246, 15, 'Year 13 Career Education', '', 0),
+(247, 11, 'Year 9 Library', '', 0),
+(248, 12, 'Year 10 Library', '', 0),
+(249, 13, 'Year 11 Library', '', 0),
+(250, 14, 'Year 12 Library', '', 0),
+(251, 15, 'Year 13 Library', '', 0),
+(252, 13, 'Year 11 Accounting', '', 0),
+(253, 14, 'Year 12 Accounting', '', 0),
+(254, 15, 'Year 13 Accounting', '', 0),
+(255, 13, 'Year 11 Economic', '', 0),
+(256, 14, 'Year 12 Economic', '', 0),
+(257, 15, 'Year 13 Economic', '', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion`
+--
+
+DROP TABLE IF EXISTS `subject_discussion`;
+CREATE TABLE IF NOT EXISTS `subject_discussion` (
+  `sd_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_sub_id_fk` int NOT NULL,
+  `author` int NOT NULL,
+  `message` longtext COLLATE utf8mb4_general_ci,
+  `created_at` datetime DEFAULT NULL,
+  `post_status` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`sd_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion`
+--
+
+INSERT INTO `subject_discussion` (`sd_id`, `class_sub_id_fk`, `author`, `message`, `created_at`, `post_status`) VALUES
+(1, 7, 12, 'Bula vinaka everyone this is my first post. Testing the subject discussion features.', '2026-06-04 13:06:25', 1),
+(2, 7, 42, 'Bula My colleagues. Looking forward for a fruitful year.', '2026-06-04 13:16:01', 1),
+(3, 7, 42, 'testing 2 images', '2026-06-04 13:28:37', 1),
+(4, 7, 42, 'testing 3 images', '2026-06-04 13:29:05', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion_comment`
+--
+
+DROP TABLE IF EXISTS `subject_discussion_comment`;
+CREATE TABLE IF NOT EXISTS `subject_discussion_comment` (
+  `sdc_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sd_id_fk` int NOT NULL,
+  `author` int NOT NULL,
+  `comment` longtext COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `comment_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Active',
+  PRIMARY KEY (`sdc_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion_comment`
+--
+
+INSERT INTO `subject_discussion_comment` (`sdc_id`, `sd_id_fk`, `author`, `comment`, `created_at`, `comment_status`) VALUES
+(1, 1, 12, 'Wow it finally works', '2026-06-04 13:07:11', 'Deleted'),
+(2, 2, 42, 'good', '2026-06-04 13:30:08', 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion_comment_like`
+--
+
+DROP TABLE IF EXISTS `subject_discussion_comment_like`;
+CREATE TABLE IF NOT EXISTS `subject_discussion_comment_like` (
+  `clike_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sdc_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'like',
+  PRIMARY KEY (`clike_id`),
+  UNIQUE KEY `sdc_id_fk_user_id_fk` (`sdc_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion_comment_like`
+--
+
+INSERT INTO `subject_discussion_comment_like` (`clike_id`, `sdc_id_fk`, `user_id_fk`, `like_type`) VALUES
+(1, 1, 42, 'like');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion_comment_reply`
+--
+
+DROP TABLE IF EXISTS `subject_discussion_comment_reply`;
+CREATE TABLE IF NOT EXISTS `subject_discussion_comment_reply` (
+  `sdcr_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sdc_id_fk` int NOT NULL,
+  `author` int NOT NULL,
+  `reply` longtext COLLATE utf8mb4_general_ci NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `reply_status` varchar(20) COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'Active',
+  PRIMARY KEY (`sdcr_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion_comment_reply`
+--
+
+INSERT INTO `subject_discussion_comment_reply` (`sdcr_id`, `sdc_id_fk`, `author`, `reply`, `created_at`, `reply_status`) VALUES
+(1, 1, 42, 'Thank you sir looking forward for the first class and orientation', '2026-06-04 13:13:44', 'Active'),
+(2, 1, 12, '@Sherine Kumar you are correct indeed', '2026-06-04 13:18:42', 'Deleted'),
+(3, 1, 42, '@Sam White i know right?', '2026-06-04 13:19:15', 'Active');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion_comment_reply_like`
+--
+
+DROP TABLE IF EXISTS `subject_discussion_comment_reply_like`;
+CREATE TABLE IF NOT EXISTS `subject_discussion_comment_reply_like` (
+  `rlike_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sdcr_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'like',
+  PRIMARY KEY (`rlike_id`),
+  UNIQUE KEY `sdcr_id_fk_user_id_fk` (`sdcr_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion_comment_reply_like`
+--
+
+INSERT INTO `subject_discussion_comment_reply_like` (`rlike_id`, `sdcr_id_fk`, `user_id_fk`, `like_type`) VALUES
+(1, 3, 42, 'like'),
+(2, 2, 42, 'like'),
+(3, 1, 42, 'like');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion_like`
+--
+
+DROP TABLE IF EXISTS `subject_discussion_like`;
+CREATE TABLE IF NOT EXISTS `subject_discussion_like` (
+  `like_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sd_id_fk` int NOT NULL,
+  `user_id_fk` int NOT NULL,
+  `like_type` enum('like','dislike') COLLATE utf8mb4_general_ci NOT NULL,
+  PRIMARY KEY (`like_id`),
+  UNIQUE KEY `sd_id_fk_user_id_fk` (`sd_id_fk`,`user_id_fk`)
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion_like`
+--
+
+INSERT INTO `subject_discussion_like` (`like_id`, `sd_id_fk`, `user_id_fk`, `like_type`) VALUES
+(1, 1, 12, 'like'),
+(2, 1, 42, 'like'),
+(3, 2, 42, 'like');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_discussion_photo`
+--
+
+DROP TABLE IF EXISTS `subject_discussion_photo`;
+CREATE TABLE IF NOT EXISTS `subject_discussion_photo` (
+  `photo_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `sd_id_fk` int NOT NULL,
+  `photo_path` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `photo_order` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`photo_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `subject_discussion_photo`
+--
+
+INSERT INTO `subject_discussion_photo` (`photo_id`, `sd_id_fk`, `photo_path`, `photo_order`) VALUES
+(1, 1, 'sdp_1780535185_2126.png', 0),
+(2, 1, 'sdp_1780535185_9617.png', 1),
+(3, 1, 'sdp_1780535185_8177.png', 2),
+(4, 1, 'sdp_1780535185_5098.png', 3),
+(5, 1, 'sdp_1780535185_2947.png', 4),
+(6, 1, 'sdp_1780535185_3557.png', 5),
+(7, 1, 'sdp_1780535185_3413.png', 6),
+(8, 1, 'sdp_1780535185_7318.png', 7),
+(9, 1, 'sdp_1780535185_5324.png', 8),
+(10, 1, 'sdp_1780535185_8200.png', 9),
+(11, 2, 'sdp_1780535761_6363.jpg', 0),
+(12, 3, 'sdp_1780536517_3787.jpg', 0),
+(13, 3, 'sdp_1780536517_4739.jpg', 1),
+(14, 4, 'sdp_1780536545_6477.png', 0),
+(15, 4, 'sdp_1780536545_9602.png', 1),
+(16, 4, 'sdp_1780536545_9213.png', 2);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `subject_feedback`
+--
+
+DROP TABLE IF EXISTS `subject_feedback`;
+CREATE TABLE IF NOT EXISTS `subject_feedback` (
+  `feedback_id` int NOT NULL AUTO_INCREMENT,
+  `class_sub_id_fk` int NOT NULL,
+  `class_id_fk` int NOT NULL,
+  `student_id_fk` int NOT NULL,
+  `teacher_id_fk` int DEFAULT NULL,
+  `sch_sub_id_fk` int DEFAULT NULL,
+  `overall_rating` tinyint NOT NULL DEFAULT '0',
+  `teaching_rating` tinyint NOT NULL DEFAULT '0',
+  `content_rating` tinyint NOT NULL DEFAULT '0',
+  `engagement_rating` tinyint NOT NULL DEFAULT '0',
+  `comment` text COLLATE utf8mb4_unicode_ci,
+  `is_anonymous` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`feedback_id`),
+  UNIQUE KEY `unique_feedback` (`class_sub_id_fk`,`student_id_fk`)
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `subject_feedback`
+--
+
+INSERT INTO `subject_feedback` (`feedback_id`, `class_sub_id_fk`, `class_id_fk`, `student_id_fk`, `teacher_id_fk`, `sch_sub_id_fk`, `overall_rating`, `teaching_rating`, `content_rating`, `engagement_rating`, `comment`, `is_anonymous`, `created_at`, `updated_at`) VALUES
+(1, 7, 3, 37, 12, 37, 4, 5, 3, 5, 'Too good', 0, '2026-06-04 11:55:16', '2026-06-04 11:56:14'),
+(2, 7, 3, 42, 12, 37, 2, 3, 3, 4, NULL, 1, '2026-06-04 12:39:00', '2026-06-04 12:39:00'),
+(3, 1, 3, 42, 12, 30, 5, 5, 5, 5, 'Very good experiece', 1, '2026-06-05 10:04:43', '2026-06-05 10:04:43');
 
 -- --------------------------------------------------------
 
@@ -2967,7 +5177,7 @@ CREATE TABLE IF NOT EXISTS `subscription` (
   PRIMARY KEY (`subscription_id`),
   KEY `fk_subscription_plan` (`plan_id_fk`),
   KEY `fk_subscription_school` (`sch_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `subscription`
@@ -2976,7 +5186,298 @@ CREATE TABLE IF NOT EXISTS `subscription` (
 INSERT INTO `subscription` (`subscription_id`, `plan_id_fk`, `sch_id_fk`, `subscription_start_date`, `subscription_end_date`, `subscription_time`, `subscription_term`, `payment_mode`, `subscription_status`) VALUES
 (1, 1, 12, '2025-12-08', '2026-01-31', NULL, 12, 'Cash', 'Active'),
 (6, 3, 26, '2026-02-19', '2029-02-19', NULL, 36, 'Cash', 'Pending Payment'),
-(9, 1, 29, '2026-05-13', '2026-06-13', NULL, 12, 'Cash', 'Active');
+(9, 1, 29, '2026-05-13', '2026-06-13', NULL, 12, 'Cash', 'Active'),
+(10, 3, 30, '2026-06-06', '2029-06-06', NULL, 36, '', 'Pending Verification');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `term_exam_mark`
+--
+
+DROP TABLE IF EXISTS `term_exam_mark`;
+CREATE TABLE IF NOT EXISTS `term_exam_mark` (
+  `temark_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_sub_id_fk` int NOT NULL,
+  `class_id_fk` int NOT NULL,
+  `student_id_fk` int NOT NULL,
+  `term` tinyint(1) NOT NULL,
+  `mark` decimal(6,2) DEFAULT NULL,
+  `total_mark` decimal(6,2) NOT NULL DEFAULT '100.00',
+  `is_absent` tinyint(1) NOT NULL DEFAULT '0',
+  `teacher_comment` text COLLATE utf8mb4_general_ci,
+  `entered_by` int NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`temark_id`),
+  UNIQUE KEY `class_sub_id_fk_student_id_fk_term` (`class_sub_id_fk`,`student_id_fk`,`term`)
+) ENGINE=MyISAM AUTO_INCREMENT=127 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `term_exam_mark`
+--
+
+INSERT INTO `term_exam_mark` (`temark_id`, `class_sub_id_fk`, `class_id_fk`, `student_id_fk`, `term`, `mark`, `total_mark`, `is_absent`, `teacher_comment`, `entered_by`, `created_at`, `updated_at`) VALUES
+(1, 7, 3, 36, 1, 50.00, 100.00, 0, 'More effort required', 12, '2026-06-04 14:17:17', '2026-06-04 14:58:31'),
+(2, 7, 3, 42, 1, 60.00, 100.00, 0, 'Good performance', 12, '2026-06-04 14:18:06', '2026-06-04 15:04:30'),
+(3, 7, 3, 37, 1, 70.00, 100.00, 0, 'Hard working child', 12, '2026-06-04 14:42:18', '2026-06-04 15:04:24'),
+(4, 7, 3, 40, 1, 75.00, 100.00, 0, 'Very keen learner', 12, '2026-06-04 15:04:46', '2026-06-04 15:04:46'),
+(5, 7, 3, 41, 1, 90.00, 100.00, 0, 'Excellent', 12, '2026-06-04 15:05:17', '2026-06-04 15:05:17'),
+(6, 7, 3, 39, 1, 95.00, 100.00, 0, 'Outstanding', 12, '2026-06-04 15:05:35', '2026-06-04 15:05:35'),
+(7, 7, 3, 38, 1, 80.00, 100.00, 0, 'Impressive performance', 12, '2026-06-04 15:05:45', '2026-06-04 15:05:45'),
+(8, 11, 3, 36, 1, 75.00, 100.00, 0, 'Great effort keep it up', 12, '2026-06-04 15:07:59', '2026-06-04 15:07:59'),
+(9, 11, 3, 42, 1, 60.00, 100.00, 0, 'Can do better next time', 12, '2026-06-04 15:08:00', '2026-06-04 15:08:00'),
+(10, 11, 3, 37, 1, 88.00, 100.00, 0, 'Great work shown', 12, '2026-06-04 15:08:01', '2026-06-04 15:08:01'),
+(11, 11, 3, 40, 1, 90.00, 100.00, 0, 'Excellent keep it up', 12, '2026-06-04 15:08:02', '2026-06-04 15:08:02'),
+(12, 11, 3, 38, 1, 67.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:08:03', '2026-06-04 15:08:03'),
+(13, 11, 3, 41, 1, 52.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:08:04', '2026-06-04 15:08:04'),
+(14, 11, 3, 39, 1, 49.00, 100.00, 0, 'Needs to work harder', 12, '2026-06-04 15:08:05', '2026-06-04 15:08:05'),
+(15, 2, 3, 36, 1, 65.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:29', '2026-06-04 15:13:29'),
+(16, 2, 3, 42, 1, 76.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:29', '2026-06-04 15:13:29'),
+(17, 2, 3, 37, 1, 56.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:30', '2026-06-04 15:13:30'),
+(18, 2, 3, 40, 1, 59.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:31', '2026-06-04 15:13:31'),
+(19, 2, 3, 38, 1, 62.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:32', '2026-06-04 15:13:32'),
+(20, 2, 3, 41, 1, 70.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:32', '2026-06-04 15:13:32'),
+(21, 2, 3, 39, 1, 58.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:13:33', '2026-06-04 15:13:33'),
+(22, 13, 3, 39, 1, 82.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:17', '2026-06-04 15:14:17'),
+(23, 13, 3, 41, 1, 75.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:18', '2026-06-04 15:14:18'),
+(24, 13, 3, 38, 1, 80.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:19', '2026-06-04 15:14:19'),
+(25, 13, 3, 40, 1, 70.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:19', '2026-06-04 15:14:19'),
+(26, 13, 3, 37, 1, 59.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:20', '2026-06-04 15:14:20'),
+(27, 13, 3, 42, 1, 66.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:21', '2026-06-04 15:14:21'),
+(28, 13, 3, 36, 1, 68.00, 100.00, 0, 'Impressive', 12, '2026-06-04 15:14:21', '2026-06-04 15:14:21'),
+(29, 3, 3, 36, 1, 69.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:23', '2026-06-04 15:16:23'),
+(30, 3, 3, 42, 1, 45.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:24', '2026-06-04 15:16:24'),
+(31, 3, 3, 37, 1, 48.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:25', '2026-06-04 15:16:25'),
+(32, 3, 3, 40, 1, 55.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:26', '2026-06-04 15:16:26'),
+(33, 3, 3, 38, 1, 68.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:27', '2026-06-04 15:16:27'),
+(34, 3, 3, 41, 1, 70.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:28', '2026-06-04 15:16:28'),
+(35, 3, 3, 39, 1, 53.00, 100.00, 0, 'Can do better', 12, '2026-06-04 15:16:29', '2026-06-04 15:16:29'),
+(36, 4, 3, 36, 1, 53.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:53', '2026-06-04 15:17:53'),
+(37, 4, 3, 42, 1, 57.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:55', '2026-06-04 15:17:55'),
+(38, 4, 3, 37, 1, 68.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:55', '2026-06-04 15:17:55'),
+(39, 4, 3, 40, 1, 45.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:56', '2026-06-04 15:17:56'),
+(40, 4, 3, 38, 1, 69.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:57', '2026-06-04 15:17:57'),
+(41, 4, 3, 41, 1, 53.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:57', '2026-06-04 15:17:57'),
+(42, 4, 3, 39, 1, 71.00, 100.00, 0, 'Try harder', 12, '2026-06-04 15:17:58', '2026-06-04 15:17:58'),
+(43, 5, 3, 36, 1, 50.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:02', '2026-06-04 15:19:02'),
+(44, 5, 3, 42, 1, 60.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:03', '2026-06-04 15:19:03'),
+(45, 5, 3, 37, 1, 70.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:04', '2026-06-04 15:19:04'),
+(46, 5, 3, 40, 1, 80.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:04', '2026-06-04 15:19:04'),
+(47, 5, 3, 38, 1, 68.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:05', '2026-06-04 15:19:05'),
+(48, 5, 3, 41, 1, 63.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:06', '2026-06-04 15:19:06'),
+(49, 5, 3, 39, 1, 75.00, 100.00, 0, 'Better performance', 12, '2026-06-04 15:19:06', '2026-06-04 15:19:06'),
+(50, 38, 4, 60, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:31:16', '2026-06-06 18:31:16'),
+(51, 38, 4, 47, 1, 45.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:33:33', '2026-06-06 18:33:33'),
+(52, 38, 4, 48, 1, 50.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:33:42', '2026-06-06 18:33:42'),
+(53, 38, 4, 49, 1, 55.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:33:46', '2026-06-06 18:33:46'),
+(54, 38, 4, 50, 1, 80.00, 100.00, 0, 'Excellent', 63, '2026-06-06 18:33:53', '2026-06-06 18:33:53'),
+(55, 38, 4, 52, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:33:55', '2026-06-06 18:33:55'),
+(56, 38, 4, 53, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:33:58', '2026-06-06 18:33:58'),
+(57, 38, 4, 54, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:34:01', '2026-06-06 18:34:01'),
+(58, 38, 4, 62, 1, 85.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:34:48', '2026-06-06 18:34:48'),
+(59, 38, 4, 61, 1, 75.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:34:48', '2026-06-06 18:34:48'),
+(60, 38, 4, 30, 1, 76.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:34:49', '2026-06-06 18:34:49'),
+(61, 38, 4, 20, 1, 81.00, 100.00, 0, 'Outstanding', 63, '2026-06-06 18:34:52', '2026-06-06 18:34:52'),
+(62, 38, 4, 59, 1, 54.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:34:53', '2026-06-06 18:34:53'),
+(63, 36, 4, 30, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:35:50', '2026-06-06 18:35:50'),
+(64, 36, 4, 61, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:35:51', '2026-06-06 18:35:51'),
+(65, 36, 4, 62, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:35:52', '2026-06-06 18:35:52'),
+(66, 36, 4, 60, 1, 70.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:35:58', '2026-06-06 18:35:58'),
+(67, 36, 4, 20, 1, 60.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:00', '2026-06-06 18:36:00'),
+(68, 36, 4, 59, 1, 49.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:02', '2026-06-06 18:36:02'),
+(69, 36, 4, 58, 1, 51.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:05', '2026-06-06 18:36:05'),
+(70, 36, 4, 57, 1, 74.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:07', '2026-06-06 18:36:07'),
+(71, 36, 4, 56, 1, 76.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:10', '2026-06-06 18:36:10'),
+(72, 36, 4, 54, 1, 90.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:12', '2026-06-06 18:36:12'),
+(73, 36, 4, 53, 1, 88.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:16', '2026-06-06 18:36:16'),
+(74, 36, 4, 52, 1, 76.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:18', '2026-06-06 18:36:18'),
+(75, 36, 4, 50, 1, 47.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:21', '2026-06-06 18:36:21'),
+(76, 36, 4, 49, 1, 32.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:24', '2026-06-06 18:36:24'),
+(77, 36, 4, 48, 1, 54.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:26', '2026-06-06 18:36:26'),
+(78, 36, 4, 47, 1, 56.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:36:28', '2026-06-06 18:36:28'),
+(79, 41, 4, 62, 1, 78.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:34', '2026-06-06 18:37:34'),
+(80, 41, 4, 61, 1, 68.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:37', '2026-06-06 18:37:37'),
+(81, 41, 4, 30, 1, 67.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:40', '2026-06-06 18:37:40'),
+(82, 41, 4, 60, 1, 68.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:42', '2026-06-06 18:37:42'),
+(83, 41, 4, 20, 1, 59.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:45', '2026-06-06 18:37:45'),
+(84, 41, 4, 59, 1, 65.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:48', '2026-06-06 18:37:48'),
+(85, 41, 4, 58, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:51', '2026-06-06 18:37:51'),
+(86, 41, 4, 57, 1, 64.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:54', '2026-06-06 18:37:54'),
+(87, 41, 4, 56, 1, 58.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:56', '2026-06-06 18:37:56'),
+(88, 41, 4, 54, 1, 78.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:37:59', '2026-06-06 18:37:59'),
+(89, 41, 4, 53, 1, 95.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:03', '2026-06-06 18:38:03'),
+(90, 41, 4, 52, 1, 50.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:05', '2026-06-06 18:38:05'),
+(91, 41, 4, 50, 1, 89.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:07', '2026-06-06 18:38:07'),
+(92, 41, 4, 49, 1, 76.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:09', '2026-06-06 18:38:09'),
+(93, 41, 4, 48, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:12', '2026-06-06 18:38:12'),
+(94, 41, 4, 47, 1, 58.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:15', '2026-06-06 18:38:15'),
+(95, 39, 4, 47, 1, 36.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:38:39', '2026-06-06 18:38:39'),
+(96, 39, 4, 48, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:38:41', '2026-06-06 18:38:41'),
+(97, 39, 4, 49, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:38:42', '2026-06-06 18:38:42'),
+(98, 39, 4, 50, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:38:43', '2026-06-06 18:38:43'),
+(99, 39, 4, 52, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:38:45', '2026-06-06 18:38:45'),
+(100, 39, 4, 57, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:03', '2026-06-06 18:39:03'),
+(101, 39, 4, 56, 1, 56.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:04', '2026-06-06 18:39:04'),
+(102, 39, 4, 54, 1, 68.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:05', '2026-06-06 18:39:05'),
+(103, 39, 4, 53, 1, 56.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:05', '2026-06-06 18:39:05'),
+(104, 39, 4, 58, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:39:11', '2026-06-06 18:39:11'),
+(105, 39, 4, 59, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:39:12', '2026-06-06 18:39:12'),
+(106, 39, 4, 20, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:39:12', '2026-06-06 18:39:12'),
+(107, 39, 4, 60, 1, NULL, 100.00, 1, NULL, 63, '2026-06-06 18:39:13', '2026-06-06 18:39:13'),
+(108, 39, 4, 30, 1, 68.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:20', '2026-06-06 18:39:39'),
+(109, 39, 4, 62, 1, 47.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:36', '2026-06-06 18:39:36'),
+(110, 39, 4, 61, 1, 78.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:39:38', '2026-06-06 18:39:38'),
+(111, 40, 4, 62, 1, 87.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:38', '2026-06-06 18:40:38'),
+(112, 40, 4, 61, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:40', '2026-06-06 18:40:40'),
+(113, 40, 4, 30, 1, 76.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:42', '2026-06-06 18:40:42'),
+(114, 40, 4, 60, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:44', '2026-06-06 18:40:44'),
+(115, 40, 4, 20, 1, 67.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:46', '2026-06-06 18:40:46'),
+(116, 40, 4, 59, 1, 56.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:48', '2026-06-06 18:40:48'),
+(117, 40, 4, 58, 1, 70.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:51', '2026-06-06 18:40:51'),
+(118, 40, 4, 57, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:54', '2026-06-06 18:40:54'),
+(119, 40, 4, 56, 1, 54.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:56', '2026-06-06 18:40:56'),
+(120, 40, 4, 54, 1, 58.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:40:59', '2026-06-06 18:40:59'),
+(121, 40, 4, 53, 1, 69.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:41:01', '2026-06-06 18:41:01'),
+(122, 40, 4, 52, 1, 82.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:41:03', '2026-06-06 18:41:03'),
+(123, 40, 4, 50, 1, 90.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:41:06', '2026-06-06 18:41:06'),
+(124, 40, 4, 49, 1, 80.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:41:09', '2026-06-06 18:41:09'),
+(125, 40, 4, 48, 1, 65.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:41:11', '2026-06-06 18:41:11'),
+(126, 40, 4, 47, 1, 75.00, 100.00, 0, 'Can do better', 63, '2026-06-06 18:41:13', '2026-06-06 18:41:13');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `term_report_ct_comment`
+--
+
+DROP TABLE IF EXISTS `term_report_ct_comment`;
+CREATE TABLE IF NOT EXISTS `term_report_ct_comment` (
+  `ctc_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_id_fk` int NOT NULL,
+  `student_id_fk` int NOT NULL,
+  `term` tinyint(1) NOT NULL,
+  `comment` text COLLATE utf8mb4_general_ci NOT NULL,
+  `by_user_id` int NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`ctc_id`),
+  UNIQUE KEY `class_id_fk_student_id_fk_term` (`class_id_fk`,`student_id_fk`,`term`)
+) ENGINE=MyISAM AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `term_report_ct_comment`
+--
+
+INSERT INTO `term_report_ct_comment` (`ctc_id`, `class_id_fk`, `student_id_fk`, `term`, `comment`, `by_user_id`, `created_at`, `updated_at`) VALUES
+(1, 3, 36, 1, 'Hardworking student', 12, '2026-06-04 15:23:34', '2026-06-04 15:23:34'),
+(2, 3, 42, 1, 'Hardworking student', 12, '2026-06-04 15:23:41', '2026-06-04 15:23:41'),
+(3, 3, 37, 1, 'Student needs to focus more on studies', 12, '2026-06-04 15:25:33', '2026-06-04 15:25:33'),
+(4, 3, 40, 1, 'Can do better if student can concentrate more on academic activities', 12, '2026-06-04 15:26:20', '2026-06-04 15:26:20'),
+(5, 3, 38, 1, 'Impressive performance', 12, '2026-06-04 15:26:33', '2026-06-04 15:26:33'),
+(6, 3, 41, 1, 'Impressive performance', 12, '2026-06-04 15:26:42', '2026-06-04 15:26:42'),
+(7, 3, 39, 1, 'Impressive performance', 12, '2026-06-04 15:26:51', '2026-06-04 15:26:51'),
+(8, 4, 47, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:42:39', '2026-06-06 18:42:39'),
+(9, 4, 48, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:42:48', '2026-06-06 18:42:48'),
+(10, 4, 49, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:42:53', '2026-06-06 18:42:53'),
+(11, 4, 50, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:42:57', '2026-06-06 18:42:57'),
+(12, 4, 52, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:02', '2026-06-06 18:43:02'),
+(13, 4, 53, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:07', '2026-06-06 18:43:07'),
+(14, 4, 54, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:13', '2026-06-06 18:43:13'),
+(15, 4, 56, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:18', '2026-06-06 18:43:18'),
+(16, 4, 57, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:24', '2026-06-06 18:43:24'),
+(17, 4, 58, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:27', '2026-06-06 18:43:27'),
+(18, 4, 59, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:31', '2026-06-06 18:43:31'),
+(19, 4, 20, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:37', '2026-06-06 18:43:37'),
+(20, 4, 60, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:43', '2026-06-06 18:43:43'),
+(21, 4, 30, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:47', '2026-06-06 18:43:47'),
+(22, 4, 61, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:51', '2026-06-06 18:43:51'),
+(23, 4, 62, 1, 'A pleasure to teach — continues to show strong effort, curiosity, and progress.', 63, '2026-06-06 18:43:55', '2026-06-06 18:43:55'),
+(24, 5, 46, 1, 'xCxczxc', 63, '2026-06-19 15:47:01', '2026-06-19 15:47:01');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `term_report_principal_comment`
+--
+
+DROP TABLE IF EXISTS `term_report_principal_comment`;
+CREATE TABLE IF NOT EXISTS `term_report_principal_comment` (
+  `prc_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_id_fk` int NOT NULL,
+  `student_id_fk` int NOT NULL,
+  `term` tinyint(1) NOT NULL,
+  `comment` text COLLATE utf8mb4_general_ci NOT NULL,
+  `by_user_id` int NOT NULL,
+  `created_at` datetime DEFAULT NULL,
+  `updated_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`prc_id`),
+  UNIQUE KEY `class_id_fk_student_id_fk_term` (`class_id_fk`,`student_id_fk`,`term`)
+) ENGINE=MyISAM AUTO_INCREMENT=24 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `term_report_principal_comment`
+--
+
+INSERT INTO `term_report_principal_comment` (`prc_id`, `class_id_fk`, `student_id_fk`, `term`, `comment`, `by_user_id`, `created_at`, `updated_at`) VALUES
+(1, 3, 36, 1, 'Outstanding student that always eager to assist teachers and peer and took part in extra curricular activity', 1, '2026-06-04 15:51:03', '2026-06-04 15:51:03'),
+(2, 3, 42, 1, 'Positive learning culture observed; continue reinforcing literacy routines.', 1, '2026-06-04 15:51:11', '2026-06-04 15:51:11'),
+(3, 3, 37, 1, 'Notable growth in team-based planning; maintain momentum next term.', 1, '2026-06-04 15:51:34', '2026-06-04 15:51:34'),
+(4, 3, 40, 1, 'Attendance and participation up; address late submissions in target subjects.', 1, '2026-06-04 15:51:46', '2026-06-04 15:51:46'),
+(5, 3, 38, 1, 'Incidents reduced; ensure consistent follow-through across all grade levels.', 1, '2026-06-04 15:52:03', '2026-06-04 15:52:03'),
+(6, 3, 41, 1, 'Formative assessments driving instruction well; sharpen differentiation strategies.', 1, '2026-06-04 15:52:19', '2026-06-04 15:52:19'),
+(7, 3, 39, 1, 'Good responsiveness; expand outreach for under-connected families.', 1, '2026-06-04 15:52:33', '2026-06-04 15:52:33'),
+(8, 4, 47, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:31', '2026-06-06 18:49:31'),
+(9, 4, 48, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:34', '2026-06-06 18:49:34'),
+(10, 4, 49, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:38', '2026-06-06 18:49:38'),
+(11, 4, 50, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:43', '2026-06-06 18:49:43'),
+(12, 4, 52, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:46', '2026-06-06 18:49:46'),
+(13, 4, 53, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:51', '2026-06-06 18:49:51'),
+(14, 4, 54, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:49:55', '2026-06-06 18:49:55'),
+(15, 4, 56, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:00', '2026-06-06 18:50:00'),
+(16, 4, 57, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:04', '2026-06-06 18:50:04'),
+(17, 4, 58, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:10', '2026-06-06 18:50:10'),
+(18, 4, 59, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:15', '2026-06-06 18:50:15'),
+(19, 4, 20, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:20', '2026-06-06 18:50:20'),
+(20, 4, 60, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:25', '2026-06-06 18:50:25'),
+(21, 4, 30, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:29', '2026-06-06 18:50:29'),
+(22, 4, 61, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:32', '2026-06-06 18:50:32'),
+(23, 4, 62, 1, 'Working steadily and showing good growth. Keep building on this momentum.', 1, '2026-06-06 18:50:36', '2026-06-06 18:50:36');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `term_report_status`
+--
+
+DROP TABLE IF EXISTS `term_report_status`;
+CREATE TABLE IF NOT EXISTS `term_report_status` (
+  `trs_id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `class_id_fk` int NOT NULL,
+  `term` tinyint(1) NOT NULL,
+  `status` enum('collecting','ct_submitted','published') COLLATE utf8mb4_general_ci NOT NULL DEFAULT 'collecting',
+  `ct_submitted_by` int DEFAULT NULL,
+  `ct_submitted_at` datetime DEFAULT NULL,
+  `published_by` int DEFAULT NULL,
+  `published_at` datetime DEFAULT NULL,
+  PRIMARY KEY (`trs_id`),
+  UNIQUE KEY `class_id_fk_term` (`class_id_fk`,`term`)
+) ENGINE=MyISAM AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `term_report_status`
+--
+
+INSERT INTO `term_report_status` (`trs_id`, `class_id_fk`, `term`, `status`, `ct_submitted_by`, `ct_submitted_at`, `published_by`, `published_at`) VALUES
+(1, 3, 1, 'published', 12, '2026-06-04 15:27:08', 1, '2026-06-04 15:53:04'),
+(2, 3, 2, 'collecting', NULL, NULL, NULL, NULL),
+(3, 3, 3, 'collecting', NULL, NULL, NULL, NULL),
+(4, 4, 1, 'published', 63, '2026-06-06 18:48:15', 1, '2026-06-06 18:50:56'),
+(5, 4, 2, 'collecting', NULL, NULL, NULL, NULL),
+(6, 4, 3, 'collecting', NULL, NULL, NULL, NULL),
+(7, 5, 1, 'collecting', NULL, NULL, NULL, NULL),
+(8, 5, 2, 'collecting', NULL, NULL, NULL, NULL),
+(9, 5, 3, 'collecting', NULL, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -3021,7 +5522,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `reset_token_expiry` int DEFAULT NULL,
   PRIMARY KEY (`user_id`),
   KEY `fk_user_ditrict` (`district_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=46 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=75 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `users`
@@ -3030,7 +5531,7 @@ CREATE TABLE IF NOT EXISTS `users` (
 INSERT INTO `users` (`user_id`, `district_id_fk`, `password`, `username`, `fname`, `lname`, `oname`, `gender`, `dob`, `address`, `email`, `pending_email_update`, `phone`, `created_date`, `created_time`, `online_status`, `password_reset_code`, `profile_photo`, `is_a_parent`, `updated_date`, `updated_time`, `security_token`, `security_token_expiry`, `account_status`, `user_status`, `two_factor_method`, `two_factor_secret`, `two_factor_enabled`, `otp_code`, `otp_expiry`, `otp_verified`, `reset_token`, `reset_token_expiry`) VALUES
 (1, 56, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Pio', 'Baleicoqe', '', 'Male', '1982-01-06', 'Veivauceva 3, 6 Miles, Tacirua', 'piobaleicoqe@yahoo.com', NULL, 9896700, '2025-05-14', 1747194903, 'Online', NULL, 'avatar_1721681108.jpg', 0, '2026-05-11 11:48:11', 0, NULL, NULL, 'Active', 'Active', NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL),
 (11, 50, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Pio', 'Baleicoqe', '', 'Male', '2026-01-30', '6 Miles', 'piobaleicoqe2@gmail.com', NULL, 1234567, '2026-01-14', 1768363922, 'Offline', '', '1778626718_73cc384e833c05112504.png', 0, NULL, 0, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
-(12, 16, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Sam', 'White', '', 'Male', '2026-02-02', 'sgsfgsdgdsggd', 'info@baleicoqe.com', NULL, 1234567, '2026-02-02', 1769998699, 'Online', NULL, '1769998699_c2f5e3c9d0452d1e685c.jpg', 0, NULL, 0, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(12, 16, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Sam', 'White', '', 'Male', '2026-02-02', 'sgsfgsdgdsggd', 'info@baleicoqe.com', NULL, 1234567, '2026-02-02', 1769998699, 'Offline', NULL, '1769998699_c2f5e3c9d0452d1e685c.jpg', 0, NULL, 0, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (14, 130, '$2y$10$SpAGtSzYl.ILorqp5cYZoey5X2JWka2q0FV34T8Nw.gUkCbfDC.pS', '', 'Daniel', 'Carter', 'Junior', 'Male', '2026-02-03', '6 Miles\r\nVeivauceva 2', 'piobaleicoqe49@gmail.com', NULL, 9896700, '2026-02-03', 1770084104, 'Offline', 'c920491520eb2f1b7d34183f0e2b9f09', '1770235198_2d1110dd204994b25d1a.jpg', 0, NULL, 0, NULL, NULL, NULL, 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (18, 192, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Mary', 'Lou', '', 'Female', '2026-02-03', '6 Miles\r\nTacirua', 'pio@baleicoqe.com', NULL, 1234567, '2026-02-03', 1770093072, 'Offline', 'de1fe291be6bb18f4135b82929838a6f', '1770093072_e7acbdf94d841d01518c.png', 0, '2026-05-12 00:00:00', 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (20, 42, '', '', 'Peni', 'Ravai', '', 'Male', '2006-02-09', NULL, '', NULL, NULL, '2026-03-02', 1772407401, 'Offline', '7b888e80c4d02f02079dbefaf1d5978e', '', 0, NULL, 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
@@ -3044,15 +5545,44 @@ INSERT INTO `users` (`user_id`, `district_id_fk`, `password`, `username`, `fname
 (34, 28, '$2y$10$pinrhpgBGHoNXvsPQ149JOxRe/o/0usx5o.37S5dX480jRR6ov78K', '', 'Peter', 'Guss', '', 'Male', '2005-05-05', 'Sinu ROad, Nabua, Suva', 'pguss@gmail.com', NULL, 9087967, '2026-05-27', 1779826463, 'Offline', 'f1d87835f482cfe096aa3d78f5b3d4a8', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (35, 34, '', '', 'Shane', 'Davis', '', 'Male', '2008-05-27', NULL, '', NULL, NULL, '2026-05-27', 1779834195, 'Offline', 'c34587166878d32f3dd081692fd14917', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (36, 22, '', '', 'Shane', 'Davis', '', 'Male', '2009-05-27', NULL, '', NULL, NULL, '2026-05-27', 1779836663, 'Offline', 'd4de89c4ca62072ebec03f60f8a4cda2', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
-(37, 84, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', 'Maeri24', 'Maeri', 'Luikali', '', 'Female', '2009-05-29', NULL, '', NULL, NULL, '2026-05-27', 1779838403, 'Offline', 'ee6feb9e0b0ecc80426d6402b403cc5c', '1779840157_8b39d23135066baa1f6a.png', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(37, 84, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', 'Maeri24', 'Maeri', 'Luikali', '', 'Female', '2009-05-29', NULL, '', NULL, NULL, '2026-05-27', 1779838403, 'Online', 'ee6feb9e0b0ecc80426d6402b403cc5c', '1780556693_6e7f5fa5a00eb5aaa8ef.jpg', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (38, 193, '', '', 'Jenifer ', 'Pareti', '', 'Female', '2009-05-05', NULL, '', NULL, NULL, '2026-05-28', 1779913023, 'Offline', '118eafb0ee0c3e7cedd4d57056ee1a92', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (39, 47, '', '', 'Maleli', 'Tora', 'Uluiviti', 'Male', '2009-04-09', NULL, '', NULL, NULL, '2026-05-28', 1779913079, 'Offline', 'ac705d10f98d9a23b7ddfe7936a135f0', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (40, 133, '', '', 'Ilisabeta', 'Matata', '', 'Female', '2009-07-23', NULL, '', NULL, NULL, '2026-05-28', 1779913118, 'Offline', 'e50bfefbd46dcfe403f25fd5b1e23ced', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (41, 111, '', '', 'Edwin', 'Smith', '', 'Male', '2009-02-04', NULL, '', NULL, NULL, '2026-05-28', 1779913168, 'Offline', '2305f438366c4ce6a2bab4b10d8cc14a', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
-(42, 159, '', '', 'Sherine', 'Kumar', '', 'Female', '2009-08-28', NULL, '', NULL, NULL, '2026-05-28', 1779913233, 'Offline', '5035a959b0618c0b4c12050e1288966c', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(42, 159, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', 'Sherine', 'Sherine', 'Kumar', '', 'Female', '2009-08-28', NULL, '', NULL, NULL, '2026-05-28', 1779913233, 'Offline', '5035a959b0618c0b4c12050e1288966c', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
 (43, 42, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Bese', 'Takina', '', 'Male', '2026-06-13', 'Suva City', 'bese@yahoo.com', NULL, 1234567, '2026-06-01', 1780261886, 'Online', '2aa69fe13c95e759ef2b3604b92dfd77', '1780261886_fbd7205fcea30083b90e.jpg', 1, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
-(44, 87, '$2y$10$B6UiXsh3mj1L2TIYymYkweAikthkKs3g7UpfqlWZXN1kQHw/SHLEq', '', 'Peter', 'Toganivalu', '', 'Male', '1889-06-02', 'Wailevu', 'pitatoga@yahoo.com', NULL, 8796578, '2026-06-01', 1780264419, 'Offline', '5086822e64ed10884c2598263d28be97', '', 1, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
-(45, 195, '$2y$10$a9UJNgUtjYk57LCNTl6KDueXsUmOUW9WgQavhu8j5hoCzTZIwYrc6', '', 'Mandy', 'Lopez', '', 'Female', '1969-06-04', 'Baw View Heights, Suva', 'mlopez@yahoo.com', NULL, 8769087, '2026-06-02', 1780342192, 'Offline', 'dd16ba51370cc2306d63815342b7c179', '1780342192_beac329b5cfa7ad3c080.jpg', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL);
+(44, 87, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Peter', 'Toganivalu', '', 'Male', '1889-06-02', 'Wailevu', 'pitatoga@yahoo.com', NULL, 8796578, '2026-06-01', 1780264419, 'Offline', '5086822e64ed10884c2598263d28be97', '', 1, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(45, 195, '$2y$10$a9UJNgUtjYk57LCNTl6KDueXsUmOUW9WgQavhu8j5hoCzTZIwYrc6', '', 'Mandy', 'Lopez', '', 'Female', '1969-06-04', 'Baw View Heights, Suva', 'mlopez@yahoo.com', NULL, 8769087, '2026-06-02', 1780342192, 'Offline', 'dd16ba51370cc2306d63815342b7c179', '1780342192_beac329b5cfa7ad3c080.jpg', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(46, 34, '', '1011265', ' Esiteri', 'Adrole', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(47, 34, '', '984891', ' Litiana', 'Balawakula', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(48, 34, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '1025950', ' Milika', 'Botiki', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Online', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(49, 34, '', '974385', ' Sereana', 'Buwawa', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(50, 34, '', '1018158', ' Lusiana', 'Finau', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(51, 34, '', '859136', ' Alesi', 'Lomasalato', '', 'Male', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(52, 34, '', '1046028', 'Luke', 'Lomasalato ', '', 'Male', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(53, 34, '', '821234', ' Talica', 'Naikelekelevesi', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(54, 34, '', '963909', ' Kelera', 'Naisaki', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(55, 34, '', '991456', ' Lemeki', 'Naitagotago', '', 'Male', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(56, 34, '', '954210', ' Waisea', 'Nasili', '', 'Male', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(57, 34, '', '980618', 'Akansha', 'Prakash', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(58, 34, '', '850530', ' Sailosi', 'Qiolele', '', 'Male', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(59, 34, '', '1026460', ' Iowani', 'Rasumu', '', 'Male', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(60, 34, '', '1031302', ' Lewai', 'Saluta', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(61, 34, '', '1025924', ' Rosi', 'Tupou', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(62, 34, '', '906778', ' Nanise', 'Waqaitanoa', '', 'Female', '0000-00-00', '', '', '', 0, '0000-00-00', 0, 'Offline', '', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(63, 31, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Uwate', 'Vakaloloma', '', 'Male', '1987-04-26', 'Lot 2, Naividaliga New Subdivision, Wainibuku', 'uwatevakaloloma1987@gmail.com', NULL, 2148885, '2026-06-06', 1780725345, 'Online', '14463583cda9e1d65a0a9a428bb1a815', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(64, 115, '', '', 'James', 'Cartel', '', 'Male', '2026-06-18', 'Suva 123', '', NULL, NULL, '2026-06-18', 1781731975, 'Offline', 'ee6d4d46a279c35b1fa31dbf0d6df3f1', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(65, 193, '', '', 'Petero', 'Simons', '', 'Male', '2026-06-18', 'Suva', '', NULL, NULL, '2026-06-18', 1781751375, 'Offline', '3333b17b3b0c1fdb264a48af087ac8a5', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(66, 28, '', '2606115798', 'Seini', 'Seru', '', 'Female', '2026-06-18', NULL, '', NULL, NULL, '2026-06-18', 1781752541, 'Offline', 'f7ac7e362ca6c9a47cb6fcc00ea5ec9a', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(67, 37, '', '3421345678', 'Jeke', 'Sade', '', 'Male', '2026-06-27', NULL, '', NULL, NULL, '2026-06-18', 1781753182, 'Offline', '5b042e3f8552d2cb767e0e907f43ba35', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(68, 34, '', '2606707539', 'Maikali', 'Rayasi', '', 'Male', '2005-06-25', NULL, '', NULL, NULL, '2026-06-25', 1782344553, 'Offline', 'f81aebabe31701796cd1aeaa96529ce7', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(69, 61, '', '2606635288', 'Venesa', 'Radio', '', 'Female', '2008-06-25', NULL, '', NULL, NULL, '2026-06-25', 1782346401, 'Offline', 'ed20a69c92b3c515381baffc4a4eb89b', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(70, 45, '', '2606985614', 'Mike', 'Test', '', 'Male', '2006-06-25', NULL, '', NULL, NULL, '2026-06-25', 1782356737, 'Offline', '1857a2e831fe19accc8d9b42fa3b45c3', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(71, 29, '', '2606137605', 'Peter', 'Stevens', '', 'Male', '2006-06-25', NULL, '', NULL, NULL, '2026-06-25', 1782357199, 'Offline', '7b7f0888187b8bd19860f7081794fc2b', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(72, 23, '', '2606173080', 'Peter', 'Stevension', '', 'Male', '2006-06-25', NULL, '', NULL, NULL, '2026-06-25', 1782358108, 'Offline', '8fb780d2d421ba6234dfd877ebcaddd9', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(73, 23, '', '2606432679', 'Mick', 'Stevens', '', 'Male', '2006-06-25', NULL, '', NULL, NULL, '2026-06-25', 1782358573, 'Offline', '20f36bab75946a2b5578bb2ab3b4a3ce', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL),
+(74, 47, '', '2606977863', 'Samueal', 'Gaumguo', '', 'Male', '2007-06-26', NULL, '', NULL, NULL, '2026-06-26', 1782402270, 'Offline', '141d4596081fbfa7a32876d1b383092f', '', 0, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -3075,7 +5605,7 @@ CREATE TABLE IF NOT EXISTS `user_log` (
   `log_theme` varchar(45) DEFAULT NULL,
   PRIMARY KEY (`user_log_id`),
   KEY `fk_user_log_user` (`user_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=884 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=1119 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `user_log`
@@ -3964,7 +6494,243 @@ INSERT INTO `user_log` (`user_log_id`, `user_id_fk`, `ip_aadress`, `user_agent`,
 (880, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-03', 1780440751, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
 (881, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for Benjamin Dada', '2026-06-03', 1780440806, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
 (882, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-03', 1780473325, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
-(883, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-03', 1780479865, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning');
+(883, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-03', 1780479865, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(884, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780503875, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(885, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780508758, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(886, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780508775, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(887, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780508780, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(888, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-04', 1780508785, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(889, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Update Role Permissions', 'Permissions for role Student have been updated. Total permissions: 10', '2026-06-04', 1780508913, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(890, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780509011, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(891, 33, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780509023, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(892, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780509131, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(893, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780509148, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(894, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780513259, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(895, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780513261, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(896, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780513274, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(897, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780513286, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(898, 33, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780513294, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(899, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780513297, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(900, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780516700, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(901, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780516702, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(902, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780533101, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(903, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-04', 1780533124, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(904, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780533232, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(905, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780533236, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(906, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780533248, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(907, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780533252, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(908, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-04', 1780533386, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(909, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780533460, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(910, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-04', 1780543698, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(911, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780543786, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(912, 44, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780543805, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(913, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780543814, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(914, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780543819, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(915, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-04', 1780543824, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(916, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Update Role Permissions', 'Permissions for role Principal have been updated. Total permissions: 76', '2026-06-04', 1780543957, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(917, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780544023, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(918, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780544028, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(919, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780544156, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(920, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780544966, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(921, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780544970, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(922, 44, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780545259, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(923, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780545278, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(924, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-04', 1780546292, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(925, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780546295, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(926, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-04', 1780546946, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(927, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-04', 1780556593, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(928, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-04', 1780556598, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(929, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Edit User', 'User \"Maeri Luikali\" updated', '2026-06-04', 1780556693, '<i class=\"ki-duotone ki-check-circle\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(930, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-04', 1780556694, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(931, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780600123, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(932, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780602529, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(933, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-05', 1780611725, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(934, 33, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780611730, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(935, 33, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-05', 1780612063, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(936, 33, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-05', 1780612206, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(937, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780612209, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(938, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780626828, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(939, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780626881, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(940, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780641496, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(941, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780642722, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(942, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780652398, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(943, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-05', 1780656949, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(944, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780681093, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(945, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780681103, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(946, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780682880, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(947, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780692308, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(948, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780692312, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(949, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780714947, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(950, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780714983, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(951, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780715025, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(952, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780715030, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(953, 42, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780715066, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(954, 37, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780715079, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(955, 12, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780717999, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(956, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780718117, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(957, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-06', 1780718131, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(958, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-06', 1780718171, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(959, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Add New School', 'School \"William Cross College\" has been created successfully!', '2026-06-06', 1780718462, '<i class=\"ki-duotone ki-save-2\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(960, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780723598, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(961, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780724144, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(962, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780724179, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(963, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780724305, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(964, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Alesi Lomasalato', '2026-06-06', 1780724334, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(965, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Esiteri Adrole', '2026-06-06', 1780724358, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(966, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Iowani Rasumu', '2026-06-06', 1780724377, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(967, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Kelera Naisaki', '2026-06-06', 1780724395, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(968, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Lemeki Naitagotago', '2026-06-06', 1780724408, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(969, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Milika Botiki', '2026-06-06', 1780724421, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(970, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Lewai Saluta', '2026-06-06', 1780724442, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(971, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Rosi Tupou', '2026-06-06', 1780724454, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success');
+INSERT INTO `user_log` (`user_log_id`, `user_id_fk`, `ip_aadress`, `user_agent`, `user_device`, `log_title`, `log_desc`, `log_date`, `log_time`, `log_icon`, `log_theme`) VALUES
+(972, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Sailosi Qiolele', '2026-06-06', 1780724470, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(973, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Sereana Buwawa', '2026-06-06', 1780724482, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(974, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Talica Naikelekelevesi', '2026-06-06', 1780724494, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(975, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Waisea Nasili', '2026-06-06', 1780724506, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(976, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for Akansha Prakash', '2026-06-06', 1780724517, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(977, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for James Smith', '2026-06-06', 1780724531, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(978, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for Luke Lomasalato ', '2026-06-06', 1780724616, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(979, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for Peni Ravai', '2026-06-06', 1780724628, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(980, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Nanise Waqaitanoa', '2026-06-06', 1780724642, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(981, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Lusiana Finau', '2026-06-06', 1780724656, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(982, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Admission Added', 'New admission for  Litiana Balawakula', '2026-06-06', 1780724669, '<i class=\"ki-duotone ki-element-plus\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'success'),
+(983, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Classroom Created', 'Classroom \"Year 13A 2026\" created for year 2026', '2026-06-06', 1780725228, '<i class=\"ki-duotone ki-element-7\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(984, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Add New User', 'User \"Uwate Vakaloloma\" has been created successfully!', '2026-06-06', 1780725345, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(985, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780725345, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(986, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Staff Assigned', '\"Uwate Vakaloloma\" assigned as Class Teacher for classroom ID 4', '2026-06-06', 1780725365, '<i class=\"ki-duotone ki-people\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'primary'),
+(987, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Staff Assigned', '\"Sereana Buwawa\" assigned as Class Captain for classroom ID 4', '2026-06-06', 1780725423, '<i class=\"ki-duotone ki-people\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'primary'),
+(988, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'Staff Assigned', '\"Sailosi Qiolele\" assigned as Assistant Class Captain for classroom ID 4', '2026-06-06', 1780725432, '<i class=\"ki-duotone ki-people\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'primary'),
+(989, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780725828, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(990, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780725855, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(991, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780726618, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(992, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780728508, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(993, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780728515, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(994, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780728830, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(995, 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-06', 1780729026, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(996, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-06', 1780729032, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(997, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-06', 1780729037, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(998, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-08', 1780861196, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(999, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-08', 1780861214, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1000, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-09', 1780947151, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1001, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-09', 1780967622, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1002, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-18', 1781731917, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1003, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"James Cartel\" has been created successfully!', '2026-06-18', 1781731976, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1004, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-18', 1781731976, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1005, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-18', 1781749603, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1006, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-18', 1781751324, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1007, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Petero Simons\" has been created successfully!', '2026-06-18', 1781751375, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1008, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-18', 1781751375, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1009, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-18', 1781752479, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1010, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Seini Seru\" has been created successfully!', '2026-06-18', 1781752541, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1011, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-18', 1781752541, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1012, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-18', 1781752608, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1013, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Jeke Sade\" has been created successfully!', '2026-06-18', 1781753182, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1014, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-18', 1781753182, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1015, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-18', 1781753814, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1016, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-18', 1781767812, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1017, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-18', 1781768052, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1018, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-19', 1781816169, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1019, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-19', 1781816618, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1020, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-19', 1781820814, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1021, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-19', 1781820830, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1022, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Student have been updated. Total permissions: 8', '2026-06-19', 1781820901, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1023, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Classroom Updated', 'Classroom \"Year 13A 2026\" updated (ID: 4)', '2026-06-19', 1781824274, '<i class=\"ki-duotone ki-pencil\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1024, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Classroom Created', 'Classroom \"Year 13B 2026\" created for year 2026', '2026-06-19', 1781828558, '<i class=\"ki-duotone ki-element-7\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1025, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Added', 'Enrolment created for  Alesi Lomasalato | Year: 2026 Term: 2', '2026-06-19', 1781830395, '<i class=\"ki-duotone ki-abstract-28\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1026, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Added', 'Enrolment created for  Esiteri Adrole | Year: 2026 Term: 2', '2026-06-19', 1781830420, '<i class=\"ki-duotone ki-abstract-28\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1027, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Added', 'Enrolment created for  Lemeki Naitagotago | Year: 2026 Term: 2', '2026-06-19', 1781830435, '<i class=\"ki-duotone ki-abstract-28\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1028, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Added', 'Enrolment created for  Milika Botiki | Year: 2026 Term: 2', '2026-06-19', 1781832435, '<i class=\"ki-duotone ki-abstract-28\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1029, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Updated', 'Enrolment ID 42 updated.', '2026-06-19', 1781836718, '<i class=\"ki-duotone ki-pencil\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1030, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Added', 'Enrolment created for  Milika Botiki | Year: 2026 Term: 2', '2026-06-19', 1781836751, '<i class=\"ki-duotone ki-abstract-28\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1031, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Classroom Created', 'Classroom \"Year 12B 2026\" created for year 2026', '2026-06-19', 1781837278, '<i class=\"ki-duotone ki-element-7\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1032, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Staff Assigned', '\"Uwate Vakaloloma\" assigned as Class Teacher for classroom ID 6', '2026-06-19', 1781837315, '<i class=\"ki-duotone ki-people\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'primary'),
+(1033, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Staff Assigned', '\"Uwate Vakaloloma\" assigned as Class Teacher for classroom ID 5', '2026-06-19', 1781837401, '<i class=\"ki-duotone ki-people\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'primary'),
+(1034, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-20', 1781895889, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1035, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-22', 1782083768, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1036, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-22', 1782083811, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1037, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-22', 1782098953, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1038, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-22', 1782102475, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1039, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-22', 1782102476, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1040, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-22', 1782128707, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1041, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-23', 1782129686, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1042, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-23', 1782155770, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1043, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-23', 1782155781, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1044, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-23', 1782188839, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1045, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-23', 1782188851, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1046, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-25', 1782337140, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1047, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-25', 1782339146, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1048, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New Permission', 'Permission \"My Exam\" has been created successfully!', '2026-06-25', 1782339194, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1049, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Permission Listing', 'User viewed permission listing.', '2026-06-25', 1782339194, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1050, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-25', 1782339271, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1051, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Parent have been updated. Total permissions: 1', '2026-06-25', 1782339280, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1052, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-25', 1782339284, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1053, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Student have been updated. Total permissions: 8', '2026-06-25', 1782339304, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1054, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-25', 1782339307, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1055, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Assistant Teacher have been updated. Total permissions: 69', '2026-06-25', 1782339315, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1056, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Assistant Teacher have been updated. Total permissions: 69', '2026-06-25', 1782339317, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1057, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-25', 1782344438, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1058, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-25', 1782344468, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1059, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Maikali Rayasi\" has been created successfully!', '2026-06-25', 1782344553, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1060, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-25', 1782344553, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1061, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Venesa Radio\" has been created successfully!', '2026-06-25', 1782346401, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1062, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-25', 1782346401, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1063, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-25', 1782349519, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1064, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-25', 1782356113, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1065, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Mick Stevens\" has been created successfully!', '2026-06-25', 1782358573, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1066, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-25', 1782358573, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1067, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-26', 1782400300, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1068, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New User', 'User \"Samueal Gaumguo\" has been created successfully!', '2026-06-26', 1782402270, '<i class=\"ki-duotone ki-user-tick\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'success'),
+(1069, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-06-26', 1782402270, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1070, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-26', 1782404457, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1071, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Updated', 'Enrolment ID 18 updated.', '2026-06-26', 1782417523, '<i class=\"ki-duotone ki-pencil\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1072, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Updated', 'Enrolment ID 51 updated.', '2026-06-26', 1782418321, '<i class=\"ki-duotone ki-pencil\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1073, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Deleted', 'Enrolment ID 52 deleted.', '2026-06-26', 1782418501, '<i class=\"ki-duotone ki-trash\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span><span class=\"path4\"></span><span class=\"path5\"></span></i>', 'danger'),
+(1074, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Enrolment Added', 'Enrolment created for  Iowani Rasumu | Year: 2026 Term: 2', '2026-06-26', 1782418554, '<i class=\"ki-duotone ki-abstract-28\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1075, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-26', 1782418603, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1076, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-26', 1782418603, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1077, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-26', 1782420326, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1078, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Add New Role', 'Role Admin has been created successfully!', '2026-06-26', 1782421546, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1079, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-26', 1782421546, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1080, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-26', 1782421707, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1081, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-26', 1782421734, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1082, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-26', 1782421858, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1083, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-29', 1782683144, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1084, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Admission Updated', 'Admission ID 19 updated for Jenifer  Pareti', '2026-06-29', 1782683215, '<i class=\"ki-duotone ki-pencil\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1085, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-29', 1782687699, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1086, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-30', 1782796407, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1087, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-30', 1782796429, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1088, 63, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-30', 1782796435, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1089, 48, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-30', 1782796512, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1090, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-30', 1782798420, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1091, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-06-30', 1782798425, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1092, 48, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-06-30', 1782806127, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1093, 48, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-06-30', 1782806130, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1094, 48, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-07-01', 1782834203, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1095, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-07-01', 1782834260, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1096, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Conduct Incident Logged', 'Conduct incident logged for admission ID 30', '2026-07-01', 1782841600, '<i class=\"ki-duotone ki-shield-cross\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1097, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Conduct Incident Updated', 'Conduct incident ID 1 updated', '2026-07-01', 1782841655, '<i class=\"ki-duotone ki-shield-cross\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1098, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-07-01', 1782841734, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1099, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Permission Listing', 'User viewed permission listing.', '2026-07-01', 1782841776, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1100, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Edit Permission', 'Permission \"My Conduct\" has been updated successfully!', '2026-07-01', 1782841794, '<i class=\"ki-duotone ki-verify\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1101, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Permission Listing', 'User viewed permission listing.', '2026-07-01', 1782841794, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1102, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-07-01', 1782841846, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1103, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Student have been updated. Total permissions: 9', '2026-07-01', 1782841885, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1104, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Update Role Permissions', 'Permissions for role Student have been updated. Total permissions: 11', '2026-07-01', 1782841927, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success'),
+(1105, 48, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-07-01', 1782842020, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1106, 48, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-07-01', 1782842022, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1107, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Permission Listing', 'User viewed permission listing.', '2026-07-01', 1782842042, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1108, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Edit Permission', 'Permission \"My Conduct\" has been updated successfully!', '2026-07-01', 1782842089, '<i class=\"ki-duotone ki-verify\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1109, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Permission Listing', 'User viewed permission listing.', '2026-07-01', 1782842089, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1110, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Edit Permission', 'Permission \"My Conduct\" has been updated successfully!', '2026-07-01', 1782843070, '<i class=\"ki-duotone ki-verify\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1111, 1, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View Permission Listing', 'User viewed permission listing.', '2026-07-01', 1782843071, '<i class=\"ki-duotone ki-shield-tick\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info'),
+(1112, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Conduct Incident Logged', 'Conduct incident logged for admission ID 34', '2026-07-01', 1782843227, '<i class=\"ki-duotone ki-shield-cross\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1113, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Conduct Incident Logged', 'Conduct incident logged for admission ID 34', '2026-07-01', 1782848129, '<i class=\"ki-duotone ki-shield-cross\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'warning'),
+(1114, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-07-01', 1782854911, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1115, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-07-01', 1782854947, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger'),
+(1116, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-07-01', 1782854948, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary'),
+(1117, 63, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'View User Listing', 'User view user listing.', '2026-07-01', 1782855154, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning'),
+(1118, 48, '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-07-01', 1782859502, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary');
 
 -- --------------------------------------------------------
 
@@ -4088,7 +6854,7 @@ CREATE TABLE IF NOT EXISTS `user_password` (
   `password_status` varchar(60) NOT NULL,
   PRIMARY KEY (`user_pass_id`),
   KEY `user_password_ibfk_1` (`user_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `user_password`
@@ -4104,7 +6870,8 @@ INSERT INTO `user_password` (`user_pass_id`, `user_id_fk`, `password`, `date_cre
 (16, 34, '$2y$10$pinrhpgBGHoNXvsPQ149JOxRe/o/0usx5o.37S5dX480jRR6ov78K', '2026-05-27', 1779826463, 'Active'),
 (17, 43, '$2y$10$vVZ9T3LIm0HshoGWmfCttO25EDuuSrNte36M73v4cs.0tCU4jROb.', '2026-06-01', 1780261886, 'Active'),
 (18, 44, '$2y$10$B6UiXsh3mj1L2TIYymYkweAikthkKs3g7UpfqlWZXN1kQHw/SHLEq', '2026-06-01', 1780264419, 'Active'),
-(19, 45, '$2y$10$a9UJNgUtjYk57LCNTl6KDueXsUmOUW9WgQavhu8j5hoCzTZIwYrc6', '2026-06-02', 1780342192, 'Active');
+(19, 45, '$2y$10$a9UJNgUtjYk57LCNTl6KDueXsUmOUW9WgQavhu8j5hoCzTZIwYrc6', '2026-06-02', 1780342192, 'Active'),
+(20, 63, '$2y$10$1OGxlYprz9aXz1olzIM37eym32NOIo51WRMA.z5gGAAbKqBM9uAZm', '2026-06-06', 1780725345, 'Active');
 
 -- --------------------------------------------------------
 
@@ -4123,7 +6890,7 @@ CREATE TABLE IF NOT EXISTS `user_role` (
   PRIMARY KEY (`user_role_id`),
   KEY `fk_user_role_users` (`user_id_fk`),
   KEY `role_id_fk` (`role_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=57 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=87 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `user_role`
@@ -4147,7 +6914,6 @@ INSERT INTO `user_role` (`user_role_id`, `user_id_fk`, `role_id_fk`, `created_da
 (41, 34, 5, NULL, NULL, 'Active'),
 (42, 35, 7, '2026-05-27 10:23:15', '2026-05-27 10:23:15', 'Active'),
 (43, 36, 7, '2026-05-27 11:04:23', '2026-05-27 11:04:23', 'Active'),
-(45, 37, 7, NULL, '2026-05-27 12:02:37', 'Active'),
 (46, 38, 7, '2026-05-28 08:17:03', '2026-05-28 08:17:03', 'Active'),
 (47, 39, 7, '2026-05-28 08:17:59', '2026-05-28 08:17:59', 'Active'),
 (48, 40, 7, '2026-05-28 08:18:38', '2026-05-28 08:18:38', 'Active'),
@@ -4156,7 +6922,37 @@ INSERT INTO `user_role` (`user_role_id`, `user_id_fk`, `role_id_fk`, `created_da
 (52, 44, 3, '2026-06-01 09:53:39', '2026-06-01 09:53:39', 'Active'),
 (53, 41, 7, NULL, '2026-06-01 11:52:05', 'Active'),
 (54, 45, 5, '2026-06-02 07:29:52', '2026-06-02 07:29:52', 'Active'),
-(56, 27, 7, NULL, '2026-06-02 11:21:55', 'Active');
+(56, 27, 7, NULL, '2026-06-02 11:21:55', 'Active'),
+(57, 37, 7, NULL, '2026-06-04 19:04:53', 'Active'),
+(58, 46, 7, NULL, NULL, 'Active'),
+(59, 47, 7, NULL, NULL, 'Active'),
+(60, 48, 7, NULL, NULL, 'Active'),
+(61, 49, 7, NULL, NULL, 'Active'),
+(62, 50, 7, NULL, NULL, 'Active'),
+(63, 51, 7, NULL, NULL, 'Active'),
+(64, 52, 7, NULL, NULL, 'Active'),
+(65, 53, 7, NULL, NULL, 'Active'),
+(66, 54, 7, NULL, NULL, 'Active'),
+(67, 55, 7, NULL, NULL, 'Active'),
+(68, 56, 7, NULL, NULL, 'Active'),
+(69, 57, 7, NULL, NULL, 'Active'),
+(70, 58, 7, NULL, NULL, 'Active'),
+(71, 59, 7, NULL, NULL, 'Active'),
+(72, 60, 7, NULL, NULL, 'Active'),
+(73, 61, 7, NULL, NULL, 'Active'),
+(74, 62, 7, NULL, NULL, 'Active'),
+(75, 63, 5, '2026-06-06 17:55:45', '2026-06-06 17:55:45', 'Active'),
+(76, 64, 7, '2026-06-18 09:32:56', '2026-06-18 09:32:56', 'Active'),
+(77, 65, 7, '2026-06-18 14:56:15', '2026-06-18 14:56:15', 'Active'),
+(78, 66, 7, '2026-06-18 15:15:41', '2026-06-18 15:15:41', 'Active'),
+(79, 67, 7, '2026-06-18 15:26:22', '2026-06-18 15:26:22', 'Active'),
+(80, 68, 7, '2026-06-25 11:42:33', '2026-06-25 11:42:33', 'Active'),
+(81, 69, 7, '2026-06-25 12:13:21', '2026-06-25 12:13:21', 'Active'),
+(82, 70, 7, '2026-06-25 15:05:37', '2026-06-25 15:05:37', 'Active'),
+(83, 71, 7, '2026-06-25 15:13:19', '2026-06-25 15:13:19', 'Active'),
+(84, 72, 7, '2026-06-25 15:28:28', '2026-06-25 15:28:28', 'Active'),
+(85, 73, 7, '2026-06-25 15:36:13', '2026-06-25 15:36:13', 'Active'),
+(86, 74, 7, '2026-06-26 03:44:30', '2026-06-26 03:44:30', 'Active');
 
 -- --------------------------------------------------------
 
@@ -4182,7 +6978,7 @@ CREATE TABLE IF NOT EXISTS `user_session` (
   `session_status` enum('Active','Expired','Signed Out') DEFAULT 'Active',
   PRIMARY KEY (`session_id`),
   KEY `fk_user_session_user` (`user_id_fk`)
-) ENGINE=InnoDB AUTO_INCREMENT=72 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=156 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `user_session`
@@ -4259,7 +7055,91 @@ INSERT INTO `user_session` (`session_id`, `user_id_fk`, `session_token`, `ip_add
 (68, 12, '2e3f1e9ccc9c126c9d3bfeeb1533d343ef01fb1336d3dd86c1348af20f7530cd', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-03', 1780431277, 1780431277, 'Signed Out'),
 (69, 33, '0bc32a0048820697b7d21defcd9d7237e9a0a007f2b346562a999bacd1681d9e', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-03', 1780432718, 1780432718, 'Signed Out'),
 (70, 12, 'f373b696ab86bda41035d84dc5715df37877f93d63be25bc17cb5d5e67e923d3', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-03', 1780432778, 1780432778, 'Active'),
-(71, 12, 'c1638c059edcc39e5295eec3bb4fd025736d0835780e374d35a55ece4182756b', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-03', 1780473325, 1780473325, 'Active');
+(71, 12, 'c1638c059edcc39e5295eec3bb4fd025736d0835780e374d35a55ece4182756b', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-03', 1780473325, 1780473325, 'Active'),
+(72, 12, 'ef8769385e8f7fdd84fb3e5352f4148d37b94f376c56e30d71bcd7a1a41291fe', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780503875, 1780503875, 'Signed Out'),
+(73, 37, '8ff4313923892fb180a101171f7bc240c5c898c350249f81f29a5c8fd2f50e47', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780508758, 1780508758, 'Signed Out'),
+(74, 1, '99a57e0aa1c5b225fa466a4964fc62c2a126b8b2f2d3d3a6191e621578c8f227', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780508780, 1780508780, 'Signed Out'),
+(75, 33, 'a1696dbe42a7d9ada78fae6546d9179ebf61e5de5d74c76a4e3d58722aa88309', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780509023, 1780509023, 'Signed Out'),
+(76, 37, '08b06a46c910ed8179ee69d62a076131b1910e75ed39453426341fbef1aab8bd', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780509148, 1780509148, 'Signed Out'),
+(77, 37, 'f0b34c8d81655af1ab3d0d0f287b5e41d5c0c919b2033b22ee2f0930dfcb8ce0', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780513261, 1780513261, 'Signed Out'),
+(78, 37, 'e8f963677e6f37f41ea66031b05d3fc78f3c7445959363303c0a7b47c75dccc8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780513286, 1780513286, 'Signed Out'),
+(79, 12, '83fcd447dcaebe9d6f9771b8b753ad920d291c2c5a8dab56622e448aeaa1e24b', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780513297, 1780513297, 'Signed Out'),
+(80, 37, 'f1711a5dec52175df535959c4339884f59f936deeedf0efad38de06f5090fdee', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780516702, 1780516702, 'Signed Out'),
+(81, 37, 'e2a6ceca8e5954afc998bf8b6d227a8a0d8f8ad4c3ea4022ef0e83fc31a8e231', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780533232, 1780533232, 'Signed Out'),
+(82, 1, '2a655afa8401e5ca7be9e11adcb11c719713ba36fb165345ba683e5dad1db33f', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780533248, 1780533248, 'Signed Out'),
+(83, 42, '59cba4292b9e4e63cbdeca14b773225bf465b805d88586fada65c0330e67537b', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780533460, 1780533460, 'Signed Out'),
+(84, 44, '350566c894e982f3d9d89b5a10263532b7e87fe0de4d65f34858c80cf7806241', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780543805, 1780543805, 'Signed Out'),
+(85, 1, '9ddb82885d540a8a4b4d5a8ee15a24d762f68c765c8ea13c346a27b5e69c3fa9', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780543819, 1780543819, 'Signed Out'),
+(86, 12, '8ad1488f56e292063fae71c025c0521f619b30f46c81d33ba31c768f6d29b78b', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780544028, 1780544028, 'Signed Out'),
+(87, 42, '1be01d5f2d9eaae7b7ae93e2309fb036baf997948179f9d09e6d5f35f48f2845', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-04', 1780544156, 1780544156, 'Active'),
+(88, 1, 'e5bb443543e513ea2107c49a0f59bbbc446da735c4a999ae268267d4da333491', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780544970, 1780544970, 'Signed Out'),
+(89, 42, '0453c3ce9d3f9655b6cbf17dbd1c32cd18337c7639a15b1650afb776364e909a', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-04', 1780545278, 1780545278, 'Active'),
+(90, 12, 'f3058ce6ee72d91ddce0b2ed7b157378ad83bf0ca583096f92088d5309275610', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780546295, 1780546295, 'Active'),
+(91, 12, 'e97e15b54a3260f2e48a934dc3fc22eed18dbc48b8d191313edaea8eb1e14d8e', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-04', 1780556593, 1780556593, 'Active'),
+(92, 12, '9a8b24fef04fc28f17b5f2f30bbe2c94fc282782a24a98bb85ff9ab2810a3f5a', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-05', 1780600123, 1780600123, 'Signed Out'),
+(93, 42, '1beea5ca13e6e7d6b4e91fc305cfe3dc8d043b12e832183d0774c9920027cf47', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-05', 1780602529, 1780602529, 'Active'),
+(94, 33, '3607bdbf4db72389597d3954e87385334edaa2f526676000a33afcd482a06370', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-05', 1780611730, 1780611730, 'Signed Out'),
+(95, 12, '62237842d1db88ed606eb435466c439e56ac590098af49a016a4a28a929e363d', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-05', 1780612209, 1780612209, 'Active'),
+(96, 12, '5563b5bbbdb0346e0d5acdc47eb060ab906d698d0c69fabe858e7bee734748f2', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-05', 1780626828, 1780626828, 'Active'),
+(97, 42, 'dd05d527992605e90baad8b1d5ecd7a8a51626dfe79d4f5a0eefb60c11e65b01', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-05', 1780626881, 1780626881, 'Active'),
+(98, 12, 'bc6b0ae461fdf1ff4440519828a5ef7d91649eed9ec67909d4f32b1fefbaed99', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-05', 1780641496, 1780641496, 'Active'),
+(99, 42, 'a45bea27225fbb0ba63bc5d673ecb0314acf72a285872ed9cfca97e241a4d406', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-05', 1780642722, 1780642722, 'Active'),
+(100, 12, '92ed680ee6cdc9bd27c4ba9e999888ab7924819b6427bb1abedbaeab35c63186', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-05', 1780652398, 1780652398, 'Active'),
+(101, 42, '45dda6ab6c08c7f2bfdc8c02a837f300bcccbe46456d5fc2a8e8eb5c585803e8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-05', 1780656949, 1780656949, 'Active'),
+(102, 12, 'cf17e422a57bef120ea5e4ef754373c2fa1107657449aef2039f295a23beafce', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-06', 1780681093, 1780681093, 'Signed Out'),
+(103, 42, '885fd7e7121b766adb1a56dd2187d2fcd9e1f2e8e16e544669f9a55c67ad6e50', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-06', 1780681103, 1780681103, 'Signed Out'),
+(104, 37, '7110f8e2a743145e9da62b6c9e336311ff5a531014d1b085db29ad26ae7ab8f3', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-06', 1780682880, 1780682880, 'Active'),
+(105, 42, 'f2ea7fcf73e2a2d4cb1793757df1eba79924ccc93d709de249411cd606dd4681', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-06', 1780692312, 1780692312, 'Signed Out'),
+(106, 42, '95ce08122ae5b7318c97b2e7377b1e98fd973fd8b2bb029078c0c75db0e5a4e1', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36 Edg/148.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-06', 1780714947, 1780714947, 'Signed Out'),
+(107, 42, '5b9727582fb2dc27e6b6601bae6154ddff1e261aba9eaebb86c9a93843478dd2', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-06', 1780715025, 1780715025, 'Signed Out'),
+(108, 37, '96dd747554a74010a1657efc7fc052206db692d684dd01cfc17cf7751804d9c7', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-06', 1780715079, 1780715079, 'Active'),
+(109, 1, 'bb86a399290dd867a45feff8e887a4c25c14a5c8fc830897783f6c5238fda90a', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-06', 1780718117, 1780718117, 'Signed Out'),
+(110, 63, '2e95ebe8339a04887fb433db4ae35fac915a229d258ef2ed43e1cc6be138b272', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-06', 1780725855, 1780725855, 'Signed Out'),
+(111, 48, '7b83a30c1e0dcf95c85984d43af4f9686b77aff7013853e207d5f019d862a4c8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-06', 1780726618, 1780726618, 'Active'),
+(112, 1, '5814e7949aea630dd7840f613ccd6f541ede28598e9258e60adedab9840a0a8b', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-06', 1780728515, 1780728515, 'Signed Out'),
+(113, 63, '04c8ab0aec557532a275b16d32086edebed5bbe62db7b4ac6b093316efe5ca75', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-06', 1780729032, 1780729032, 'Active'),
+(114, 63, '9397346843028ba550b67f801482c5e1defaf6b1bbf0bed03fdb5a65f25c557e', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-08', 1780861196, 1780861196, 'Active'),
+(115, 48, '137dd147bfa78d02a02ec690b2d4fea9fe639dd10836cef88f277008e773d281', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-08', 1780861214, 1780861214, 'Active'),
+(116, 63, 'b21b7e56a3b1eeff7e91a728f3ae5ddc1c58cd64f521087538f1923fcc1025d6', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-09', 1780947151, 1780947151, 'Active'),
+(117, 48, 'eea3d44fc87e4700fd3cdb6f80758c2f3a3fd5518ba2517a165df63653b283aa', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-09', 1780967622, 1780967622, 'Active'),
+(118, 1, 'd63d22481e8c0b1091dc1a503efce67de66cd9204606af6bf8753c220e45a3fc', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-18', 1781731917, 1781731917, 'Active'),
+(119, 63, '8d22031c3edad8c705213bb1714a206858eb646a597888fd323c07221f684f1a', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-18', 1781749603, 1781749603, 'Active'),
+(120, 1, '4d814b6c1fe0c10df89f8e8c9a08a44003760d17859dac7fdbec638dda605621', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-18', 1781751324, 1781751324, 'Signed Out'),
+(121, 48, '4a91ccd02094c7bf7aa765286a759fe3e36deaa53206f31e93a4a9c9beb46386', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-18', 1781767812, 1781767812, 'Active'),
+(122, 63, '62377bd7ec9a8aa8de5aaf0d016cecfb66d8717fecb35b54830665fb77382ae3', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-18', 1781768052, 1781768052, 'Active'),
+(123, 48, 'a23293cc1aedb56b410a5132e430c66bbe775a9d93fbfb0c2657ffed99ee62fe', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-19', 1781816169, 1781816169, 'Active'),
+(124, 63, '55bd6bd22e1d8c1257fec03451a3541adbc754cb5b6bbf2a07d52ce49a4fa5e6', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-19', 1781816618, 1781816618, 'Active'),
+(125, 1, 'e7990e4b86858765ef85f755d0e1f637b811eec761f20fe5564ac68cfb2a0f71', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-19', 1781820814, 1781820814, 'Active'),
+(126, 63, '8a2aa7ec2875e5cd71be6261763e18a0792bea86c570a89f03ad9c4100eeab1d', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-20', 1781895889, 1781895889, 'Active'),
+(127, 1, '23a0a0a2149dcf7240e403fb16a37f7327fd00c5615cd070300860ae3098181b', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-22', 1782083768, 1782083768, 'Active'),
+(128, 63, '240770b3b8d10467940a979bb652b62ef43144e351d759df206192bbecfea525', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:151.0) Gecko/20100101 Firefox/151.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-22', 1782083811, 1782083811, 'Active'),
+(129, 48, 'd06a37546e8faad872bd5a2551d2a6d3ab4d1fd67f3e534d2478219a60fa2ce5', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-22', 1782098953, 1782098953, 'Signed Out'),
+(130, 48, 'ab66a6ea7b476fea9fc5d9f503ff413166dae36d80b186d569be77bd53b8fca9', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-22', 1782102476, 1782102476, 'Active'),
+(131, 48, '38d865e80bae23cf717b952cd5567daad3c924d5f50dc51ca74500103740733c', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-22', 1782128707, 1782128707, 'Active'),
+(132, 63, '830836140fea0167e93ffffb64f18c9ad9179aa6d01f86b7fd7f14db49f87b2a', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-23', 1782129686, 1782129686, 'Active'),
+(133, 63, 'b26b090efe0953cdaf9e3568848a218da58718334ec08a9b697c4ffc927ac3d6', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-23', 1782155770, 1782155770, 'Active'),
+(134, 48, 'a781c887df7e808724bccc657d4bc8bea1e39dfd38c6cc4427ab9af168381564', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-23', 1782155781, 1782155781, 'Active'),
+(135, 48, '253e39716299540e498268b9a34384c977ae232467da82db6886128d51722fb0', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-23', 1782188839, 1782188839, 'Active'),
+(136, 63, 'c2e9c98d21bd172f6f2652eddeaab2b29676db4638321e1c1a2e0c6947b5b7e7', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-23', 1782188851, 1782188851, 'Active'),
+(137, 48, '6f11306cda1e549a901d6a4941936e56dc7d3cf7288f85c3ed2ed7a222b20bbd', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-25', 1782337140, 1782337140, 'Signed Out'),
+(138, 1, '2d0caf6985e770ac2f94f5635af0024e8c4e51d6b1e274b1d2e5dbb026e10164', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-25', 1782339146, 1782339146, 'Active'),
+(139, 63, '88dad0c59a152d3ee1c27ba4dbba74f9dfbe23e26f11c8333f29a155040ea92c', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-25', 1782344468, 1782344468, 'Active'),
+(140, 63, '53ea79c8c2f51b07b884415c8af99a059dd0360bc10ece871457b8611dc93185', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-25', 1782356113, 1782356113, 'Active'),
+(141, 1, 'fef8daea39b36167f134bc276799b25cfe8effcffd5ff9486107d02d570e820a', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-26', 1782400300, 1782400300, 'Active'),
+(142, 63, 'bb0f3d0c8a355ef8025b9f3a19a3cff325bd2ed4bade2a14ebaefa85670a56d9', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-26', 1782404457, 1782404457, 'Active'),
+(143, 1, '208249fb1489e7237b10fecc6e6b2b856e183e71e3b733c310c1ff10440295e4', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-26', 1782418603, 1782418603, 'Active'),
+(144, 1, 'a58deafc2422a5fc17d920f8762b01a0f7458f4cba8925223cac72efd5a809a6', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-29', 1782683144, 1782683144, 'Active'),
+(145, 63, '732a6460a59b0461651d61b2ad289da21396cc9341ea6d38deb5b7fdf25ec21f', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-30', 1782796407, 1782796407, 'Signed Out'),
+(146, 63, 'a392b8ffff12c85636853d351afb829e2d6cdf77558a78aa554bd51dc4589a84', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-06-30', 1782796429, 1782796429, 'Active'),
+(147, 48, '031b7174b80b7c3d2e1b0473055253836681d5f85f004d92e13d87016149b1c4', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-30', 1782796512, 1782796512, 'Signed Out'),
+(148, 1, '5b69188ea2b2ed7d8ce3be0a838736522d7cd2b52f4c02b7e08e42f467e96c77', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-06-30', 1782798420, 1782798420, 'Active'),
+(149, 48, '3b6ab5043268250ae9396283c48a11113ee0e87e377e714b8c03e6cf014f4276', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-06-30', 1782806130, 1782806130, 'Active'),
+(150, 48, 'b0ffa4b0c6a9cf3f7bf0e5cda54ac41a0483d729f100aa94d21203f3a51a01b4', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-07-01', 1782834203, 1782834203, 'Signed Out'),
+(151, 63, '707e89d4ae43e4febe4ea861fac8100a205d0d0fcbe8c6c508aead513cc0b2de', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-07-01', 1782834260, 1782834260, 'Signed Out'),
+(152, 1, '94b17042353170d0e602b7fe158e1904014f52eabbae9fba3038f56c7a8c53c8', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-07-01', 1782841734, 1782841734, 'Active'),
+(153, 48, '81719b5cc248b19f583b14ae63cde1eaafca24c328c988fd313315da66b4ce59', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Local', 'Local', '2026-07-01', 1782842022, 1782842022, 'Active'),
+(154, 63, 'dbf2bea4512d80e748312d891cb8c5c88d5e994abdc3366f6f73f038860986c9', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Local', 'Local', '2026-07-01', 1782854948, 1782854948, 'Active'),
+(155, 48, '0455baf5b12f27a534cb36b5116c0864945eacea999070e0caf55b91a2fa1ed0', '::1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36 Edg/149.0.0.0', 'Desktop', 'Windows', 'Edge', 'Local', 'Local', '2026-07-01', 1782859502, 1782859502, 'Active');
 
 --
 -- Constraints for dumped tables
@@ -4417,12 +7297,6 @@ ALTER TABLE `stream_core_subject`
 ALTER TABLE `stream_optional_subject`
   ADD CONSTRAINT `fk_stream_optional_subject_stream` FOREIGN KEY (`stream_id_fk`) REFERENCES `stream` (`stream_id`) ON DELETE RESTRICT ON UPDATE CASCADE,
   ADD CONSTRAINT `stream_optional_subject_ibfk_1` FOREIGN KEY (`sch_sub_id_fk`) REFERENCES `sch_subject` (`sch_sub_id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
-
---
--- Constraints for table `subject`
---
-ALTER TABLE `subject`
-  ADD CONSTRAINT `fk_subject_level_level` FOREIGN KEY (`level_id_fk`) REFERENCES `level` (`level_id`) ON DELETE RESTRICT ON UPDATE CASCADE;
 
 --
 -- Constraints for table `subscription`

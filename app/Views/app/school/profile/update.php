@@ -203,6 +203,33 @@
 						</div>
 						<!--end::Motto-->
 
+						<!--begin::School Status (Super Admin only)-->
+						<?php if (!empty($isSuperAdmin)): ?>
+						<div class="row mb-6">
+							<label class="col-lg-4 col-form-label fw-semibold fs-6">
+								School Status
+								<span class="ms-1" data-bs-toggle="tooltip" title="Changing the status affects whether this school can log in and operate.">
+									<i class="ki-duotone ki-information-5 fs-6 text-muted"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+								</span>
+							</label>
+							<div class="col-lg-8 fv-row">
+								<select name="sch_status" class="form-select form-select-lg form-select-solid">
+									<?php
+									$currentStatus = old('sch_status', $school['sch_status'] ?? 'Inactive');
+									$statuses = ['Active', 'Inactive', 'Step 1 Configured', 'Step 2 Configured', 'Step 3 Configured', 'Step 4 Configured'];
+									foreach ($statuses as $s):
+									?>
+									<option value="<?= $s ?>" <?= $currentStatus === $s ? 'selected' : '' ?>>
+										<?= $s ?>
+									</option>
+									<?php endforeach; ?>
+								</select>
+								<div class="form-text">Current status: <strong><?= esc($school['sch_status'] ?? 'Unknown') ?></strong></div>
+							</div>
+						</div>
+						<?php endif; ?>
+						<!--end::School Status-->
+
 						<!--begin::School Colors-->
 						<div class="row mb-6">
 							<label class="col-lg-4 col-form-label fw-semibold fs-6">School Colors</label>

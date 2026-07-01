@@ -29,10 +29,16 @@
 <div id="kt_app_content_container" class="app-container container-xxl">
 
 <?php
-$hasFile   = !empty($assignment['assignment_file']);
-$fileUrl   = $hasFile ? base_url('uploads/assignments/' . $assignment['assignment_file']) : '';
-$isPastDue = !empty($assignment['assignment_due_date']) && strtotime($assignment['assignment_due_date']) < time();
-$submitted = !empty($submission);
+$asgnFiles     = $assignment['files'] ?? [];
+$hasFile       = !empty($asgnFiles);
+$pdfFiles      = array_values(array_filter($asgnFiles, fn($f) => strtolower(pathinfo($f['file_src'], PATHINFO_EXTENSION)) === 'pdf'));
+$hasPdf        = !empty($pdfFiles);
+$primaryPdfSrc = $hasPdf ? $pdfFiles[0]['file_src'] : null;
+$primaryPdfUrl = $hasPdf ? base_url('uploads/assignments/' . $primaryPdfSrc) : '';
+$gridFiles     = $asgnFiles;
+$hasGrid       = $hasFile;
+$isPastDue     = !empty($assignment['assignment_due_date']) && strtotime($assignment['assignment_due_date']) < time();
+$submitted     = !empty($submission);
 ?>
 
 <!--begin::Assignment meta bar-->
@@ -71,7 +77,8 @@ $submitted = !empty($submission);
 
 <div class="row g-6">
 
-<!--begin::PDF Book Viewer card-->
+<!--begin::PDF Flipbook card-->
+<?php if ($hasPdf): ?>
 <div class="col-12">
 <div class="card border-0 shadow-sm overflow-hidden">
 
@@ -79,31 +86,62 @@ $submitted = !empty($submission);
     <div class="card-header border-0 pt-5 pb-3 px-6" style="background:#fff;">
         <div class="d-flex align-items-center gap-2">
             <i class="ki-duotone ki-book-open fs-3 text-primary"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-            <h5 class="fw-bold text-gray-800 fs-5 mb-0">Assignment Document</h5>
+            <h5 class="fw-bold text-gray-800 fs-5 mb-0">Assignment Documents</h5>
         </div>
-        <?php if ($hasFile): ?>
         <div class="d-flex align-items-center gap-2">
-            <!--Sound toggle-->
             <button id="soundToggle" class="btn btn-sm btn-light d-inline-flex align-items-center gap-2" title="Toggle flip sound"
                     style="height:34px;padding:0 12px;border-radius:8px;font-size:.8rem;font-weight:600;">
                 <span class="sound-on">🔊 Sound On</span>
                 <span class="sound-off d-none">🔇 Muted</span>
             </button>
-            <a href="<?= $fileUrl ?>" target="_blank" class="btn btn-sm btn-light-primary" style="height:34px;">
+            <?php if (count($pdfFiles) === 1): ?>
+            <a href="<?= $primaryPdfUrl ?>" target="_blank" class="btn btn-sm btn-light-primary" style="height:34px;">
                 <i class="ki-duotone ki-exit-right fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
-                Open in Browser
+                Open PDF
             </a>
+            <?php else: ?>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-light-primary dropdown-toggle" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false" style="height:34px;">
+                    <i class="ki-duotone ki-exit-right fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                    Open PDF
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm" style="min-width:200px;">
+                    <?php foreach ($pdfFiles as $pi => $pf): ?>
+                    <li>
+                        <a class="dropdown-item d-flex align-items-center gap-2 pdf-switcher"
+                           href="#"
+                           data-url="<?= base_url('uploads/assignments/' . $pf['file_src']) ?>">
+                            <i class="ki-duotone ki-file-down fs-6 text-danger"><span class="path1"></span><span class="path2"></span></i>
+                            PDF Document #<?= $pi + 1 ?>
+                            <?php if ($pi === 0): ?>
+                            <span class="badge badge-light-success ms-auto fs-9 pdf-current-badge">Current</span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+            <?php endif; ?>
+            <button id="btnFullscreen" class="btn btn-sm btn-dark d-flex align-items-center justify-content-center gap-1"
+                    title="Toggle fullscreen"
+                    style="height:34px;padding:0 10px;flex-shrink:0;font-size:.78rem;font-weight:600;white-space:nowrap;">
+                <span class="fs-icon-enter d-flex align-items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M1 1v4h1V2h3V1H1zm9 0v1h3v3h1V1h-4zM1 15h4v-1H2v-3H1v4zm10 0h4v-4h-1v3h-3v1z"/>
+                    </svg>
+                    Full
+                </span>
+                <span class="fs-icon-exit d-none d-flex align-items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M5 0h-1v4h-4v1h5V0zm6 0v5h5v-1h-4V0h-1zM0 11v1h4v4h1v-5H0zm11 5h1v-4h4v-1h-5v5z"/>
+                    </svg>
+                    Exit
+                </span>
+            </button>
         </div>
-        <?php endif; ?>
     </div>
     <!--end::Card header-->
-
-    <?php if (!$hasFile): ?>
-    <div class="card-body text-center py-16 text-muted">
-        <i class="ki-duotone ki-document fs-4x text-gray-200 mb-3"><span class="path1"></span><span class="path2"></span></i>
-        <div class="fs-6 fw-semibold">No file attached to this assignment.</div>
-    </div>
-    <?php else: ?>
 
     <!--begin::Book stage (dark reading area)-->
     <div class="book-stage">
@@ -183,10 +221,68 @@ $submitted = !empty($submission);
     </div>
     <!--end::Book stage-->
 
-    <?php endif; ?>
 </div>
 </div>
-<!--end::PDF Book Viewer card-->
+<?php elseif (!$hasFile): ?>
+<!--begin::No files card-->
+<div class="col-12">
+<div class="card border-0 shadow-sm">
+    <div class="card-body text-center py-16 text-muted">
+        <i class="ki-duotone ki-document fs-4x text-gray-200 mb-3"><span class="path1"></span><span class="path2"></span></i>
+        <div class="fs-6 fw-semibold">No files attached to this assignment.</div>
+    </div>
+</div>
+</div>
+<?php endif; ?>
+<!--end::PDF Flipbook card-->
+
+<?php if ($hasGrid): ?>
+<!--begin::Files grid card-->
+<div class="col-12">
+<div class="card border-0 shadow-sm">
+    <div class="card-header border-0 pt-5 pb-3 px-6">
+        <div class="d-flex align-items-center gap-2">
+            <i class="ki-duotone ki-folder-up fs-4 text-primary"><span class="path1"></span><span class="path2"></span></i>
+            <h5 class="fw-bold text-gray-800 fs-5 mb-0">Assignment Files</h5>
+        </div>
+        <span class="badge badge-light-primary fs-9"><?= count($gridFiles) ?> file<?= count($gridFiles) !== 1 ? 's' : '' ?></span>
+    </div>
+    <div class="card-body px-6 pb-6 pt-3">
+        <div class="asgn-file-grid">
+        <?php foreach ($gridFiles as $gFile):
+            $gExt  = strtolower(pathinfo($gFile['file_src'], PATHINFO_EXTENSION));
+            $gUrl  = base_url('uploads/assignments/' . $gFile['file_src']);
+            [$gIcon, $gColor, $gBg] = match($gExt) {
+                'pdf'                          => ['ki-file-down',   'text-danger',  '#fff5f5'],
+                'jpg','jpeg','png','gif','webp' => ['ki-picture',     'text-primary', '#eff6ff'],
+                'doc','docx'                   => ['ki-file',         'text-info',    '#f0f9ff'],
+                'xls','xlsx'                   => ['ki-chart-simple', 'text-success', '#f0fdf4'],
+                'ppt','pptx'                   => ['ki-file',         'text-warning', '#fffbeb'],
+                'zip','tar','gz','rar'         => ['ki-folder',       'text-warning', '#fffbeb'],
+                'txt'                          => ['ki-file',         'text-muted',   '#f9fafb'],
+                default                        => ['ki-file',         'text-muted',   '#f9fafb'],
+            };
+        ?>
+        <div class="asgn-file-grid-item"
+             data-bs-toggle="tooltip"
+             data-bs-placement="top"
+             title="<?= esc($gFile['file_src']) ?>">
+            <a href="<?= $gUrl ?>" target="_blank" class="file-card-link d-block text-decoration-none">
+                <div class="rounded-2 border text-center py-3 px-1"
+                     style="background:<?= $gBg ?>;min-height:90px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+                    <i class="ki-duotone <?= $gIcon ?> fs-2x <?= $gColor ?>"><span class="path1"></span><span class="path2"></span></i>
+                    <span class="badge badge-light-secondary fs-10 mt-1"><?= strtoupper($gExt) ?></span>
+                    <div class="text-muted px-1 mt-1 asgn-file-name"><?= esc($gFile['file_src']) ?></div>
+                </div>
+            </a>
+        </div>
+        <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+</div>
+<!--end::Files grid card-->
+<?php endif; ?>
 
 <!--begin::Submission card-->
 <div class="col-12">
@@ -282,6 +378,17 @@ $submitted = !empty($submission);
         </div>
         <!--end::Grade result block-->
 
+        <?php if (!empty($plagiarism) && ($plagiarism['status'] === 'completed') && $plagiarism['score'] !== null): ?>
+        <?php $plScoreG = (float)$plagiarism['score']; $plColorG = $plScoreG >= 40 ? 'danger' : ($plScoreG >= 20 ? 'warning' : 'success'); ?>
+        <div class="d-flex align-items-center gap-3 p-3 rounded-2 mb-4" style="background:#f8fafc;border:1px solid #e2e8f0;">
+            <i class="ki-duotone ki-scan-barcode fs-2 text-muted"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span><span class="path7"></span><span class="path8"></span></i>
+            <div class="flex-grow-1">
+                <div class="text-muted fs-9 mb-1">Plagiarism similarity (Copyleaks)</div>
+                <span class="badge badge-light-<?= $plColorG ?> fs-8 fw-bold"><?= number_format($plScoreG, 1) ?>% similarity</span>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <?php elseif ($submitted): ?>
         <!--begin::Submitted awaiting grade-->
         <div class="d-flex align-items-center gap-3 p-4 rounded-2 mb-5" style="background:#f0fdf4;border:1px solid #bbf7d0;">
@@ -299,9 +406,75 @@ $submitted = !empty($submission);
             </div>
         </div>
         <!--end::Submitted awaiting grade-->
+
+        <?php if (!empty($plagiarism)): ?>
+        <?php
+            $plStatus = $plagiarism['status'];
+            $plScore  = ($plagiarism['score'] !== null) ? (float) $plagiarism['score'] : null;
+        ?>
+        <!--begin::Plagiarism status-->
+        <div class="d-flex align-items-center gap-3 p-3 rounded-2 mb-5"
+             style="background:#f8fafc;border:1px solid #e2e8f0;">
+            <?php if ($plStatus === 'completed' && $plScore !== null):
+                $plColor  = $plScore >= 40 ? '#dc2626' : ($plScore >= 20 ? '#d97706' : '#16a34a');
+                $plBg     = $plScore >= 40 ? '#fef2f2' : ($plScore >= 20 ? '#fffbeb' : '#f0fdf4');
+                $plBorder = $plScore >= 40 ? '#fecaca' : ($plScore >= 20 ? '#fde68a' : '#bbf7d0');
+                $plLabel  = $plScore >= 40 ? 'High similarity detected' : ($plScore >= 20 ? 'Moderate similarity' : 'Low similarity');
+            ?>
+            <div class="d-flex align-items-center gap-3 p-3 rounded-2 flex-grow-1"
+                 style="background:<?= $plBg ?>;border:1px solid <?= $plBorder ?>;">
+                <div class="fw-black fs-2" style="color:<?= $plColor ?>;"><?= number_format($plScore, 1) ?>%</div>
+                <div>
+                    <div class="fw-bold fs-8" style="color:<?= $plColor ?>;"><?= $plLabel ?></div>
+                    <div class="text-muted fs-9">Similarity score via Copyleaks plagiarism detection</div>
+                    <?php if ($plScore >= 20): ?>
+                    <div class="text-muted fs-9 mt-1">Your teacher will review this result when marking.</div>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php elseif ($plStatus === 'submitted' || $plStatus === 'scanning' || $plStatus === 'pending'): ?>
+            <i class="ki-duotone ki-scan-barcode fs-2 text-info"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span><span class="path7"></span><span class="path8"></span></i>
+            <div>
+                <div class="fw-bold fs-8 text-info">Plagiarism check in progress</div>
+                <div class="text-muted fs-9">Copyleaks is scanning your submission. Results will appear here and be visible to your teacher.</div>
+            </div>
+            <?php elseif ($plStatus === 'error' || $plStatus === 'credits_expired'): ?>
+            <i class="ki-duotone ki-information-5 fs-2 text-warning"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+            <div>
+                <div class="fw-bold fs-8 text-warning">Plagiarism check unavailable</div>
+                <div class="text-muted fs-9">The automated check could not be completed. Your submission has still been received.</div>
+            </div>
+            <?php endif; ?>
+        </div>
+        <!--end::Plagiarism status-->
+        <?php endif; ?>
+
         <?php endif; ?>
 
         <?php if (!$isGraded): ?>
+        <!--begin::Important notes alert-->
+        <div class="alert d-flex align-items-start gap-4 mb-6 p-4"
+             style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;">
+            <i class="ki-duotone ki-information-5 fs-2 flex-shrink-0 mt-1" style="color:#0284c7;">
+                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+            </i>
+            <div class="flex-grow-1">
+                <div class="fw-bold fs-7 mb-2" style="color:#0369a1;">Important Submission Notes</div>
+                <ul class="mb-0 ps-4 d-flex flex-column gap-2 fs-8 text-gray-700">
+                    <li><strong>Review all materials first.</strong> Read every file in the Assignment Files section above before you begin your work.</li>
+                    <li><strong>Reference correctly.</strong> Include all sources using <strong>APA 7th Edition</strong> format.
+                        <a href="https://www.usp.ac.fj/library/referencing/" target="_blank" class="fw-semibold" style="color:#0284c7;">USP Fiji Referencing Guide ↗</a></li>
+                    <li><strong>Submit early — do not wait until the last minute.</strong> Technical issues (internet, device) are not accepted as grounds for late submission. The system closes at the due date and time.</li>
+                    <li><strong>Academic integrity.</strong> Your submission must be entirely your own work. Plagiarism is treated as a serious academic offence and may result in a mark of zero and disciplinary action.
+                        Check your work before submitting using a free plagiarism checker:
+                        <a href="https://www.grammarly.com/plagiarism-checker" target="_blank" class="fw-semibold" style="color:#0284c7;">Grammarly ↗</a> &nbsp;·&nbsp;
+                        <a href="https://smallseotools.com/plagiarism-checker/" target="_blank" class="fw-semibold" style="color:#0284c7;">SmallSEOTools ↗</a> &nbsp;·&nbsp;
+                        <a href="https://www.duplichecker.com/" target="_blank" class="fw-semibold" style="color:#0284c7;">DupliChecker ↗</a></li>
+                    <li><strong>File format.</strong> Submit as <strong>PDF</strong>, <strong>ZIP</strong>, or <strong>RAR</strong> only. Verify your file opens correctly before uploading.</li>
+                </ul>
+            </div>
+        </div>
+        <!--end::Important notes alert-->
         <div class="mb-5">
             <label class="form-label fw-semibold fs-7 required">
                 <?= $submitted ? 'Upload New File (replaces current submission)' : 'Upload Your Work' ?>
@@ -439,61 +612,104 @@ document.getElementById('soundToggle')?.addEventListener('click', function() {
     if (!soundMuted) { getAudioCtx()?.resume(); }
 });
 
-<?php if ($hasFile): ?>
+<?php if ($hasPdf): ?>
 // ─── PDF + PageFlip Viewer ──────────────────────────────────────────────────
 pdfjsLib.GlobalWorkerOptions.workerSrc =
     'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-const PDF_URL      = <?= json_encode($fileUrl) ?>;
-const loadText     = document.getElementById('pdfLoadText');
-const progressBar  = document.getElementById('pdfProgressBar');
-const progressLbl  = document.getElementById('pdfProgressLabel');
-const loadingEl    = document.getElementById('pdfLoading');
-const bookWrap     = document.getElementById('bookWrap');
-const bookFooter   = document.getElementById('bookFooter');
-const btnPrev      = document.getElementById('pdfPrev');
-const btnNext      = document.getElementById('pdfNext');
-const pageInfoEl   = document.getElementById('pageInfo');
+const loadText    = document.getElementById('pdfLoadText');
+const progressBar = document.getElementById('pdfProgressBar');
+const progressLbl = document.getElementById('pdfProgressLabel');
+const loadingEl   = document.getElementById('pdfLoading');
+const bookWrap    = document.getElementById('bookWrap');
+const bookFooter  = document.getElementById('bookFooter');
+const btnPrev     = document.getElementById('pdfPrev');
+const btnNext     = document.getElementById('pdfNext');
+const pageInfoEl  = document.getElementById('pageInfo');
 
-let pageFlip  = null;
-let totalPgs  = 0;
+let pageFlip     = null;
+let totalPgs     = 0;
+let currentPdfUrl = <?= json_encode($primaryPdfUrl) ?>;
 
-async function initViewer() {
+async function initViewer(pdfUrl) {
+    currentPdfUrl = pdfUrl;
+    console.log('[PDF] initViewer() called → url:', pdfUrl);
+
+    // Destroy previous PageFlip instance cleanly
+    if (pageFlip) {
+        console.log('[PDF] Destroying previous PageFlip instance...');
+        try { pageFlip.destroy(); console.log('[PDF] destroy() OK'); }
+        catch(destroyErr) { console.warn('[PDF] destroy() threw (non-fatal):', destroyErr); }
+        pageFlip = null;
+    }
+
+    // Replace the flipBook div with a fresh element to clear any stale PageFlip DOM
+    const pagesWrapEl = document.getElementById('bookPagesWrap');
+    if (pagesWrapEl) {
+        const oldBook = document.getElementById('flipBook');
+        const freshBook = document.createElement('div');
+        freshBook.id = 'flipBook';
+        if (oldBook) {
+            pagesWrapEl.replaceChild(freshBook, oldBook);
+            console.log('[PDF] flipBook element replaced with fresh node');
+        } else {
+            pagesWrapEl.insertBefore(freshBook, pagesWrapEl.firstChild);
+            console.warn('[PDF] flipBook was missing — inserted fresh node');
+        }
+    } else {
+        console.error('[PDF] bookPagesWrap element not found! Aborting.');
+        return;
+    }
+
+    // Reset UI to loading state
+    if (loadingEl)   { loadingEl.style.display   = '';      }
+    if (bookWrap)    { bookWrap.style.display     = 'none';  }
+    if (bookFooter)  { bookFooter.style.display   = 'none';  }
+    if (progressBar) { progressBar.style.width    = '0%';    }
+    if (progressLbl) { progressLbl.textContent    = '';      }
+    if (loadText)    { loadText.textContent       = 'Loading document…'; }
+    if (btnPrev)     { btnPrev.disabled           = true;    }
+    if (btnNext)     { btnNext.disabled           = true;    }
+
     try {
-        loadText.textContent = 'Loading document…';
-        const pdf = await pdfjsLib.getDocument(PDF_URL).promise;
+        console.log('[PDF] Calling pdfjsLib.getDocument() ...');
+        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        loadingTask.onProgress = function(data) {
+            if (data.total && progressBar) {
+                const pct = Math.round((data.loaded / data.total) * 40);
+                progressBar.style.width = pct + '%';
+            }
+        };
+        const pdf = await loadingTask.promise;
         totalPgs  = pdf.numPages;
+        console.log('[PDF] PDF loaded ✓  total pages:', totalPgs);
 
-        // Measure the actual stage width AFTER it's in the DOM
-        const stage   = document.querySelector('.book-stage');
-        const stageW  = stage.clientWidth || window.innerWidth;
+        // Measure stage
+        const stage  = document.querySelector('.book-stage');
+        const stageW = stage ? (stage.clientWidth || window.innerWidth) : window.innerWidth;
+        console.log('[PDF] Stage clientWidth:', stageW);
 
-        // Subtract stage padding (32px × 2) + arrows+gaps (52px+22px) × 2
         const spreadAvail = Math.max(stageW - 64 - 148, 320);
-        // Each page = half the spread, hard cap 640px
         const pg1      = await pdf.getPage(1);
         const vp1      = pg1.getViewport({ scale: 1 });
         const PG_W     = Math.min(Math.floor(spreadAvail / 2), 640);
         const SCALE    = PG_W / vp1.width;
         const PG_H     = Math.round(vp1.height * SCALE);
         const SPREAD_W = PG_W * 2;
+        console.log('[PDF] Dimensions — PG_W:', PG_W, ' PG_H:', PG_H, ' SCALE:', SCALE.toFixed(4), ' SPREAD_W:', SPREAD_W);
 
-        // Size stage, wrapper and inner elements
-        stage.style.minHeight = (PG_H + 200) + 'px';
-        bookWrap.style.height = (PG_H + 28)  + 'px';   // 28px for top+bottom bindings
+        if (stage)   stage.style.minHeight = (PG_H + 200) + 'px';
+        if (bookWrap) bookWrap.style.height = (PG_H + 28)  + 'px';
         const pagesWrap = document.getElementById('bookPagesWrap');
         if (pagesWrap) {
             pagesWrap.style.width  = SPREAD_W + 'px';
             pagesWrap.style.height = PG_H     + 'px';
         }
-        // Stretch binding strips across both pages
-        document.querySelectorAll('.book-binding').forEach(b => {
-            b.style.width = SPREAD_W + 'px';
-        });
+        document.querySelectorAll('.book-binding').forEach(b => { b.style.width = SPREAD_W + 'px'; });
 
-        loadText.textContent = 'Rendering pages…';
+        if (loadText) loadText.textContent = 'Rendering pages…';
 
-        // Render all pages → JPEG data URLs
+        // Render all pages to JPEG data URLs
         const dataUrls = [];
         for (let i = 1; i <= totalPgs; i++) {
             const page     = await pdf.getPage(i);
@@ -502,31 +718,35 @@ async function initViewer() {
             canvas.width   = viewport.width;
             canvas.height  = viewport.height;
             const ctx2d    = canvas.getContext('2d');
-            // Page background
             ctx2d.fillStyle = '#fff';
             ctx2d.fillRect(0, 0, canvas.width, canvas.height);
             await page.render({ canvasContext: ctx2d, viewport }).promise;
             dataUrls.push(canvas.toDataURL('image/jpeg', 0.90));
-
-            const pct = Math.round((i / totalPgs) * 100);
-            progressBar.style.width = pct + '%';
-            progressLbl.textContent = `Page ${i} of ${totalPgs}`;
+            const pct = 40 + Math.round((i / totalPgs) * 60);
+            if (progressBar) progressBar.style.width = pct + '%';
+            if (progressLbl) progressLbl.textContent = 'Page ' + i + ' of ' + totalPgs;
         }
+        console.log('[PDF] All pages rendered ✓  dataUrls.length:', dataUrls.length);
 
-        // Reveal book, hide loader
-        loadingEl.style.display  = 'none';
-        bookWrap.style.display   = 'flex';
-        bookFooter.style.display = 'block';
+        // Show book
+        if (loadingEl)  loadingEl.style.display  = 'none';
+        if (bookWrap)   bookWrap.style.display    = 'flex';
+        if (bookFooter) bookFooter.style.display  = 'block';
 
-        // Initialise StPageFlip
-        const bookEl = document.getElementById('flipBook');
-        pageFlip = new St.PageFlip(bookEl, {
+        // Init StPageFlip
+        const currentBookEl = document.getElementById('flipBook');
+        console.log('[PDF] Initialising St.PageFlip on element:', currentBookEl);
+        if (!currentBookEl) {
+            console.error('[PDF] flipBook element missing at PageFlip init — aborting.');
+            return;
+        }
+        pageFlip = new St.PageFlip(currentBookEl, {
             width:               PG_W,
             height:              PG_H,
             size:                'fixed',
             drawShadow:          true,
             flippingTime:        750,
-            usePortrait:         false,   // ALWAYS two-page open-book spread
+            usePortrait:         false,
             autoSize:            false,
             maxShadowOpacity:    0.7,
             showCover:           false,
@@ -536,25 +756,30 @@ async function initViewer() {
             swipeDistance:       10,
             startPage:           0,
         });
+        console.log('[PDF] St.PageFlip created ✓');
 
         pageFlip.loadFromImages(dataUrls);
+        console.log('[PDF] loadFromImages() called ✓');
 
         pageFlip.on('flip', function(e) {
             playFlipSound();
             updateInfo(e.data);
         });
-
         pageFlip.on('init', function() {
+            console.log('[PDF] PageFlip init event ✓');
             updateInfo(0);
-            btnPrev.disabled = false;
-            btnNext.disabled = false;
+            if (btnPrev) btnPrev.disabled = false;
+            if (btnNext) btnNext.disabled = false;
         });
 
     } catch (err) {
-        loadingEl.innerHTML =
-            '<div class="text-danger fw-semibold fs-7">Failed to load PDF. <a href="' +
-            PDF_URL + '" target="_blank" class="text-warning">Open directly ↗</a></div>';
-        console.error(err);
+        console.error('[PDF] ✗ initViewer error:', err.name, err.message, err);
+        if (loadingEl) loadingEl.innerHTML =
+            '<div class="text-danger fw-semibold fs-7 text-center p-5">' +
+            '<i class="ki-duotone ki-cross-circle fs-2x text-danger mb-3"><span class="path1"></span><span class="path2"></span></i>' +
+            '<div class="mb-2">Failed to load PDF</div>' +
+            '<div class="text-muted fs-9 mb-4 font-monospace">' + err.name + ': ' + err.message + '</div>' +
+            '<a href="' + pdfUrl + '" target="_blank" class="btn btn-sm btn-warning">Open file directly ↗</a></div>';
     }
 }
 
@@ -563,16 +788,35 @@ function updateInfo(pageIndex) {
     const total = pageFlip.getPageCount();
     const left  = pageIndex + 1;
     const right = Math.min(pageIndex + 2, total);
-    pageInfoEl.textContent = left === right
-        ? `Page ${left} of ${total}`
-        : `Pages ${left} – ${right} of ${total}`;
-    btnPrev.disabled = pageIndex <= 0;
-    btnNext.disabled = pageIndex >= total - 2;
+    if (pageInfoEl) pageInfoEl.textContent = left === right
+        ? 'Page ' + left + ' of ' + total
+        : 'Pages ' + left + ' – ' + right + ' of ' + total;
+    if (btnPrev) btnPrev.disabled = pageIndex <= 0;
+    if (btnNext) btnNext.disabled = pageIndex >= total - 2;
 }
 
-// Button nav (sound fires via the 'flip' event — not here, to avoid double-play)
-btnPrev.addEventListener('click', function() { if (pageFlip) pageFlip.flipPrev(); });
-btnNext.addEventListener('click', function() { if (pageFlip) pageFlip.flipNext(); });
+function switchPDF(url) {
+    console.log('[PDF] switchPDF() →', url);
+    document.querySelectorAll('.pdf-switcher').forEach(function(a) {
+        const badge = a.querySelector('.pdf-current-badge');
+        if (a.dataset.url === url) {
+            if (!badge) {
+                const b = document.createElement('span');
+                b.className = 'badge badge-light-success ms-auto fs-9 pdf-current-badge';
+                b.textContent = 'Current';
+                a.appendChild(b);
+            }
+        } else {
+            if (badge) badge.remove();
+        }
+    });
+    document.querySelector('.book-stage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    initViewer(url);
+}
+
+// Button nav
+if (btnPrev) btnPrev.addEventListener('click', function() { if (pageFlip) pageFlip.flipPrev(); });
+if (btnNext) btnNext.addEventListener('click', function() { if (pageFlip) pageFlip.flipNext(); });
 
 // Keyboard nav
 document.addEventListener('keydown', function(e) {
@@ -581,8 +825,58 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'ArrowLeft'  || e.key === 'PageUp')   pageFlip.flipPrev();
 });
 
-// Start
-initViewer();
+// Fullscreen
+(function() {
+    const btnFs     = document.getElementById('btnFullscreen');
+    const fsCard    = btnFs ? btnFs.closest('.card') : null;
+    const iconEnter = document.querySelector('.fs-icon-enter');
+    const iconExit  = document.querySelector('.fs-icon-exit');
+
+    if (!btnFs || !fsCard) return;
+
+    function enterFs() {
+        const req = fsCard.requestFullscreen || fsCard.webkitRequestFullscreen || fsCard.mozRequestFullScreen;
+        if (req) req.call(fsCard).catch(function(err) {
+            console.warn('[PDF] Fullscreen request failed:', err.message);
+        });
+    }
+    function exitFs() {
+        const ex = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen;
+        if (ex) ex.call(document);
+    }
+
+    btnFs.addEventListener('click', function() {
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+        isFs ? exitFs() : enterFs();
+    });
+
+    function onFsChange() {
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement);
+        if (iconEnter) iconEnter.classList.toggle('d-none', isFs);
+        if (iconExit)  iconExit.classList.toggle('d-none', !isFs);
+        btnFs.title = isFs ? 'Exit full screen' : 'Full screen';
+        // Re-render the flipbook at the new stage dimensions
+        if (currentPdfUrl) {
+            setTimeout(function() { initViewer(currentPdfUrl); }, 200);
+        }
+    }
+    document.addEventListener('fullscreenchange',       onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    document.addEventListener('mozfullscreenchange',    onFsChange);
+})();
+
+// pdf-switcher — event delegation so it works inside Bootstrap dropdowns
+document.addEventListener('click', function(e) {
+    const el = e.target.closest('.pdf-switcher');
+    if (!el) return;
+    console.log('[PDF] pdf-switcher clicked — url:', el.dataset.url, ' el:', el);
+    e.preventDefault();
+    switchPDF(el.dataset.url);
+});
+
+// Initial load
+console.log('[PDF] Starting initial load →', <?= json_encode($primaryPdfUrl) ?>);
+initViewer(<?= json_encode($primaryPdfUrl) ?>);
 <?php endif; ?>
 
 // ─── Submission Upload ──────────────────────────────────────────────────────
@@ -684,6 +978,13 @@ if (fileInput) {
                 }
             });
         });
+    });
+}
+
+// Bootstrap tooltips for file grid items
+if (window.bootstrap && window.bootstrap.Tooltip) {
+    document.querySelectorAll('.asgn-file-grid-item[data-bs-toggle="tooltip"]').forEach(function(el) {
+        new bootstrap.Tooltip(el, { trigger: 'hover', delay: { show: 150, hide: 0 } });
     });
 }
 
@@ -907,6 +1208,87 @@ if (fileInput) {
 .dropzone-area:hover, .dropzone-area.dz-hover {
     border-color: var(--bs-primary);
     background: #f0f4ff;
+}
+
+/* ══ Assignment file grid (8 per row) ══ */
+.asgn-file-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    overflow: visible;
+}
+.asgn-file-grid-item {
+    flex: 0 0 calc(12.5% - 7px);
+    min-width: 78px;
+    position: relative;
+}
+@media (max-width: 767px) {
+    .asgn-file-grid-item { flex: 0 0 calc(16.667% - 7px); min-width: 68px; }
+}
+@media (max-width: 480px) {
+    .asgn-file-grid-item { flex: 0 0 calc(25% - 6px); min-width: 60px; }
+}
+
+
+/* ══ File card hover — dark background ══ */
+.file-card-link > div {
+    transition: background .18s, border-color .18s, transform .15s, box-shadow .15s;
+}
+.file-card-link:hover > div {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,.3);
+}
+.file-card-link:hover > div i[class*="ki-"] {
+    color: #94a3b8 !important;
+}
+.file-card-link:hover > div .badge {
+    background: rgba(255,255,255,.1) !important;
+    color: #cbd5e1 !important;
+    border-color: transparent !important;
+}
+.file-card-link:hover > div .asgn-file-name {
+    color: #64748b !important;
+}
+
+/* ══ Filename label inside file card ══ */
+.asgn-file-name {
+    font-size: .58rem;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 6px;
+    line-height: 1.2;
+}
+
+/* ══ Fullscreen flipbook ══ */
+.card:fullscreen,
+.card:-webkit-full-screen,
+.card:-moz-full-screen {
+    border-radius: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+.card:fullscreen .card-header,
+.card:-webkit-full-screen .card-header,
+.card:-moz-full-screen .card-header {
+    background: #0f172a !important;
+    border-bottom: 1px solid rgba(255,255,255,.1) !important;
+    flex-shrink: 0;
+}
+.card:fullscreen .card-header *,
+.card:-webkit-full-screen .card-header * {
+    color: rgba(255,255,255,.85) !important;
+}
+.card:fullscreen .book-stage,
+.card:-webkit-full-screen .book-stage,
+.card:-moz-full-screen .book-stage {
+    flex: 1 !important;
+    min-height: 0 !important;
+    height: 100% !important;
 }
 
 /* ══ Responsive ══ */

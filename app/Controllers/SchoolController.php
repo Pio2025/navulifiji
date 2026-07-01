@@ -1444,6 +1444,7 @@ class SchoolController extends BaseController
             'schoolCategory'   => $this->schoolCategoryModel->getAllSchoolCategory(),
             'province'         => $this->provinceModel->getAllProvince(),
             'provinceDistrict' => $this->districtModel->getDistrictByProvince($currentProvinceId),
+            'isSuperAdmin'     => $isSuperAdmin,
         ]);
 
         $layout = $isSuperAdmin ? 'app/layouts/main' : 'app/layouts/school_main';
@@ -1473,6 +1474,8 @@ class SchoolController extends BaseController
             return redirect()->back()->withInput()->with('validation', $this->validator);
         }
 
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+
         $updateData = [
             'sch_name'            => $this->request->getPost('sch_name'),
             'sch_email'           => $this->request->getPost('sch_email'),
@@ -1486,6 +1489,14 @@ class SchoolController extends BaseController
             'sch_y_coord'         => $this->request->getPost('sch_y_coord') ?: null,
             'sch_x_coord'         => $this->request->getPost('sch_x_coord') ?: null,
         ];
+
+        if ($isSuperAdmin) {
+            $validStatuses = ['Active', 'Inactive', 'Step 1 Configured', 'Step 2 Configured', 'Step 3 Configured', 'Step 4 Configured'];
+            $postedStatus  = $this->request->getPost('sch_status');
+            if ($postedStatus && in_array($postedStatus, $validStatuses, true)) {
+                $updateData['sch_status'] = $postedStatus;
+            }
+        }
 
         try {
             $file = $this->request->getFile('sch_logo');

@@ -382,6 +382,15 @@ document.getElementById('btn_save_enrolment').addEventListener('click', function
     var btn      = this;
     var formData = new FormData(document.getElementById('add_enrolment_form'));
 
+    // Subject checkboxes are rendered in the right-panel (#subjects_content) which sits
+    // outside the <form> element — FormData won't capture them, so append them manually.
+    document.querySelectorAll('#subjects_content input[name="core_subjects[]"]:checked').forEach(function(cb) {
+        formData.append('core_subjects[]', cb.value);
+    });
+    document.querySelectorAll('#subjects_content input[name^="optional_group_"]:checked').forEach(function(rb) {
+        formData.append(rb.name, rb.value);
+    });
+
     if (!formData.get('admission_id_fk')) {
         Swal.fire({ title: 'Missing Student', text: 'Please select a student.', icon: 'warning',
             buttonsStyling: false, confirmButtonText: 'OK',

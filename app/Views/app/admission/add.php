@@ -1,5 +1,26 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
+/* Required section highlight */
+.adm-required-section {
+    border: 1.5px solid #e4e6ef;
+    border-left: 4px solid #009ef7;
+    border-radius: 6px;
+    padding: 1.25rem 1.5rem;
+    background: #f9fbff;
+    transition: border-color .2s, box-shadow .2s;
+}
+.adm-required-section:focus-within {
+    border-color: #009ef7;
+    box-shadow: 0 0 0 3px rgba(0,158,247,.1);
+}
+.adm-required-section .adm-required-badge {
+    font-size: .7rem;
+    font-weight: 700;
+    color: #f1416c;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    margin-left: .5rem;
+}
 .adm-section-label {
     display: flex;
     align-items: center;
@@ -150,10 +171,11 @@
         <form id="admission_form">
 
             <!--begin::School Selection-->
-            <div class="mb-8">
+            <div class="mb-8 adm-required-section">
                 <label class="adm-section-label">
                     <i class="ki-duotone ki-bank fs-6 text-primary me-1"><span class="path1"></span><span class="path2"></span></i>
                     School
+                    <span class="adm-required-badge">required</span>
                 </label>
 
                 <?php if ($isSuperAdmin): ?>
@@ -204,10 +226,11 @@
             <!--end::School Selection-->
 
             <!--begin::User Selection-->
-            <div class="mb-8">
+            <div class="mb-8 adm-required-section">
                 <label class="adm-section-label">
                     <i class="ki-duotone ki-profile-circle fs-6 text-primary me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     User
+                    <span class="adm-required-badge">required</span>
                 </label>
                 <label class="form-label fw-semibold fs-7 required">Select User to Admit</label>
 
@@ -302,6 +325,60 @@
                           placeholder="Add any relevant notes about this admission..."></textarea>
             </div>
             <!--end::Admission Note-->
+
+            <!--begin::Enrolment Section (Student role only)-->
+            <div id="enrolment_section" class="mb-8" style="display:none;">
+                <label class="adm-section-label">
+                    <i class="ki-duotone ki-abstract-28 fs-6 text-primary me-1"><span class="path1"></span><span class="path2"></span></i>
+                    Enrolment
+                    <span class="text-muted fw-normal fs-8 ms-2 text-lowercase">— optional: enrol this student into a stream now</span>
+                </label>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold fs-7">Stream / Class</label>
+                    <select class="form-select form-select-sm" name="enrol_stream_id" id="enrol_stream_select" disabled>
+                        <option value="">— Select a school &amp; student first —</option>
+                    </select>
+                    <div id="enrol_stream_loader" class="text-muted fs-8 mt-1" style="display:none;">
+                        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Loading streams...
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4" id="enrol_details_row" style="display:none;">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold fs-7">Year</label>
+                        <input type="number" name="enrol_year" class="form-control form-control-sm"
+                               value="<?= date('Y') ?>" min="2000" max="2099">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold fs-7">Term</label>
+                        <select name="enrol_term" class="form-select form-select-sm">
+                            <option value="1">Term 1</option>
+                            <option value="2">Term 2</option>
+                            <option value="3">Term 3</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold fs-7">Enrolment Date</label>
+                        <input type="date" name="enrol_date" class="form-control form-control-sm"
+                               value="<?= date('Y-m-d') ?>">
+                    </div>
+                </div>
+
+                <div id="enrol_subjects_panel" style="display:none;">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge badge-light-info fs-9 px-3 py-1">Subjects</span>
+                        <span class="text-muted fs-9">Select the subjects this student is taking</span>
+                    </div>
+                    <div id="enrol_subjects_loader" class="text-center text-muted fs-8 py-2" style="display:none;">
+                        <span class="spinner-border spinner-border-sm me-1 text-primary"></span> Loading subjects...
+                    </div>
+                    <div id="enrol_subjects_content"></div>
+                </div>
+
+                <input type="hidden" name="has_subjects" id="has_subjects_adm" value="0">
+            </div>
+            <!--end::Enrolment Section-->
 
             <!--begin::Teaching Subjects (Teacher role only)-->
             <div id="teaching_subject_section" class="mb-4" style="display:none;">
@@ -516,10 +593,147 @@ $(document).ready(function() {
         $('#user_preview_role').text(role);
         $('#user_preview').show();
 
-        // Show teaching subjects section for Teacher role category
+        // Show teaching subjects for Teachers; show enrolment section for Students
         const isTeacher = cat.toLowerCase().trim() === 'teacher';
+        const isStudent = cat.toLowerCase().trim() === 'student';
+
         $('#teaching_subject_section').toggle(isTeacher);
+        $('#enrolment_section').toggle(isStudent);
+
         if (!isTeacher) resetTeachingSubjects();
+
+        if (isStudent) {
+            var schId = getAdmissionSchId();
+            if (schId) {
+                loadEnrolStreams(schId);
+            } else {
+                // School not yet selected — show section with prompt
+                var streamSel = document.getElementById('enrol_stream_select');
+                streamSel.innerHTML = '<option value="">— Select a school first to load streams —</option>';
+                streamSel.disabled  = true;
+                resetEnrolSubjects();
+            }
+        } else {
+            resetEnrolmentSection();
+        }
+    });
+});
+
+// ── Enrolment Section (Students) ─────────────────────────────────
+var ENROL_STREAMS_URL  = '<?= base_url('enrolment/streams/') ?>';
+var ENROL_SUBJECTS_URL = '<?= base_url('enrolment/subjects/') ?>';
+
+function getAdmissionSchId() {
+    var schSelect = document.getElementById('school_select');
+    if (schSelect) return parseInt(schSelect.value) || 0;
+    var hidden = document.querySelector('input[name="sch_id_fk"]');
+    return hidden ? parseInt(hidden.value) || 0 : 0;
+}
+
+function loadEnrolStreams(schId) {
+    if (!schId) return;
+    var streamSel = document.getElementById('enrol_stream_select');
+    streamSel.innerHTML = '<option value="">— Loading... —</option>';
+    streamSel.disabled  = true;
+    document.getElementById('enrol_stream_loader').style.display = '';
+    resetEnrolSubjects();
+
+    $.get(ENROL_STREAMS_URL + schId, function(res) {
+        document.getElementById('enrol_stream_loader').style.display = 'none';
+        streamSel.innerHTML = '<option value="">— Select stream —</option>';
+        if (res.success && res.streams && res.streams.length) {
+            var lastLevel = '';
+            res.streams.forEach(function(s) {
+                var lvl = s.level_name || 'Unknown';
+                if (lvl !== lastLevel) {
+                    if (lastLevel) streamSel.insertAdjacentHTML('beforeend', '</optgroup>');
+                    streamSel.insertAdjacentHTML('beforeend', '<optgroup label="' + escHtmlTS(lvl) + '">');
+                    lastLevel = lvl;
+                }
+                streamSel.insertAdjacentHTML('beforeend',
+                    '<option value="' + s.stream_id + '">' + escHtmlTS(s.stream_name) + '</option>');
+            });
+            if (lastLevel) streamSel.insertAdjacentHTML('beforeend', '</optgroup>');
+            streamSel.disabled = false;
+        } else {
+            streamSel.innerHTML = '<option value="">— No streams available —</option>';
+        }
+    }, 'json').fail(function() {
+        document.getElementById('enrol_stream_loader').style.display = 'none';
+        streamSel.innerHTML = '<option value="">— Failed to load —</option>';
+    });
+}
+
+function resetEnrolSubjects() {
+    document.getElementById('enrol_details_row').style.display    = 'none';
+    document.getElementById('enrol_subjects_panel').style.display = 'none';
+    document.getElementById('enrol_subjects_content').innerHTML   = '';
+    document.getElementById('has_subjects_adm').value             = '0';
+}
+
+function resetEnrolmentSection() {
+    var streamSel = document.getElementById('enrol_stream_select');
+    streamSel.innerHTML = '<option value="">— Select school &amp; student first —</option>';
+    streamSel.disabled  = true;
+    resetEnrolSubjects();
+}
+
+document.getElementById('enrol_stream_select').addEventListener('change', function() {
+    var streamId = parseInt(this.value) || 0;
+    resetEnrolSubjects();
+    if (!streamId) return;
+
+    document.getElementById('enrol_details_row').style.display    = '';
+    document.getElementById('enrol_subjects_panel').style.display  = '';
+    document.getElementById('enrol_subjects_loader').style.display = '';
+
+    $.get(ENROL_SUBJECTS_URL + streamId, function(res) {
+        document.getElementById('enrol_subjects_loader').style.display = 'none';
+        var html = '';
+
+        if (res.success && ((res.core && res.core.length) || (res.optional && res.optional.length))) {
+            document.getElementById('has_subjects_adm').value = '1';
+
+            if (res.core && res.core.length) {
+                html += '<div class="mb-4"><div class="d-flex align-items-center gap-2 mb-2">' +
+                        '<span class="badge badge-light-primary fs-9 px-3 py-1">Core Subjects</span>' +
+                        '<span class="text-danger fs-9">* select all</span></div>';
+                res.core.forEach(function(s) {
+                    html += '<label class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-100 cursor-pointer">' +
+                            '<input type="checkbox" class="form-check-input mt-0" name="core_subjects[]" value="' + s.sch_sub_id + '" checked>' +
+                            '<span class="fw-semibold fs-7 text-gray-800">' + escHtmlTS(s.subject_name) + '</span></label>';
+                });
+                html += '</div>';
+            }
+
+            if (res.optional && res.optional.length) {
+                var groups = {};
+                res.optional.forEach(function(s) {
+                    if (!groups[s.option_num]) groups[s.option_num] = [];
+                    groups[s.option_num].push(s);
+                });
+                var gIdx = 1;
+                Object.keys(groups).forEach(function(gnum) {
+                    html += '<div class="mb-3"><div class="d-flex align-items-center gap-2 mb-2">' +
+                            '<span class="badge badge-light-warning fs-9 px-3 py-1">Optional Group ' + gIdx++ + '</span>' +
+                            '<span class="text-muted fs-9">select one</span></div>';
+                    groups[gnum].forEach(function(s) {
+                        html += '<label class="d-flex align-items-center gap-3 py-2 border-bottom border-gray-100 cursor-pointer">' +
+                                '<input type="radio" class="form-check-input mt-0" name="optional_group_' + gnum + '" value="' + s.sch_sub_id + '">' +
+                                '<span class="fw-semibold fs-7 text-gray-800">' + escHtmlTS(s.subject_name) + '</span></label>';
+                    });
+                    html += '</div>';
+                });
+            }
+        } else {
+            html = '<div class="text-muted fs-8 py-2">No subjects configured for this stream.</div>';
+        }
+
+        document.getElementById('enrol_subjects_content').innerHTML = html;
+    }, 'json').fail(function() {
+        document.getElementById('enrol_subjects_loader').style.display = 'none';
+        document.getElementById('enrol_subjects_content').innerHTML =
+            '<div class="text-danger fs-8">Failed to load subjects.</div>';
     });
 });
 
@@ -682,9 +896,28 @@ document.getElementById('btn_open_subject_modal').addEventListener('click', func
 
 // Reset subjects cache when school changes (super admin)
 <?php if ($isSuperAdmin): ?>
-document.getElementById('school_select')?.addEventListener('change', function() {
+$('#school_select').on('change', function() {
     subjectsCache = null;
     resetTeachingSubjects();
+
+    var cat      = ($('#user_select').find('option:selected').data('cat') || '').toLowerCase().trim();
+    var newSchId = parseInt($(this).val()) || 0;
+
+    if (cat === 'student') {
+        // Ensure the enrolment section is visible
+        $('#enrolment_section').show();
+        if (newSchId) {
+            loadEnrolStreams(newSchId);
+        } else {
+            resetEnrolmentSection();
+        }
+    } else if (cat === 'teacher') {
+        // School changed — teacher subject cache is stale, section stays visible
+        if (!newSchId) resetEnrolmentSection();
+    } else {
+        // No user selected yet — reset enrolment
+        resetEnrolmentSection();
+    }
 });
 <?php endif; ?>
 

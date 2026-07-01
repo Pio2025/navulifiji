@@ -259,4 +259,100 @@ class StudentAttendanceModel extends Model
     {
         return $this->getAttendanceForStreamDate($streamId, $date);
     }
+
+    // ── Student self-view ─────────────────────────────────────────────────────
+
+    public function getStudentDailyAttendance(int $userId, int $streamId): array
+    {
+        $db  = \Config\Database::connect();
+        $adm = $db->table('admission')
+            ->select('admission_id')
+            ->where('user_id_fk', $userId)
+            ->where('admission_status', 'Active')
+            ->get()->getRowArray();
+        if (!$adm) {
+            $adm = $db->table('admission')
+                ->select('admission_id')
+                ->where('user_id_fk', $userId)
+                ->get()->getRowArray();
+        }
+        if (!$adm) return [];
+
+        return $db->table('student_attendance')
+            ->where('admission_id_fk', $adm['admission_id'])
+            ->where('stream_id_fk', $streamId)
+            ->where('attendance_type', 'Daily')
+            ->orderBy('attendance_date', 'ASC')
+            ->get()->getResultArray();
+    }
+
+    public function getStudentSubjectAttendance(int $userId, int $streamId): array
+    {
+        $db  = \Config\Database::connect();
+        $adm = $db->table('admission')
+            ->select('admission_id')
+            ->where('user_id_fk', $userId)
+            ->where('admission_status', 'Active')
+            ->get()->getRowArray();
+        if (!$adm) {
+            $adm = $db->table('admission')
+                ->select('admission_id')
+                ->where('user_id_fk', $userId)
+                ->get()->getRowArray();
+        }
+        if (!$adm) return [];
+
+        $sql = "
+            SELECT sa.stud_att_id, sa.attendance_date, sa.attendance_status, sa.attendance_note,
+                   COALESCE(sub.subject_name, '—') AS subject_name
+            FROM student_attendance sa
+            LEFT JOIN sch_subject ss ON ss.sch_sub_id = sa.subject_id_fk
+            LEFT JOIN subject sub    ON sub.subject_id = ss.subject_id_fk
+            WHERE sa.admission_id_fk = ? AND sa.stream_id_fk = ? AND sa.attendance_type = 'Subject'
+            ORDER BY sa.attendance_date ASC, sub.subject_name ASC
+        ";
+        return $db->query($sql, [$adm['admission_id'], $streamId])->getResultArray();
+    }
+
+    // ── Term grid helpers ─────────────────────────────────────────────────────
+
+    public function getStudentsInStream(int $streamId): array
+    {
+        $db = \Config\Database::connect();
+        return $db->table('enrolment e')
+            ->select('e.enrol_id, e.admission_id_fk, u.fname, u.lname, u.oname, u.profile_photo')
+            ->join('admission a',     'a.admission_id    = e.admission_id_fk', 'inner')
+            ->join('users u',         'u.user_id         = a.user_id_fk',      'inner')
+            ->join('user_role ur',    'ur.user_id_fk     = u.user_id',         'inner')
+            ->join('role r',          'r.role_id         = ur.role_id_fk',     'inner')
+            ->join('role_category rc','rc.role_cat_id    = r.role_cat_id_fk',  'inner')
+            ->where('e.stream_id_fk', $streamId)
+            ->where('e.enrol_status', 'Active')
+            ->where('rc.role_cat_id', 4)
+            ->where('ur.user_role_status', 'Active')
+            ->groupBy('e.admission_id_fk')
+            ->orderBy('u.lname', 'ASC')
+            ->orderBy('u.fname', 'ASC')
+            ->get()->getResultArray();
+    }
+
+    public function getTermAttendance(int $streamId, array $dates): array
+    {
+        if (empty($dates)) {
+            return [];
+        }
+        $db   = \Config\Database::connect();
+        $rows = $db->table('student_attendance')
+            ->select('enrol_id_fk, attendance_date, attendance_status')
+            ->where('stream_id_fk', $streamId)
+            ->where('attendance_type', 'Daily')
+            ->whereIn('attendance_date', $dates)
+            ->get()->getResultArray();
+
+        $indexed = [];
+        foreach ($rows as $row) {
+            $indexed[(int)$row['enrol_id_fk']][$row['attendance_date']] = $row['attendance_status'];
+        }
+        return $indexed;
+    }
 }

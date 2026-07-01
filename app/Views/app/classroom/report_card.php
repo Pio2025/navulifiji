@@ -63,6 +63,15 @@ if (!function_exists('ordinal')) {
                 <div class="fw-bold text-gray-900 fs-3"><?= esc($classroom['sch_name']) ?></div>
                 <div class="text-muted fs-6 mt-1">TERM <?= $term ?> EXAMINATION REPORT CARD</div>
                 <div class="text-muted fs-7"><?= esc($classroom['class_name']) ?> — <?= esc($classroom['class_year']) ?></div>
+                <?php
+                $contactParts = array_filter([
+                    $classroom['sch_address'] ?? '',
+                    !empty($classroom['sch_phone']) ? 'Ph: ' . $classroom['sch_phone'] : '',
+                    $classroom['sch_email'] ?? '',
+                ]);
+                if (!empty($contactParts)): ?>
+                <div class="text-muted fs-8 mt-1"><?= esc(implode('  |  ', $contactParts)) ?></div>
+                <?php endif; ?>
             </div>
             <!--end::Centre text-->
 

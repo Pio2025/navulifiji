@@ -138,6 +138,9 @@
                 pointer-events: none; user-select: none;
             }
 
+            /* ── Clickable chat header (avatar / name / status open the dropdown) ── */
+            .chat-header-clickable { cursor: pointer; }
+
             /* ── Message action context menu ── */
             #chat_del_menu {
                 position: fixed; z-index: 9990;
@@ -165,6 +168,75 @@
                 font-style: italic; color: #a1a5b7; font-size: .8rem;
                 display: flex; align-items: center; gap: 6px;
             }
+
+            /* ── Reaction trigger button (matches .chat-msg-action) ── */
+            .chat-reaction-trigger {
+                opacity: 0;
+                transition: opacity .15s, transform .1s;
+                width: 30px; height: 30px; padding: 0;
+                border: none; border-radius: 50%; flex-shrink: 0;
+                display: flex; align-items: center; justify-content: center;
+                background: #fff;
+                box-shadow: 0 1px 6px rgba(0,0,0,.18);
+                cursor: pointer;
+                font-size: 15px;
+                line-height: 1;
+            }
+            .chat-msg-row:hover .chat-reaction-trigger { opacity: 1; }
+            .chat-reaction-trigger:hover  { background: #f5f5f5; transform: scale(1.08); }
+            .chat-reaction-trigger:focus  { opacity: 1; outline: 2px solid #009ef7; outline-offset: 2px; }
+
+            /* ── Reaction pills under a message bubble ── */
+            .chat-reaction-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+            .chat-reaction-pill {
+                display: inline-flex; align-items: center; gap: 4px;
+                padding: 1px 8px; border-radius: 999px;
+                background: #f1f1f4; border: 1px solid #e4e6ef;
+                font-size: .76rem; cursor: pointer; user-select: none;
+                transition: background .12s, border-color .12s;
+            }
+            .chat-reaction-pill:hover { background: #e4e6ef; }
+            .chat-reaction-pill.mine  { background: #eef6ff; border-color: #bfdbfe; }
+            .chat-reaction-pill .crp-count { color: #5e6278; font-weight: 600; }
+
+            /* ── Reaction quick-bar (👍❤️😂😮😢🙏 + more) ── */
+            #chat_reaction_bar {
+                position: fixed; z-index: 9991;
+                display: flex; align-items: center; gap: 2px;
+                background: #fff; border-radius: 999px;
+                box-shadow: 0 6px 28px rgba(0,0,0,.18);
+                padding: 5px 7px;
+            }
+            #chat_reaction_bar .crb-emoji {
+                width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+                font-size: 18px; border-radius: 50%; cursor: pointer; transition: transform .1s, background .1s;
+            }
+            #chat_reaction_bar .crb-emoji:hover { background: #f1f1f4; transform: scale(1.18); }
+            #chat_reaction_bar .crb-more { font-size: 13px; color: #5e6278; }
+
+            /* ── Emoji palette popup (composer + "more" reactions) ── */
+            #chat_emoji_popup {
+                position: fixed; z-index: 9992;
+                width: 280px; max-height: 320px; overflow-y: auto;
+                background: #fff; border-radius: 12px;
+                box-shadow: 0 6px 28px rgba(0,0,0,.18);
+                padding: 10px;
+            }
+            #chat_emoji_popup .cep-cat-label {
+                font-size: .72rem; font-weight: 700; color: #a1a5b7;
+                text-transform: uppercase; letter-spacing: .03em;
+                margin: 8px 2px 4px;
+            }
+            #chat_emoji_popup .cep-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+            #chat_emoji_popup .cep-emoji {
+                display: flex; align-items: center; justify-content: center;
+                font-size: 19px; height: 32px; border-radius: 8px; cursor: pointer;
+                transition: background .1s, transform .1s;
+            }
+            #chat_emoji_popup .cep-emoji:hover { background: #f1f1f4; transform: scale(1.15); }
+
+            /* ── Composer emoji button ── */
+            [data-kt-element="emoji"] { font-size: 18px; line-height: 1; }
 
             /* ── Lightbox ── */
             #navuli_lightbox {
@@ -1505,6 +1577,17 @@
 			// Pre-load in background on page load so data is ready when drawer opens
 			fetchPage();
 
+			// Live update: a user we're allowed to see just connected and isn't rendered yet
+			// (e.g. they're beyond the currently-loaded page) -- add them at the top without reload.
+			document.addEventListener('navuli:userOnline', e => {
+				const u = e.detail;
+				if (!u || !u.user_id) return;
+				if (listEl.querySelector(`.ucl-row[data-user-id="${u.user_id}"]`)) return;
+				const term = searchEl.value.trim().toLowerCase();
+				if (term && !`${u.fname} ${u.lname}`.toLowerCase().includes(term)) return;
+				listEl.insertBefore(buildRow(u), listEl.firstChild);
+			});
+
 		}());
 		</script>
 
@@ -1522,16 +1605,30 @@
 			<div class="card w-100 rounded-0 border-0 d-flex flex-column h-100" id="kt_drawer_chat_messenger">
 				<!--begin::Card header-->
 				<div class="card-header pe-5" id="kt_drawer_chat_messenger_header">
-					<div class="card-title">
+					<div class="card-title flex-grow-1">
 						<div class="d-flex align-items-center">
-							<div class="symbol symbol-45px symbol-circle me-3 position-relative" id="kt_drawer_chat_avatar">
+							<div class="symbol symbol-45px symbol-circle me-3 position-relative chat-header-clickable" id="kt_drawer_chat_avatar">
 								<!-- populated dynamically -->
 							</div>
-							<div class="d-flex flex-column">
-								<span class="fs-5 fw-bold text-gray-900 lh-1" id="kt_drawer_chat_name">–</span>
-								<div class="mt-1 d-flex align-items-center">
-									<span id="kt_drawer_chat_status_dot" class="badge badge-circle w-10px h-10px me-1 bg-secondary"></span>
-									<span class="fs-7 fw-semibold text-muted" id="kt_drawer_chat_status_text">Offline</span>
+							<div class="d-flex flex-column flex-grow-1">
+								<span class="fs-5 fw-bold text-gray-900 lh-1 chat-header-clickable" id="kt_drawer_chat_name">–</span>
+								<div class="mt-1 d-flex align-items-center justify-content-between">
+									<div class="d-flex align-items-center chat-header-clickable">
+										<span id="kt_drawer_chat_status_dot" class="badge badge-circle w-10px h-10px me-1 bg-secondary"></span>
+										<span class="fs-7 fw-semibold text-muted" id="kt_drawer_chat_status_text">Offline</span>
+									</div>
+									<div class="btn-group">
+										<button type="button" class="btn btn-sm btn-icon btn-active-light-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false" title="More options">
+											<i class="ki-duotone ki-dots-vertical fs-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+										</button>
+										<ul class="dropdown-menu dropdown-menu-end">
+											<li><a class="dropdown-item" href="#" data-kt-element="block-toggle">Block</a></li>
+											<li><a class="dropdown-item" href="#" data-kt-element="chat-transcript">Chat Transcript</a></li>
+											<li><a class="dropdown-item" href="#" data-kt-element="open-in-message">Open in Message</a></li>
+											<li><hr class="dropdown-divider"></li>
+											<li><a class="dropdown-item text-danger" href="#" data-kt-element="clear-conversation">Clear Conversation</a></li>
+										</ul>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -1582,8 +1679,10 @@
 										<button class="chat-msg-action" type="button" title="More options">
 											<span class="cdm-dots">⋯</span>
 										</button>
+										<button class="chat-reaction-trigger" type="button" title="React">😊</button>
 										<div class="px-4 py-3 rounded bg-light-primary text-dark fw-semibold mw-lg-380px text-end" data-kt-element="message-text"></div>
 									</div>
+									<div class="chat-reaction-row justify-content-end" data-kt-element="reaction-row"></div>
 								</div>
 							</div>
 						</div>
@@ -1602,10 +1701,12 @@
 									</div>
 									<div class="d-flex align-items-center gap-1">
 										<div class="px-4 py-3 rounded bg-light-info text-dark fw-semibold mw-lg-380px text-start" data-kt-element="message-text"></div>
+										<button class="chat-reaction-trigger" type="button" title="React">😊</button>
 										<button class="chat-msg-action" type="button" title="More options">
 											<span class="cdm-dots">⋯</span>
 										</button>
 									</div>
+									<div class="chat-reaction-row justify-content-start" data-kt-element="reaction-row"></div>
 								</div>
 							</div>
 						</div>
@@ -1667,6 +1768,9 @@
 							</button>
 							<input type="file" data-kt-element="photo-input" class="d-none"
 							       accept=".jpg,.jpeg,.png,.gif,.webp" multiple>
+							<button class="btn btn-sm btn-icon btn-active-light-primary me-1" type="button"
+							        data-kt-element="emoji"
+							        title="Emoji">😊</button>
 						</div>
 						<button class="btn btn-primary" type="button" data-kt-element="send">Send</button>
 					</div>
@@ -1780,6 +1884,22 @@
 			</div>
 		</div>
 		<!--end::Chat message context menu-->
+
+		<!--begin::Reaction quick-bar-->
+		<div id="chat_reaction_bar" class="d-none">
+			<span class="crb-emoji" data-emoji="👍">👍</span>
+			<span class="crb-emoji" data-emoji="❤️">❤️</span>
+			<span class="crb-emoji" data-emoji="😂">😂</span>
+			<span class="crb-emoji" data-emoji="😮">😮</span>
+			<span class="crb-emoji" data-emoji="😢">😢</span>
+			<span class="crb-emoji" data-emoji="🙏">🙏</span>
+			<span class="crb-emoji crb-more" id="chat_reaction_more" title="More emoji">➕</span>
+		</div>
+		<!--end::Reaction quick-bar-->
+
+		<!--begin::Emoji palette popup-->
+		<div id="chat_emoji_popup" class="d-none"></div>
+		<!--end::Emoji palette popup-->
 
 		<!--begin::Chat bottom dock-->
 		<div id="chat_bottom_dock">

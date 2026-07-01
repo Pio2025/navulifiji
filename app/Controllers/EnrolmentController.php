@@ -193,10 +193,14 @@ class EnrolmentController extends BaseController
 
             // Validate subjects if the stream has subjects loaded
             if ($hasSubjects) {
-                if (count($coreSubjects) < 4) {
+                $db          = \Config\Database::connect();
+                $coreCount   = (int) $db->table('stream_core_subject')
+                    ->where('stream_id_fk', $streamId)->countAllResults();
+                $minRequired = $coreCount > 0 ? $coreCount : 1;
+                if (count($coreSubjects) < $minRequired) {
                     return $this->response->setJSON([
                         'success' => false,
-                        'message' => 'At least 4 core subjects must be selected.'
+                        'message' => 'At least ' . $minRequired . ' core ' . ($minRequired === 1 ? 'subject' : 'subjects') . ' must be selected.'
                     ]);
                 }
             }
@@ -235,6 +239,12 @@ class EnrolmentController extends BaseController
 
             // Insert student subjects
             if ($hasSubjects) {
+                $classRow = $db->table('classroom')
+                    ->where('stream_id_fk', $streamId)
+                    ->where('class_year',   $enrolYear)
+                    ->get()->getRowArray();
+                $classId = $classRow ? (int)$classRow['class_id'] : 0;
+
                 $allSubjects = array_merge(
                     array_map('intval', $coreSubjects),
                     $optionalSubjects
@@ -242,7 +252,8 @@ class EnrolmentController extends BaseController
                 foreach ($allSubjects as $schSubId) {
                     if ($schSubId > 0) {
                         $db->table('student_subject')->insert([
-                            'enrol_id_fk'     => $enrolId,
+                            'admission_id_fk' => $admissionId,
+                            'class_id_fk'     => $classId,
                             'sch_sub_id_fk'   => $schSubId,
                             'stud_sub_status' => 'Active',
                         ]);
@@ -461,9 +472,19 @@ class EnrolmentController extends BaseController
 
             $db = \Config\Database::connect();
 
+            $enrolment   = $db->table('enrolment')
+                ->select('admission_id_fk, stream_id_fk, enrol_year')
+                ->where('enrol_id', $enrolId)->get()->getRowArray();
+            $admissionId = (int)($enrolment['admission_id_fk'] ?? 0);
+            $classRow    = $db->table('classroom')
+                ->where('stream_id_fk', (int)($enrolment['stream_id_fk'] ?? 0))
+                ->where('class_year',   (int)($enrolment['enrol_year']   ?? 0))
+                ->get()->getRowArray();
+            $classId = $classRow ? (int)$classRow['class_id'] : 0;
+
             // Prevent duplicates
             $exists = $db->table('student_subject')
-                ->where('enrol_id_fk', $enrolId)
+                ->where('admission_id_fk', $admissionId)
                 ->where('sch_sub_id_fk', $schSubId)
                 ->get()->getRowArray();
 
@@ -472,7 +493,8 @@ class EnrolmentController extends BaseController
             }
 
             $db->table('student_subject')->insert([
-                'enrol_id_fk'     => $enrolId,
+                'admission_id_fk' => $admissionId,
+                'class_id_fk'     => $classId,
                 'sch_sub_id_fk'   => $schSubId,
                 'stud_sub_status' => 'Active',
             ]);
@@ -530,10 +552,16 @@ class EnrolmentController extends BaseController
 
             $db = \Config\Database::connect();
 
-            // Get stream for type classification
-            $enrolment = $db->table('enrolment')->select('stream_id_fk')
+            // Get stream, admission, and class for subject insertion
+            $enrolment   = $db->table('enrolment')->select('stream_id_fk, admission_id_fk, enrol_year')
                 ->where('enrol_id', $enrolId)->get()->getRowArray();
-            $streamId = (int)($enrolment['stream_id_fk'] ?? 0);
+            $streamId    = (int)($enrolment['stream_id_fk']    ?? 0);
+            $admissionId = (int)($enrolment['admission_id_fk'] ?? 0);
+            $classRow    = $db->table('classroom')
+                ->where('stream_id_fk', $streamId)
+                ->where('class_year',   (int)($enrolment['enrol_year'] ?? 0))
+                ->get()->getRowArray();
+            $classId = $classRow ? (int)$classRow['class_id'] : 0;
 
             $added = [];
             foreach ($schSubIds as $schSubId) {
@@ -542,13 +570,14 @@ class EnrolmentController extends BaseController
 
                 // Skip duplicates
                 $exists = $db->table('student_subject')
-                    ->where('enrol_id_fk', $enrolId)
+                    ->where('admission_id_fk', $admissionId)
                     ->where('sch_sub_id_fk', $schSubId)
                     ->get()->getRowArray();
                 if ($exists) continue;
 
                 $db->table('student_subject')->insert([
-                    'enrol_id_fk'     => $enrolId,
+                    'admission_id_fk' => $admissionId,
+                    'class_id_fk'     => $classId,
                     'sch_sub_id_fk'   => $schSubId,
                     'stud_sub_status' => 'Active',
                 ]);

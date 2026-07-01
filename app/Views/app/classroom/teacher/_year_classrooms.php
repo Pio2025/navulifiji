@@ -1,5 +1,8 @@
 <?php
-$ci = 0;
+$ci         = 0;
+$schCatData = session('sch_cat_data') ?? [];
+$termLabel  = $schCatData['label'] ?? 'Term';
+$catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 => [], 3 => []];
 ?>
 
 <?php if (empty($classrooms)): ?>
@@ -29,6 +32,7 @@ $ci = 0;
     $isActive = ($cls['class_status'] === 'Active');
     $tabClass = 'tmy_class_'   . $cls['class_id'];
     $tabSubj  = 'tmy_subj_'    . $cls['class_id'];
+    $tabAtt   = 'tmy_att_'     . $cls['class_id'];
     $tabExam  = 'tmy_exam_'    . $cls['class_id'];
     $tabDisc  = 'tmy_discuss_' . $cls['class_id'];
     $tableId  = 'stu_tbl_'     . $cls['class_id'];
@@ -183,6 +187,13 @@ $ci = 0;
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link text-gray-700 py-4" data-bs-toggle="tab" href="#<?= $tabAtt ?>">
+                    <i class="ki-duotone ki-calendar-tick fs-4 me-1">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span>
+                    </i>Attendance
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link text-gray-700 py-4" data-bs-toggle="tab" href="#<?= $tabExam ?>">
                     <i class="ki-duotone ki-document fs-4 me-1">
                         <span class="path1"></span><span class="path2"></span>
@@ -334,6 +345,56 @@ $ci = 0;
         </div>
         <!--end::Tab: Subjects-->
 
+        <!--begin::Tab: Attendance-->
+        <div class="tab-pane fade" id="<?= $tabAtt ?>">
+            <div style="border-top:1px solid #f1f1f4;"></div>
+            <div class="card-body px-6 py-8">
+                <div class="d-flex align-items-center gap-2 mb-6">
+                    <i class="ki-duotone ki-calendar-tick fs-3 text-success">
+                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                        <span class="path4"></span><span class="path5"></span><span class="path6"></span>
+                    </i>
+                    <h5 class="fw-bold text-gray-800 mb-0">Student Attendance</h5>
+                </div>
+                <div class="row g-4">
+                    <?php foreach ($catTerms as $termNo => $termMeta): ?>
+                    <div class="col-md-4">
+                        <div class="card border border-dashed border-gray-300">
+                            <div class="card-body p-5">
+                                <div class="d-flex align-items-center gap-3 mb-4">
+                                    <div class="d-flex align-items-center justify-content-center bg-light-success rounded-2 flex-shrink-0" style="width:44px;height:44px;">
+                                        <i class="ki-duotone ki-calendar-tick fs-3 text-success">
+                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                            <span class="path4"></span><span class="path5"></span><span class="path6"></span>
+                                        </i>
+                                    </div>
+                                    <div class="fw-bold text-gray-800 fs-6"><?= esc($termLabel) ?> <?= (int)$termNo ?></div>
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    <a href="<?= base_url('attendance?stream_id=' . ($cls['stream_id'] ?? '') . '&term=' . (int)$termNo) ?>"
+                                       class="btn btn-sm btn-light-success">
+                                        <i class="ki-duotone ki-calendar-8 fs-5 me-1">
+                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                        </i>
+                                        Student Daily Attendance
+                                    </a>
+                                    <a href="<?= base_url('attendance/subject?stream_id=' . ($cls['stream_id'] ?? '') . '&term=' . (int)$termNo) ?>"
+                                       class="btn btn-sm btn-light-info">
+                                        <i class="ki-duotone ki-book-open fs-5 me-1">
+                                            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                        </i>
+                                        Student Subject Attendance
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <!--end::Tab: Attendance-->
+
         <!--begin::Tab: Exam-->
         <div class="tab-pane fade" id="<?= $tabExam ?>">
             <div style="border-top:1px solid #f1f1f4;"></div>
@@ -343,7 +404,7 @@ $ci = 0;
                     <h5 class="fw-bold text-gray-800 mb-0">Term Examinations</h5>
                 </div>
                 <div class="row g-4">
-                    <?php foreach ([1, 2, 3] as $termNo): ?>
+                    <?php foreach ($catTerms as $termNo => $termMeta): ?>
                     <div class="col-md-4">
                         <div class="card border border-dashed border-gray-300">
                             <div class="card-body p-5">
@@ -353,18 +414,18 @@ $ci = 0;
                                             <span class="path1"></span><span class="path2"></span>
                                         </i>
                                     </div>
-                                    <div class="fw-bold text-gray-800 fs-6">Term <?= $termNo ?></div>
+                                    <div class="fw-bold text-gray-800 fs-6"><?= esc($termLabel) ?> <?= (int)$termNo ?></div>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
                                     <?php if ($isClassTeacher && $isActive): ?>
-                                    <a href="<?= base_url('classroom/class-exam/' . $cls['class_id'] . '/term/' . $termNo) ?>"
+                                    <a href="<?= base_url('classroom/class-exam/' . $cls['class_id'] . '/term/' . (int)$termNo) ?>"
                                        class="btn btn-sm btn-light-primary">
                                         <i class="ki-duotone ki-notepad-edit fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
                                         Manage Marks
                                     </a>
                                     <?php endif; ?>
                                     <?php foreach ($cls['teacher_subjects'] as $subj): ?>
-                                    <a href="<?= base_url('classroom/teacher/' . $subj['sch_sub_id'] . '/exams') ?>?term=<?= $termNo ?>"
+                                    <a href="<?= base_url('classroom/teacher/' . $subj['sch_sub_id'] . '/exams') ?>?term=<?= (int)$termNo ?>"
                                        class="btn btn-sm btn-light-success">
                                         <i class="ki-duotone ki-book-open fs-5 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                                         <?= esc($subj['subject_name']) ?>

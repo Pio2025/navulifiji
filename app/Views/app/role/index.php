@@ -254,7 +254,7 @@ var KTRolesList = function () {
             processing: true,
             serverSide: true,
             searchDelay: 500,
-            order: [[0, 'asc']],
+            order: [[1, 'asc']],
             stateSave: false,
             
             ajax: {

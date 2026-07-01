@@ -12,7 +12,7 @@ class RoleModel extends Model
     protected $returnType = 'array'; 
     protected $useSoftDeletes = false;
     protected $protectFields = true;
-    protected $allowedFields = ['role_name', 'role_desc', 'role_rank', 'created_at', 'updated_at'];
+    protected $allowedFields = ['role_name', 'role_desc', 'role_rank', 'role_cat_id_fk', 'created_at', 'updated_at'];
     
     // Timestamps
     protected $useTimestamps = true;
@@ -71,7 +71,7 @@ class RoleModel extends Model
      */
     public function getAllRoles()
     {
-        return $this->orderBy('role_name', 'ASC')->findAll();
+        return $this->orderBy('role_rank', 'ASC')->findAll();
     }
     
     /**
@@ -221,17 +221,15 @@ class RoleModel extends Model
             $orderDir = $postData['order']['dir'] ?? 'ASC';
             
             // Validate column name to prevent SQL injection
-            $allowedColumns = ['role_name', 'role_desc'];
-            
+            $allowedColumns = ['role_name', 'role_desc', 'role_rank'];
+
             if (in_array($orderColumn, $allowedColumns)) {
                 $builder->orderBy($orderColumn, $orderDir);
             } else {
-                // Default sorting
-                $builder->orderBy('role_name', 'ASC');
+                $builder->orderBy('role_rank', 'ASC');
             }
         } else {
-            // Default sorting if no order specified
-            $builder->orderBy('role_name', 'ASC');
+            $builder->orderBy('role_rank', 'ASC');
         }
         
         // Pagination

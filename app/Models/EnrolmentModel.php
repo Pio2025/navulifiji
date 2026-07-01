@@ -176,9 +176,10 @@ class EnrolmentModel extends Model
     {
         $db = \Config\Database::connect();
 
-        $enrolment = $db->table('enrolment')->select('stream_id_fk')
+        $enrolment = $db->table('enrolment')->select('stream_id_fk, admission_id_fk')
             ->where('enrol_id', $enrolId)->get()->getRowArray();
-        $streamId = (int)($enrolment['stream_id_fk'] ?? 0);
+        $streamId    = (int)($enrolment['stream_id_fk']    ?? 0);
+        $admissionId = (int)($enrolment['admission_id_fk'] ?? 0);
 
         $rows = $db->query("
             SELECT
@@ -199,9 +200,9 @@ class EnrolmentModel extends Model
                    ON scs.sch_sub_id_fk = ss.sch_sub_id_fk AND scs.stream_id_fk = ?
             LEFT JOIN stream_optional_subject sos
                    ON sos.sch_sub_id_fk = ss.sch_sub_id_fk AND sos.stream_id_fk = ?
-            WHERE ss.enrol_id_fk = ?
+            WHERE ss.admission_id_fk = ?
             ORDER BY subject_type ASC, sub.subject_name ASC
-        ", [$streamId, $streamId, $enrolId])->getResultArray();
+        ", [$streamId, $streamId, $admissionId])->getResultArray();
 
         $grouped = ['core' => [], 'optional' => [], 'other' => []];
         foreach ($rows as $row) {
@@ -217,13 +218,14 @@ class EnrolmentModel extends Model
     {
         $db = \Config\Database::connect();
 
-        $enrolment = $db->table('enrolment')->select('stream_id_fk')
+        $enrolment = $db->table('enrolment')->select('stream_id_fk, admission_id_fk')
             ->where('enrol_id', $enrolId)->get()->getRowArray();
-        $streamId = (int)($enrolment['stream_id_fk'] ?? 0);
+        $streamId    = (int)($enrolment['stream_id_fk']    ?? 0);
+        $admissionId = (int)($enrolment['admission_id_fk'] ?? 0);
 
         $assignedIds = array_column(
             $db->table('student_subject')->select('sch_sub_id_fk')
-               ->where('enrol_id_fk', $enrolId)->get()->getResultArray(),
+               ->where('admission_id_fk', $admissionId)->get()->getResultArray(),
             'sch_sub_id_fk'
         );
 

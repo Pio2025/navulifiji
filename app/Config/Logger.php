@@ -39,7 +39,7 @@ class Logger extends BaseConfig
      *
      * @var int|list<int>
      */
-    public $threshold = 4; // WARNING and above only (suppresses DEBUG/INFO noise)
+    public $threshold = 4;
 
     /**
      * --------------------------------------------------------------------------

@@ -960,6 +960,19 @@
                         <?php endif; ?>
                     </div>
                     <?php else: ?>
+                    <!--begin::Search bar-->
+                    <div class="mb-5">
+                        <div class="position-relative">
+                            <i class="ki-duotone ki-magnifier fs-4 position-absolute top-50 translate-middle-y ms-3 text-gray-400">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            <input type="text" id="asgn_search"
+                                   class="form-control form-control-sm ps-10 fs-7"
+                                   placeholder="Search assignments by name…"
+                                   style="border-radius:8px;">
+                        </div>
+                    </div>
+                    <!--end::Search bar-->
                     <div class="row g-5" id="assignments_grid">
                     <?php foreach ($assignments as $asgn):
                         $statusColor = match($asgn['assignment_status']) {
@@ -968,7 +981,7 @@
                         $isPublished = $asgn['assignment_status'] === 'Published';
                         $isPastDue   = !empty($asgn['assignment_due_date']) && strtotime($asgn['assignment_due_date']) < time();
                     ?>
-                    <div class="col-md-4" id="asgn_card_<?= $asgn['assignment_id'] ?>">
+                    <div class="col-md-4 asgn-item" id="asgn_card_<?= $asgn['assignment_id'] ?>">
                         <div class="card border border-dashed h-100" style="border-radius:.75rem;overflow:visible;position:relative;border-color:#c4c4d4!important;">
                             <!--begin::Dropdown-->
                             <div style="position:absolute;top:10px;right:10px;z-index:10;">
@@ -986,7 +999,7 @@
                                            data-due="<?= $asgn['assignment_due_date'] ? date('Y-m-d H:i:s', strtotime($asgn['assignment_due_date'])) : '' ?>"
                                            data-total="<?= $asgn['assignment_total_score'] ?? 100 ?>"
                                            data-status="<?= $asgn['assignment_status'] ?>"
-                                           data-file="<?= esc($asgn['assignment_file'] ?? '') ?>"
+                                           data-files='<?= esc(json_encode(array_map(fn($f) => ['id' => $f['assign_file_id'], 'src' => $f['file_src']], $asgn['files'] ?? [])), 'attr') ?>'
                                            data-is-published="<?= $isPublished ? '1' : '0' ?>">
                                             <i class="ki-duotone <?= $isPublished ? 'ki-lock' : 'ki-pencil' ?> fs-6 me-2">
                                                 <span class="path1"></span><span class="path2"></span>
@@ -1029,13 +1042,18 @@
                             <!--end::Dropdown-->
                             <div class="card-body p-5 pt-4">
                                 <span class="badge badge-light-<?= $statusColor ?> fs-9 mb-3"><?= $asgn['assignment_status'] ?></span>
-                                <div class="fw-bold text-gray-800 fs-6 mb-3 pe-8 lh-sm"><?= esc($asgn['assignment_name']) ?></div>
-                                <?php if (!empty($asgn['assignment_file'])): ?>
-                                <a href="<?= base_url('uploads/assignments/' . $asgn['assignment_file']) ?>" target="_blank"
-                                   class="d-flex align-items-center gap-2 text-decoration-none mb-3 p-2 rounded-2 bg-light-primary">
-                                    <i class="ki-duotone ki-file-down fs-4 text-primary"><span class="path1"></span><span class="path2"></span></i>
-                                    <span class="text-primary fw-semibold fs-8 text-truncate"><?= esc($asgn['assignment_file']) ?></span>
-                                </a>
+                                <div class="fw-bold text-gray-800 fs-6 mb-3 pe-8 lh-sm"
+                                     data-asgn-name="<?= esc(strtolower($asgn['assignment_name'])) ?>"><?= esc($asgn['assignment_name']) ?></div>
+                                <?php if (!empty($asgn['files'])): ?>
+                                <div class="d-flex flex-column gap-2 mb-3">
+                                <?php foreach ($asgn['files'] as $afile): ?>
+                                    <a href="<?= base_url('uploads/assignments/' . $afile['file_src']) ?>" target="_blank"
+                                       class="d-flex align-items-center gap-2 text-decoration-none p-2 rounded-2 bg-light-primary">
+                                        <i class="ki-duotone ki-file-down fs-4 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                                        <span class="text-primary fw-semibold fs-8 text-truncate"><?= esc($afile['file_src']) ?></span>
+                                    </a>
+                                <?php endforeach; ?>
+                                </div>
                                 <?php endif; ?>
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <i class="ki-duotone ki-calendar fs-5 <?= $isPastDue ? 'text-danger' : 'text-warning' ?>">
@@ -1057,6 +1075,11 @@
                     </div>
                     <?php endforeach; ?>
                     </div>
+                    <div id="asgn_no_results" class="text-center py-10 text-muted fs-7 d-none">
+                        <i class="ki-duotone ki-search-list fs-3x text-gray-200 mb-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        <div>No assignments match your search.</div>
+                    </div>
+                    <div id="asgn_pagination" class="mt-6"></div>
                     <?php endif; ?>
                     <!--end::Assignments-->
 
@@ -1760,9 +1783,17 @@
                            placeholder="e.g. Term 1 Research Paper" maxlength="255" />
                 </div>
                 <div class="mb-4">
-                    <label class="form-label fw-semibold fs-7">Assignment File <span class="text-muted fw-normal">(PDF only)</span></label>
-                    <input type="file" class="form-control form-control-sm" id="add_asgn_file" accept=".pdf" />
-                    <div class="text-muted fs-9 mt-1">Upload the assignment document in PDF format.</div>
+                    <label class="form-label fw-semibold fs-7 mb-2">Assignment Files <span class="text-muted fw-normal">(optional)</span></label>
+                    <div class="asgn-dropzone" id="add_dropzone">
+                        <input type="file" id="add_asgn_file"
+                               accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.tar"
+                               multiple class="d-none" />
+                        <i class="ki-duotone ki-cloud-add fs-3x text-gray-300 mb-2"><span class="path1"></span><span class="path2"></span></i>
+                        <div class="fw-semibold text-gray-600 fs-7 mb-1">Drag &amp; drop files here</div>
+                        <div class="text-muted fs-8 mb-3">or <span class="text-primary fw-semibold dz-browse-link" style="cursor:pointer;">click to browse</span></div>
+                        <div class="text-muted fs-9">PDF · Images · Word · Excel · PowerPoint · TXT · ZIP · TAR</div>
+                    </div>
+                    <div id="add_asgn_file_list" class="d-flex flex-column gap-2 mt-3"></div>
                 </div>
                 <div class="row g-4 mb-2">
                     <div class="col-8">
@@ -1816,9 +1847,19 @@
                     <input type="text" class="form-control form-control-sm" id="edit_asgn_name" maxlength="255" />
                 </div>
                 <div class="mb-4">
-                    <label class="form-label fw-semibold fs-7">Replace File <span class="text-muted fw-normal">(PDF only, leave blank to keep existing)</span></label>
-                    <input type="file" class="form-control form-control-sm" id="edit_asgn_file" accept=".pdf" />
-                    <div class="text-muted fs-9 mt-1" id="edit_asgn_current_file"></div>
+                    <label class="form-label fw-semibold fs-7 mb-2">Saved Files</label>
+                    <div id="edit_asgn_current_files" class="d-flex flex-column gap-2 mb-3"></div>
+                    <label class="form-label fw-semibold fs-7 mb-2">Add New Files <span class="text-muted fw-normal">(optional)</span></label>
+                    <div class="asgn-dropzone" id="edit_dropzone">
+                        <input type="file" id="edit_asgn_file"
+                               accept=".pdf,.jpg,.jpeg,.png,.gif,.webp,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.tar"
+                               multiple class="d-none" />
+                        <i class="ki-duotone ki-cloud-add fs-3x text-gray-300 mb-2"><span class="path1"></span><span class="path2"></span></i>
+                        <div class="fw-semibold text-gray-600 fs-7 mb-1">Drag &amp; drop files here</div>
+                        <div class="text-muted fs-8 mb-3">or <span class="text-primary fw-semibold dz-browse-link" style="cursor:pointer;">click to browse</span></div>
+                        <div class="text-muted fs-9">PDF · Images · Word · Excel · PowerPoint · TXT · ZIP · TAR</div>
+                    </div>
+                    <div id="edit_asgn_file_list" class="d-flex flex-column gap-2 mt-3"></div>
                 </div>
                 <div class="row g-4 mb-4">
                     <div class="col-8">
@@ -1861,6 +1902,33 @@
 </div>
 <!--end::Edit Assignment Modal-->
 
+<style>
+.asgn-dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 22px 16px 18px;
+    text-align: center;
+    cursor: pointer;
+    background: #fafafa;
+    transition: border-color .2s, background .2s;
+    user-select: none;
+}
+.asgn-dropzone:hover,
+.asgn-dropzone.dz-active {
+    border-color: var(--bs-primary, #3b82f6);
+    background: #eff6ff;
+}
+.asgn-file-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #e4e6ef;
+    background: #f9fafb;
+}
+</style>
+
 <script>
 // Pre-select term when "Create First Lesson" is clicked from an empty term tab
 document.querySelectorAll('[data-term]').forEach(function(btn) {
@@ -1871,26 +1939,106 @@ document.querySelectorAll('[data-term]').forEach(function(btn) {
 });
 
 // ── Assignment JS ──────────────────────────────────────────────
-const ASGN_STORE_URL  = '<?= base_url('classroom/teacher/' . $schSubId . '/assignment/store') ?>';
+const ASGN_STORE_URL   = '<?= base_url('classroom/teacher/' . $schSubId . '/assignment/store') ?>';
 const ASGN_UPDATE_BASE = '<?= base_url('classroom/teacher/' . $schSubId . '/assignment/') ?>';
+const ASGN_ALLOWED_EXT = ['pdf','jpg','jpeg','png','gif','webp','doc','docx','xls','xlsx','ppt','pptx','txt','zip','tar'];
 
-// ── Flatpickr date+time pickers ───────────────────────────────
-const fpCfg = {
-    enableTime: true,
-    dateFormat: 'Y-m-d H:i',
-    time_24hr: false,
-    minuteIncrement: 5,
-    allowInput: true,
-};
+// ── Flatpickr ─────────────────────────────────────────────────
+const fpCfg = { enableTime: true, dateFormat: 'Y-m-d H:i', time_24hr: false, minuteIncrement: 5, allowInput: true };
 const fpAdd  = flatpickr(document.getElementById('add_asgn_due'),  fpCfg);
 const fpEdit = flatpickr(document.getElementById('edit_asgn_due'), fpCfg);
 
-// Add assignment
+// ── Dropzone factory ──────────────────────────────────────────
+function makeDropzone(dropId, inputId, listId) {
+    const drop  = document.getElementById(dropId);
+    const input = document.getElementById(inputId);
+    const list  = document.getElementById(listId);
+    if (!drop || !input || !list) return { getFiles: () => [], clear: () => {} };
+
+    let staged = [];
+    let dragCnt = 0;
+
+    function fileExt(f)  { return f.name.split('.').pop().toLowerCase(); }
+    function fmtSize(b)  { return b < 1024 ? b+' B' : b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB'; }
+    function fileIcon(e) {
+        if (['jpg','jpeg','png','gif','webp','svg'].includes(e)) return 'ki-picture';
+        if (['zip','tar','gz','rar','7z'].includes(e))           return 'ki-folder';
+        if (['xls','xlsx','csv'].includes(e))                    return 'ki-chart-simple';
+        if (['ppt','pptx'].includes(e))                          return 'ki-tablet';
+        return 'ki-file';
+    }
+
+    function render() {
+        list.innerHTML = '';
+        staged.forEach(function(f, i) {
+            const e   = fileExt(f);
+            const row = document.createElement('div');
+            row.className = 'asgn-file-row';
+            row.innerHTML =
+                '<i class="ki-duotone ' + fileIcon(e) + ' fs-3 text-primary flex-shrink-0">' +
+                    '<span class="path1"></span><span class="path2"></span>' +
+                '</i>' +
+                '<div class="flex-grow-1 min-w-0">' +
+                    '<div class="fw-semibold fs-8 text-gray-800 text-truncate">' + f.name + '</div>' +
+                    '<div class="text-muted fs-9">' + e.toUpperCase() + ' &middot; ' + fmtSize(f.size) + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn btn-sm btn-icon btn-light-danger dz-rm" data-i="' + i + '" ' +
+                    'style="width:26px;height:26px;flex-shrink:0;">' +
+                    '<i class="ki-duotone ki-cross fs-6"><span class="path1"></span><span class="path2"></span></i>' +
+                '</button>';
+            list.appendChild(row);
+        });
+    }
+
+    function addFiles(fileList) {
+        const bad = [];
+        for (const f of fileList) {
+            if (!ASGN_ALLOWED_EXT.includes(fileExt(f))) { bad.push(f.name); continue; }
+            if (!staged.find(s => s.name === f.name && s.size === f.size)) staged.push(f);
+        }
+        if (bad.length) {
+            Swal.fire({ title: 'File type not allowed', text: bad.join(', '), icon: 'warning',
+                buttonsStyling: false, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-warning' } });
+        }
+        render();
+    }
+
+    // Click anywhere on dropzone to open file picker (but not on the browse link separately)
+    drop.addEventListener('click', function(e) {
+        if (e.target.closest('.dz-rm')) return;
+        input.click();
+    });
+    input.addEventListener('change', function() { addFiles(this.files); this.value = ''; });
+
+    drop.addEventListener('dragenter', function(e) { e.preventDefault(); if (++dragCnt === 1) drop.classList.add('dz-active'); });
+    drop.addEventListener('dragleave', function()  { if (--dragCnt === 0) drop.classList.remove('dz-active'); });
+    drop.addEventListener('dragover',  function(e) { e.preventDefault(); });
+    drop.addEventListener('drop', function(e) {
+        e.preventDefault(); dragCnt = 0; drop.classList.remove('dz-active');
+        addFiles(e.dataTransfer.files);
+    });
+
+    list.addEventListener('click', function(e) {
+        const btn = e.target.closest('.dz-rm');
+        if (!btn) return;
+        staged.splice(parseInt(btn.dataset.i), 1);
+        render();
+    });
+
+    return {
+        getFiles: () => staged,
+        clear:    () => { staged = []; render(); }
+    };
+}
+
+const addDz  = makeDropzone('add_dropzone',  'add_asgn_file',  'add_asgn_file_list');
+const editDz = makeDropzone('edit_dropzone', 'edit_asgn_file', 'edit_asgn_file_list');
+
+// ── Create assignment ─────────────────────────────────────────
 document.getElementById('btn_save_assignment')?.addEventListener('click', function() {
     const btn  = this;
     const name = document.getElementById('add_asgn_name').value.trim();
     const due  = document.getElementById('add_asgn_due').value;
-    const file = document.getElementById('add_asgn_file').files[0];
     if (!name || !due) {
         Swal.fire({ title: 'Required fields missing', text: 'Please enter assignment name and due date.', icon: 'warning',
             buttonsStyling: false, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-warning' } });
@@ -1901,7 +2049,7 @@ document.getElementById('btn_save_assignment')?.addEventListener('click', functi
     fd.append('assignment_name', name);
     fd.append('assignment_due_date', due);
     fd.append('assignment_total_score', document.getElementById('add_asgn_total').value || '100');
-    if (file) fd.append('assignment_file', file);
+    for (const f of addDz.getFiles()) fd.append('assignment_files[]', f);
     $.ajax({
         url: ASGN_STORE_URL, type: 'POST', data: fd, processData: false, contentType: false,
         success: function(res) {
@@ -1923,14 +2071,14 @@ document.getElementById('btn_save_assignment')?.addEventListener('click', functi
     });
 });
 
-// Clear add modal on open
+// Reset add modal on open
 document.getElementById('modal_add_assignment')?.addEventListener('show.bs.modal', function() {
     document.getElementById('add_asgn_name').value = '';
-    document.getElementById('add_asgn_file').value = '';
     fpAdd.clear();
+    addDz.clear();
 });
 
-// Open edit modal
+// ── Open edit modal ───────────────────────────────────────────
 document.addEventListener('click', function(e) {
     const btn = e.target.closest('.btn-edit-assignment');
     if (!btn) return;
@@ -1945,20 +2093,69 @@ document.addEventListener('click', function(e) {
     document.getElementById('edit_asgn_total').value  = btn.dataset.total || '100';
     if (btn.dataset.due) { fpEdit.setDate(btn.dataset.due, true); } else { fpEdit.clear(); }
     document.getElementById('edit_asgn_status').value = btn.dataset.status || 'Draft';
-    document.getElementById('edit_asgn_file').value   = '';
-    const cf = document.getElementById('edit_asgn_current_file');
-    cf.textContent = btn.dataset.file ? 'Current file: ' + btn.dataset.file : 'No file uploaded.';
+    editDz.clear();
+
+    // Populate saved-files list
+    const savedList = document.getElementById('edit_asgn_current_files');
+    savedList.innerHTML = '';
+    let saved = [];
+    try { saved = JSON.parse(btn.dataset.files || '[]'); } catch (ex) {}
+    if (!saved.length) {
+        savedList.innerHTML = '<div class="text-muted fs-9 mb-1">No files saved yet.</div>';
+    } else {
+        saved.forEach(function(f) {
+            const ext = f.src ? f.src.split('.').pop().toUpperCase() : '';
+            const row = document.createElement('div');
+            row.className = 'asgn-file-row mb-1';
+            row.innerHTML =
+                '<i class="ki-duotone ki-file fs-3 text-primary flex-shrink-0"><span class="path1"></span><span class="path2"></span></i>' +
+                '<div class="flex-grow-1 min-w-0">' +
+                    '<div class="fw-semibold fs-8 text-gray-800 text-truncate">' + f.src + '</div>' +
+                    '<div class="text-muted fs-9">' + ext + '</div>' +
+                '</div>' +
+                (f.id
+                    ? '<button type="button" class="btn btn-sm btn-icon btn-light-danger btn-del-assignment-file flex-shrink-0" ' +
+                      'data-file-id="' + f.id + '" style="width:26px;height:26px;">' +
+                      '<i class="ki-duotone ki-trash fs-7"><span class="path1"></span><span class="path2"></span></i></button>'
+                    : '');
+            savedList.appendChild(row);
+        });
+    }
+
     new bootstrap.Modal(document.getElementById('modal_edit_assignment')).show();
 });
 
-// Save edit
+// Delete a saved file (fires immediately, no need to wait for Save)
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.btn-del-assignment-file');
+    if (!btn) return;
+    e.preventDefault();
+    const assignmentId = document.getElementById('edit_asgn_id').value;
+    const fileId       = btn.dataset.fileId;
+    $.ajax({
+        url: ASGN_UPDATE_BASE + assignmentId + '/file/' + fileId + '/delete', type: 'POST',
+        success: function(res) {
+            if (res.success) {
+                btn.closest('.asgn-file-row').remove();
+            } else {
+                Swal.fire({ title: 'Failed', text: res.message, icon: 'error',
+                    buttonsStyling: false, confirmButtonText: 'Close', customClass: { confirmButton: 'btn btn-danger' } });
+            }
+        },
+        error: function() {
+            Swal.fire({ title: 'Error', text: 'An error occurred.', icon: 'error',
+                buttonsStyling: false, confirmButtonText: 'Close', customClass: { confirmButton: 'btn btn-danger' } });
+        }
+    });
+});
+
+// ── Save edit ─────────────────────────────────────────────────
 document.getElementById('btn_update_assignment')?.addEventListener('click', function() {
     const btn  = this;
     const id   = document.getElementById('edit_asgn_id').value;
     const name = document.getElementById('edit_asgn_name').value.trim();
     const due  = document.getElementById('edit_asgn_due').value;
     const stat = document.getElementById('edit_asgn_status').value;
-    const file = document.getElementById('edit_asgn_file').files[0];
     if (!name || !due) {
         Swal.fire({ title: 'Required fields missing', text: 'Please enter assignment name and due date.', icon: 'warning',
             buttonsStyling: false, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-warning' } });
@@ -1970,7 +2167,7 @@ document.getElementById('btn_update_assignment')?.addEventListener('click', func
     fd.append('assignment_due_date', due);
     fd.append('assignment_status', stat);
     fd.append('assignment_total_score', document.getElementById('edit_asgn_total').value || '100');
-    if (file) fd.append('assignment_file', file);
+    for (const f of editDz.getFiles()) fd.append('assignment_files[]', f);
     $.ajax({
         url: ASGN_UPDATE_BASE + id + '/update', type: 'POST', data: fd, processData: false, contentType: false,
         success: function(res) {
@@ -2026,6 +2223,80 @@ document.addEventListener('click', function(e) {
     });
 });
 // ── End Assignment JS ──────────────────────────────────────────
+
+// ─── Assignment search + pagination ────────────────────────────────────────
+(function() {
+    const ASGN_PER_PAGE    = 9;
+    const asgnSearch       = document.getElementById('asgn_search');
+    const asgnGrid         = document.getElementById('assignments_grid');
+    const asgnPaginationEl = document.getElementById('asgn_pagination');
+    const asgnNoResults    = document.getElementById('asgn_no_results');
+    if (!asgnSearch || !asgnGrid) return;
+
+    const allCards = Array.from(asgnGrid.querySelectorAll('.asgn-item'));
+    let filtered   = allCards.slice();
+    let curPage    = 1;
+
+    function renderPage() {
+        const start = (curPage - 1) * ASGN_PER_PAGE;
+        const end   = start + ASGN_PER_PAGE;
+        allCards.forEach(c => c.style.display = 'none');
+        filtered.forEach((c, i) => { c.style.display = (i >= start && i < end) ? '' : 'none'; });
+        if (asgnNoResults) asgnNoResults.classList.toggle('d-none', filtered.length > 0);
+        renderPagination();
+    }
+
+    function renderPagination() {
+        if (!asgnPaginationEl) return;
+        asgnPaginationEl.innerHTML = '';
+        const total = Math.ceil(filtered.length / ASGN_PER_PAGE);
+        if (total <= 1) return;
+        const ul = document.createElement('ul');
+        ul.className = 'pagination pagination-sm justify-content-center mb-0';
+        function mkLi(label, page, disabled, active) {
+            const li = document.createElement('li');
+            li.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+            const a = document.createElement('a');
+            a.className = 'page-link'; a.href = '#'; a.innerHTML = label;
+            a.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (disabled) return;
+                curPage = page; renderPage();
+                asgnGrid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            li.appendChild(a); return li;
+        }
+        ul.appendChild(mkLi('&laquo;', curPage - 1, curPage === 1, false));
+        // Show max 7 page buttons with ellipsis for large page counts
+        for (let p = 1; p <= total; p++) {
+            if (total > 7 && p > 2 && p < total - 1 && Math.abs(p - curPage) > 1) {
+                if (p === 3 || p === total - 2) {
+                    const li = document.createElement('li');
+                    li.className = 'page-item disabled';
+                    li.innerHTML = '<a class="page-link">…</a>';
+                    ul.appendChild(li);
+                }
+                continue;
+            }
+            ul.appendChild(mkLi(p, p, false, p === curPage));
+        }
+        ul.appendChild(mkLi('&raquo;', curPage + 1, curPage === total, false));
+        asgnPaginationEl.appendChild(ul);
+    }
+
+    function doFilter() {
+        const q = asgnSearch.value.trim().toLowerCase();
+        filtered = allCards.filter(c => {
+            const nameEl = c.querySelector('[data-asgn-name]');
+            return !q || (nameEl && nameEl.dataset.asgnName.includes(q));
+        });
+        curPage = 1;
+        renderPage();
+    }
+
+    asgnSearch.addEventListener('input', doFilter);
+    renderPage(); // initial render — show first 9
+})();
 
 document.getElementById('btn_save_lesson')?.addEventListener('click', function() {
     const btn   = this;

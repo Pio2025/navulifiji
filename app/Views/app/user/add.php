@@ -448,6 +448,27 @@
                                 <!--end::Note-->
                             </div>
 
+                        <!--begin::Subject Section-->
+                        <div id="exam-section" style="display:none;" class="mt-2">
+                            <div class="separator separator-dashed my-4"></div>
+
+                            <div class="d-flex align-items-center mb-3">
+                                <i class="ki-duotone ki-book fs-2 text-primary me-2">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                                <span class="fw-bold fs-6 text-gray-800">Select Subjects</span>
+                            </div>
+
+                            <div id="exam-subjects-loading" class="text-muted fs-7 mb-3" style="display:none;">
+                                <span class="spinner-border spinner-border-sm me-1 align-middle"></span> Loading subjects…
+                            </div>
+
+                            <div id="exam-subjects-content"></div>
+                        </div>
+                        <!--end::Subject Section-->
+
+                        </div>
+
                         </div>
                         <!--end::Enrollment Fields-->
                     </div>
@@ -550,6 +571,135 @@ document.addEventListener('DOMContentLoaded', function() {
         if (streamField) { streamField.innerHTML = '<option value="">Select a stream...</option>'; }
         document.getElementById('stream-alert').style.display    = 'none';
         document.getElementById('enrollment-fields').style.display = 'none';
+        resetExamSection();
+    }
+
+    // Old subject selections captured from redirect-back (cleared after first apply)
+    <?php
+        $ciOldPost      = session('_ci_old_input')['post'] ?? [];
+        $oldCoreSubs    = array_map('intval', (array)($ciOldPost['exam_core_subs'] ?? []));
+        $oldOptGroups   = [];
+        foreach ($ciOldPost as $_key => $_val) {
+            if (preg_match('/^exam_opt_group_(\d+)$/', $_key, $_m)) {
+                $oldOptGroups[(int)$_m[1]] = (int)$_val;
+            }
+        }
+    ?>
+    let _oldCoreSubs  = <?= json_encode($oldCoreSubs) ?>;
+    let _oldOptGroups = <?= json_encode($oldOptGroups) ?>;
+
+    function applyOldSubjectSelections() {
+        if (_oldCoreSubs.length > 0) {
+            document.querySelectorAll('input.exam-core-sub').forEach(function(cb) {
+                cb.checked = _oldCoreSubs.includes(parseInt(cb.value));
+            });
+        }
+        Object.keys(_oldOptGroups).forEach(function(grp) {
+            const radio = document.querySelector(
+                'input[name="exam_opt_group_' + grp + '"][value="' + _oldOptGroups[grp] + '"]'
+            );
+            if (radio) radio.checked = true;
+        });
+        _oldCoreSubs  = [];
+        _oldOptGroups = {};
+    }
+
+    function resetExamSection() {
+        document.getElementById('exam-section').style.display        = 'none';
+        document.getElementById('exam-subjects-loading').style.display = 'none';
+        document.getElementById('exam-subjects-content').innerHTML   = '';
+    }
+
+    function fetchExamForStream(streamId) {
+        if (!streamId) { resetExamSection(); return; }
+
+        const examSection = document.getElementById('exam-section');
+        const subsLoading = document.getElementById('exam-subjects-loading');
+        const subsContent = document.getElementById('exam-subjects-content');
+
+        examSection.style.display = '';
+        subsLoading.style.display = '';
+        subsContent.innerHTML     = '';
+
+        $.ajax({
+            url:      '<?= base_url('enrolment/subjects') ?>/' + streamId,
+            type:     'GET',
+            dataType: 'json',
+            success: function(sr) {
+                subsLoading.style.display = 'none';
+                renderExamSubjects(sr, subsContent);
+                applyOldSubjectSelections();
+            },
+            error: function() {
+                subsLoading.style.display = 'none';
+                subsContent.innerHTML = '<div class="text-danger fs-7">Could not load subjects.</div>';
+            }
+        });
+    }
+
+    function renderExamSubjects(data, container) {
+        if ((!data.core || data.core.length === 0) && (!data.optional || data.optional.length === 0)) {
+            container.innerHTML = '<div class="text-muted fs-7">No subjects configured for this stream.</div>';
+            return;
+        }
+
+        let html = '';
+
+        if (data.core && data.core.length > 0) {
+            html += '<div class="mb-4">';
+            html += '<div class="fw-semibold text-gray-700 fs-7 mb-2">Core Subjects <span class="text-muted">(select all that apply)</span></div>';
+            html += '<div class="row g-2">';
+            data.core.forEach(function(s) {
+                html += '<div class="col-lg-3 col-md-4 col-sm-6">'
+                      + '<div class="form-check">'
+                      + '<input class="form-check-input exam-core-sub" type="checkbox"'
+                      + ' name="exam_core_subs[]" value="' + s.sch_sub_id + '"'
+                      + ' id="ec_' + s.sch_sub_id + '" checked>'
+                      + '<label class="form-check-label fs-7" for="ec_' + s.sch_sub_id + '">'
+                      + escHtml(s.subject_name)
+                      + '</label>'
+                      + '</div></div>';
+            });
+            html += '</div></div>';
+        }
+
+        if (data.optional && data.optional.length > 0) {
+            // Group by option_num
+            const groups = {};
+            data.optional.forEach(function(s) {
+                if (!groups[s.option_num]) groups[s.option_num] = [];
+                groups[s.option_num].push(s);
+            });
+
+            Object.keys(groups).forEach(function(grp) {
+                html += '<div class="card card-bordered mb-3">';
+                html += '<div class="card-header min-h-40px py-2 px-4">';
+                html += '<span class="card-title fw-semibold text-gray-700 fs-7 m-0">Optional Group ' + grp + '</span>';
+                html += '<div class="card-toolbar"><span class="badge badge-light-warning fs-8">choose one</span></div>';
+                html += '</div>';
+                html += '<div class="card-body py-3 px-4">';
+                html += '<div class="row g-2">';
+                groups[grp].forEach(function(s, i) {
+                    html += '<div class="col-lg-3 col-md-4 col-sm-6">'
+                          + '<div class="form-check">'
+                          + '<input class="form-check-input" type="radio"'
+                          + ' name="exam_opt_group_' + grp + '" value="' + s.sch_sub_id + '"'
+                          + ' id="eo_' + grp + '_' + s.sch_sub_id + '"'
+                          + (i === 0 ? ' checked' : '') + '>'
+                          + '<label class="form-check-label fs-7" for="eo_' + grp + '_' + s.sch_sub_id + '">'
+                          + escHtml(s.subject_name)
+                          + '</label>'
+                          + '</div></div>';
+                });
+                html += '</div></div></div>';
+            });
+        }
+
+        container.innerHTML = html;
+    }
+
+    function escHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
 
     function fetchSchoolStreams(schId) {
@@ -583,7 +733,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Restore previously selected stream (e.g. after server validation failure)
                     const oldStream = '<?= old('stream_id_fk') ?>';
-                    if (oldStream) streamSel.value = oldStream;
+                    if (oldStream) {
+                        streamSel.value = oldStream;
+                        fetchExamForStream(oldStream);
+                    }
 
                     alertEl.style.display  = 'none';
                     fieldsEl.style.display = '';
@@ -598,6 +751,16 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Watch stream select — fetch exam when stream changes
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'enrol-stream-select') {
+            resetExamSection();
+            if (e.target.value) {
+                fetchExamForStream(e.target.value);
+            }
+        }
+    });
 
     // Watch school select — fetch streams when Student role is active
     const schoolSelect = document.querySelector('select[name="sch_id"]');
@@ -780,6 +943,42 @@ $(document).ready(function(){
             }
         });
     });
+});
+
+// ── Province/District restoration on validation error redirect ───
+$(document).ready(function() {
+    const oldDistrict = '<?= old('district') ?>';
+    const provinceEl  = document.getElementById('province-select');
+
+    if (provinceEl && provinceEl.value) {
+        const responseEl = document.querySelector('.response');
+        const hasDist    = responseEl && responseEl.querySelector('select[name="district"]');
+
+        if (hasDist) {
+            // PHP rendered district list from session — ensure old selection is applied
+            if (oldDistrict) {
+                $(responseEl).find('select[name="district"]').val(oldDistrict);
+            }
+        } else {
+            // Session data missing — reload districts via AJAX then restore selection
+            $.ajax({
+                url:      '<?= base_url('district/getDistrictByProvince') ?>',
+                type:     'POST',
+                data:     { id: provinceEl.value, '<?= csrf_token() ?>': '<?= csrf_hash() ?>' },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        $('.response').html(response.html);
+                        if (oldDistrict) {
+                            $('.response').find('select[name="district"]').val(oldDistrict);
+                        }
+                        const lbl = $('.response').find('label');
+                        if (lbl.length) lbl.addClass('required');
+                    }
+                }
+            });
+        }
+    }
 });
 
 // ── Username auto-generate ────────────────────────────────────────
