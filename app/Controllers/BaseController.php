@@ -47,6 +47,20 @@ use App\Models\ClassroomStaffModel;
 use App\Models\ParentStudentModel;
 use App\Models\StudentAttendanceModel;
 use App\Models\StudentAttendanceFileModel;
+use App\Models\ExamModel;
+use App\Models\StudentExamModel;
+use App\Models\ExamRegistrationModel;
+use App\Models\ExamSubjectModel;
+use App\Models\ConductTypeModel;
+use App\Models\ConductIncidentModel;
+use App\Models\ConductIncidentFileModel;
+use App\Models\ConductActionModel;
+use App\Models\ConductNotificationModel;
+use App\Models\ConductAppealModel;
+use App\Models\ConductAppealFileModel;
+use App\Models\SchoolCategoryConfigModel;
+use App\Models\SchoolCategoryTermModel;
+use App\Models\PublicHolidayModel;
 
 
 
@@ -116,6 +130,20 @@ abstract class BaseController extends Controller
     protected $termExamModel;
     protected $lessonDragDropModel;
     protected $lessonLabelModel;
+    protected $examModel;
+    protected $studentExamModel;
+    protected $examRegistrationModel;
+    protected $examSubjectModel;
+    protected $conductTypeModel;
+    protected $conductIncidentModel;
+    protected $conductIncidentFileModel;
+    protected $conductActionModel;
+    protected $conductNotificationModel;
+    protected $conductAppealModel;
+    protected $conductAppealFileModel;
+    protected $schoolCategoryConfigModel;
+    protected $schoolCategoryTermModel;
+    protected $publicHolidayModel;
 
 
     /**
@@ -224,7 +252,22 @@ abstract class BaseController extends Controller
         $this->lessonDragDropModel->ensureTables();
         $this->lessonLabelModel           = new \App\Models\LessonLabelModel();
         $this->lessonLabelModel->ensureTables();
-        
+        $this->examModel              = new ExamModel();
+        $this->studentExamModel       = new StudentExamModel();
+        $this->examRegistrationModel  = new ExamRegistrationModel();
+        $this->examSubjectModel       = new ExamSubjectModel();
+        $this->conductTypeModel         = new ConductTypeModel();
+        $this->conductIncidentModel     = new ConductIncidentModel();
+        $this->conductIncidentFileModel = new ConductIncidentFileModel();
+        $this->conductActionModel       = new ConductActionModel();
+        $this->conductNotificationModel = new ConductNotificationModel();
+        $this->conductAppealModel           = new ConductAppealModel();
+        $this->conductAppealFileModel       = new ConductAppealFileModel();
+        $this->schoolCategoryConfigModel    = new SchoolCategoryConfigModel();
+        $this->schoolCategoryTermModel      = new SchoolCategoryTermModel();
+        $this->publicHolidayModel           = new PublicHolidayModel();
+        $this->publicHolidayModel->ensureTable();
+
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING
         // ===================================================

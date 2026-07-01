@@ -904,6 +904,11 @@ var NavuliChat = (function () {
                 }
             });
 
+            // Other party reacted to (or unreacted from) a message
+            socket.on("message_reacted", ({ messageId, reactions }) => {
+                renderReactions(String(messageId), reactions);
+            });
+
             socket.on("user_typing", ({ userId, conversationId, isTyping }) => {
                 if (String(conversationId) === String(currentConversationId)) {
                     if (isTyping) showTypingBubble(); else hideTypingBubble();
@@ -911,14 +916,26 @@ var NavuliChat = (function () {
             });
 
             socket.on("user_status", ({ userId, status }) => {
-                document.querySelectorAll(`[data-user-id="${userId}"] span[style*="border-radius:50%"]`).forEach(dot => {
-                    dot.style.background = status === "online" ? "#50cd89" : "#a1a5b7";
+                const existingRows = document.querySelectorAll(`[data-user-id="${userId}"]`);
+                existingRows.forEach(row => {
+                    const dot = row.querySelector(`span[style*="border-radius:50%"]`);
+                    if (dot) dot.style.background = status === "online" ? "#50cd89" : "#a1a5b7";
                 });
                 if (String(userId) === String(currentTargetUserId)) {
                     const dot  = document.getElementById("kt_drawer_chat_status_dot");
                     const text = document.getElementById("kt_drawer_chat_status_text");
                     if (dot)  dot.className   = `badge badge-circle w-10px h-10px me-1 ${status === "online" ? "bg-success" : "bg-secondary"}`;
                     if (text) text.textContent = status === "online" ? "Online" : "Offline";
+                }
+
+                // A user who just connected and isn't rendered in any chat user list yet
+                // (e.g. they're beyond the currently-loaded page) — fetch their info, if
+                // they're visible to me, and let the user-list pages add them live.
+                if (status === "online" && existingRows.length === 0) {
+                    api("GET", `/user/chatUserInfo/${userId}`).then(res => {
+                        if (!res.success || !res.user) return;
+                        document.dispatchEvent(new CustomEvent("navuli:userOnline", { detail: res.user }));
+                    });
                 }
             });
 
@@ -948,13 +965,25 @@ var NavuliChat = (function () {
                 showActiveCallUI();
             });
 
-            socket.on("call_declined", () => {
+            socket.on("call_declined", ({ reason } = {}) => {
                 if (callState.direction !== "outgoing") return;
                 const { peerName, conversationId, callType, peerId } = callState;
                 saveCallEvent(conversationId, callType, "declined", 0, peerId);
                 CallAudio.playDeclined();
                 resetCallState();
-                showCallSwal("warning", (peerName || "User") + " declined the call.", "");
+                if (reason === "busy") {
+                    Swal.fire({
+                        icon: "info",
+                        title: "Call not connected",
+                        html: `<strong>${escHtml(peerName || "User")}</strong> is already on another call and could not be reached.<br><br>Please try again when they are available.`,
+                        confirmButtonText: "OK",
+                        confirmButtonColor: "#1a56db",
+                        showClass: { popup: "animate__animated animate__fadeInDown animate__faster" },
+                        hideClass: { popup: "animate__animated animate__fadeOutUp animate__faster" },
+                    });
+                } else {
+                    showCallSwal("warning", (peerName || "User") + " declined the call.", "");
+                }
             });
 
             socket.on("call_cancelled", () => {
@@ -962,6 +991,13 @@ var NavuliChat = (function () {
                 CallAudio.playBusy();
                 resetCallState();
                 showCallSwal("info", "Call was cancelled.", "");
+            });
+
+            socket.on("call_blocked", () => {
+                document.getElementById("navuli_incoming_call")?.classList.add("d-none");
+                CallAudio.playBusy();
+                resetCallState();
+                showCallSwal("warning", "You can't call this user.", "");
             });
 
             socket.on("call_ended", () => {
@@ -998,7 +1034,12 @@ var NavuliChat = (function () {
 
     function openConversation(targetUserId, triggerEl) {
         return api("GET", `/chat/conversation/${targetUserId}`).then(res => {
-            if (!res.success) return;
+            if (!res.success) {
+                if (res.message && typeof Swal !== "undefined") {
+                    Swal.fire({ icon: "info", title: "Can't start chat", text: res.message });
+                }
+                return;
+            }
             currentConversationId = res.conversation_id;
             currentTargetUserId   = targetUserId;
             lastKnownMessageId    = 0;
@@ -1012,6 +1053,7 @@ var NavuliChat = (function () {
             updateChatHeader(triggerEl);
             document.querySelectorAll("[data-kt-element='messages']").forEach(c => clearRenderedMessages(c));
             hideTypingBubble();
+            fetchBlockStatus(targetUserId);
             return loadMessages();
         });
     }
@@ -1021,6 +1063,135 @@ var NavuliChat = (function () {
         document.querySelectorAll("[data-kt-element='chat-header-name']").forEach(el => el.textContent = triggerEl.dataset.userName || "");
         document.querySelectorAll("[data-kt-element='chat-header-photo']").forEach(el => {
             el.src = triggerEl.dataset.userPhoto || `${BASE_URL}/app/assets/media/avatars/blank.png`;
+        });
+    }
+
+    // ------------------------------------------------------------------ Block
+
+    let convBlocked = false;
+    let blockedByMe = false;
+
+    function fetchBlockStatus(targetUserId) {
+        api("GET", `/chat/block-status/${targetUserId}`).then(res => {
+            if (!res.success) return;
+            convBlocked = res.blocked;
+            blockedByMe = res.blockedByMe;
+            updateBlockUi();
+        });
+    }
+
+    function updateBlockUi() {
+        document.querySelectorAll("[data-kt-element='block-toggle']").forEach(el => {
+            el.textContent = blockedByMe ? "Unblock" : "Block";
+        });
+        setComposerDisabled(convBlocked);
+    }
+
+    function setComposerDisabled(disabled) {
+        document.querySelectorAll("#kt_chat_messenger, #kt_drawer_chat_messenger").forEach(messenger => {
+            ["input", "send", "attach", "photo-attach", "emoji"].forEach(name => {
+                const target = messenger.querySelector(`[data-kt-element='${name}']`);
+                if (target) target.disabled = disabled;
+            });
+
+            let notice = messenger.querySelector(".chat-blocked-notice");
+            if (disabled) {
+                if (!notice) {
+                    notice = document.createElement("div");
+                    notice.className = "chat-blocked-notice text-danger fs-8 fw-semibold mb-2";
+                    notice.textContent = "You can't message this user.";
+                    messenger.querySelector("[data-kt-element='input']")?.insertAdjacentElement("beforebegin", notice);
+                }
+            } else {
+                notice?.remove();
+            }
+        });
+
+        document.getElementById("kt_drawer_chat_voice_call")?.toggleAttribute("disabled", disabled);
+        document.getElementById("kt_drawer_chat_video_call")?.toggleAttribute("disabled", disabled);
+    }
+
+    function initHeaderDropdown() {
+        document.addEventListener("click", e => {
+            const blockBtn = e.target.closest("[data-kt-element='block-toggle']");
+            if (blockBtn) {
+                e.preventDefault();
+                if (!currentTargetUserId) return;
+
+                const doToggle = () => {
+                    api("POST", `/chat/block/${currentTargetUserId}`).then(res => {
+                        if (!res.success) return;
+                        blockedByMe = res.blocked;
+                        fetchBlockStatus(currentTargetUserId);
+                    });
+                };
+
+                if (!blockedByMe && typeof Swal !== "undefined") {
+                    Swal.fire({
+                        title: "Block this user?",
+                        text: "They won't be able to message or call you, and you won't be able to message or call them.",
+                        icon: "warning", showCancelButton: true,
+                        confirmButtonText: "Block", cancelButtonText: "Cancel",
+                        buttonsStyling: false,
+                        customClass: { confirmButton: "btn btn-danger me-2", cancelButton: "btn btn-light" },
+                    }).then(r => { if (r.isConfirmed) doToggle(); });
+                } else {
+                    doToggle();
+                }
+                return;
+            }
+
+            const transcriptBtn = e.target.closest("[data-kt-element='chat-transcript']");
+            if (transcriptBtn) {
+                e.preventDefault();
+                if (currentConversationId) window.open(`${BASE_URL}/chat/transcript/${currentConversationId}`, "_blank");
+                return;
+            }
+
+            const openMsgBtn = e.target.closest("[data-kt-element='open-in-message']");
+            if (openMsgBtn) {
+                e.preventDefault();
+                if (currentTargetUserId) {
+                    const params = new URLSearchParams({ name: currentContactName || "", photo: currentContactPhotoUrl || "" });
+                    window.location.href = `${BASE_URL}/message/${currentTargetUserId}?${params.toString()}`;
+                }
+                return;
+            }
+
+            const clearBtn = e.target.closest("[data-kt-element='clear-conversation']");
+            if (clearBtn) {
+                e.preventDefault();
+                if (!currentConversationId) return;
+                const doClear = () => {
+                    api("POST", `/chat/conversation/${currentConversationId}/clear`).then(res => {
+                        if (!res.success) return;
+                        document.querySelectorAll("[data-kt-element='messages']").forEach(c => clearRenderedMessages(c));
+                        showEmptyState();
+                    });
+                };
+                if (typeof Swal !== "undefined") {
+                    Swal.fire({
+                        title: "Clear this conversation?",
+                        text: "All messages will be removed for you. The other person will still see them until they clear it too.",
+                        icon: "warning", showCancelButton: true,
+                        confirmButtonText: "Clear", cancelButtonText: "Cancel",
+                        buttonsStyling: false,
+                        customClass: { confirmButton: "btn btn-danger me-2", cancelButton: "btn btn-light" },
+                    }).then(r => { if (r.isConfirmed) doClear(); });
+                } else {
+                    doClear();
+                }
+                return;
+            }
+        });
+    }
+
+    function initClickableHeader() {
+        document.addEventListener("click", e => {
+            const trigger = e.target.closest(".chat-header-clickable");
+            if (!trigger) return;
+            const toggle = trigger.closest(".card-header")?.querySelector(".dropdown-toggle");
+            toggle?.click();
         });
     }
 
@@ -1239,6 +1410,8 @@ var NavuliChat = (function () {
             if (typingBubble) container.insertBefore(clone, typingBubble);
             else container.appendChild(clone);
         });
+
+        if (!isDeleted && msg.reactions?.length) renderReactions(msg.id, msg.reactions);
     }
 
     // ------------------------------------------------------------------ Call message rendering
@@ -1258,6 +1431,7 @@ var NavuliChat = (function () {
         const status   = meta.status || "ended";
         const isMissed = status === "missed";
         const isBad    = isMissed || status === "declined";
+        const isMine   = String(msg.sender_id) === String(currentUserId);
 
         const iconCls    = isVideo ? "fa-video" : "fa-phone";
         const iconBg     = isBad   ? "#fff0f3" : "#eef6ff";
@@ -1292,22 +1466,43 @@ var NavuliChat = (function () {
             ? `<span style="position:absolute;top:-5px;right:-5px;width:17px;height:17px;background:#f1416c;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;line-height:1;">✕</span>`
             : "";
 
+        const callCardHtml = `
+            <div class="d-flex align-items-center gap-3 px-4 py-3 rounded-3" style="background:#f8faff;border:1px solid #dce8ff;max-width:280px;">
+                <div style="position:relative;width:46px;height:46px;border-radius:10px;background:${iconBg};border:1.5px solid ${iconBorder};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+                    <i class="fa-solid ${iconCls} fs-4" style="color:${iconColor};"></i>
+                    ${badgeHtml}
+                </div>
+                <div>
+                    <div class="fw-semibold text-gray-800 fs-7">${escHtml(callLabel)}</div>
+                    <div class="text-muted fs-9">${escHtml(sublabel)}</div>
+                    ${btnHtml}
+                </div>
+            </div>`;
+
+        const avatarUrl = isMine
+            ? (window.NAVULI_MY_PHOTO || `${BASE_URL}/app/assets/media/avatars/blank.png`)
+            : (msg.profile_photo ? `${BASE_URL}/uploads/profilePhoto/${msg.profile_photo}` : (currentContactPhotoUrl || `${BASE_URL}/app/assets/media/avatars/blank.png`));
+        const senderName = `${msg.fname ?? ""} ${msg.lname ?? ""}`.trim();
+
+        const actionBtnHtml = `<button class="chat-msg-action" type="button" title="More options"><span class="cdm-dots">⋯</span></button>`;
+        const avatarHtml    = `<div class="symbol symbol-30px symbol-circle"><img alt="${escHtml(senderName)}" src="${avatarUrl}" style="width:30px;height:30px;object-fit:cover;border-radius:50%;"></div>`;
+        const nameTimeHtml  = isMine
+            ? `<span class="text-muted fs-8" data-kt-element="message-time">${escHtml(formatTime(msg.created_at))}</span>${avatarHtml}`
+            : `${avatarHtml}<span class="fw-semibold fs-8 text-gray-700">${escHtml(senderName)}</span><span class="text-muted fs-8" data-kt-element="message-time">${escHtml(formatTime(msg.created_at))}</span>`;
+
         document.querySelectorAll("[data-kt-element='messages']").forEach(container => {
             const wrapper = document.createElement("div");
-            wrapper.className           = "d-flex justify-content-center my-4 chat-msg-row";
+            wrapper.className           = `d-flex ${isMine ? "justify-content-end" : "justify-content-start"} mb-6 chat-msg-row`;
             wrapper.dataset.messageId   = msg.id;
             wrapper.dataset.senderId    = msg.sender_id;
             wrapper.dataset.messageType = "call";
             wrapper.innerHTML = `
-                <div class="d-flex align-items-center gap-3 px-4 py-3 rounded-3" style="background:#f8faff;border:1px solid #dce8ff;max-width:300px;">
-                    <div style="position:relative;width:46px;height:46px;border-radius:10px;background:${iconBg};border:1.5px solid ${iconBorder};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-                        <i class="fa-solid ${iconCls} fs-4" style="color:${iconColor};"></i>
-                        ${badgeHtml}
-                    </div>
-                    <div>
-                        <div class="fw-semibold text-gray-800 fs-7">${escHtml(callLabel)}</div>
-                        <div class="text-muted fs-9">${escHtml(sublabel)}</div>
-                        ${btnHtml}
+                <div class="d-flex flex-column ${isMine ? "align-items-end" : "align-items-start"}">
+                    <div class="d-flex align-items-center mb-1 gap-2">${nameTimeHtml}</div>
+                    <div class="d-flex align-items-center gap-1">
+                        ${isMine ? actionBtnHtml : ""}
+                        <div data-kt-element="message-text">${callCardHtml}</div>
+                        ${isMine ? "" : actionBtnHtml}
                     </div>
                 </div>`;
             const typingBubble = container.querySelector("[data-kt-element='typing-bubble']");
@@ -1362,6 +1557,178 @@ var NavuliChat = (function () {
     }
 
     function escHtml(str) { const d = document.createElement("div"); d.textContent = str ?? ""; return d.innerHTML; }
+
+    // ------------------------------------------------------------------ Reactions
+
+    function renderReactions(messageId, reactions) {
+        document.querySelectorAll(`[data-message-id="${messageId}"]`).forEach(msgEl => {
+            const row = msgEl.querySelector("[data-kt-element='reaction-row']");
+            if (!row) return;
+            if (!reactions || !reactions.length) { row.innerHTML = ""; return; }
+            row.innerHTML = reactions.map(r => `
+                <span class="chat-reaction-pill${r.mine ? " mine" : ""}" data-emoji="${escHtml(r.emoji)}">
+                    <span>${r.emoji}</span><span class="crp-count">${r.count}</span>
+                </span>`).join("");
+        });
+    }
+
+    function doReact(messageId, emoji) {
+        const form = new FormData();
+        form.append("emoji", emoji);
+        api("POST", `/chat/message/${messageId}/react`, form, true).then(res => {
+            if (!res.success) return;
+            renderReactions(res.messageId, res.reactions);
+            if (socket && socketConnected) {
+                socket.emit("message_reacted", {
+                    conversationId: res.conversationId,
+                    messageId:      res.messageId,
+                    reactions:      res.reactions,
+                });
+            }
+        });
+    }
+
+    function positionPopupNear(target, popupEl) {
+        const rect = (target instanceof Element) ? target.getBoundingClientRect() : target;
+        const w = popupEl.offsetWidth  || 280;
+        const h = popupEl.offsetHeight || 200;
+        let top  = rect.bottom + 6;
+        let left = rect.left;
+        if (top  + h > window.innerHeight - 8) top  = rect.top - h - 6;
+        if (left < 8)                           left = 8;
+        if (left + w > window.innerWidth  - 8) left = window.innerWidth  - w - 8;
+        popupEl.style.top  = top  + "px";
+        popupEl.style.left = left + "px";
+    }
+
+    let reactionBarTargetId = null;
+
+    function initReactions() {
+        const bar = document.getElementById("chat_reaction_bar");
+        if (!bar) return;
+
+        document.addEventListener("click", e => {
+            const trigger = e.target.closest(".chat-reaction-trigger");
+            if (trigger) {
+                e.stopPropagation();
+                const msgEl = trigger.closest("[data-message-id]");
+                if (!msgEl) return;
+                reactionBarTargetId = msgEl.dataset.messageId;
+                closeEmojiPopup();
+                bar.classList.remove("d-none");
+                positionPopupNear(trigger, bar);
+                return;
+            }
+
+            const pill = e.target.closest(".chat-reaction-pill");
+            if (pill) {
+                e.stopPropagation();
+                const msgEl = pill.closest("[data-message-id]");
+                if (msgEl) doReact(msgEl.dataset.messageId, pill.dataset.emoji);
+                return;
+            }
+
+            if (!bar.classList.contains("d-none") &&
+                !bar.contains(e.target) &&
+                !e.target.closest(".chat-reaction-trigger")) {
+                bar.classList.add("d-none");
+            }
+        });
+
+        bar.querySelectorAll(".crb-emoji[data-emoji]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                if (reactionBarTargetId) doReact(reactionBarTargetId, btn.dataset.emoji);
+                bar.classList.add("d-none");
+            });
+        });
+
+        document.getElementById("chat_reaction_more")?.addEventListener("click", () => {
+            const rect = bar.getBoundingClientRect();
+            bar.classList.add("d-none");
+            if (reactionBarTargetId) openEmojiPopup({ mode: "react", messageId: reactionBarTargetId, anchorEl: rect });
+        });
+
+        document.addEventListener("keydown", e => { if (e.key === "Escape") bar.classList.add("d-none"); });
+    }
+
+    // ------------------------------------------------------------------ Emoji palette popup
+
+    const EMOJI_PALETTE = {
+        "Smileys": ["😀","😁","😂","🤣","😃","😄","😅","😆","😉","😊","😋","😎","😍","🥰","😘","🙂","🙃","😇","😐","😑","😶","🙄","😏","😣","😥","😮","🤐","😯","😪","😫","🥱","😴","😌","😜","😝","🤤","😒","😓","😔","😕"],
+        "Gestures": ["👍","👎","👌","✌️","🤞","🤟","🤘","👏","🙌","👐","🤲","🙏","💪","👋","🤝","✋","🖐️","👆","👇","👉","👈"],
+        "Hearts":   ["❤️","🧡","💛","💚","💙","💜","🖤","🤍","🤎","💔","❣️","💕","💞","💓","💗","💖","💘","💝"],
+        "Animals & Nature": ["🐶","🐱","🐭","🐹","🐰","🦊","🐻","🐼","🐨","🐯","🦁","🐮","🐷","🐸","🐵","🌸","🌹","🌻","🌞","🌈"],
+        "Objects & Symbols": ["🎉","🎊","🎁","🏆","⭐","🔥","💯","✅","❌","⚠️","💡","📌","📎","🔔","🎵","☕","🍕","🍔","🎂","⚽"],
+    };
+
+    let emojiPopupMode      = null; // 'react' | 'compose'
+    let emojiPopupMessageId = null;
+    let emojiPopupInputEl   = null;
+
+    function buildEmojiPopupHtml() {
+        let html = "";
+        for (const [cat, list] of Object.entries(EMOJI_PALETTE)) {
+            html += `<div class="cep-cat-label">${escHtml(cat)}</div><div class="cep-grid">`;
+            html += list.map(e => `<span class="cep-emoji" data-emoji="${e}">${e}</span>`).join("");
+            html += `</div>`;
+        }
+        return html;
+    }
+
+    function initEmojiPopup() {
+        const popup = document.getElementById("chat_emoji_popup");
+        if (!popup) return;
+        popup.innerHTML = buildEmojiPopupHtml();
+
+        popup.addEventListener("click", e => {
+            const item = e.target.closest(".cep-emoji");
+            if (!item) return;
+            const emoji = item.dataset.emoji;
+            if (emojiPopupMode === "react" && emojiPopupMessageId) {
+                doReact(emojiPopupMessageId, emoji);
+            } else if (emojiPopupMode === "compose" && emojiPopupInputEl) {
+                insertAtCursor(emojiPopupInputEl, emoji);
+            }
+            closeEmojiPopup();
+        });
+
+        document.addEventListener("click", e => {
+            if (!popup.classList.contains("d-none") &&
+                !popup.contains(e.target) &&
+                !e.target.closest(".chat-reaction-trigger") &&
+                !e.target.closest("#chat_reaction_more") &&
+                !e.target.closest("[data-kt-element='emoji']")) {
+                closeEmojiPopup();
+            }
+        });
+
+        document.addEventListener("keydown", e => { if (e.key === "Escape") closeEmojiPopup(); });
+    }
+
+    function openEmojiPopup({ mode, messageId, inputEl, anchorEl }) {
+        const popup = document.getElementById("chat_emoji_popup");
+        if (!popup) return;
+        emojiPopupMode      = mode;
+        emojiPopupMessageId = messageId || null;
+        emojiPopupInputEl   = inputEl || null;
+        popup.classList.remove("d-none");
+        positionPopupNear(anchorEl, popup);
+    }
+
+    function closeEmojiPopup() {
+        document.getElementById("chat_emoji_popup")?.classList.add("d-none");
+        emojiPopupMode = null; emojiPopupMessageId = null; emojiPopupInputEl = null;
+    }
+
+    function insertAtCursor(input, text) {
+        const start = input.selectionStart ?? input.value.length;
+        const end   = input.selectionEnd   ?? input.value.length;
+        input.value = input.value.slice(0, start) + text + input.value.slice(end);
+        const pos = start + text.length;
+        input.focus();
+        input.setSelectionRange(pos, pos);
+        autoResizeTextarea(input);
+    }
 
     // ------------------------------------------------------------------ Textarea auto-resize
 
@@ -1430,6 +1797,9 @@ var NavuliChat = (function () {
         el.querySelector("[data-kt-element='file-input']")?.addEventListener("change", e => { const f = e.target.files?.[0]; if (f) { sendFile(f, el); e.target.value = ""; } });
         el.querySelector("[data-kt-element='photo-attach']")?.addEventListener("click", () => el.querySelector("[data-kt-element='photo-input']")?.click());
         el.querySelector("[data-kt-element='photo-input']")?.addEventListener("change", e => { if (e.target.files?.length) { sendPhotos(e.target.files, el); e.target.value = ""; } });
+        el.querySelector("[data-kt-element='emoji']")?.addEventListener("click", e => {
+            openEmojiPopup({ mode: "compose", inputEl: input, anchorEl: e.currentTarget });
+        });
     }
 
     // ------------------------------------------------------------------ Call audio (Web Audio API tones)
@@ -1563,7 +1933,18 @@ var NavuliChat = (function () {
     }
 
     async function initiateCall(callType) {
-        if (callState.active) return;
+        if (callState.active) {
+            Swal.fire({
+                icon: "info",
+                title: "Already in a call",
+                html: `You are currently in a <strong>${callState.callType}</strong> call with <strong>${escHtml(callState.peerName || "someone")}</strong>.<br><br>Please end that call before starting a new one.`,
+                confirmButtonText: "Got it",
+                confirmButtonColor: "#1a56db",
+                showClass: { popup: "animate__animated animate__fadeInDown animate__faster" },
+                hideClass: { popup: "animate__animated animate__fadeOutUp animate__faster" },
+            });
+            return;
+        }
         if (!currentTargetUserId || !currentConversationId) {
             showCallSwal("warning", "No conversation open", "Please open a chat conversation first.");
             return;
@@ -1775,7 +2156,7 @@ var NavuliChat = (function () {
 
     function handleIncomingCall({ callerId, callerName, callerPhoto, callType, offer, conversationId }) {
         console.log("[NavuliChat] handleIncomingCall received — from:", callerId, callerName, "type:", callType, "convId:", conversationId);
-        if (callState.active) { socket?.volatile.emit("call_decline", { callerId }); return; }
+        if (callState.active) { socket?.volatile.emit("call_decline", { callerId, reason: "busy" }); return; }
         callState.direction      = "incoming";
         callState.callType       = callType || "voice";
         callState.peerId         = callerId;
@@ -2055,6 +2436,10 @@ var NavuliChat = (function () {
             initShareModal();
             initMinimize();
             initCallButtons();
+            initReactions();
+            initEmojiPopup();
+            initHeaderDropdown();
+            initClickableHeader();
             initMessenger(document.querySelector("#kt_chat_messenger"));
             initMessenger(document.querySelector("#kt_drawer_chat_messenger"));
             connectSocket().then(() => fetchUnreadCount());

@@ -183,6 +183,7 @@ $routes->get('user/edit/(:num)', 'UserController::edit/$1');
 // POST routes after GET routes
 $routes->post('user/getUserListing', 'UserController::getUserListing');
 $routes->get('user/chatUserList',   'UserController::getChatUserList');
+$routes->get('user/chatUserInfo/(:num)', 'UserController::getChatUserInfo/$1');
 
 // ============================================================================
 // CHAT Routes
@@ -194,10 +195,20 @@ $routes->get( 'chat/conversation/(:num)',      'ChatController::getOrCreateConve
 $routes->get( 'chat/messages/(:num)',          'ChatController::getMessages/$1');
 $routes->get( 'chat/messages/(:num)/new',     'ChatController::getNewMessages/$1');
 $routes->post('chat/message/(:num)/delete',   'ChatController::deleteMessage/$1');
+$routes->post('chat/conversation/(:num)/clear', 'ChatController::clearConversation/$1');
 $routes->post('chat/messages',                 'ChatController::sendMessage');
 $routes->post('chat/upload',                   'ChatController::uploadFile');
 $routes->post('chat/read/(:num)',              'ChatController::markRead/$1');
 $routes->post('chat/call-event',               'ChatController::callEvent');
+$routes->post('chat/message/(:num)/react',     'ChatController::reactMessage/$1');
+$routes->post('chat/block/(:num)',             'ChatController::block/$1');
+$routes->get( 'chat/block-status/(:num)',      'ChatController::blockStatus/$1');
+$routes->post('chat/internal/block-check',     'ChatController::internalBlockCheck');
+$routes->get( 'chat/transcript/(:num)',        'ChatController::transcript/$1');
+
+$routes->get('message',                        'MessageController::index');
+$routes->get('message/(:num)',                 'MessageController::index/$1');
+
 $routes->post('user/store', 'UserController::store');
 $routes->post('user/update/(:num)', 'UserController::update/$1');
 $routes->post('user/delete/(:num)', 'UserController::delete/$1');
@@ -307,6 +318,63 @@ $routes->post('reference/generate-transcript/(:num)',  'ReferenceController::gen
 
 
 $routes->post('admission/delete/(:num)', 'AdmissionController::delete/$1');
+
+// ============================================================================
+// SCHOOL CATEGORY Routes
+// ============================================================================
+$routes->get( 'school/category',                'SchoolCategoryController::index');
+$routes->get( 'school/category/add',            'SchoolCategoryController::add');
+$routes->post('school/category/store',          'SchoolCategoryController::store');
+$routes->get( 'school/category/edit/(:num)',    'SchoolCategoryController::edit/$1');
+$routes->post('school/category/update/(:num)',  'SchoolCategoryController::update/$1');
+$routes->post('school/category/remove/(:num)',  'SchoolCategoryController::delete/$1');
+
+// ============================================================================
+// EXAM Routes
+// ============================================================================
+$routes->get( 'exam',                              'ExamController::index');
+$routes->get( 'exam/my',                           'ExamController::my');
+$routes->get( 'exam/add',                          'ExamController::add');
+$routes->post('exam/store',                        'ExamController::store');
+$routes->get( 'exam/detail/(:num)',                        'ExamController::detail/$1');
+$routes->get( 'exam/detail/(:num)/school/(:num)',          'ExamController::schoolDetail/$1/$2');
+$routes->get( 'exam/edit/(:num)',                  'ExamController::edit/$1');
+$routes->post('exam/update/(:num)',                'ExamController::update/$1');
+$routes->post('exam/delete/(:num)',                'ExamController::delete/$1');
+$routes->post('exam/(:num)/students/add',          'ExamController::addStudents/$1');
+$routes->post('exam/student/(:num)/remove',                  'ExamController::removeStudent/$1');
+$routes->post('exam/(:num)/school/(:num)/students/drop-all', 'ExamController::dropAllStudents/$1/$2');
+$routes->get( 'exam/stream/(:num)/exams',                    'ExamController::getExamsForStream/$1');
+$routes->get( 'exam/student/(:num)/marks',                   'ExamController::marks/$1');
+$routes->post('exam/student/(:num)/marks/save',              'ExamController::saveMarks/$1');
+$routes->get( 'exam/student/(:num)/subjects/assign',          'ExamController::showAssignSubjects/$1');
+$routes->post('exam/student/(:num)/subjects/assign',          'ExamController::assignSubjects/$1');
+$routes->get( 'exam/detail/(:num)/school/(:num)/report/pdf',       'ExamController::schoolReportPdf/$1/$2');
+$routes->get( 'exam/student/(:num)/marks/report/pdf',              'ExamController::studentReportPdf/$1');
+$routes->get( 'exam/detail/(:num)/school/(:num)/students/by-year', 'ExamController::studentsByYear/$1/$2');
+
+// ============================================================================
+// CONDUCT Routes
+// ============================================================================
+$routes->get( 'conduct',                        'ConductController::index');
+$routes->get( 'conduct/my',                      'ConductController::my');
+$routes->get( 'conduct/report',                  'ConductController::report');
+$routes->get( 'conduct/add',                     'ConductController::add');
+$routes->post('conduct/store',                   'ConductController::store');
+$routes->get( 'conduct/edit/(:num)',             'ConductController::edit/$1');
+$routes->post('conduct/update/(:num)',           'ConductController::update/$1');
+$routes->post('conduct/remove/(:num)',           'ConductController::delete/$1');
+$routes->get( 'conduct/detail/(:num)',           'ConductController::detail/$1');
+$routes->post('conduct/(:num)/actions/add',      'ConductController::addAction/$1');
+$routes->post('conduct/action/(:num)/complete',  'ConductController::completeAction/$1');
+$routes->post('conduct/(:num)/notify',           'ConductController::notify/$1');
+$routes->post('conduct/file/(:num)/delete',      'ConductController::deleteFile/$1');
+$routes->get( 'conduct/file/(:num)',             'ConductController::viewFile/$1');
+$routes->get( 'conduct/my/detail/(:num)',        'ConductController::myDetail/$1');
+$routes->post('conduct/appeal/(:num)',           'ConductController::appeal/$1');
+$routes->get( 'conduct/appeals',                 'ConductController::appeals');
+$routes->post('conduct/appeal/(:num)/process',   'ConductController::processAppeal/$1');
+$routes->get( 'conduct/appeal/file/(:num)',      'ConductController::viewAppealFile/$1');
 
 // ============================================================================
 // ADMISSION
@@ -442,6 +510,7 @@ $routes->get( 'classroom/discussion/reply/(:num)/reactions',   'ClassroomControl
 $routes->post('classroom/teacher/(:num)/assignment/store',           'ClassroomController::teacherAssignmentStore/$1');
 $routes->post('classroom/teacher/(:num)/assignment/(:num)/update',   'ClassroomController::teacherAssignmentUpdate/$1/$2');
 $routes->post('classroom/teacher/(:num)/assignment/(:num)/delete',   'ClassroomController::teacherAssignmentDelete/$1/$2');
+$routes->post('classroom/teacher/(:num)/assignment/(:num)/file/(:num)/delete', 'ClassroomController::teacherAssignmentFileDelete/$1/$2/$3');
 $routes->get( 'classroom/teacher/(:num)',               'ClassroomController::teacherClassroom/$1');
 $routes->get( 'classroom/teacher/(:num)/(:segment)',    'ClassroomController::teacherClassroom/$1/$2');
 $routes->get( 'classroom/student/(:num)',                                                    'ClassroomController::studentClassroom/$1');
@@ -465,6 +534,7 @@ $routes->get( 'classroom/past-classrooms',                                      
 $routes->post('classroom/student/(:num)/feedback/store',               'ClassroomController::studentFeedbackStore/$1');
 $routes->get( 'classroom/student/(:num)/assignment/(:num)/submit',     'ClassroomController::studentAssignmentSubmit/$1/$2');
 $routes->post('classroom/student/(:num)/assignment/(:num)/submit',     'ClassroomController::studentAssignmentSubmitStore/$1/$2');
+$routes->post('copyleaks/webhook/(:segment)',                          'CopyleaksController::handle/$1');
 $routes->get( 'classroom/student/(:num)/assignment/(:num)/assessment', 'ClassroomController::studentAssignmentAssessment/$1/$2');
 $routes->get( 'classroom/teacher/(:num)/assignment/(:num)/mark',       'ClassroomController::teacherAssignmentMark/$1/$2');
 $routes->post('classroom/teacher/(:num)/assignment/(:num)/mark/save',  'ClassroomController::teacherAssignmentMarkSave/$1/$2');
@@ -476,8 +546,12 @@ $routes->get( 'classroom/student/(:num)/(:segment)',                            
 // ATTENDANCE Routes
 // ============================================================================
 // Pages
-$routes->get( 'attendance',          'AttendanceController::index');
-$routes->get( 'attendance/add',      'AttendanceController::add');
+$routes->get( 'attendance',             'AttendanceController::index');
+$routes->get( 'attendance/add',         'AttendanceController::add');
+$routes->get( 'attendance/my/daily',        'AttendanceController::myDailyAttendance');
+$routes->get( 'attendance/my/daily/pdf',    'AttendanceController::myDailyPdf');
+$routes->post('attendance/holiday/add',     'AttendanceController::addHoliday');
+$routes->post('attendance/holiday/remove/(:num)', 'AttendanceController::removeHoliday/$1');
 
 // AJAX helpers
 $routes->get( 'attendance/check',    'AttendanceController::checkExists');
@@ -486,6 +560,8 @@ $routes->get( 'attendance/events',   'AttendanceController::getCalendarEvents');
 $routes->get( 'attendance/detail',   'AttendanceController::getDateDetail');
 
 // Write actions
+$routes->get( 'attendance/grid/pdf',          'AttendanceController::gridPdf');
+$routes->post('attendance/grid/save',         'AttendanceController::saveGrid');
 $routes->post('attendance/save',              'AttendanceController::save');
 $routes->post('attendance/save-ajax',         'AttendanceController::saveAjax');
 $routes->post('attendance/update/(:num)',      'AttendanceController::updateRecord/$1');
@@ -497,6 +573,7 @@ $routes->post('attendance/delete-file/(:num)', 'AttendanceController::deleteFile
 // ── Subject Attendance ───────────────────────────────────────────────────────
 $routes->get( 'attendance/subject',                       'SubjectAttendanceController::index');
 $routes->get( 'attendance/subject/add',                   'SubjectAttendanceController::add');
+$routes->get( 'attendance/my/subject',                    'SubjectAttendanceController::mySubjectAttendance');
 
 // AJAX helpers
 $routes->get( 'attendance/subject/check',                 'SubjectAttendanceController::checkExists');
