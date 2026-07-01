@@ -1107,8 +1107,9 @@ var NavuliChat = (function () {
             }
         });
 
-        document.getElementById("kt_drawer_chat_voice_call")?.toggleAttribute("disabled", disabled);
-        document.getElementById("kt_drawer_chat_video_call")?.toggleAttribute("disabled", disabled);
+        const callButtonsDisabled = disabled || callState.active;
+        document.getElementById("kt_drawer_chat_voice_call")?.toggleAttribute("disabled", callButtonsDisabled);
+        document.getElementById("kt_drawer_chat_video_call")?.toggleAttribute("disabled", callButtonsDisabled);
     }
 
     function initHeaderDropdown() {
@@ -1955,6 +1956,7 @@ var NavuliChat = (function () {
 
         // 1. Set state and show card IMMEDIATELY
         callState.active         = true;
+        setComposerDisabled(convBlocked);   // lock call buttons on all conversations
         callState.direction      = "outgoing";
         callState.callType       = callType;
         callState.peerId         = currentTargetUserId;
@@ -2189,6 +2191,7 @@ var NavuliChat = (function () {
 
         // ── 1. Mark active and show card IMMEDIATELY ──────────────────────
         callState.active = true;
+        setComposerDisabled(convBlocked);   // lock call buttons on all conversations
         showCallCardUI("Connecting…", () => {
             socket?.volatile.emit("call_decline", { callerId: peerId });
             resetCallState();
@@ -2374,6 +2377,7 @@ var NavuliChat = (function () {
             callTimeout: null, incomingTimeout: null,
             localStream: null, pc: null, pendingCandidates: [], muted: false,
         });
+        setComposerDisabled(convBlocked);   // unlock call buttons now that call is over
     }
 
     function initCallButtons() {
