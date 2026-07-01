@@ -1461,6 +1461,35 @@
 				return status === 'Online' ? '#50cd89' : '#a1a5b7';
 			}
 
+			// Per-user unread counts for the popup list
+			const uclUnread = {};
+
+			function setUnreadBadge(userId, count) {
+				userId = String(userId);
+				uclUnread[userId] = count;
+				const row = listEl.querySelector(`.ucl-row[data-user-id="${userId}"]`);
+				if (!row) return;
+				const badge = row.querySelector('.ucl-unread-badge');
+				if (!badge) return;
+				if (count > 0) {
+					badge.textContent   = count > 99 ? '99+' : String(count);
+					badge.style.display = 'flex';
+				} else {
+					badge.textContent   = '';
+					badge.style.display = 'none';
+				}
+			}
+
+			function loadUnreadCounts() {
+				fetch('<?= base_url('chat/unread-per-user') ?>', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+					.then(r => r.json())
+					.then(data => {
+						if (!data.success) return;
+						Object.entries(data.counts).forEach(([uid, cnt]) => setUnreadBadge(uid, cnt));
+					})
+					.catch(() => {});
+			}
+
 			function buildRow(u) {
 				const initials = ((u.fname || '').charAt(0) + (u.lname || '').charAt(0)).toUpperCase();
 				const avatar   = u.profile_photo
@@ -1476,12 +1505,18 @@
 				row.dataset.userName     = `${u.fname} ${u.lname}`;
 				row.dataset.userPhoto    = u.profile_photo ? `${PHOTO_BASE}${u.profile_photo}` : '';
 				row.dataset.userStatus   = u.online_status;
+
+				const cnt         = uclUnread[String(u.user_id)] || 0;
+				const badgeDisplay = cnt > 0 ? 'flex' : 'none';
+				const badgeText    = cnt > 99 ? '99+' : (cnt > 0 ? String(cnt) : '');
+
 				row.innerHTML = `
 					<div style="position:relative;flex-shrink:0;">${avatar}${dot}</div>
 					<div style="min-width:0;flex:1;">
 						<div class="fw-semibold text-gray-800 fs-7 text-truncate">${esc(u.fname)} ${esc(u.lname)}</div>
 						<div class="fs-9 ${u.online_status === 'Online' ? 'text-success' : 'text-muted'}">${esc(u.online_status)}</div>
-					</div>`;
+					</div>
+					<span class="ucl-unread-badge" style="display:${badgeDisplay};align-items:center;justify-content:center;flex-shrink:0;min-width:20px;height:20px;border-radius:10px;background:#f1416c;color:#fff;font-size:10px;font-weight:700;line-height:1;padding:0 5px;">${badgeText}</span>`;
 				row.addEventListener('mouseenter', () => row.style.background = 'var(--bs-gray-100)');
 				row.addEventListener('mouseleave', () => row.style.background = '');
 				row.addEventListener('click', () => openChat(u, row));
@@ -1517,6 +1552,9 @@
 					document.body.classList.add('drawer-on');
 				}
 
+				// Clear unread badge for this user
+				setUnreadBadge(u.user_id, 0);
+
 				// Load message history and join socket room
 				if (window.NavuliChat) NavuliChat.openConversation(u.user_id, row);
 			}
@@ -1542,6 +1580,7 @@
 							countEl.textContent   = data.onlineCount > 0 ? data.onlineCount + ' online' : '';
 							countEl.style.display = data.onlineCount > 0 ? '' : 'none';
 						}
+						loadUnreadCounts();
 					})
 					.catch(() => {/* silent */})
 					.finally(() => {
@@ -1586,6 +1625,18 @@
 				const term = searchEl.value.trim().toLowerCase();
 				if (term && !`${u.fname} ${u.lname}`.toLowerCase().includes(term)) return;
 				listEl.insertBefore(buildRow(u), listEl.firstChild);
+			});
+
+			// Real-time unread badge updates from the chat module
+			document.addEventListener('navuli:unreadBadge', e => {
+				const { userId, count, action } = e.detail || {};
+				if (!userId) return;
+				if (action === 'increment') {
+					const current = uclUnread[String(userId)] || 0;
+					setUnreadBadge(userId, current + 1);
+				} else {
+					setUnreadBadge(userId, count || 0);
+				}
 			});
 
 		}());
