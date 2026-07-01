@@ -220,6 +220,35 @@
 		return status === 'Online' ? '#50cd89' : '#a1a5b7';
 	}
 
+	// Per-user unread counts: userId (string) -> count
+	const unreadCounts = {};
+
+	function setUnreadBadge(userId, count) {
+		userId = String(userId);
+		unreadCounts[userId] = count;
+		const row = listEl.querySelector(`.mp-row[data-user-id="${userId}"]`);
+		if (!row) return;
+		const badge = row.querySelector('.mp-unread-badge');
+		if (!badge) return;
+		if (count > 0) {
+			badge.textContent  = count > 99 ? '99+' : count;
+			badge.style.display = '';
+		} else {
+			badge.textContent  = '';
+			badge.style.display = 'none';
+		}
+	}
+
+	function loadUnreadCounts() {
+		fetch('<?= base_url('chat/unread-per-user') ?>', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+			.then(r => r.json())
+			.then(data => {
+				if (!data.success) return;
+				Object.entries(data.counts).forEach(([uid, cnt]) => setUnreadBadge(uid, cnt));
+			})
+			.catch(() => {/* silent */});
+	}
+
 	function buildRow(u) {
 		const initials = ((u.fname || '').charAt(0) + (u.lname || '').charAt(0)).toUpperCase();
 		const avatar   = u.profile_photo
@@ -234,12 +263,18 @@
 		row.dataset.userName   = `${u.fname} ${u.lname}`;
 		row.dataset.userPhoto  = u.profile_photo ? `${PHOTO_BASE}${u.profile_photo}` : '';
 		row.dataset.userStatus = u.online_status;
+
+		const storedCount = unreadCounts[String(u.user_id)] || 0;
+		const badgeStyle  = storedCount > 0 ? '' : 'display:none;';
+		const badgeText   = storedCount > 99 ? '99+' : (storedCount || '');
+
 		row.innerHTML = `
 			<div style="position:relative;flex-shrink:0;">${avatar}${dot}</div>
 			<div style="min-width:0;flex:1;">
 				<div class="fw-semibold text-gray-800 fs-7 text-truncate">${esc(u.fname)} ${esc(u.lname)}</div>
 				<div class="fs-9 ${u.online_status === 'Online' ? 'text-success' : 'text-muted'}">${esc(u.online_status)}</div>
-			</div>`;
+			</div>
+			<span class="mp-unread-badge badge rounded-pill bg-danger fs-9" style="min-width:18px;height:18px;line-height:18px;padding:0 5px;flex-shrink:0;${badgeStyle}">${badgeText}</span>`;
 		row.addEventListener('mouseenter', () => row.style.background = 'var(--bs-gray-100)');
 		row.addEventListener('mouseleave', () => row.style.background = '');
 		row.addEventListener('click', () => openChat(u.user_id, row.dataset.userName, row.dataset.userPhoto, u.online_status, row));
@@ -259,6 +294,7 @@
 		document.getElementById('mp_status_text').textContent = isOnline ? 'Online' : 'Offline';
 
 		activeUserId = String(userId);
+		setUnreadBadge(userId, 0);
 		listEl.querySelectorAll('.mp-row').forEach(el => {
 			el.style.background = el.dataset.userId === activeUserId ? 'var(--bs-gray-100)' : '';
 		});
@@ -310,6 +346,7 @@
 	});
 
 	fetchPage();
+	loadUnreadCounts();
 
 	// If we navigated straight here with a known target user (e.g. via "Open in Message"),
 	// open the conversation immediately without waiting for their row to appear in the list.
@@ -326,6 +363,20 @@
 		const term = searchEl.value.trim().toLowerCase();
 		if (term && !`${u.fname} ${u.lname}`.toLowerCase().includes(term)) return;
 		listEl.insertBefore(buildRow(u), listEl.firstChild);
+	});
+
+	// Real-time unread badge updates from the chat module
+	document.addEventListener('navuli:unreadBadge', e => {
+		const { userId, count, action } = e.detail || {};
+		if (!userId) return;
+		if (action === 'increment') {
+			// Don't increment badge for the conversation currently open
+			if (String(userId) === activeUserId) return;
+			const current = unreadCounts[String(userId)] || 0;
+			setUnreadBadge(userId, current + 1);
+		} else {
+			setUnreadBadge(userId, count || 0);
+		}
 	});
 
 }());

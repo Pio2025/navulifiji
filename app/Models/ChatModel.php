@@ -499,6 +499,31 @@ class ChatModel extends Model
         return $row ? (int) $row->cnt : 0;
     }
 
+    /**
+     * Returns unread message counts keyed by sender user_id.
+     * e.g. [ 5 => 3, 12 => 1 ] means 3 unread from user 5, 1 from user 12.
+     */
+    public function getUnreadCountsPerUser(int $userId): array
+    {
+        $rows = $this->db->query("
+            SELECT m.sender_id, COUNT(*) AS cnt
+            FROM   chat_messages m
+            INNER JOIN chat_participants cp
+                   ON  cp.conversation_id = m.conversation_id
+                  AND  cp.user_id = ?
+            WHERE  m.sender_id  != ?
+              AND  m.deleted_at IS NULL
+              AND  (cp.last_read_at IS NULL OR m.created_at > cp.last_read_at)
+            GROUP BY m.sender_id
+        ", [$userId, $userId])->getResultArray();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['sender_id']] = (int) $row['cnt'];
+        }
+        return $result;
+    }
+
     // ------------------------------------------------------------------ Private helpers
 
     private function getMessageFiles(int $messageId): array

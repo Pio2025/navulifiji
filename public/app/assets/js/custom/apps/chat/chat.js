@@ -894,6 +894,11 @@ var NavuliChat = (function () {
                 } else {
                     fetchUnreadCount();
                     showToastNotification(message);
+                    if (message.sender_id) {
+                        document.dispatchEvent(new CustomEvent("navuli:unreadBadge", {
+                            detail: { userId: String(message.sender_id), action: "increment" }
+                        }));
+                    }
                 }
             });
 
@@ -1773,6 +1778,11 @@ var NavuliChat = (function () {
     function doMarkRead(conversationId) {
         api("POST", `/chat/read/${conversationId}`).then(() => fetchUnreadCount());
         if (socket && socketConnected) socket.emit("messages_read", { conversationId });
+        if (currentTargetUserId) {
+            document.dispatchEvent(new CustomEvent("navuli:unreadBadge", {
+                detail: { userId: String(currentTargetUserId), count: 0 }
+            }));
+        }
     }
 
     function fetchUnreadCount() {

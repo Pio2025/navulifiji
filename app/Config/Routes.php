@@ -190,6 +190,7 @@ $routes->get('user/chatUserInfo/(:num)', 'UserController::getChatUserInfo/$1');
 // ============================================================================
 $routes->get( 'chat/token',                    'ChatController::getToken');
 $routes->get( 'chat/unread-count',             'ChatController::getUnreadCount');
+$routes->get( 'chat/unread-per-user',          'ChatController::getUnreadPerUser');
 $routes->get( 'chat/conversations',            'ChatController::getConversations');
 $routes->get( 'chat/conversation/(:num)',      'ChatController::getOrCreateConversation/$1');
 $routes->get( 'chat/messages/(:num)',          'ChatController::getMessages/$1');

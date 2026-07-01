@@ -341,6 +341,22 @@ class ChatController extends BaseController
         return $this->response->setJSON(['success' => true, 'count' => $count]);
     }
 
+    /**
+     * GET /chat/unread-per-user
+     * Returns unread message counts keyed by sender user_id.
+     */
+    public function getUnreadPerUser()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false]);
+        }
+
+        $myId   = (int) $this->session->get('userID');
+        $counts = $this->chatModel->getUnreadCountsPerUser($myId);
+
+        return $this->response->setJSON(['success' => true, 'counts' => $counts]);
+    }
+
     // ------------------------------------------------------------------ Read receipt
 
     /**
