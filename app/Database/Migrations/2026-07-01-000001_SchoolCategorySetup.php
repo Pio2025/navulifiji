@@ -21,10 +21,13 @@ class SchoolCategorySetup extends Migration
             $this->forge->createTable('school_category_config', true, ['ENGINE' => 'MyISAM']);
         }
 
-        // 2. Fix sch_cat_term_entry.term_end_date from INT to DATE
-        $this->forge->modifyColumn('sch_cat_term_entry', [
-            'term_end_date' => ['type' => 'DATE', 'null' => false],
-        ]);
+        // 2. Fix sch_cat_term_entry.term_end_date from INT to DATE (skip if column already gone)
+        $cols = $this->db->getFieldNames('sch_cat_term_entry');
+        if (in_array('term_end_date', $cols)) {
+            $this->forge->modifyColumn('sch_cat_term_entry', [
+                'term_end_date' => ['type' => 'DATE', 'null' => false],
+            ]);
+        }
 
         // 3. Insert permissions for School Category (only if not already seeded)
         $existing = $this->db->table('permission')
