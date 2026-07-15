@@ -7,6 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+// Custom 404 handler — renders inside main layout when logged in
+$routes->set404Override('App\Controllers\ErrorController::show404');
+
 // Catch malformed URLs and redirect to home
 //$routes->get('.*', 'Home::index');
 

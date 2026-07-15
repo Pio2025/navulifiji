@@ -1,84 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title><?= lang('Errors.badRequest') ?></title>
-
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>400 – Bad Request | Navuli</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700" />
     <style>
-        div.logo {
-            height: 200px;
-            width: 155px;
-            display: inline-block;
-            opacity: 0.08;
-            position: absolute;
-            top: 2rem;
-            left: 50%;
-            margin-left: -73px;
-        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            height: 100%;
-            background: #fafafa;
-            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-            color: #777;
-            font-weight: 300;
+            font-family: Inter, "Helvetica Neue", Helvetica, Arial, sans-serif;
+            background: #f5f8fa;
+            color: #3f4254;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
-        h1 {
-            font-weight: lighter;
-            letter-spacing: normal;
-            font-size: 3rem;
-            margin-top: 0;
-            margin-bottom: 0;
-            color: #222;
+        .wrap { text-align: center; padding: 3rem 2rem; max-width: 480px; width: 100%; }
+        .logo { font-size: 1.4rem; font-weight: 700; color: #009ef7; margin-bottom: 2.5rem; letter-spacing: -.5px; }
+        .num { font-size: 8rem; font-weight: 900; line-height: 1; color: #e4e6ea; letter-spacing: -4px; }
+        .icon-wrap {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: #fff8dd;
+            display: flex; align-items: center; justify-content: center;
+            margin: 1.25rem auto;
         }
-        .wrap {
-            max-width: 1024px;
-            margin: 5rem auto;
-            padding: 2rem;
-            background: #fff;
-            text-align: center;
-            border: 1px solid #efefef;
-            border-radius: 0.5rem;
-            position: relative;
+        .icon-wrap svg { width: 36px; height: 36px; color: #ffc700; fill: currentColor; }
+        h1 { font-size: 1.75rem; font-weight: 700; color: #181c32; margin-bottom: .75rem; }
+        p  { font-size: .95rem; color: #7e8299; line-height: 1.6; margin-bottom: 2rem; }
+        .btns { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+        .btn {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .65rem 1.4rem; border-radius: .475rem;
+            font-size: .9rem; font-weight: 600;
+            text-decoration: none; border: none; cursor: pointer;
+            transition: opacity .15s;
         }
-        pre {
-            white-space: normal;
-            margin-top: 1.5rem;
-        }
-        code {
-            background: #fafafa;
-            border: 1px solid #efefef;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            display: block;
-        }
-        p {
-            margin-top: 1.5rem;
-        }
-        .footer {
-            margin-top: 2rem;
-            border-top: 1px solid #efefef;
-            padding: 1em 2em 0 2em;
-            font-size: 85%;
-            color: #999;
-        }
-        a:active,
-        a:link,
-        a:visited {
-            color: #dd4814;
-        }
+        .btn:hover { opacity: .85; }
+        .btn-light   { background: #f1f1f4; color: #3f4254; }
+        .btn-primary { background: #009ef7; color: #fff; }
+        .footer { margin-top: 3rem; font-size: .78rem; color: #b5b5c3; }
     </style>
 </head>
 <body>
 <div class="wrap">
-    <h1>400</h1>
-
-    <p>
-        <?php if (ENVIRONMENT !== 'production') : ?>
-            <?= nl2br(esc($message)) ?>
-        <?php else : ?>
-            <?= lang('Errors.sorryBadRequest') ?>
-        <?php endif; ?>
-    </p>
+    <div class="logo">Navuli</div>
+    <div class="num">400</div>
+    <div class="icon-wrap">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    </div>
+    <h1>Bad Request</h1>
+    <p>The request could not be understood or was missing required parameters.</p>
+    <div class="btns">
+        <a href="javascript:history.back()" class="btn btn-light">&#8592; Go Back</a>
+        <a href="/" class="btn btn-primary">&#8962; Home</a>
+    </div>
+    <div class="footer">&copy; <?= date('Y') ?> Navuli – School Management Information System</div>
 </div>
 </body>
 </html>
