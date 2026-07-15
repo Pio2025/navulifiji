@@ -437,8 +437,23 @@ class ClassroomController extends BaseController
                 $data['classrooms'] = $this->getChildrensClassrooms($userId);
                 $data['_view']      = 'app/classroom/parent/my';
             } else {
-                $data['_view'] = 'app/classroom/my';
-                $data['mode']  = 'none';
+                // Check if this user is assigned as a Class Teacher even without roleCatId=3
+                $years       = $this->getTeacherClassroomYears($userId);
+                $defaultYear = $this->getTeacherDefaultYear($userId);
+                if ($defaultYear) {
+                    $sessionPhoto = $this->session->get('photo');
+                    $data['classrooms']      = $this->getTeacherClassroomsForYear($userId, $defaultYear);
+                    $data['years']           = $years;
+                    $data['defaultYear']     = $defaultYear;
+                    $data['sessionFname']    = $this->session->get('fname') ?? '';
+                    $data['sessionPhotoUrl'] = $sessionPhoto ? base_url('uploads/profilePhoto/' . $sessionPhoto) : null;
+                    $data['sessionUserId']   = $userId;
+                    $data['userId']          = $userId;
+                    $data['_view']           = 'app/classroom/teacher/my';
+                } else {
+                    $data['_view'] = 'app/classroom/my';
+                    $data['mode']  = 'none';
+                }
             }
         }
 
@@ -5088,13 +5103,19 @@ class ClassroomController extends BaseController
     {
         $db   = \Config\Database::connect();
         $rows = $db->query("
-            SELECT DISTINCT c.class_year
-            FROM classroom_subject_teacher cst
-            INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
-            INNER JOIN classroom c            ON c.class_id        = csub.class_id_fk
-            WHERE cst.user_id_fk = ?
+            SELECT DISTINCT c.class_year FROM (
+                SELECT csub.class_id_fk AS class_id
+                FROM classroom_subject_teacher cst
+                INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
+                WHERE cst.user_id_fk = ?
+                UNION
+                SELECT cr.class_id_fk AS class_id
+                FROM classroom_role cr
+                WHERE cr.user_id_fk = ? AND cr.cs_role = 'Class Teacher' AND cr.cs_status = 'Active'
+            ) AS src
+            INNER JOIN classroom c ON c.class_id = src.class_id
             ORDER BY c.class_year DESC
-        ", [$userId])->getResultArray();
+        ", [$userId, $userId])->getResultArray();
         return array_column($rows, 'class_year');
     }
 
@@ -5102,22 +5123,35 @@ class ClassroomController extends BaseController
     {
         $db  = \Config\Database::connect();
         $row = $db->query("
-            SELECT c.class_year
-            FROM classroom_subject_teacher cst
-            INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
-            INNER JOIN classroom c            ON c.class_id        = csub.class_id_fk
-            WHERE cst.user_id_fk = ? AND c.class_status = 'Active'
+            SELECT c.class_year FROM (
+                SELECT csub.class_id_fk AS class_id
+                FROM classroom_subject_teacher cst
+                INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
+                WHERE cst.user_id_fk = ?
+                UNION
+                SELECT cr.class_id_fk AS class_id
+                FROM classroom_role cr
+                WHERE cr.user_id_fk = ? AND cr.cs_role = 'Class Teacher' AND cr.cs_status = 'Active'
+            ) AS src
+            INNER JOIN classroom c ON c.class_id = src.class_id
+            WHERE c.class_status = 'Active'
             ORDER BY c.class_year DESC LIMIT 1
-        ", [$userId])->getRowArray();
+        ", [$userId, $userId])->getRowArray();
         if ($row) return (int) $row['class_year'];
         $row = $db->query("
-            SELECT c.class_year
-            FROM classroom_subject_teacher cst
-            INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
-            INNER JOIN classroom c            ON c.class_id        = csub.class_id_fk
-            WHERE cst.user_id_fk = ?
+            SELECT c.class_year FROM (
+                SELECT csub.class_id_fk AS class_id
+                FROM classroom_subject_teacher cst
+                INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
+                WHERE cst.user_id_fk = ?
+                UNION
+                SELECT cr.class_id_fk AS class_id
+                FROM classroom_role cr
+                WHERE cr.user_id_fk = ? AND cr.cs_role = 'Class Teacher' AND cr.cs_status = 'Active'
+            ) AS src
+            INNER JOIN classroom c ON c.class_id = src.class_id
             ORDER BY c.class_year DESC LIMIT 1
-        ", [$userId])->getRowArray();
+        ", [$userId, $userId])->getRowArray();
         return $row ? (int) $row['class_year'] : null;
     }
 
@@ -5144,16 +5178,24 @@ class ClassroomController extends BaseController
                  INNER JOIN users u_cc ON u_cc.user_id = cr_cc.user_id_fk
                  WHERE cr_cc.class_id_fk = c.class_id AND cr_cc.cs_role = 'Class Captain' LIMIT 1) AS class_captain_photo,
                 (SELECT COUNT(*) FROM classroom_student cs2 WHERE cs2.class_id_fk = c.class_id) AS student_count
-            FROM classroom_subject_teacher cst
-            INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
-            INNER JOIN classroom c            ON c.class_id        = csub.class_id_fk
-            INNER JOIN stream s               ON s.stream_id       = c.stream_id_fk
-            INNER JOIN sch_level sl           ON sl.sch_level_id   = s.sch_level_id_fk
-            INNER JOIN level l                ON l.level_id        = sl.level_id_fk
-            INNER JOIN school sch             ON sch.sch_id        = sl.sch_id_fk
-            WHERE cst.user_id_fk = ? AND c.class_year = ?
+            FROM (
+                SELECT csub.class_id_fk AS class_id
+                FROM classroom_subject_teacher cst
+                INNER JOIN classroom_subject csub ON csub.class_sub_id = cst.class_sub_id_fk
+                WHERE cst.user_id_fk = ?
+                UNION
+                SELECT cr.class_id_fk AS class_id
+                FROM classroom_role cr
+                WHERE cr.user_id_fk = ? AND cr.cs_role = 'Class Teacher' AND cr.cs_status = 'Active'
+            ) AS src
+            INNER JOIN classroom c   ON c.class_id      = src.class_id
+            INNER JOIN stream s      ON s.stream_id      = c.stream_id_fk
+            INNER JOIN sch_level sl  ON sl.sch_level_id  = s.sch_level_id_fk
+            INNER JOIN level l       ON l.level_id       = sl.level_id_fk
+            INNER JOIN school sch    ON sch.sch_id       = sl.sch_id_fk
+            WHERE c.class_year = ?
             ORDER BY c.class_name ASC
-        ", [$userId, $year])->getResultArray();
+        ", [$userId, $userId, $year])->getResultArray();
 
         foreach ($rows as &$cls) {
             $cls['students']         = $this->getClassroomAllStudents((int) $cls['class_id'], true);
