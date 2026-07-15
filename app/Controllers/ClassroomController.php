@@ -6150,12 +6150,17 @@ class ClassroomController extends BaseController
         $roleCatId    = (int) $this->session->get('roleCatID');
         $isSuperAdmin = (int) $this->session->get('roleID') === 1;
 
-        // Access: published → anyone; not published → teacher/admin only
+        // Access: published → anyone; not published → class/assistant teacher of THIS class or admin
         if ($status['status'] !== 'published') {
-            $isTeacher = $roleCatId === 3;
-            $roleName  = strtolower(trim($this->session->get('roleName') ?? ''));
-            $isAdmin   = $isSuperAdmin || $roleName === 'principal' || $this->require_access('_exam_publish') === true;
-            if (!$isTeacher && !$isAdmin) {
+            $roleName       = strtolower(trim($this->session->get('roleName') ?? ''));
+            $isAdmin        = $isSuperAdmin || $roleName === 'principal' || $this->require_access('_exam_publish') === true;
+            $isClassTeacher = (int) $db->query("
+                SELECT COUNT(*) cnt FROM classroom_role
+                WHERE class_id_fk = ? AND user_id_fk = ?
+                  AND cs_role IN ('Class Teacher','Assistant Class Teacher')
+                  AND cs_status = 'Active'
+            ", [$classId, $userId])->getRow()->cnt > 0;
+            if (!$isClassTeacher && !$isAdmin) {
                 return redirect()->to('classroom/my')->with('error', 'Report not yet published.');
             }
         }
@@ -6207,9 +6212,16 @@ class ClassroomController extends BaseController
         $isSuperAdmin = (int) $this->session->get('roleID') === 1;
 
         if ($status['status'] !== 'published') {
-            $isTeacher = $roleCatId === 3;
-            $isAdmin   = $isSuperAdmin || $this->require_access('_exam_publish') === true;
-            if (!$isTeacher && !$isAdmin) {
+            $userId         = (int) $this->session->get('userID');
+            $roleName       = strtolower(trim($this->session->get('roleName') ?? ''));
+            $isAdmin        = $isSuperAdmin || $roleName === 'principal' || $this->require_access('_exam_publish') === true;
+            $isClassTeacher = (int) $db->query("
+                SELECT COUNT(*) cnt FROM classroom_role
+                WHERE class_id_fk = ? AND user_id_fk = ?
+                  AND cs_role IN ('Class Teacher','Assistant Class Teacher')
+                  AND cs_status = 'Active'
+            ", [$classId, $userId])->getRow()->cnt > 0;
+            if (!$isClassTeacher && !$isAdmin) {
                 return redirect()->to('classroom/my')->with('error', 'Report not yet published.');
             }
         }
