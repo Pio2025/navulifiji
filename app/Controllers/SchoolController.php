@@ -246,6 +246,12 @@ class SchoolController extends BaseController
              return redirect()->to('/school/login');
         }
         
+        // Check permission
+        /*if (!$this->require_access('_school_listing')) {
+            $data['_view'] = 'app/auth/access_control';
+        } else {
+            $data['_view'] = 'app/school/management/index';
+        }*/
         
         $view = 'app/school/dashboard/index';
         $data = $this->loadCommonData($view);
@@ -1431,7 +1437,14 @@ class SchoolController extends BaseController
         }
 
         $this->session->set('active_page', 'update');
-        $view = 'app/school/profile/update';
+        
+
+        // Check permission
+        if (!$this->require_access('_edit_school')) {
+            $data['_view'] = 'app/auth/access_control';
+        } else {
+            $view = 'app/school/profile/update';
+        }
 
         $commonData = $this->loadCommonData($view);
 

@@ -55,6 +55,51 @@ class AnnouncementController extends BaseController
         return $dir;
     }
 
+    // ─── school ID resolution (handles stale sessions where schID = 0) ────────
+
+    private function resolveSchoolId(): int
+    {
+        $schId  = (int) $this->session->get('schID');
+        $userId = (int) $this->session->get('userID');
+
+        if ($schId !== 0) {
+            return $schId;
+        }
+
+        $db = \Config\Database::connect();
+
+        // Try staff table first
+        $row = $db->table('staff')
+            ->select('sch_id_fk')
+            ->where('user_id_fk', $userId)
+            ->where('staff_status', 'Active')
+            ->limit(1)
+            ->get()->getRowArray();
+        if ($row) {
+            $schId = (int) $row['sch_id_fk'];
+            $this->session->set('schID', $schId);
+            return $schId;
+        }
+
+        // Fall back to classroom assignment chain
+        $row = $db->table('classroom_subject_teacher cst')
+            ->select('sl.sch_id_fk')
+            ->join('classroom_subject cs', 'cs.class_sub_id = cst.class_sub_id_fk')
+            ->join('classroom c',          'c.class_id = cs.class_id_fk')
+            ->join('stream s',             's.stream_id = c.stream_id_fk')
+            ->join('sch_level sl',         'sl.sch_level_id = s.sch_level_id_fk')
+            ->where('cst.user_id_fk', $userId)
+            ->limit(1)
+            ->get()->getRowArray();
+        if ($row) {
+            $schId = (int) $row['sch_id_fk'];
+            $this->session->set('schID', $schId);
+            return $schId;
+        }
+
+        return 0;
+    }
+
     // ─── INDEX ────────────────────────────────────────────────────────────────
 
     public function index(): string|\CodeIgniter\HTTP\RedirectResponse
@@ -65,7 +110,7 @@ class AnnouncementController extends BaseController
 
         $this->annModel->expireOld();
 
-        $schId         = (int) $this->session->get('schID');
+        $schId = $this->resolveSchoolId();
         $announcements = $this->annModel->getActiveForSchool($schId);
 
         $this->setPageData('Announcements', 'Dashboard', 'Announcements');
