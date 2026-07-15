@@ -320,7 +320,7 @@ class StudentAttendanceModel extends Model
     {
         $db = \Config\Database::connect();
         return $db->table('enrolment e')
-            ->select('e.enrol_id, e.admission_id_fk, u.fname, u.lname, u.oname, u.profile_photo')
+            ->select('MIN(e.enrol_id) AS enrol_id, e.admission_id_fk, u.fname, u.lname, u.oname, u.profile_photo')
             ->join('admission a',     'a.admission_id    = e.admission_id_fk', 'inner')
             ->join('users u',         'u.user_id         = a.user_id_fk',      'inner')
             ->join('user_role ur',    'ur.user_id_fk     = u.user_id',         'inner')
@@ -330,7 +330,7 @@ class StudentAttendanceModel extends Model
             ->where('e.enrol_status', 'Active')
             ->where('rc.role_cat_id', 4)
             ->where('ur.user_role_status', 'Active')
-            ->groupBy('e.admission_id_fk')
+            ->groupBy('e.admission_id_fk, u.fname, u.lname, u.oname, u.profile_photo')
             ->orderBy('u.lname', 'ASC')
             ->orderBy('u.fname', 'ASC')
             ->get()->getResultArray();
