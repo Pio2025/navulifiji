@@ -139,6 +139,15 @@ $routes->post('auth/reset-password/(:segment)', 'AuthController::processResetPas
 
 $routes->get('dashboard', 'DashboardController::index');
 
+// ============================================================================
+// NOTICE BOARD Routes
+// ============================================================================
+$routes->get( 'dashboard/notice',                  'NoticeBoardController::index');
+$routes->post('dashboard/notice/store',            'NoticeBoardController::store');
+$routes->post('dashboard/notice/(:num)/update',    'NoticeBoardController::update/$1');
+$routes->post('dashboard/notice/(:num)/delete',    'NoticeBoardController::delete/$1');
+$routes->post('dashboard/notice/(:num)/pin',       'NoticeBoardController::togglePin/$1');
+
 
 $routes->get('user/activate/(:num)', 'UserController::activate/$1');
 
