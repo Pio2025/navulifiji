@@ -111,6 +111,21 @@
 					</div>
 					<!--end::Personal Information-->
 
+					<!--begin::FEMIS ID-->
+					<div class="row mb-6">
+						<div class="col-lg-4 mb-6">
+							<label class="form-label">FEMIS ID</label>
+							<input type="number" name="femis_id"
+							       class="form-control <?= session('validation')?->hasError('femis_id') ? 'is-invalid' : '' ?>"
+							       placeholder="Enter FEMIS ID (optional)"
+							       value="<?= old('femis_id', $user['femis_id'] ?? '') ?>" min="1" />
+							<?php if (session('validation')?->hasError('femis_id')): ?>
+								<div class="invalid-feedback"><?= session('validation')->getError('femis_id') ?></div>
+							<?php endif; ?>
+						</div>
+					</div>
+					<!--end::FEMIS ID-->
+
 					<!--begin::Contact Information-->
 					<div class="row mb-6">
 						<label class="col-lg-12 col-form-label fw-bold fs-5 mb-3">Contact Information</label>

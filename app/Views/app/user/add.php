@@ -88,7 +88,7 @@
 					</div>
 					<!--end::Row-->
 					
-					<!--begin::Row - Username-->
+					<!--begin::Row - Username & FEMIS ID-->
 					<div class="row mb-3">
 						<div class="col-lg-6 mb-3">
 							<label class="form-label required fw-bold">User ID</label>
@@ -109,8 +109,18 @@
 							<?php endif; ?>
 							<div class="form-text">10-digit unique ID. Auto-generated on load — you can also type one manually or click Generate.</div>
 						</div>
+						<div class="col-lg-6 mb-3">
+							<label class="form-label">FEMIS ID</label>
+							<input type="number" name="femis_id"
+							       class="form-control <?= session('validation')?->hasError('femis_id') ? 'is-invalid' : '' ?>"
+							       placeholder="Enter FEMIS ID (optional)"
+							       value="<?= old('femis_id') ?>" min="1" />
+							<?php if (session('validation')?->hasError('femis_id')): ?>
+								<div class="invalid-feedback"><?= session('validation')->getError('femis_id') ?></div>
+							<?php endif; ?>
+						</div>
 					</div>
-					<!--end::Row - Username-->
+					<!--end::Row - Username & FEMIS ID-->
 
 					<!--begin::Row - Contact Information-->
 					<div class="row mb-3">

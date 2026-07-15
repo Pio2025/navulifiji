@@ -82,6 +82,8 @@ class UserModel extends Model
 
         'reset_token_expiry',
 
+        'femis_id',
+
     ];
 
     

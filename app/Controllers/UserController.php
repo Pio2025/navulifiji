@@ -637,7 +637,13 @@ class UserController extends BaseController
                     'required' => 'Role is required',
                     'integer' => 'Please select a valid role'
                 ]
-            ]
+            ],
+            'femis_id' => [
+                'rules' => 'permit_empty|integer',
+                'errors' => [
+                    'integer' => 'FEMIS ID must be a number'
+                ]
+            ],
         ];
         
         // Email is always optional but must be valid and unique if provided
@@ -802,6 +808,7 @@ class UserController extends BaseController
                 'dob' => $dobFormatted,
                 'address' => $this->request->getPost('address') ?: null,
                 'district_id_fk' => $district,
+                'femis_id' => $this->request->getPost('femis_id') ?: null,
                 'user_status' => $this->request->getPost('user_status') ?: 'Active',
                 'is_a_parent' => $this->request->getPost('is_a_parent') ? 1 : 0,
                 'created_date' => date('Y-m-d'),
@@ -1730,7 +1737,8 @@ class UserController extends BaseController
             'phone' => 'permit_empty|min_length[7]|max_length[7]|numeric',
             'gender' => 'required|in_list[Male,Female,Other]',
             'role_id' => 'required|integer',
-            'province' => 'required|integer'
+            'province' => 'permit_empty|integer',
+            'femis_id' => 'permit_empty|integer',
         ];
         
         if (!$this->validate($rules)) {
@@ -1812,8 +1820,9 @@ class UserController extends BaseController
                 'gender' => $this->request->getPost('gender'),
                 'dob' => $dob,
                 'address' => $this->request->getPost('address') ?: null,
-                'district_id_fk' => $districtId, // Validated above
-                'profile_photo' => $photoName, // Database column is 'profile_photo'
+                'district_id_fk' => $districtId,
+                'femis_id' => $this->request->getPost('femis_id') ?: null,
+                'profile_photo' => $photoName,
                 'user_status' => $this->request->getPost('user_status') ?: 'Active',
                 'is_a_parent' => $this->request->getPost('is_a_parent') ? 1 : 0
             ];
