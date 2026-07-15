@@ -1056,17 +1056,34 @@ class UserController extends BaseController
                             $addEnrolment = $this->enrolmentModel->addEnrolment($enrolmentData);
 
                             if ($addEnrolment) {
-                                // Find the classroom for this stream + year and save subjects to student_subject
+                                // Find the active classroom for this stream + year
                                 $streamId  = (int) $this->request->getPost('stream_id_fk');
                                 $enrolYear = (int) $this->request->getPost('enrol_year');
 
                                 $classRow = $this->db->table('classroom')
-                                    ->where('stream_id_fk', $streamId)
-                                    ->where('class_year',   $enrolYear)
+                                    ->where('stream_id_fk',  $streamId)
+                                    ->where('class_year',    $enrolYear)
+                                    ->where('class_status',  'Active')
                                     ->get()->getRowArray();
 
                                 if ($classRow) {
                                     $classId = (int) $classRow['class_id'];
+
+                                    // Auto-enrol into classroom_student if not already there
+                                    $alreadyEnrolled = $this->db->table('classroom_student')
+                                        ->where('class_id_fk', $classId)
+                                        ->where('user_id_fk',  $userId)
+                                        ->countAllResults() > 0;
+
+                                    if (!$alreadyEnrolled) {
+                                        $this->db->table('classroom_student')->insert([
+                                            'class_id_fk'       => $classId,
+                                            'user_id_fk'        => $userId,
+                                            'class_stud_status' => 'Active',
+                                            'admitted_at'       => date('Y-m-d'),
+                                            'admitted_by'       => (int) $this->session->get('userID'),
+                                        ]);
+                                    }
 
                                     // Core subjects
                                     $coreSubIds = array_filter(
