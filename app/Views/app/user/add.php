@@ -175,7 +175,7 @@
                         <div class="row">
                             <!--begin::Col - Province-->
                             <div class="col-lg-6">
-                                <label class="form-label mb-3 required">Select Province</label>
+                                <label class="form-label mb-3">Select Province</label>
                                 <select class="form-select selectProvince <?= session('validation')?->hasError('province') ? 'is-invalid' : '' ?>" 
                                         aria-label="Select province" 
                                         name="province"

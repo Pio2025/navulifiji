@@ -151,7 +151,7 @@
 					<div class="row mb-4">
 						<!--begin::Province-->
 						<div class="col-lg-6 mb-2">
-							<label class="form-label required">Province</label>
+							<label class="form-label">Province</label>
 							<select class="form-select <?= session('validation')?->hasError('province') ? 'is-invalid' : '' ?>" 
 							        name="province" id="province-select">
 								<option value="">Select province...</option>

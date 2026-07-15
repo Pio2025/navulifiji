@@ -673,11 +673,9 @@ class UserController extends BaseController
             log_message('info', 'DOB set as required for Student');
         }
         
-        // Province is always required
         $rules['province'] = [
-            'rules' => 'required|integer',
+            'rules' => 'permit_empty|integer',
             'errors' => [
-                'required' => 'Please select a province',
                 'integer' => 'Invalid province selected'
             ]
         ];
