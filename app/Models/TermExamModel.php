@@ -11,7 +11,7 @@ class TermExamModel extends Model
 
     protected $allowedFields = [
         'class_sub_id_fk', 'class_id_fk', 'student_id_fk',
-        'term', 'mark', 'total_mark', 'teacher_comment',
+        'term', 'term_exam_id_fk', 'mark', 'total_mark', 'teacher_comment',
         'entered_by', 'created_at', 'updated_at',
     ];
 
@@ -21,6 +21,21 @@ class TermExamModel extends Model
     {
         $db    = \Config\Database::connect();
         $forge = \Config\Database::forge();
+
+        if (!$db->tableExists('term_exam_def')) {
+            $forge->addField([
+                'term_exam_id' => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+                'class_id_fk'  => ['type' => 'INT', 'null' => false],
+                'term'         => ['type' => 'TINYINT', 'constraint' => 1, 'null' => false],
+                'exam_name'    => ['type' => 'VARCHAR', 'constraint' => 100, 'null' => false],
+                'sort_order'   => ['type' => 'TINYINT', 'unsigned' => true, 'default' => 1],
+                'created_by'   => ['type' => 'INT', 'null' => false, 'default' => 0],
+                'created_at'   => ['type' => 'DATETIME', 'null' => true],
+                'updated_at'   => ['type' => 'DATETIME', 'null' => true],
+            ]);
+            $forge->addPrimaryKey('term_exam_id');
+            $forge->createTable('term_exam_def', true);
+        }
 
         if (!$db->tableExists('term_exam_mark')) {
             $forge->addField([
@@ -45,6 +60,50 @@ class TermExamModel extends Model
         // Migrate: add is_absent if missing
         if ($db->tableExists('term_exam_mark') && !$db->fieldExists('is_absent', 'term_exam_mark')) {
             $db->query("ALTER TABLE `term_exam_mark` ADD COLUMN `is_absent` TINYINT(1) NOT NULL DEFAULT 0 AFTER `total_mark`");
+        }
+
+        // Migrate: add term_exam_id_fk and update unique key
+        if ($db->tableExists('term_exam_mark') && !$db->fieldExists('term_exam_id_fk', 'term_exam_mark')) {
+            $db->query("ALTER TABLE `term_exam_mark` ADD COLUMN `term_exam_id_fk` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `term`");
+
+            // Backfill: create one default exam def per (class_id_fk, term) and link existing marks
+            $termNames = [1 => 'Term 1 End Examination', 2 => 'Term 2 End Examination', 3 => 'Term 3 End Examination'];
+            $pairs = $db->query("SELECT DISTINCT class_id_fk, term FROM term_exam_mark")->getResultArray();
+            $now = date('Y-m-d H:i:s');
+            foreach ($pairs as $p) {
+                // Check if an exam def already exists for this class+term
+                $exists = $db->table('term_exam_def')
+                    ->where('class_id_fk', $p['class_id_fk'])->where('term', $p['term'])
+                    ->countAllResults();
+                if (!$exists) {
+                    $db->table('term_exam_def')->insert([
+                        'class_id_fk' => $p['class_id_fk'],
+                        'term'        => $p['term'],
+                        'exam_name'   => $termNames[(int)$p['term']] ?? "Term {$p['term']} End Examination",
+                        'sort_order'  => 1,
+                        'created_by'  => 0,
+                        'created_at'  => $now,
+                        'updated_at'  => $now,
+                    ]);
+                    $newId = $db->insertID();
+                    $db->query(
+                        "UPDATE term_exam_mark SET term_exam_id_fk = ? WHERE class_id_fk = ? AND term = ? AND term_exam_id_fk = 0",
+                        [$newId, $p['class_id_fk'], $p['term']]
+                    );
+                }
+            }
+
+            // Drop old unique key (CI4 forge names it after the first field) and add new one
+            try {
+                $db->query("ALTER TABLE `term_exam_mark` DROP INDEX `class_sub_id_fk`");
+            } catch (\Exception $e) {
+                // Key may have a different name — ignore and proceed
+            }
+            try {
+                $db->query("ALTER TABLE `term_exam_mark` ADD UNIQUE KEY `uq_exam_mark` (`class_sub_id_fk`, `student_id_fk`, `term`, `term_exam_id_fk`)");
+            } catch (\Exception $e) {
+                // May already exist
+            }
         }
 
         if (!$db->tableExists('term_report_ct_comment')) {
@@ -119,7 +178,7 @@ class TermExamModel extends Model
 
     // ── Subject teacher: marks per subject/term ───────────────────────
 
-    public function getMarksForSubjectTerm(int $classSubId, int $term): array
+    public function getMarksForSubjectTerm(int $classSubId, int $term, int $termExamId = 0): array
     {
         $db = \Config\Database::connect();
         return $db->query("
@@ -128,14 +187,92 @@ class TermExamModel extends Model
                    CONCAT(u.fname,' ',u.lname) AS student_name, u.profile_photo
             FROM term_exam_mark tem
             INNER JOIN users u ON u.user_id = tem.student_id_fk
-            WHERE tem.class_sub_id_fk = ? AND tem.term = ?
+            WHERE tem.class_sub_id_fk = ? AND tem.term = ? AND tem.term_exam_id_fk = ?
             ORDER BY u.lname, u.fname
-        ", [$classSubId, $term])->getResultArray();
+        ", [$classSubId, $term, $termExamId])->getResultArray();
+    }
+
+    // ── Exam definition management ────────────────────────────────
+
+    public function getExamsForClass(int $classId, int $term): array
+    {
+        $db = \Config\Database::connect();
+        return $db->table('term_exam_def')
+            ->where('class_id_fk', $classId)
+            ->where('term', $term)
+            ->orderBy('sort_order', 'ASC')
+            ->orderBy('term_exam_id', 'ASC')
+            ->get()->getResultArray();
+    }
+
+    public function getOrCreateDefaultExam(int $classId, int $term, int $userId): int
+    {
+        $db = \Config\Database::connect();
+        $existing = $db->table('term_exam_def')
+            ->where('class_id_fk', $classId)->where('term', $term)
+            ->orderBy('sort_order', 'ASC')->limit(1)->get()->getRowArray();
+        if ($existing) return (int) $existing['term_exam_id'];
+
+        $termNames = [1 => 'Term 1 End Examination', 2 => 'Term 2 End Examination', 3 => 'Term 3 End Examination'];
+        $now = date('Y-m-d H:i:s');
+        $db->table('term_exam_def')->insert([
+            'class_id_fk' => $classId,
+            'term'        => $term,
+            'exam_name'   => $termNames[$term] ?? "Term $term End Examination",
+            'sort_order'  => 1,
+            'created_by'  => $userId,
+            'created_at'  => $now,
+            'updated_at'  => $now,
+        ]);
+        return (int) $db->insertID();
+    }
+
+    public function createExam(int $classId, int $term, string $name, int $userId): int
+    {
+        $db = \Config\Database::connect();
+        $maxOrder = (int) ($db->table('term_exam_def')
+            ->selectMax('sort_order', 'max_ord')
+            ->where('class_id_fk', $classId)->where('term', $term)
+            ->get()->getRowArray()['max_ord'] ?? 0);
+        $now = date('Y-m-d H:i:s');
+        $db->table('term_exam_def')->insert([
+            'class_id_fk' => $classId,
+            'term'        => $term,
+            'exam_name'   => $name,
+            'sort_order'  => $maxOrder + 1,
+            'created_by'  => $userId,
+            'created_at'  => $now,
+            'updated_at'  => $now,
+        ]);
+        return (int) $db->insertID();
+    }
+
+    public function renameExam(int $termExamId, string $name): void
+    {
+        \Config\Database::connect()->table('term_exam_def')
+            ->where('term_exam_id', $termExamId)
+            ->update(['exam_name' => $name, 'updated_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function deleteExam(int $termExamId): bool
+    {
+        $db = \Config\Database::connect();
+        $def = $db->table('term_exam_def')->where('term_exam_id', $termExamId)->get()->getRowArray();
+        if (!$def) return false;
+
+        $count = $db->table('term_exam_def')
+            ->where('class_id_fk', $def['class_id_fk'])->where('term', $def['term'])
+            ->countAllResults();
+        if ($count <= 1) return false; // cannot delete the last exam
+
+        $db->table('term_exam_mark')->where('term_exam_id_fk', $termExamId)->delete();
+        $db->table('term_exam_def')->where('term_exam_id', $termExamId)->delete();
+        return true;
     }
 
     public function saveExamMark(int $classSubId, int $classId, int $studentId, int $term,
                                   ?float $mark, float $total, ?string $comment, int $userId,
-                                  int $isAbsent = 0): void
+                                  int $isAbsent = 0, int $termExamId = 0): void
     {
         $db  = \Config\Database::connect();
         $now = date('Y-m-d H:i:s');
@@ -143,6 +280,7 @@ class TermExamModel extends Model
             ->where('class_sub_id_fk', $classSubId)
             ->where('student_id_fk', $studentId)
             ->where('term', $term)
+            ->where('term_exam_id_fk', $termExamId)
             ->get()->getRowArray();
 
         $row = [
@@ -158,11 +296,12 @@ class TermExamModel extends Model
             $db->table('term_exam_mark')->where('temark_id', $existing['temark_id'])->update($row);
         } else {
             $db->table('term_exam_mark')->insert(array_merge($row, [
-                'class_sub_id_fk' => $classSubId,
-                'class_id_fk'     => $classId,
-                'student_id_fk'   => $studentId,
-                'term'            => $term,
-                'created_at'      => $now,
+                'class_sub_id_fk'  => $classSubId,
+                'class_id_fk'      => $classId,
+                'student_id_fk'    => $studentId,
+                'term'             => $term,
+                'term_exam_id_fk'  => $termExamId,
+                'created_at'       => $now,
             ]));
         }
     }
@@ -197,11 +336,19 @@ class TermExamModel extends Model
             ORDER BY sub.subject_name
         ", [$classId])->getResultArray();
 
-        // Get all marks for this class/term
+        // Get all marks for this class/term — aggregate across all exams per subject/student
         $allMarks = $db->query("
-            SELECT tem.class_sub_id_fk, tem.student_id_fk, tem.mark, tem.total_mark, tem.is_absent, tem.teacher_comment
-            FROM term_exam_mark tem
-            WHERE tem.class_id_fk = ? AND tem.term = ?
+            SELECT class_sub_id_fk, student_id_fk,
+                   CASE WHEN COUNT(CASE WHEN is_absent=0 AND mark IS NOT NULL THEN 1 END) > 0
+                        THEN SUM(CASE WHEN is_absent=0 AND mark IS NOT NULL THEN mark ELSE 0 END)
+                        ELSE NULL
+                   END AS mark,
+                   SUM(total_mark) AS total_mark,
+                   CASE WHEN COUNT(*) = SUM(is_absent) THEN 1 ELSE 0 END AS is_absent,
+                   NULL AS teacher_comment
+            FROM term_exam_mark
+            WHERE class_id_fk = ? AND term = ?
+            GROUP BY class_sub_id_fk, student_id_fk
         ", [$classId, $term])->getResultArray();
 
         // Index marks by [class_sub_id][student_id]
@@ -365,9 +512,15 @@ class TermExamModel extends Model
         $db = \Config\Database::connect();
 
         $marks = $db->query("
-            SELECT tem.mark, tem.total_mark, tem.teacher_comment,
-                   sub.subject_name,
-                   CONCAT(ut.fname,' ',ut.lname) AS teacher_name
+            SELECT sub.subject_name,
+                   CONCAT(ut.fname,' ',ut.lname) AS teacher_name,
+                   CASE WHEN COUNT(CASE WHEN tem.is_absent=0 AND tem.mark IS NOT NULL THEN 1 END) > 0
+                        THEN SUM(CASE WHEN tem.is_absent=0 AND tem.mark IS NOT NULL THEN tem.mark ELSE 0 END)
+                        ELSE NULL
+                   END AS mark,
+                   SUM(tem.total_mark) AS total_mark,
+                   CASE WHEN COUNT(*) = SUM(tem.is_absent) THEN 1 ELSE 0 END AS is_absent,
+                   NULL AS teacher_comment
             FROM term_exam_mark tem
             INNER JOIN classroom_subject cs ON cs.class_sub_id = tem.class_sub_id_fk
             INNER JOIN sch_subject ss ON ss.sch_sub_id = cs.sub_id_fk
@@ -376,6 +529,7 @@ class TermExamModel extends Model
                 AND cst.class_sub_teacher_status = 'Active'
             LEFT JOIN users ut ON ut.user_id = cst.user_id_fk
             WHERE tem.class_id_fk = ? AND tem.student_id_fk = ? AND tem.term = ?
+            GROUP BY cs.class_sub_id, sub.subject_name, ut.fname, ut.lname
             ORDER BY sub.subject_name
         ", [$classId, $studentId, $term])->getResultArray();
 

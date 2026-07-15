@@ -1644,13 +1644,29 @@ class ClassroomController extends BaseController
                 WHERE cs.class_id_fk = ?
                 ORDER BY u.lname, u.fname
             ", [$classId])->getResultArray();
-            $data['examMarks'] = [];
-            $data['reportStatuses'] = [];
+
+            // Load exam definitions per term (auto-create default if none exist)
+            $examDefs     = [];
+            $examMarks    = [];
+            $reportStatuses = [];
             for ($t = 1; $t <= 3; $t++) {
-                $rows = $this->termExamModel->getMarksForSubjectTerm($classSubId, $t);
-                $data['examMarks'][$t]       = array_column($rows, null, 'student_id_fk');
-                $data['reportStatuses'][$t]  = $this->termExamModel->getReportStatus($classId, $t);
+                $defs = $this->termExamModel->getExamsForClass($classId, $t);
+                if (empty($defs)) {
+                    $this->termExamModel->getOrCreateDefaultExam($classId, $t, $userId);
+                    $defs = $this->termExamModel->getExamsForClass($classId, $t);
+                }
+                $examDefs[$t] = $defs;
+                $examMarks[$t] = [];
+                foreach ($defs as $def) {
+                    $eid  = (int) $def['term_exam_id'];
+                    $rows = $this->termExamModel->getMarksForSubjectTerm($classSubId, $t, $eid);
+                    $examMarks[$t][$eid] = array_column($rows, null, 'student_id_fk');
+                }
+                $reportStatuses[$t] = $this->termExamModel->getReportStatus($classId, $t);
             }
+            $data['examDefs']       = $examDefs;
+            $data['examMarks']      = $examMarks;
+            $data['reportStatuses'] = $reportStatuses;
             $data['isClassTeacher'] = (bool) $db->table('classroom_role')
                 ->where('class_id_fk', $classId)->where('user_id_fk', $userId)
                 ->where('cs_role', 'Class Teacher')
@@ -5876,17 +5892,23 @@ class ClassroomController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'This classroom is no longer active. Marks cannot be saved.']);
         }
 
-        $classSubId = (int) $assign['class_sub_id'];
-        $classId    = (int) $assign['class_id'];
-        $studentId  = (int) $this->request->getPost('student_id');
-        $term       = (int) $this->request->getPost('term');
-        $markVal    = $this->request->getPost('mark');
-        $total      = (float) ($this->request->getPost('total_mark') ?? 100);
-        $comment    = trim($this->request->getPost('teacher_comment') ?? '');
-        $isAbsent   = (int) ($this->request->getPost('is_absent') ?? 0);
+        $classSubId  = (int) $assign['class_sub_id'];
+        $classId     = (int) $assign['class_id'];
+        $studentId   = (int) $this->request->getPost('student_id');
+        $term        = (int) $this->request->getPost('term');
+        $termExamId  = (int) ($this->request->getPost('term_exam_id') ?? 0);
+        $markVal     = $this->request->getPost('mark');
+        $total       = (float) ($this->request->getPost('total_mark') ?? 100);
+        $comment     = trim($this->request->getPost('teacher_comment') ?? '');
+        $isAbsent    = (int) ($this->request->getPost('is_absent') ?? 0);
 
         if (!$studentId || $term < 1 || $term > 3) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid data.']);
+        }
+
+        // Ensure termExamId is valid for this class+term (use first if not provided)
+        if ($termExamId <= 0) {
+            $termExamId = $this->termExamModel->getOrCreateDefaultExam($classId, $term, $userId);
         }
 
         // Block editing once class teacher has submitted
@@ -5900,10 +5922,91 @@ class ClassroomController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => "Mark must be between 0 and {$total}."]);
         }
 
-        $this->termExamModel->saveExamMark($classSubId, $classId, $studentId, $term, $mark, $total, $comment, $userId, $isAbsent);
+        $this->termExamModel->saveExamMark($classSubId, $classId, $studentId, $term, $mark, $total, $comment, $userId, $isAbsent, $termExamId);
         $pct   = (!$isAbsent && $mark !== null && $total > 0) ? round(($mark / $total) * 100, 1) : null;
         $grade = $isAbsent ? 'ABS' : ($pct !== null ? \App\Models\TermExamModel::grade($pct) : '—');
         return $this->response->setJSON(['success' => true, 'mark' => $mark, 'total' => $total, 'pct' => $pct, 'grade' => $grade, 'is_absent' => $isAbsent]);
+    }
+
+    // ================================================================
+    // TERM EXAM — EXAM DEFINITION MANAGEMENT (CREATE/RENAME/DELETE)
+    // ================================================================
+
+    private function isTeacherOfClass(int $classId, int $userId, $db): bool
+    {
+        $row = $db->query("
+            SELECT 1 FROM classroom_subject_teacher cst
+            INNER JOIN classroom_subject cs ON cs.class_sub_id = cst.class_sub_id_fk
+            WHERE cs.class_id_fk = ? AND cst.user_id_fk = ? AND cst.class_sub_teacher_status = 'Active'
+            LIMIT 1
+        ", [$classId, $userId])->getRowArray();
+        if ($row) return true;
+        return $db->table('classroom_role')
+            ->where('class_id_fk', $classId)->where('user_id_fk', $userId)
+            ->whereIn('cs_role', ['Class Teacher', 'Assistant Class Teacher'])
+            ->where('cs_status', 'Active')->countAllResults() > 0;
+    }
+
+    public function createTermExam()
+    {
+        if (!$this->isLoggedIn()) return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        $userId   = (int) $this->session->get('userID');
+        $schSubId = (int) $this->request->getPost('sch_sub_id');
+        $term     = (int) $this->request->getPost('term');
+        $name     = trim($this->request->getPost('exam_name') ?? '');
+
+        if (!$schSubId || $term < 1 || $term > 3 || $name === '' || mb_strlen($name) > 100) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid data.']);
+        }
+
+        $assign = $this->resolveTeacherClassSub($schSubId, $userId, true);
+        if (!$assign) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+
+        $classId = (int) $assign['class_id'];
+        $id      = $this->termExamModel->createExam($classId, $term, $name, $userId);
+        return $this->response->setJSON(['success' => true, 'term_exam_id' => $id, 'exam_name' => $name]);
+    }
+
+    public function renameTermExam(int $termExamId)
+    {
+        if (!$this->isLoggedIn()) return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        $userId = (int) $this->session->get('userID');
+        $name   = trim($this->request->getPost('exam_name') ?? '');
+
+        if ($name === '' || mb_strlen($name) > 100) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid name.']);
+        }
+
+        $db  = \Config\Database::connect();
+        $def = $db->table('term_exam_def')->where('term_exam_id', $termExamId)->get()->getRowArray();
+        if (!$def) return $this->response->setJSON(['success' => false, 'message' => 'Exam not found.']);
+
+        if (!$this->isTeacherOfClass((int)$def['class_id_fk'], $userId, $db)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $this->termExamModel->renameExam($termExamId, $name);
+        return $this->response->setJSON(['success' => true, 'exam_name' => $name]);
+    }
+
+    public function deleteTermExam(int $termExamId)
+    {
+        if (!$this->isLoggedIn()) return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        $userId = (int) $this->session->get('userID');
+        $db     = \Config\Database::connect();
+
+        $def = $db->table('term_exam_def')->where('term_exam_id', $termExamId)->get()->getRowArray();
+        if (!$def) return $this->response->setJSON(['success' => false, 'message' => 'Exam not found.']);
+
+        if (!$this->isTeacherOfClass((int)$def['class_id_fk'], $userId, $db)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $ok = $this->termExamModel->deleteExam($termExamId);
+        if (!$ok) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Cannot delete the only exam for this term.']);
+        }
+        return $this->response->setJSON(['success' => true]);
     }
 
     // ================================================================

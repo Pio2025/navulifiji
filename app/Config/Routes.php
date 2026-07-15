@@ -506,6 +506,9 @@ $routes->post('classroom/lesson/(:num)/dragdrop/(:num)/zone/(:num)/delete',     
 $routes->post('classroom/lesson/(:num)/dragdrop/(:num)/answers/save',                'ClassroomController::saveDragDropAnswers/$1/$2');
 // Term Exam
 $routes->post('classroom/teacher/(:num)/exam/mark/save',            'ClassroomController::saveExamMark/$1');
+$routes->post('classroom/term-exam/create',                         'ClassroomController::createTermExam');
+$routes->post('classroom/term-exam/(:num)/rename',                  'ClassroomController::renameTermExam/$1');
+$routes->post('classroom/term-exam/(:num)/delete',                  'ClassroomController::deleteTermExam/$1');
 $routes->get( 'classroom/class-exam/(:num)/term/(:num)',            'ClassroomController::classTeacherExamReview/$1/$2');
 $routes->get( 'classroom/class-exam/(:num)',                        'ClassroomController::classTeacherExamReview/$1');
 $routes->post('classroom/class-exam/(:num)/comment',                'ClassroomController::saveCtComment/$1');

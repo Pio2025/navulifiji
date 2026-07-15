@@ -1087,9 +1087,34 @@
                     <!--begin::Exams-->
                     <?php
                     $examStudents    = $examStudents    ?? [];
-                    $examMarks       = $examMarks       ?? [1=>[],2=>[],3=>[]];
+                    $examDefs        = $examDefs        ?? [1=>[],2=>[],3=>[]];
+                    $examMarks       = $examMarks       ?? [1=>[],2=>[],3=>[]];  // [term][examId][student_id]
                     $reportStatuses  = $reportStatuses  ?? [1=>['status'=>'collecting'],2=>['status'=>'collecting'],3=>['status'=>'collecting']];
                     $isClassTeacher  = $isClassTeacher  ?? false;
+
+                    // First exam ID per term (for PHP initial render)
+                    $firstExamId = [];
+                    foreach ([1,2,3] as $_t) {
+                        $firstExamId[$_t] = !empty($examDefs[$_t]) ? (int)$examDefs[$_t][0]['term_exam_id'] : 0;
+                    }
+
+                    // Build JS-safe marks data: [term][examId][studentId] => simplified fields
+                    $examAllMarksJs = [];
+                    foreach ([1,2,3] as $_t) {
+                        $examAllMarksJs[$_t] = [];
+                        foreach ($examDefs[$_t] as $_def) {
+                            $_eid = (int)$_def['term_exam_id'];
+                            $examAllMarksJs[$_t][$_eid] = [];
+                            foreach ($examMarks[$_t][$_eid] ?? [] as $_sid => $_m) {
+                                $examAllMarksJs[$_t][$_eid][(int)$_sid] = [
+                                    'mark'   => $_m['mark'],
+                                    'total'  => $_m['total_mark'],
+                                    'cmt'    => $_m['teacher_comment'] ?? '',
+                                    'absent' => (int)($_m['is_absent'] ?? 0),
+                                ];
+                            }
+                        }
+                    }
                     ?>
                     <div class="d-flex align-items-center mb-5">
                         <i class="ki-duotone ki-note-2 fs-2 text-primary me-2">
@@ -1135,6 +1160,48 @@
                         $examReadonly = $isLocked || !$classroomIsActive;
                     ?>
                     <div class="tab-pane fade <?= $t===1?'show active':'' ?>" id="exam_term_<?= $t ?>">
+
+                        <!--begin::Exam selector-->
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-4" id="exam_chips_<?= $t ?>">
+                            <?php foreach ($examDefs[$t] as $_i => $_def):
+                                $_eid    = (int)$_def['term_exam_id'];
+                                $_isFirst = $_i === 0;
+                            ?>
+                            <div class="d-inline-flex align-items-center exam-chip-wrapper">
+                                <button type="button"
+                                        class="btn btn-sm <?= $_isFirst ? 'btn-primary' : 'btn-light' ?> exam-chip-btn"
+                                        data-exam-id="<?= $_eid ?>" data-term="<?= $t ?>">
+                                    <span class="exam-chip-name"><?= esc($_def['exam_name']) ?></span>
+                                </button>
+                                <?php if (!$examReadonly): ?>
+                                <button type="button"
+                                        class="btn btn-icon btn-xs btn-light-warning ms-1 btn-rename-exam"
+                                        data-exam-id="<?= $_eid ?>" data-term="<?= $t ?>"
+                                        data-current-name="<?= esc($_def['exam_name']) ?>"
+                                        title="Rename exam" style="width:22px;height:22px;">
+                                    <i class="ki-duotone ki-pencil fs-9"><span class="path1"></span><span class="path2"></span></i>
+                                </button>
+                                <?php if (count($examDefs[$t]) > 1): ?>
+                                <button type="button"
+                                        class="btn btn-icon btn-xs btn-light-danger ms-1 btn-delete-exam"
+                                        data-exam-id="<?= $_eid ?>" data-term="<?= $t ?>"
+                                        data-name="<?= esc($_def['exam_name']) ?>"
+                                        title="Delete exam" style="width:22px;height:22px;">
+                                    <i class="ki-duotone ki-trash fs-9"><span class="path1"></span><span class="path2"></span></i>
+                                </button>
+                                <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
+                            <?php endforeach; ?>
+                            <?php if (!$examReadonly): ?>
+                            <button type="button" class="btn btn-sm btn-light-success btn-add-exam" data-term="<?= $t ?>">
+                                <i class="ki-duotone ki-plus fs-6 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                Add Exam
+                            </button>
+                            <?php endif; ?>
+                        </div>
+                        <!--end::Exam selector-->
+
                         <div class="d-flex align-items-center justify-content-between mb-4">
                             <?php if ($examReadonly): ?>
                             <div class="alert alert-<?= $isPublished?'success':($isLocked?'warning':'secondary') ?> d-flex align-items-center gap-2 py-2 px-3 mb-0 flex-grow-1 me-3">
@@ -1186,7 +1253,7 @@
                             <tbody>
                             <?php foreach ($examStudents as $stu):
                                 $sid      = $stu['user_id'];
-                                $mRow     = $examMarks[$t][$sid] ?? null;
+                                $mRow     = $examMarks[$t][$firstExamId[$t]][$sid] ?? null;
                                 $isAbsent = (bool) ($mRow['is_absent'] ?? false);
                                 $mark     = $mRow ? $mRow['mark']            : '';
                                 $total    = $mRow ? $mRow['total_mark']      : '100';
@@ -1316,7 +1383,21 @@
                     <?php endif; // empty examStudents ?>
 
                     <script>
-                    const EXAM_SAVE_URL = '<?= base_url('classroom/teacher/'.$schSubId.'/exam/mark/save') ?>';
+                    const EXAM_SAVE_URL   = '<?= base_url('classroom/teacher/'.$schSubId.'/exam/mark/save') ?>';
+                    const EXAM_CREATE_URL = '<?= base_url('classroom/term-exam/create') ?>';
+                    const EXAM_BASE_URL   = '<?= base_url('classroom/term-exam') ?>/';
+                    const SCH_SUB_ID      = <?= (int)$schSubId ?>;
+
+                    // All exam definitions and marks pre-loaded from PHP
+                    const EXAM_DEFS      = <?= json_encode($examDefs) ?>;
+                    const EXAM_ALL_MARKS = <?= json_encode($examAllMarksJs) ?>;
+
+                    // Currently active exam per term
+                    const currentExamId = {
+                        1: <?= (int)($firstExamId[1] ?? 0) ?>,
+                        2: <?= (int)($firstExamId[2] ?? 0) ?>,
+                        3: <?= (int)($firstExamId[3] ?? 0) ?>,
+                    };
 
                     // Auto-activate term tab if ?term= is in the URL
                     (function() {
@@ -1342,6 +1423,14 @@
 
                     const GRADE_COLORS = {'A+':'success','A':'success','B':'primary','C':'info','F':'danger','ABS':'danger','—':'secondary'};
 
+                    function calcGrade(pct) {
+                        if (pct >= 90) return 'A+';
+                        if (pct >= 80) return 'A';
+                        if (pct >= 70) return 'B';
+                        if (pct >= 50) return 'C';
+                        return 'F';
+                    }
+
                     function applyMarkResult(res, sid, term) {
                         const pctEl   = $(`.exam-pct-${term}-${sid}`);
                         const gradeEl = $(`.exam-grade-${term}-${sid}`);
@@ -1357,7 +1446,165 @@
                             gradeEl.text(g).attr('class', `badge badge-light-${GRADE_COLORS[g]||'secondary'} fs-8 exam-grade-${term}-${sid}`);
                             row.attr('data-absent','0');
                         }
+
+                        // Keep in-memory cache updated
+                        const eid = currentExamId[term];
+                        if (!EXAM_ALL_MARKS[term]) EXAM_ALL_MARKS[term] = {};
+                        if (!EXAM_ALL_MARKS[term][eid]) EXAM_ALL_MARKS[term][eid] = {};
+                        if (res.is_absent) {
+                            EXAM_ALL_MARKS[term][eid][sid] = { mark: null, total: 100, cmt: '', absent: 1 };
+                        } else {
+                            const prevMark = EXAM_ALL_MARKS[term][eid][sid] || {};
+                            EXAM_ALL_MARKS[term][eid][sid] = {
+                                mark: res.mark, total: res.total || prevMark.total || 100,
+                                cmt: prevMark.cmt || '', absent: 0
+                            };
+                        }
                     }
+
+                    // ── Exam chip switching ───────────────────────────────────────
+                    $(document).on('click', '.exam-chip-btn', function() {
+                        const examId = parseInt($(this).data('exam-id'));
+                        const term   = parseInt($(this).data('term'));
+                        if (currentExamId[term] === examId) return;
+
+                        // Update chip highlight
+                        $(`#exam_chips_${term} .exam-chip-btn`).removeClass('btn-primary').addClass('btn-light');
+                        $(this).removeClass('btn-light').addClass('btn-primary');
+                        currentExamId[term] = examId;
+
+                        // Reload table cells with cached data for this exam
+                        const marks = ((EXAM_ALL_MARKS[term] || {})[examId]) || {};
+                        $(`#exam_term_${term} tr[id^="exam_row_${term}_"]`).each(function() {
+                            const parts    = $(this).attr('id').split('_');
+                            const sid      = parseInt(parts[parts.length - 1]);
+                            const m        = marks[sid] || {};
+                            const isAbsent = m.absent == 1;
+
+                            $(this).attr('data-absent', isAbsent ? '1' : '0');
+
+                            const markCell  = $(`.exam-mark-cell-${term}-${sid}`);
+                            const totalCell = $(`.exam-total-cell-${term}-${sid}`);
+                            const cmtCell   = $(`.exam-cmt-cell-${term}-${sid}`);
+                            const pctEl     = $(`.exam-pct-${term}-${sid}`);
+                            const gradeEl   = $(`.exam-grade-${term}-${sid}`);
+                            const saveBtn   = $(`.btn-save-mark[data-sid="${sid}"][data-term="${term}"]`);
+                            const absBtn    = $(`.btn-toggle-absent[data-sid="${sid}"][data-term="${term}"]`);
+                            const nameCell  = $(`#exam_row_${term}_${sid} td:first-child`);
+
+                            if (isAbsent) {
+                                markCell.html('<span class="badge badge-light-danger fs-8">ABS</span>');
+                                totalCell.html('<span class="text-muted fs-8">—</span>');
+                                cmtCell.html('');
+                                pctEl.html('<span class="text-danger">ABS</span>');
+                                gradeEl.text('ABS').attr('class', `badge badge-light-danger fs-8 exam-grade-${term}-${sid}`);
+                                saveBtn.prop('disabled', true);
+                                absBtn.html('<i class="ki-duotone ki-check fs-7"><span class="path1"></span><span class="path2"></span></i>Present')
+                                      .removeClass('btn-outline-danger').addClass('btn-danger');
+                                nameCell.find('.badge.badge-light-danger').remove();
+                                nameCell.find('span.fw-semibold').after('<span class="badge badge-light-danger fs-9 ms-2">ABSENT</span>');
+                            } else {
+                                const markVal  = (m.mark !== undefined && m.mark !== null) ? m.mark : '';
+                                const totalVal = m.total || 100;
+                                const cmtVal   = (m.cmt || '').replace(/"/g, '&quot;');
+                                markCell.html(`<input type="number" class="form-control form-control-sm text-center exam-mark-input" style="width:80px;margin:auto;" data-sid="${sid}" data-term="${term}" value="${markVal}" min="0" max="${totalVal}" step="0.5" placeholder="0" />`);
+                                totalCell.html(`<input type="number" class="form-control form-control-sm text-center exam-total-input" style="width:70px;margin:auto;" data-sid="${sid}" data-term="${term}" value="${totalVal}" min="1" max="1000" step="0.5" />`);
+                                cmtCell.html(`<input type="text" class="form-control form-control-sm exam-cmt-input" data-sid="${sid}" data-term="${term}" value="${cmtVal}" placeholder="Optional comment..." maxlength="500" />`);
+                                const pct   = (markVal !== '' && totalVal > 0) ? Math.round(parseFloat(markVal) / totalVal * 1000) / 10 : null;
+                                const grade = pct !== null ? calcGrade(pct) : '—';
+                                pctEl.html(pct !== null ? pct + '%' : '—');
+                                gradeEl.text(grade).attr('class', `badge badge-light-${GRADE_COLORS[grade]||'secondary'} fs-8 exam-grade-${term}-${sid}`);
+                                saveBtn.prop('disabled', false);
+                                absBtn.html('<i class="ki-duotone ki-user-cross fs-7"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>ABS')
+                                      .removeClass('btn-danger').addClass('btn-outline-danger');
+                                nameCell.find('.badge.badge-light-danger').remove();
+                            }
+                        });
+                    });
+
+                    // ── Add Exam ──────────────────────────────────────────────────
+                    $(document).on('click', '.btn-add-exam', function() {
+                        const term = $(this).data('term');
+                        Swal.fire({
+                            title: 'New Examination',
+                            input: 'text',
+                            inputLabel: 'Examination name',
+                            inputPlaceholder: 'e.g. Mid-Term Examination',
+                            showCancelButton: true,
+                            confirmButtonText: 'Create',
+                            inputValidator: val => {
+                                if (!val.trim()) return 'Please enter an examination name.';
+                                if (val.trim().length > 100) return 'Name is too long (max 100 characters).';
+                            }
+                        }).then(result => {
+                            if (!result.isConfirmed) return;
+                            $.post(EXAM_CREATE_URL, {
+                                sch_sub_id: SCH_SUB_ID,
+                                term: term,
+                                exam_name: result.value.trim()
+                            }, res => {
+                                if (res.success) {
+                                    location.reload();
+                                } else {
+                                    ExamToast.fire({ icon: 'error', title: res.message || 'Failed to create exam' });
+                                }
+                            }).fail(() => ExamToast.fire({ icon: 'error', title: 'Failed to create exam' }));
+                        });
+                    });
+
+                    // ── Rename Exam ───────────────────────────────────────────────
+                    $(document).on('click', '.btn-rename-exam', function(e) {
+                        e.stopPropagation();
+                        const examId      = $(this).data('exam-id');
+                        const currentName = $(this).data('current-name');
+                        Swal.fire({
+                            title: 'Rename Examination',
+                            input: 'text',
+                            inputLabel: 'Examination name',
+                            inputValue: currentName,
+                            showCancelButton: true,
+                            confirmButtonText: 'Save',
+                            inputValidator: val => {
+                                if (!val.trim()) return 'Please enter a name.';
+                                if (val.trim().length > 100) return 'Too long (max 100 characters).';
+                            }
+                        }).then(result => {
+                            if (!result.isConfirmed || result.value.trim() === currentName) return;
+                            $.post(EXAM_BASE_URL + examId + '/rename', { exam_name: result.value.trim() }, res => {
+                                if (res.success) {
+                                    $(`.exam-chip-btn[data-exam-id="${examId}"] .exam-chip-name`).text(result.value.trim());
+                                    $(`.btn-rename-exam[data-exam-id="${examId}"]`).data('current-name', result.value.trim());
+                                    ExamToast.fire({ icon: 'success', title: 'Exam renamed' });
+                                } else {
+                                    ExamToast.fire({ icon: 'error', title: res.message || 'Failed to rename' });
+                                }
+                            }).fail(() => ExamToast.fire({ icon: 'error', title: 'Failed to rename' }));
+                        });
+                    });
+
+                    // ── Delete Exam ───────────────────────────────────────────────
+                    $(document).on('click', '.btn-delete-exam', function(e) {
+                        e.stopPropagation();
+                        const examId = $(this).data('exam-id');
+                        const name   = $(this).data('name');
+                        Swal.fire({
+                            title: 'Delete Exam?',
+                            html: `<p>Delete <strong>${name}</strong>?<br><small class="text-danger">All marks for this exam will be permanently removed.</small></p>`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            confirmButtonText: 'Delete',
+                        }).then(result => {
+                            if (!result.isConfirmed) return;
+                            $.post(EXAM_BASE_URL + examId + '/delete', {}, res => {
+                                if (res.success) {
+                                    location.reload();
+                                } else {
+                                    ExamToast.fire({ icon: 'error', title: res.message || 'Failed to delete' });
+                                }
+                            }).fail(() => ExamToast.fire({ icon: 'error', title: 'Failed to delete' }));
+                        });
+                    });
 
                     // ── Save mark ─────────────────────────────────────────────────
                     $(document).on('click', '.btn-save-mark', function() {
@@ -1368,7 +1615,6 @@
                         const total = $(`input.exam-total-input[data-sid="${sid}"][data-term="${term}"]`).val() || 100;
                         const cmt   = $(`input.exam-cmt-input[data-sid="${sid}"][data-term="${term}"]`).val().trim();
 
-                        // ── Validation ────────────────────────────────────────────
                         if (mark === '' || mark === null) {
                             ExamToast.fire({ icon: 'warning', title: 'Mark is required before saving' });
                             $(`input.exam-mark-input[data-sid="${sid}"][data-term="${term}"]`).focus();
@@ -1379,12 +1625,12 @@
                             $(`input.exam-cmt-input[data-sid="${sid}"][data-term="${term}"]`).focus();
                             return;
                         }
-                        // ─────────────────────────────────────────────────────────
 
                         btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
 
                         $.post(EXAM_SAVE_URL, {
-                            student_id: sid, term, mark, total_mark: total, teacher_comment: cmt, is_absent: 0
+                            student_id: sid, term, mark, total_mark: total, teacher_comment: cmt,
+                            is_absent: 0, term_exam_id: currentExamId[term]
                         }, res => {
                             btn.html('<i class="ki-duotone ki-check fs-5"><span class="path1"></span><span class="path2"></span></i>').prop('disabled', false);
                             if (res.success) {
@@ -1417,11 +1663,11 @@
                         btn.html('<span class="spinner-border spinner-border-sm"></span>').prop('disabled', true);
 
                         $.post(EXAM_SAVE_URL, {
-                            student_id: sid, term, mark: '', total_mark: total, teacher_comment: '', is_absent: newAbsent
+                            student_id: sid, term, mark: '', total_mark: total, teacher_comment: '',
+                            is_absent: newAbsent, term_exam_id: currentExamId[term]
                         }, res => {
                             btn.prop('disabled', false);
                             if (!res.success) {
-                                // Restore button label on failure
                                 if (wasAbsent) {
                                     btn.html('<i class="ki-duotone ki-check fs-7"><span class="path1"></span><span class="path2"></span></i>Present');
                                 } else {
@@ -1431,28 +1677,26 @@
                                 return;
                             }
                             if (newAbsent) {
-                                    // Switch to absent state
-                                    btn.html('<i class="ki-duotone ki-check fs-7"><span class="path1"></span><span class="path2"></span></i>Present')
-                                       .removeClass('btn-outline-danger').addClass('btn-danger');
-                                    markCell.html('<span class="badge badge-light-danger fs-8">ABS</span>');
-                                    totalCell.html('<span class="text-muted fs-8">—</span>');
-                                    cmtCell.html('');
-                                    saveBtn.prop('disabled', true);
-                                    nameCell.find('.badge').remove();
-                                    nameCell.find('span.fw-semibold').after('<span class="badge badge-light-danger fs-9 ms-2">ABSENT</span>');
-                                    ExamToast.fire({ icon: 'warning', title: 'Marked as ABSENT' });
-                                } else {
-                                    // Switch to present state
-                                    btn.html('<i class="ki-duotone ki-user-cross fs-7"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>ABS')
-                                       .removeClass('btn-danger').addClass('btn-outline-danger');
-                                    markCell.html(`<input type="number" class="form-control form-control-sm text-center exam-mark-input" style="width:80px;margin:auto;" data-sid="${sid}" data-term="${term}" value="" min="0" max="${total}" step="0.5" placeholder="0" />`);
-                                    totalCell.html(`<input type="number" class="form-control form-control-sm text-center exam-total-input" style="width:70px;margin:auto;" data-sid="${sid}" data-term="${term}" value="${total}" min="1" max="1000" step="0.5" />`);
-                                    cmtCell.html(`<input type="text" class="form-control form-control-sm exam-cmt-input" data-sid="${sid}" data-term="${term}" value="" placeholder="Optional comment..." maxlength="500" />`);
-                                    saveBtn.prop('disabled', false);
-                                    nameCell.find('.badge').remove();
-                                    ExamToast.fire({ icon: 'success', title: 'Marked as Present' });
-                                }
-                                applyMarkResult(res, sid, term);
+                                btn.html('<i class="ki-duotone ki-check fs-7"><span class="path1"></span><span class="path2"></span></i>Present')
+                                   .removeClass('btn-outline-danger').addClass('btn-danger');
+                                markCell.html('<span class="badge badge-light-danger fs-8">ABS</span>');
+                                totalCell.html('<span class="text-muted fs-8">—</span>');
+                                cmtCell.html('');
+                                saveBtn.prop('disabled', true);
+                                nameCell.find('.badge').remove();
+                                nameCell.find('span.fw-semibold').after('<span class="badge badge-light-danger fs-9 ms-2">ABSENT</span>');
+                                ExamToast.fire({ icon: 'warning', title: 'Marked as ABSENT' });
+                            } else {
+                                btn.html('<i class="ki-duotone ki-user-cross fs-7"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>ABS')
+                                   .removeClass('btn-danger').addClass('btn-outline-danger');
+                                markCell.html(`<input type="number" class="form-control form-control-sm text-center exam-mark-input" style="width:80px;margin:auto;" data-sid="${sid}" data-term="${term}" value="" min="0" max="${total}" step="0.5" placeholder="0" />`);
+                                totalCell.html(`<input type="number" class="form-control form-control-sm text-center exam-total-input" style="width:70px;margin:auto;" data-sid="${sid}" data-term="${term}" value="${total}" min="1" max="1000" step="0.5" />`);
+                                cmtCell.html(`<input type="text" class="form-control form-control-sm exam-cmt-input" data-sid="${sid}" data-term="${term}" value="" placeholder="Optional comment..." maxlength="500" />`);
+                                saveBtn.prop('disabled', false);
+                                nameCell.find('.badge').remove();
+                                ExamToast.fire({ icon: 'success', title: 'Marked as Present' });
+                            }
+                            applyMarkResult(res, sid, term);
                         }).fail(() => {
                             btn.prop('disabled', false);
                             ExamToast.fire({ icon: 'error', title: 'Failed to update' });
@@ -1469,7 +1713,7 @@
                         mEl.attr('max', t);
                     });
 
-                    // ── Save on Enter in mark input ───────────────────────────────
+                    // ── Save on Enter in mark or comment input ────────────────────
                     $(document).on('keydown', '.exam-mark-input, .exam-cmt-input', function(e) {
                         if (e.key === 'Enter') {
                             const sid  = $(this).data('sid');
