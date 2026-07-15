@@ -282,13 +282,29 @@ class UserController extends BaseController
             
             log_message('debug', "Order by: {$orderColumn} {$orderDir}");
             
+            // Determine visibility scope: Super Admin (roleID=1) and users with no
+            // school affiliation (schID=0) see all users; everyone else sees only
+            // users who have an admission record at the same school.
+            $myRoleId  = (int) $this->session->get('roleID');
+            $mySchId   = (int) $this->session->get('schID');
+            $canSeeAll = ($myRoleId === 1 || $mySchId === 0);
+
             // Build query with joins
             $builder = $this->db->table('users');
-            $builder->select('*');
+            $builder->select('users.*, role.role_name, role.role_rank, district.district_name');
             $builder->join('user_role', 'user_role.user_id_fk = users.user_id', 'left');
             $builder->join('role', 'role.role_id = user_role.role_id_fk', 'left');
             $builder->join('district', 'district.district_id = users.district_id_fk', 'left');
-            
+
+            if (!$canSeeAll) {
+                // Use EXISTS so no duplicate rows and counts stay accurate
+                $builder->where("EXISTS (
+                    SELECT 1 FROM admission
+                    WHERE admission.user_id_fk = users.user_id
+                      AND admission.sch_id_fk  = {$mySchId}
+                )");
+            }
+
             // Apply search filter
             if (!empty($searchValue)) {
                 $builder->groupStart()
@@ -301,23 +317,34 @@ class UserController extends BaseController
                     ->orLike('users.user_status', $searchValue)
                     ->groupEnd();
             }
-            
+
             // Get total filtered count before pagination
             $recordsFiltered = $builder->countAllResults(false);
-            
+
             // Apply ordering
             $builder->orderBy($orderColumn, $orderDir);
-            
+
             // Apply pagination
             if ($length != -1) {
                 $builder->limit($length, $start);
             }
-            
+
             // Get data
             $users = $builder->get()->getResultArray();
-            
-            // Get total count (without filters)
-            $recordsTotal = $this->db->table('users')->countAllResults();
+
+            // Total (unfiltered) count — scoped the same way
+            if ($canSeeAll) {
+                $recordsTotal = $this->db->table('users')->countAllResults();
+            } else {
+                $recordsTotal = (int) $this->db->query("
+                    SELECT COUNT(*) AS cnt FROM users
+                    WHERE EXISTS (
+                        SELECT 1 FROM admission
+                        WHERE admission.user_id_fk = users.user_id
+                          AND admission.sch_id_fk  = ?
+                    )
+                ", [$mySchId])->getRow()->cnt;
+            }
             
             log_message('debug', "Found {$recordsFiltered} filtered users out of {$recordsTotal} total");
             
@@ -489,9 +516,24 @@ class UserController extends BaseController
         if ($accessCheck !== true) {
             $data['_view'] = 'app/auth/access_control';
         } else {
-            // Get all roles for dropdown
-            $data['roles'] = $this->roleModel->getAllRoles();
-            
+            // Roles: super admin sees all; everyone else only sees roles ranked below theirs
+            $currentUserRoleId = $this->session->get('roleID');
+            $isSuperAdmin      = (int) $currentUserRoleId === 1;
+            $currentUserRole   = $this->roleModel->find($currentUserRoleId);
+            $currentUserRank   = is_array($currentUserRole)
+                ? (int) ($currentUserRole['role_rank'] ?? 999)
+                : (int) ($currentUserRole->role_rank ?? 999);
+
+            $allRoles = $this->roleModel->getAllRoles();
+            if ($isSuperAdmin) {
+                $data['roles'] = $allRoles;
+            } else {
+                $data['roles'] = array_values(array_filter($allRoles, function ($role) use ($currentUserRank) {
+                    $rank = is_array($role) ? (int)($role['role_rank'] ?? 999) : (int)($role->role_rank ?? 999);
+                    return $rank > $currentUserRank;
+                }));
+            }
+
             // Get all districts for dropdown
             $data['districts'] = $this->districtModel->findAll();
             $data['province'] = $this->provinceModel->getAllProvince();
