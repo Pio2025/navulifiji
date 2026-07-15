@@ -308,7 +308,7 @@ class TermExamModel extends Model
 
     // ── Class teacher review: all marks for all students ─────────────
 
-    public function getAllMarksForClassTerm(int $classId, int $term): array
+    public function getAllMarksForClassTerm(int $classId, int $term, ?int $termExamId = null): array
     {
         $db = \Config\Database::connect();
 
@@ -336,20 +336,28 @@ class TermExamModel extends Model
             ORDER BY sub.subject_name
         ", [$classId])->getResultArray();
 
-        // Get all marks for this class/term — aggregate across all exams per subject/student
-        $allMarks = $db->query("
-            SELECT class_sub_id_fk, student_id_fk,
-                   CASE WHEN COUNT(CASE WHEN is_absent=0 AND mark IS NOT NULL THEN 1 END) > 0
-                        THEN SUM(CASE WHEN is_absent=0 AND mark IS NOT NULL THEN mark ELSE 0 END)
-                        ELSE NULL
-                   END AS mark,
-                   SUM(total_mark) AS total_mark,
-                   CASE WHEN COUNT(*) = SUM(is_absent) THEN 1 ELSE 0 END AS is_absent,
-                   NULL AS teacher_comment
-            FROM term_exam_mark
-            WHERE class_id_fk = ? AND term = ?
-            GROUP BY class_sub_id_fk, student_id_fk
-        ", [$classId, $term])->getResultArray();
+        // Get marks — per specific exam or aggregate across all exams
+        if ($termExamId !== null) {
+            $allMarks = $db->query("
+                SELECT class_sub_id_fk, student_id_fk, mark, total_mark, is_absent, teacher_comment
+                FROM term_exam_mark
+                WHERE class_id_fk = ? AND term = ? AND term_exam_id_fk = ?
+            ", [$classId, $term, $termExamId])->getResultArray();
+        } else {
+            $allMarks = $db->query("
+                SELECT class_sub_id_fk, student_id_fk,
+                       CASE WHEN COUNT(CASE WHEN is_absent=0 AND mark IS NOT NULL THEN 1 END) > 0
+                            THEN SUM(CASE WHEN is_absent=0 AND mark IS NOT NULL THEN mark ELSE 0 END)
+                            ELSE NULL
+                       END AS mark,
+                       SUM(total_mark) AS total_mark,
+                       CASE WHEN COUNT(*) = SUM(is_absent) THEN 1 ELSE 0 END AS is_absent,
+                       NULL AS teacher_comment
+                FROM term_exam_mark
+                WHERE class_id_fk = ? AND term = ?
+                GROUP BY class_sub_id_fk, student_id_fk
+            ", [$classId, $term])->getResultArray();
+        }
 
         // Index marks by [class_sub_id][student_id]
         $markIndex = [];

@@ -24,10 +24,13 @@
 <?= $this->include('templates/flash_messages') ?>
 
 <?php
-$isReadonly    = !($isActive ?? true);
-$canEnterMarks = $canEnterMarks ?? false;
+$isReadonly      = !($isActive ?? true);
+$canEnterMarks   = $canEnterMarks ?? false;
 $canSubmitReport = $canSubmitReport ?? false;
-$markEditable  = $canEnterMarks && !$isReadonly;
+$markEditable    = $canEnterMarks && !$isReadonly;
+$examDefs        = $examDefs ?? [];
+$selectedExamId  = $selectedExamId ?? 0;
+$isLocked        = in_array($reportStatus['status'] ?? 'collecting', ['ct_submitted', 'published']);
 ?>
 <?php if ($isReadonly): ?>
 <div class="d-flex align-items-center gap-2 px-6 py-3 mb-6 rounded-2" style="background:#fff8e1;border:1px solid #ffe082;">
@@ -37,25 +40,63 @@ $markEditable  = $canEnterMarks && !$isReadonly;
 <?php endif; ?>
 
 <!--begin::Term Tabs-->
-<ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x fs-6 fw-semibold mb-6 border-0">
+<ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x fs-6 fw-semibold mb-4 border-0">
     <?php foreach ([1,2,3] as $t): ?>
     <li class="nav-item">
         <a class="nav-link <?= $t==$term?'active':'' ?> text-active-primary pb-4"
            href="<?= base_url('classroom/class-exam/'.$classId.'/term/'.$t) ?>">
             Term <?= $t ?>
-            <?php
-            $rs = \App\Models\TermExamModel::class;
-            // status badge shown via PHP (we only have the current term's status loaded)
-            ?>
         </a>
     </li>
     <?php endforeach; ?>
 </ul>
 
+<!--begin::Exam chips-->
+<div class="d-flex align-items-center gap-2 flex-wrap mb-5 p-3 bg-light rounded-2">
+    <span class="text-muted fs-8 fw-semibold me-1">Exam:</span>
+    <?php foreach ($examDefs as $_i => $_def):
+        $_eid    = (int)$_def['term_exam_id'];
+        $_active = $_eid === $selectedExamId;
+        $_examUrl = base_url('classroom/class-exam/'.$classId.'/term/'.$term).'?exam_id='.$_eid;
+    ?>
+    <div class="d-inline-flex align-items-center">
+        <a href="<?= $_examUrl ?>"
+           class="btn btn-sm <?= $_active ? 'btn-primary' : 'btn-light' ?>">
+            <span><?= esc($_def['exam_name']) ?></span>
+        </a>
+        <?php if (!$isLocked && !$isReadonly): ?>
+        <button type="button"
+                class="btn btn-icon btn-xs btn-light-warning ms-1 btn-rename-exam"
+                data-exam-id="<?= $_eid ?>"
+                data-current-name="<?= esc($_def['exam_name']) ?>"
+                title="Rename exam" style="width:22px;height:22px;">
+            <i class="ki-duotone ki-pencil fs-9"><span class="path1"></span><span class="path2"></span></i>
+        </button>
+        <?php if (count($examDefs) > 1): ?>
+        <button type="button"
+                class="btn btn-icon btn-xs btn-light-danger ms-1 btn-delete-exam"
+                data-exam-id="<?= $_eid ?>"
+                data-name="<?= esc($_def['exam_name']) ?>"
+                title="Delete exam" style="width:22px;height:22px;">
+            <i class="ki-duotone ki-trash fs-9"><span class="path1"></span><span class="path2"></span></i>
+        </button>
+        <?php endif; ?>
+        <?php endif; ?>
+    </div>
+    <?php endforeach; ?>
+    <?php if (!$isLocked && !$isReadonly): ?>
+    <button type="button" class="btn btn-sm btn-light-success btn-add-exam"
+            data-class-id="<?= $classId ?>" data-term="<?= $term ?>">
+        <i class="ki-duotone ki-plus fs-6 me-1"><span class="path1"></span><span class="path2"></span></i>
+        Add Exam
+    </button>
+    <?php endif; ?>
+</div>
+<!--end::Exam chips-->
+
 <?php
-$isLocked   = in_array($reportStatus['status'], ['ct_submitted','published']);
-$isPublished= $reportStatus['status'] === 'published';
-$ctSubmitted= $reportStatus['status'] === 'ct_submitted';
+$isPublished = $reportStatus['status'] === 'published';
+$ctSubmitted = $reportStatus['status'] === 'ct_submitted';
 ?>
 
 <?php if ($isPublished): ?>
@@ -203,6 +244,20 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
     </div>
     <div class="card-body px-5 pb-4 pt-0">
         <!-- Marks table (editable if CT/ACT and not locked) -->
+        <?php
+        $viewingExam = '';
+        foreach ($examDefs as $_ed) {
+            if ((int)$_ed['term_exam_id'] === $selectedExamId) { $viewingExam = $_ed['exam_name']; break; }
+        }
+        ?>
+        <?php if ($viewingExam): ?>
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge badge-light-primary fs-9">
+                <i class="ki-duotone ki-document fs-9 me-1"><span class="path1"></span><span class="path2"></span></i>
+                <?= esc($viewingExam) ?>
+            </span>
+        </div>
+        <?php endif; ?>
         <div class="table-responsive mb-4">
             <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2 fs-8">
                 <thead>
@@ -338,9 +393,14 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
 </div>
 
 <script>
-const CT_COMMENT_URL  = '<?= base_url('classroom/class-exam/'.$classId.'/comment') ?>';
-const CT_SUBMIT_URL   = '<?= base_url('classroom/class-exam/'.$classId.'/term/'.$term.'/submit') ?>';
+const CT_COMMENT_URL   = '<?= base_url('classroom/class-exam/'.$classId.'/comment') ?>';
+const CT_SUBMIT_URL    = '<?= base_url('classroom/class-exam/'.$classId.'/term/'.$term.'/submit') ?>';
 const CT_SAVE_MARK_URL = '<?= base_url('classroom/class-exam/'.$classId.'/save-mark') ?>';
+const EXAM_CREATE_URL  = '<?= base_url('classroom/term-exam/create') ?>';
+const EXAM_BASE_URL    = '<?= base_url('classroom/term-exam') ?>/';
+const CT_CLASS_ID      = <?= (int)$classId ?>;
+const CT_TERM          = <?= (int)$term ?>;
+const CT_EXAM_ID       = <?= (int)$selectedExamId ?>;
 
 const CtToast = Swal.mixin({
     toast: true,
@@ -456,7 +516,84 @@ $(document).on('input', '.mark-val-input, .total-val-input', function() {
     }
 });
 
-// Save mark
+// ── Add Exam ──────────────────────────────────────────────────────────
+$(document).on('click', '.btn-add-exam', function() {
+    const classIdVal = $(this).data('class-id');
+    const termVal    = $(this).data('term');
+    Swal.fire({
+        title: 'New Examination',
+        input: 'text',
+        inputLabel: 'Examination name',
+        inputPlaceholder: 'e.g. Mid-Term Examination',
+        showCancelButton: true,
+        confirmButtonText: 'Create',
+        inputValidator: val => {
+            if (!val.trim()) return 'Please enter an examination name.';
+            if (val.trim().length > 100) return 'Name is too long (max 100 characters).';
+        }
+    }).then(result => {
+        if (!result.isConfirmed) return;
+        $.post(EXAM_CREATE_URL, { class_id: classIdVal, term: termVal, exam_name: result.value.trim() }, res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                CtToast.fire({ icon: 'error', title: res.message || 'Failed to create exam' });
+            }
+        }).fail(() => CtToast.fire({ icon: 'error', title: 'Failed to create exam' }));
+    });
+});
+
+// ── Rename Exam ────────────────────────────────────────────────────────
+$(document).on('click', '.btn-rename-exam', function() {
+    const examId      = $(this).data('exam-id');
+    const currentName = $(this).data('current-name');
+    Swal.fire({
+        title: 'Rename Examination',
+        input: 'text',
+        inputLabel: 'Examination name',
+        inputValue: currentName,
+        showCancelButton: true,
+        confirmButtonText: 'Save',
+        inputValidator: val => {
+            if (!val.trim()) return 'Please enter a name.';
+            if (val.trim().length > 100) return 'Too long (max 100 characters).';
+        }
+    }).then(result => {
+        if (!result.isConfirmed || result.value.trim() === currentName) return;
+        $.post(EXAM_BASE_URL + examId + '/rename', { exam_name: result.value.trim() }, res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                CtToast.fire({ icon: 'error', title: res.message || 'Failed to rename' });
+            }
+        }).fail(() => CtToast.fire({ icon: 'error', title: 'Failed to rename' }));
+    });
+});
+
+// ── Delete Exam ────────────────────────────────────────────────────────
+$(document).on('click', '.btn-delete-exam', function() {
+    const examId = $(this).data('exam-id');
+    const name   = $(this).data('name');
+    Swal.fire({
+        title: 'Delete Exam?',
+        html: `<p>Delete <strong>${name}</strong>?<br><small class="text-danger">All marks for this exam will be permanently removed.</small></p>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Delete',
+    }).then(result => {
+        if (!result.isConfirmed) return;
+        $.post(EXAM_BASE_URL + examId + '/delete', {}, res => {
+            if (res.success) {
+                location.reload();
+            } else {
+                CtToast.fire({ icon: 'error', title: res.message || 'Failed to delete' });
+            }
+        }).fail(() => CtToast.fire({ icon: 'error', title: 'Failed to delete' }));
+    });
+});
+
+// ── Save mark
 $(document).on('click', '.btn-save-mark', function() {
     const btn   = $(this);
     const sid   = btn.data('sid');
@@ -472,6 +609,7 @@ $(document).on('click', '.btn-save-mark', function() {
         class_sub_id:    csid,
         student_id:      sid,
         term:            term,
+        term_exam_id:    CT_EXAM_ID,
         is_absent:       isAbsent,
         mark:            mark,
         total_mark:      total,

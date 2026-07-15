@@ -1638,12 +1638,33 @@ class ClassroomController extends BaseController
                 unset($asgnRow);
             }
         } elseif ($section === 'exams') {
-            $data['examStudents'] = $db->query("
-                SELECT u.user_id, u.fname, u.lname, u.profile_photo
-                FROM classroom_student cs INNER JOIN users u ON u.user_id = cs.user_id_fk
-                WHERE cs.class_id_fk = ?
-                ORDER BY u.lname, u.fname
-            ", [$classId])->getResultArray();
+            // Only show students enrolled in this specific subject.
+            // Fall back to all class students if no enrollment data exists for this subject.
+            $enrolledIds = array_column(
+                $db->query("
+                    SELECT DISTINCT a.user_id_fk AS user_id
+                    FROM student_subject ss
+                    INNER JOIN admission a ON a.admission_id = ss.admission_id_fk
+                    WHERE ss.class_id_fk = ? AND ss.sch_sub_id_fk = ? AND ss.stud_sub_status = 'Active'
+                ", [$classId, $schSubId])->getResultArray(),
+                'user_id'
+            );
+            if (!empty($enrolledIds)) {
+                $placeholders = implode(',', array_fill(0, count($enrolledIds), '?'));
+                $data['examStudents'] = $db->query("
+                    SELECT u.user_id, u.fname, u.lname, u.profile_photo
+                    FROM classroom_student cs INNER JOIN users u ON u.user_id = cs.user_id_fk
+                    WHERE cs.class_id_fk = ? AND u.user_id IN ($placeholders)
+                    ORDER BY u.lname, u.fname
+                ", array_merge([$classId], $enrolledIds))->getResultArray();
+            } else {
+                $data['examStudents'] = $db->query("
+                    SELECT u.user_id, u.fname, u.lname, u.profile_photo
+                    FROM classroom_student cs INNER JOIN users u ON u.user_id = cs.user_id_fk
+                    WHERE cs.class_id_fk = ?
+                    ORDER BY u.lname, u.fname
+                ", [$classId])->getResultArray();
+            }
 
             // Load exam definitions per term (auto-create default if none exist)
             $examDefs     = [];
@@ -5950,20 +5971,31 @@ class ClassroomController extends BaseController
     public function createTermExam()
     {
         if (!$this->isLoggedIn()) return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
-        $userId   = (int) $this->session->get('userID');
-        $schSubId = (int) $this->request->getPost('sch_sub_id');
-        $term     = (int) $this->request->getPost('term');
-        $name     = trim($this->request->getPost('exam_name') ?? '');
+        $userId      = (int) $this->session->get('userID');
+        $schSubId    = (int) $this->request->getPost('sch_sub_id');
+        $classIdPost = (int) $this->request->getPost('class_id');
+        $term        = (int) $this->request->getPost('term');
+        $name        = trim($this->request->getPost('exam_name') ?? '');
 
-        if (!$schSubId || $term < 1 || $term > 3 || $name === '' || mb_strlen($name) > 100) {
+        if ($term < 1 || $term > 3 || $name === '' || mb_strlen($name) > 100) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid data.']);
         }
 
-        $assign = $this->resolveTeacherClassSub($schSubId, $userId, true);
-        if (!$assign) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+        $db = \Config\Database::connect();
+        if ($schSubId) {
+            $assign = $this->resolveTeacherClassSub($schSubId, $userId, true);
+            if (!$assign) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+            $classId = (int) $assign['class_id'];
+        } elseif ($classIdPost) {
+            if (!$this->isTeacherOfClass($classIdPost, $userId, $db)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+            }
+            $classId = $classIdPost;
+        } else {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid data.']);
+        }
 
-        $classId = (int) $assign['class_id'];
-        $id      = $this->termExamModel->createExam($classId, $term, $name, $userId);
+        $id = $this->termExamModel->createExam($classId, $term, $name, $userId);
         return $this->response->setJSON(['success' => true, 'term_exam_id' => $id, 'exam_name' => $name]);
     }
 
@@ -6044,10 +6076,24 @@ class ClassroomController extends BaseController
         if (!$classroom) return redirect()->to('classroom/my')->with('error', 'Classroom not found.');
 
         $this->setPageData('Class Exam Review', 'Classroom', 'Exam Review');
-        $result = $this->termExamModel->getAllMarksForClassTerm($classId, $term);
+
+        // Load exam definitions for this term; auto-create default if none exist
+        $examDefs = $this->termExamModel->getExamsForClass($classId, $term);
+        if (empty($examDefs)) {
+            $this->termExamModel->getOrCreateDefaultExam($classId, $term, $userId);
+            $examDefs = $this->termExamModel->getExamsForClass($classId, $term);
+        }
+
+        // Determine which exam to display (from ?exam_id= GET param)
+        $selectedExamId = (int) $this->request->getGet('exam_id');
+        $validIds = array_column($examDefs, 'term_exam_id');
+        if (!$selectedExamId || !in_array($selectedExamId, $validIds)) {
+            $selectedExamId = !empty($examDefs) ? (int)$examDefs[0]['term_exam_id'] : 0;
+        }
+
+        $result = $this->termExamModel->getAllMarksForClassTerm($classId, $term, $selectedExamId ?: null);
 
         // Core-subject completeness check (temporarily bypassed — always allow submit)
-        $classRoll         = count($result['students']);
         $coreSubjectStatus = [];
         $canSubmit         = true;
 
@@ -6056,6 +6102,8 @@ class ClassroomController extends BaseController
         $data['term']              = $term;
         $data['students']          = $result['students'];
         $data['subjects']          = $result['subjects'];
+        $data['examDefs']          = $examDefs;
+        $data['selectedExamId']    = $selectedExamId;
         $data['reportStatus']      = $this->termExamModel->getReportStatus($classId, $term);
         $data['canSubmit']         = $canSubmit;
         $data['canSubmitReport']   = $canSubmitReport;
@@ -6117,16 +6165,21 @@ class ClassroomController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'This classroom is no longer active.']);
         }
 
-        $classSubId = (int) $this->request->getPost('class_sub_id');
-        $studentId  = (int) $this->request->getPost('student_id');
-        $term       = (int) $this->request->getPost('term');
-        $isAbsent   = (int) $this->request->getPost('is_absent');
-        $mark       = $this->request->getPost('mark');
-        $totalMark  = (float) ($this->request->getPost('total_mark') ?: 100);
-        $comment    = trim($this->request->getPost('teacher_comment') ?? '');
+        $classSubId  = (int) $this->request->getPost('class_sub_id');
+        $studentId   = (int) $this->request->getPost('student_id');
+        $term        = (int) $this->request->getPost('term');
+        $termExamId  = (int) ($this->request->getPost('term_exam_id') ?? 0);
+        $isAbsent    = (int) $this->request->getPost('is_absent');
+        $mark        = $this->request->getPost('mark');
+        $totalMark   = (float) ($this->request->getPost('total_mark') ?: 100);
+        $comment     = trim($this->request->getPost('teacher_comment') ?? '');
 
         if (!$classSubId || !$studentId || $term < 1 || $term > 3) {
             return $this->response->setJSON(['success' => false, 'message' => 'Invalid parameters.']);
+        }
+
+        if ($termExamId <= 0) {
+            $termExamId = $this->termExamModel->getOrCreateDefaultExam($classId, $term, $userId);
         }
 
         $status = $this->termExamModel->getReportStatus($classId, $term);
@@ -6135,7 +6188,7 @@ class ClassroomController extends BaseController
         }
 
         $markValue = ($isAbsent || $mark === '' || $mark === null) ? null : (float) $mark;
-        $this->termExamModel->saveExamMark($classSubId, $classId, $studentId, $term, $markValue, $totalMark, $comment ?: null, $userId, $isAbsent);
+        $this->termExamModel->saveExamMark($classSubId, $classId, $studentId, $term, $markValue, $totalMark, $comment ?: null, $userId, $isAbsent, $termExamId);
 
         return $this->response->setJSON(['success' => true, 'message' => 'Mark saved.']);
     }
