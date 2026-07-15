@@ -14,7 +14,18 @@
         <!--end::Subtitle-->
     </div>
     <!--end::Heading-->
-    
+
+    <?php if (!empty($error)): ?>
+    <div class="alert alert-danger d-flex align-items-center mb-8 p-4" role="alert">
+        <i class="ki-duotone ki-shield-cross fs-2hx text-danger me-3">
+            <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+        </i>
+        <div class="d-flex flex-column">
+            <span class="fw-semibold"><?= esc($error) ?></span>
+        </div>
+    </div>
+    <?php endif ?>
+
     <!--begin::Input group (Identifier)-->
     <div class="fv-row mb-8">
         <!--begin::Label-->
