@@ -38,9 +38,16 @@ class DashboardController extends BaseController
         }
 
         $roleCatID = (int) $this->session->get('roleCatID');
+        $roleID    = (int) $this->session->get('roleID');
         $additionalData = [];
 
-        if ($roleCatID === 3) {
+        if ($roleID === 1 || $roleCatID === 1) {
+            $view = 'app/dashboard/super_admin';
+            $additionalData = $this->getSuperAdminStats();
+        } elseif ($roleCatID === 2 || $roleCatID === 7) {
+            $view = 'app/dashboard/school_admin';
+            $additionalData = $this->getSchoolAdminStats();
+        } elseif ($roleCatID === 3) {
             $view = 'app/dashboard/teacher';
             $additionalData = $this->getTeacherDashboardStats();
         } else {
@@ -49,6 +56,179 @@ class DashboardController extends BaseController
 
         $data = $this->loadCommonData($view, $additionalData);
         return view('app/layouts/main', $data);
+    }
+
+    private function getSuperAdminStats(): array
+    {
+        $db = \Config\Database::connect();
+
+        $totalSchools  = (int) $db->query("SELECT COUNT(*) c FROM school")->getRow()->c;
+        $activeSchools = (int) $db->query("SELECT COUNT(*) c FROM school WHERE sch_status='Active'")->getRow()->c;
+        $totalUsers    = (int) $db->query("SELECT COUNT(*) c FROM users")->getRow()->c;
+        $totalStudents = (int) $db->query("SELECT COUNT(*) c FROM admission WHERE admission_status='Completed'")->getRow()->c;
+        $totalTeachers = (int) $db->query("
+            SELECT COUNT(DISTINCT ur.user_id_fk) c
+            FROM user_role ur
+            JOIN role r ON r.role_id = ur.role_id_fk
+            WHERE r.role_cat_id_fk = 3 AND ur.user_role_status = 'Active'
+        ")->getRow()->c;
+
+        $schoolsList = $db->query("
+            SELECT sch_id, sch_name, sch_status, sch_created_at,
+                   (SELECT COUNT(*) FROM admission a WHERE a.sch_id_fk = school.sch_id AND a.admission_status = 'Completed') AS student_count
+            FROM school
+            ORDER BY sch_created_at DESC
+        ")->getResultArray();
+
+        $recentActivity = $db->query("
+            SELECT ul.log_action, ul.log_description, ul.created_at,
+                   u.fname, u.lname
+            FROM user_log ul
+            LEFT JOIN users u ON u.user_id = ul.user_id_fk
+            ORDER BY ul.created_at DESC
+            LIMIT 8
+        ")->getResultArray();
+
+        $usersByRole = $db->query("
+            SELECT rc.role_cat_name, COUNT(DISTINCT ur.user_id_fk) AS cnt
+            FROM user_role ur
+            JOIN role r ON r.role_id = ur.role_id_fk
+            JOIN role_category rc ON rc.role_cat_id = r.role_cat_id_fk
+            WHERE ur.user_role_status = 'Active'
+            GROUP BY rc.role_cat_id, rc.role_cat_name
+            ORDER BY cnt DESC
+        ")->getResultArray();
+
+        $newUsersThisMonth = (int) $db->query("
+            SELECT COUNT(*) c FROM users
+            WHERE MONTH(created_date) = MONTH(CURDATE()) AND YEAR(created_date) = YEAR(CURDATE())
+        ")->getRow()->c;
+
+        return [
+            'sa_total_schools'       => $totalSchools,
+            'sa_active_schools'      => $activeSchools,
+            'sa_total_users'         => $totalUsers,
+            'sa_total_students'      => $totalStudents,
+            'sa_total_teachers'      => $totalTeachers,
+            'sa_new_users_month'     => $newUsersThisMonth,
+            'sa_schools_list'        => $schoolsList,
+            'sa_recent_activity'     => $recentActivity,
+            'sa_users_by_role'       => $usersByRole,
+        ];
+    }
+
+    private function getSchoolAdminStats(): array
+    {
+        $db    = \Config\Database::connect();
+        $schId = (int) $this->session->get('schID');
+
+        $totalStudents = (int) $db->query("
+            SELECT COUNT(DISTINCT cs.user_id_fk) c
+            FROM classroom_student cs
+            JOIN classroom c   ON c.class_id       = cs.class_id_fk
+            JOIN stream s      ON s.stream_id       = c.stream_id_fk
+            JOIN sch_level sl  ON sl.sch_level_id  = s.sch_level_id_fk
+            WHERE sl.sch_id_fk = ? AND cs.class_stud_status = 'Active'
+        ", [$schId])->getRow()->c;
+
+        $totalTeachers = (int) $db->query("
+            SELECT COUNT(DISTINCT cst.user_id_fk) c
+            FROM classroom_subject_teacher cst
+            JOIN classroom_subject cs2 ON cs2.class_sub_id    = cst.class_sub_id_fk
+            JOIN classroom c           ON c.class_id          = cs2.class_id_fk
+            JOIN stream s              ON s.stream_id         = c.stream_id_fk
+            JOIN sch_level sl          ON sl.sch_level_id     = s.sch_level_id_fk
+            WHERE sl.sch_id_fk = ? AND cst.class_sub_teacher_status = 'Active'
+        ", [$schId])->getRow()->c;
+
+        $totalClassrooms = (int) $db->query("
+            SELECT COUNT(*) c
+            FROM classroom c
+            JOIN stream s     ON s.stream_id      = c.stream_id_fk
+            JOIN sch_level sl ON sl.sch_level_id  = s.sch_level_id_fk
+            WHERE sl.sch_id_fk = ? AND c.class_status = 'Active'
+        ", [$schId])->getRow()->c;
+
+        $activeAnnouncements = (int) $db->query("
+            SELECT COUNT(*) c FROM school_announcement
+            WHERE sch_id_fk = ? AND announcement_status = 'Active'
+        ", [$schId])->getRow()->c;
+
+        $activeNotices = (int) $db->query("
+            SELECT COUNT(*) c FROM notice_board
+            WHERE sch_id_fk = ? AND notice_status = 'Active'
+              AND (expires_at IS NULL OR expires_at > NOW())
+        ", [$schId])->getRow()->c;
+
+        // Attendance rate — last 30 days
+        $attendanceRow = $db->query("
+            SELECT
+              SUM(CASE WHEN sa.attendance_status = 'Present' THEN 1 ELSE 0 END) AS present_cnt,
+              COUNT(*) AS total_cnt
+            FROM student_attendance sa
+            JOIN stream s     ON s.stream_id      = sa.stream_id_fk
+            JOIN sch_level sl ON sl.sch_level_id  = s.sch_level_id_fk
+            WHERE sl.sch_id_fk = ?
+              AND sa.attendance_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        ", [$schId])->getRow();
+        $attendancePct = ($attendanceRow && $attendanceRow->total_cnt > 0)
+            ? round(($attendanceRow->present_cnt / $attendanceRow->total_cnt) * 100, 1)
+            : 0;
+
+        // Classrooms with student counts
+        $classroomsList = $db->query("
+            SELECT c.class_id, c.class_name, c.class_year, c.class_status,
+                   COUNT(DISTINCT cs2.user_id_fk) AS student_count
+            FROM classroom c
+            JOIN stream s     ON s.stream_id      = c.stream_id_fk
+            JOIN sch_level sl ON sl.sch_level_id  = s.sch_level_id_fk
+            LEFT JOIN classroom_student cs2 ON cs2.class_id_fk = c.class_id
+                                           AND cs2.class_stud_status = 'Active'
+            WHERE sl.sch_id_fk = ?
+            GROUP BY c.class_id, c.class_name, c.class_year, c.class_status
+            ORDER BY c.class_name
+        ", [$schId])->getResultArray();
+
+        // Term report statuses
+        $termReports = $db->query("
+            SELECT trs.trs_id, trs.term, trs.status, c.class_name
+            FROM term_report_status trs
+            JOIN classroom c   ON c.class_id       = trs.class_id_fk
+            JOIN stream s      ON s.stream_id       = c.stream_id_fk
+            JOIN sch_level sl  ON sl.sch_level_id  = s.sch_level_id_fk
+            WHERE sl.sch_id_fk = ?
+            ORDER BY c.class_name, trs.term
+        ", [$schId])->getResultArray();
+
+        // Recent conduct incidents
+        $conductIncidents = (int) $db->query("
+            SELECT COUNT(*) c
+            FROM conduct_incidents ci
+            JOIN admission a ON a.admission_id = ci.student_id
+            WHERE a.sch_id_fk = ?
+              AND ci.incident_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        ", [$schId])->getRow()->c;
+
+        // Recent 5 announcements for this school
+        $recentAnnouncements = $db->query("
+            SELECT title, priority, created_at
+            FROM school_announcement
+            WHERE sch_id_fk = ? AND announcement_status = 'Active'
+            ORDER BY created_at DESC LIMIT 5
+        ", [$schId])->getResultArray();
+
+        return [
+            'ad_total_students'       => $totalStudents,
+            'ad_total_teachers'       => $totalTeachers,
+            'ad_total_classrooms'     => $totalClassrooms,
+            'ad_active_announcements' => $activeAnnouncements,
+            'ad_active_notices'       => $activeNotices,
+            'ad_attendance_pct'       => $attendancePct,
+            'ad_classrooms_list'      => $classroomsList,
+            'ad_term_reports'         => $termReports,
+            'ad_conduct_incidents'    => $conductIncidents,
+            'ad_recent_announcements' => $recentAnnouncements,
+        ];
     }
 
     private function getTeacherDashboardStats(): array
