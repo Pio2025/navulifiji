@@ -5177,7 +5177,14 @@ class ClassroomController extends BaseController
                 (SELECT u_cc.profile_photo FROM classroom_role cr_cc
                  INNER JOIN users u_cc ON u_cc.user_id = cr_cc.user_id_fk
                  WHERE cr_cc.class_id_fk = c.class_id AND cr_cc.cs_role = 'Class Captain' LIMIT 1) AS class_captain_photo,
-                (SELECT COUNT(*) FROM classroom_student cs2 WHERE cs2.class_id_fk = c.class_id) AS student_count
+                (SELECT COUNT(*) FROM classroom_student cs2 WHERE cs2.class_id_fk = c.class_id) AS student_count,
+                (SELECT COUNT(*) FROM classroom_subject_teacher cst_a
+                 INNER JOIN classroom_subject csub_a ON csub_a.class_sub_id = cst_a.class_sub_id_fk
+                 WHERE csub_a.class_id_fk = c.class_id AND cst_a.user_id_fk = ?
+                   AND cst_a.class_sub_teacher_status = 'Active') AS active_subject_count,
+                (SELECT COUNT(*) FROM classroom_subject_teacher cst_t
+                 INNER JOIN classroom_subject csub_t ON csub_t.class_sub_id = cst_t.class_sub_id_fk
+                 WHERE csub_t.class_id_fk = c.class_id AND cst_t.user_id_fk = ?) AS total_subject_count
             FROM (
                 SELECT csub.class_id_fk AS class_id
                 FROM classroom_subject_teacher cst
@@ -5195,7 +5202,7 @@ class ClassroomController extends BaseController
             INNER JOIN school sch    ON sch.sch_id       = sl.sch_id_fk
             WHERE c.class_year = ?
             ORDER BY c.class_name ASC
-        ", [$userId, $userId, $year])->getResultArray();
+        ", [$userId, $userId, $userId, $userId, $year])->getResultArray();
 
         foreach ($rows as &$cls) {
             $cls['students']         = $this->getClassroomAllStudents((int) $cls['class_id'], true);
@@ -5249,6 +5256,7 @@ class ClassroomController extends BaseController
                 ss.sch_sub_id,
                 sub.subject_name, sub.sub_image,
                 d.dept_name,
+                cst.class_sub_teacher_status,
                 (SELECT COUNT(*) FROM classroom_student cstu
                  WHERE cstu.class_id_fk = cs.class_id_fk
                 ) AS student_count

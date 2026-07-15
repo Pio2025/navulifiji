@@ -29,7 +29,12 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
     $ccInitials = !empty($cls['class_captain'])
         ? strtoupper(substr(explode(' ', $cls['class_captain'])[0], 0, 1) . substr(explode(' ', $cls['class_captain'])[1] ?? '', 0, 1))
         : '?';
-    $isActive = ($cls['class_status'] === 'Active');
+    $isActive           = ($cls['class_status'] === 'Active');
+    $totalSubjects      = (int)($cls['total_subject_count'] ?? 0);
+    $activeSubjects     = (int)($cls['active_subject_count'] ?? 0);
+    // Read-only if classroom is not active, OR teacher has subject assignments but all are inactive
+    $isTeacherInactive  = $totalSubjects > 0 && $activeSubjects === 0;
+    $isReadOnly         = !$isActive || $isTeacherInactive;
     $tabClass = 'tmy_class_'   . $cls['class_id'];
     $tabSubj  = 'tmy_subj_'    . $cls['class_id'];
     $tabAtt   = 'tmy_att_'     . $cls['class_id'];
@@ -158,10 +163,14 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
     </div>
     <!--end::Header-->
 
-    <?php if (!$isActive): ?>
+    <?php if ($isReadOnly): ?>
     <div class="d-flex align-items-center gap-2 px-6 py-3 border-top" style="background:#fff8e1;border-color:#ffe082!important;">
         <i class="ki-duotone ki-lock-2 fs-4 text-warning"><span class="path1"></span><span class="path2"></span></i>
+        <?php if ($isTeacherInactive && $isActive): ?>
+        <span class="fs-7 fw-semibold text-warning">Read-only — your teaching role in this classroom is <strong>Inactive</strong>. You can view content but cannot add or modify anything.</span>
+        <?php else: ?>
         <span class="fs-7 fw-semibold text-warning">Read-only — this classroom is <strong><?= esc($cls['class_status']) ?></strong>. No new content can be added or modified.</span>
+        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -307,13 +316,22 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
                 <?php $subColors = ['primary','success','info','warning','danger','dark']; ?>
                 <div class="row g-4">
                     <?php foreach ($cls['teacher_subjects'] as $si => $subj):
-                        $color   = $subColors[$si % count($subColors)];
-                        $initial = strtoupper(substr($subj['subject_name'], 0, 1));
+                        $subjActive  = ($subj['class_sub_teacher_status'] ?? '') === 'Active';
+                        $subjCanEdit = $subjActive && !$isReadOnly;
+                        $color       = $subjActive ? $subColors[$si % count($subColors)] : 'secondary';
+                        $initial     = strtoupper(substr($subj['subject_name'], 0, 1));
                     ?>
                     <div class="col-6 col-sm-4 col-md-3">
+                        <?php if ($subjCanEdit): ?>
                         <a href="<?= base_url('classroom/teacher/' . $subj['sch_sub_id']) ?>" class="text-decoration-none d-block h-100">
-                            <div class="card border border-gray-100 h-100 subj-card">
-                                <div class="card-body p-4 text-center">
+                        <?php else: ?>
+                        <div class="d-block h-100" style="cursor:not-allowed;" title="<?= $subjActive ? 'Read-only — classroom is inactive' : 'Your teaching role for this subject is Inactive' ?>">
+                        <?php endif; ?>
+                            <div class="card border border-gray-100 h-100 subj-card<?= !$subjActive ? ' opacity-50' : '' ?>">
+                                <div class="card-body p-4 text-center position-relative">
+                                    <?php if (!$subjActive): ?>
+                                    <span class="badge badge-light-warning fs-9 position-absolute top-0 end-0 m-2">Inactive</span>
+                                    <?php endif; ?>
                                     <div class="d-flex align-items-center justify-content-center bg-light-<?= $color ?> rounded-2 mx-auto mb-3" style="width:52px;height:52px;">
                                         <?php if (!empty($subj['sub_image'])): ?>
                                         <img src="<?= base_url('uploads/subjects/' . $subj['sub_image']) ?>"
@@ -336,7 +354,11 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
                                     </div>
                                 </div>
                             </div>
+                        <?php if ($subjCanEdit): ?>
                         </a>
+                        <?php else: ?>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <?php endforeach; ?>
                 </div>
@@ -371,6 +393,7 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
                                     <div class="fw-bold text-gray-800 fs-6"><?= esc($termLabel) ?> <?= (int)$termNo ?></div>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
+                                    <?php if (!$isReadOnly): ?>
                                     <a href="<?= base_url('attendance?stream_id=' . ($cls['stream_id'] ?? '') . '&term=' . (int)$termNo) ?>"
                                        class="btn btn-sm btn-light-success">
                                         <i class="ki-duotone ki-calendar-8 fs-5 me-1">
@@ -385,6 +408,16 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
                                         </i>
                                         Student Subject Attendance
                                     </a>
+                                    <?php else: ?>
+                                    <button class="btn btn-sm btn-light text-muted" disabled>
+                                        <i class="ki-duotone ki-lock-2 fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                        Student Daily Attendance
+                                    </button>
+                                    <button class="btn btn-sm btn-light text-muted" disabled>
+                                        <i class="ki-duotone ki-lock-2 fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                        Student Subject Attendance
+                                    </button>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
@@ -417,19 +450,35 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
                                     <div class="fw-bold text-gray-800 fs-6"><?= esc($termLabel) ?> <?= (int)$termNo ?></div>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
-                                    <?php if ($isClassTeacher && $isActive): ?>
+                                    <?php if ($isClassTeacher): ?>
+                                    <?php if (!$isReadOnly): ?>
                                     <a href="<?= base_url('classroom/class-exam/' . $cls['class_id'] . '/term/' . (int)$termNo) ?>"
                                        class="btn btn-sm btn-light-primary">
                                         <i class="ki-duotone ki-notepad-edit fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
                                         Manage Marks
                                     </a>
+                                    <?php else: ?>
+                                    <button class="btn btn-sm btn-light text-muted" disabled title="Read-only — marks cannot be edited">
+                                        <i class="ki-duotone ki-lock-2 fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                        Manage Marks
+                                    </button>
                                     <?php endif; ?>
-                                    <?php foreach ($cls['teacher_subjects'] as $subj): ?>
+                                    <?php endif; ?>
+                                    <?php foreach ($cls['teacher_subjects'] as $subj):
+                                        $subjActive = ($subj['class_sub_teacher_status'] ?? '') === 'Active';
+                                    ?>
+                                    <?php if (!$isReadOnly && $subjActive): ?>
                                     <a href="<?= base_url('classroom/teacher/' . $subj['sch_sub_id'] . '/exams') ?>?term=<?= (int)$termNo ?>"
                                        class="btn btn-sm btn-light-success">
                                         <i class="ki-duotone ki-book-open fs-5 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                                         <?= esc($subj['subject_name']) ?>
                                     </a>
+                                    <?php else: ?>
+                                    <button class="btn btn-sm btn-light text-muted" disabled title="Read-only — <?= esc($subj['subject_name']) ?> marks cannot be edited">
+                                        <i class="ki-duotone ki-lock-2 fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>
+                                        <?= esc($subj['subject_name']) ?>
+                                    </button>
+                                    <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
@@ -451,7 +500,7 @@ $catTerms   = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 
                     'sessionPhotoUrl' => $sessionPhotoUrl ?? null,
                     'sessionUserId'   => $sessionUserId   ?? 0,
                     'sdPostUrl'       => base_url('classroom/' . $cls['class_id'] . '/discussion/post'),
-                    'canPost'         => $isActive,
+                    'canPost'         => !$isReadOnly,
                     'sdPfx'           => 'cd_t' . $cls['class_id'],
                     'sdShowShared'    => false,
                 ]) ?>
