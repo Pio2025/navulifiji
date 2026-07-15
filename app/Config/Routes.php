@@ -148,6 +148,15 @@ $routes->post('dashboard/notice/(:num)/update',    'NoticeBoardController::updat
 $routes->post('dashboard/notice/(:num)/delete',    'NoticeBoardController::delete/$1');
 $routes->post('dashboard/notice/(:num)/pin',       'NoticeBoardController::togglePin/$1');
 
+// ============================================================================
+// ANNOUNCEMENT Routes
+// ============================================================================
+$routes->get( 'dashboard/announcement',                    'AnnouncementController::index');
+$routes->post('dashboard/announcement/store',              'AnnouncementController::store');
+$routes->post('dashboard/announcement/(:num)/update',      'AnnouncementController::update/$1');
+$routes->post('dashboard/announcement/(:num)/delete',      'AnnouncementController::delete/$1');
+$routes->get( 'dashboard/announcement/(:num)/download',    'AnnouncementController::download/$1');
+
 
 $routes->get('user/activate/(:num)', 'UserController::activate/$1');
 
