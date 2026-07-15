@@ -258,10 +258,11 @@
                         <?php foreach ($sa_recent_activity as $i => $log):
                             $dotColors = ['bg-success','bg-primary','bg-warning','bg-danger','bg-info','bg-secondary'];
                             $dot = $dotColors[$i % count($dotColors)];
+                            $ts  = !empty($log['log_time']) ? (int)$log['log_time'] : strtotime($log['log_date'] ?? 'now');
                         ?>
                         <div class="timeline-item align-items-start mb-5">
                             <div class="timeline-label fw-bold text-gray-800 fs-7 mt-1">
-                                <?= date('H:i', strtotime($log['created_at'])) ?>
+                                <?= date('H:i', $ts) ?>
                             </div>
                             <div class="timeline-badge">
                                 <i class="fa fa-genderless <?= $dot ?> fs-1"></i>
@@ -271,10 +272,10 @@
                                     <?= esc(trim(($log['fname'] ?? '') . ' ' . ($log['lname'] ?? '')) ?: 'System') ?>
                                 </span>
                                 <span class="text-muted fw-normal ms-1">
-                                    <?= esc($log['log_description'] ?? $log['log_action'] ?? '') ?>
+                                    <?= esc($log['log_desc'] ?? $log['log_title'] ?? '') ?>
                                 </span>
                                 <span class="text-muted fw-normal fs-8 d-block">
-                                    <?= date('d M Y', strtotime($log['created_at'])) ?>
+                                    <?= date('d M Y', $ts) ?>
                                 </span>
                             </div>
                         </div>

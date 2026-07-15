@@ -81,11 +81,11 @@ class DashboardController extends BaseController
         ")->getResultArray();
 
         $recentActivity = $db->query("
-            SELECT ul.log_action, ul.log_description, ul.created_at,
+            SELECT ul.log_title, ul.log_desc, ul.log_date, ul.log_time,
                    u.fname, u.lname
             FROM user_log ul
             LEFT JOIN users u ON u.user_id = ul.user_id_fk
-            ORDER BY ul.created_at DESC
+            ORDER BY ul.log_time DESC
             LIMIT 8
         ")->getResultArray();
 
