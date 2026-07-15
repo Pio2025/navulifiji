@@ -488,6 +488,7 @@ $routes->post('classroom/teacher/(:num)/exam/mark/save',            'ClassroomCo
 $routes->get( 'classroom/class-exam/(:num)/term/(:num)',            'ClassroomController::classTeacherExamReview/$1/$2');
 $routes->get( 'classroom/class-exam/(:num)',                        'ClassroomController::classTeacherExamReview/$1');
 $routes->post('classroom/class-exam/(:num)/comment',                'ClassroomController::saveCtComment/$1');
+$routes->post('classroom/class-exam/(:num)/save-mark',              'ClassroomController::saveMarkAsClassTeacher/$1');
 $routes->post('classroom/class-exam/(:num)/term/(:num)/submit',     'ClassroomController::classTeacherSubmit/$1/$2');
 $routes->get( 'classroom/principal-exam/(:num)/term/(:num)',        'ClassroomController::principalExamReview/$1/$2');
 $routes->get( 'classroom/principal-exam/(:num)',                    'ClassroomController::principalExamReview/$1');

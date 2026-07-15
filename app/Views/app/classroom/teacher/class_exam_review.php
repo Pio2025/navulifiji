@@ -23,7 +23,12 @@
 
 <?= $this->include('templates/flash_messages') ?>
 
-<?php $isReadonly = !($isActive ?? true); ?>
+<?php
+$isReadonly    = !($isActive ?? true);
+$canEnterMarks = $canEnterMarks ?? false;
+$canSubmitReport = $canSubmitReport ?? false;
+$markEditable  = $canEnterMarks && !$isReadonly;
+?>
 <?php if ($isReadonly): ?>
 <div class="d-flex align-items-center gap-2 px-6 py-3 mb-6 rounded-2" style="background:#fff8e1;border:1px solid #ffe082;">
     <i class="ki-duotone ki-lock-2 fs-4 text-warning"><span class="path1"></span><span class="path2"></span></i>
@@ -108,7 +113,7 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
                 Submit to Principal
             </button>
             <div class="text-warning fw-semibold fs-9 mt-1">Classroom inactive</div>
-            <?php elseif (!$isLocked): ?>
+            <?php elseif (!$isLocked && $canSubmitReport): ?>
                 <?php if ($canSubmit): ?>
                 <button id="btn_ct_submit" class="btn btn-primary btn-sm w-100"
                         data-class="<?= $classId ?>" data-term="<?= $term ?>">
@@ -123,6 +128,9 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
                 </button>
                 <div class="text-warning fw-semibold fs-9 mt-1">Core marks incomplete</div>
                 <?php endif; ?>
+            <?php elseif (!$isLocked && !$canSubmitReport): ?>
+            <div class="fw-bold fs-7 text-info">Assistant Class Teacher</div>
+            <div class="text-muted fs-9 mt-1">Only the Class Teacher can submit to Principal</div>
             <?php elseif ($ctSubmitted): ?>
             <div class="fw-bold fs-7 text-warning">Awaiting Principal</div>
             <a href="<?= base_url('classroom/principal-exam/'.$classId.'/term/'.$term) ?>"
@@ -194,15 +202,28 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
         </div>
     </div>
     <div class="card-body px-5 pb-4 pt-0">
-        <!-- Marks summary table -->
+        <!-- Marks table (editable if CT/ACT and not locked) -->
         <div class="table-responsive mb-4">
             <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2 fs-8">
                 <thead>
                     <tr class="fw-bold text-muted">
-                        <th>Subject</th><th>Teacher</th>
-                        <th class="text-center">Mark</th><th class="text-center">Out Of</th>
-                        <th class="text-center">%</th><th class="text-center">Grade</th>
+                        <th>Subject</th>
+                        <th>Teacher</th>
+                        <?php if ($markEditable && !$isLocked): ?>
+                        <th class="text-center" style="min-width:60px;">Absent</th>
+                        <th class="text-center" style="min-width:80px;">Mark</th>
+                        <th class="text-center" style="min-width:70px;">Out Of</th>
+                        <th class="text-center" style="min-width:55px;">%</th>
+                        <th class="text-center" style="min-width:55px;">Grade</th>
+                        <th style="min-width:180px;">Teacher Comment</th>
+                        <th class="text-center" style="min-width:70px;"></th>
+                        <?php else: ?>
+                        <th class="text-center">Mark</th>
+                        <th class="text-center">Out Of</th>
+                        <th class="text-center">%</th>
+                        <th class="text-center">Grade</th>
                         <th>Teacher Comment</th>
+                        <?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
@@ -213,8 +234,64 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
                     $sp     = (!$absent && $sm !== null && $st > 0) ? round(($sm/$st)*100,1) : null;
                     $sg     = $absent ? 'ABS' : ($sp !== null ? \App\Models\TermExamModel::grade($sp) : '—');
                     $sgc    = $absent ? 'danger' : ($sp !== null ? \App\Models\TermExamModel::gradeColor($sg) : 'secondary');
+                    $csid   = $sub['class_sub_id'];
                 ?>
-                <tr class="<?= $absent?'bg-light-danger':'' ?>">
+                <?php if ($markEditable && !$isLocked): ?>
+                <tr class="<?= $absent ? 'bg-light-danger' : '' ?>" id="mark-row-<?= $sid ?>-<?= $csid ?>">
+                    <td class="fw-semibold"><?= esc($sub['subject_name']) ?></td>
+                    <td class="text-muted fs-9"><?= esc($sub['teacher_name'] ?? '—') ?></td>
+                    <td class="text-center">
+                        <div class="form-check form-check-sm d-flex justify-content-center">
+                            <input type="checkbox" class="form-check-input mark-absent-cb"
+                                   id="abs-<?= $sid ?>-<?= $csid ?>"
+                                   <?= $absent ? 'checked' : '' ?>
+                                   data-sid="<?= $sid ?>" data-csid="<?= $csid ?>">
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <input type="number" step="0.5" min="0"
+                               class="form-control form-control-sm text-center mark-val-input"
+                               style="width:70px;margin:auto;"
+                               id="mark-<?= $sid ?>-<?= $csid ?>"
+                               value="<?= $sm !== null ? $sm : '' ?>"
+                               placeholder="—"
+                               <?= $absent ? 'disabled' : '' ?>
+                               data-sid="<?= $sid ?>" data-csid="<?= $csid ?>">
+                    </td>
+                    <td class="text-center">
+                        <input type="number" step="1" min="1"
+                               class="form-control form-control-sm text-center total-val-input"
+                               style="width:65px;margin:auto;"
+                               id="total-<?= $sid ?>-<?= $csid ?>"
+                               value="<?= $st ?: 100 ?>"
+                               <?= $absent ? 'disabled' : '' ?>
+                               data-sid="<?= $sid ?>" data-csid="<?= $csid ?>">
+                    </td>
+                    <td class="text-center fw-bold fs-9" id="pct-<?= $sid ?>-<?= $csid ?>">
+                        <?= $absent ? '<span class="text-danger">ABS</span>' : ($sp !== null ? $sp.'%' : '—') ?>
+                    </td>
+                    <td class="text-center" id="grade-<?= $sid ?>-<?= $csid ?>">
+                        <span class="badge badge-light-<?= $sgc ?> fs-9"><?= $sg ?></span>
+                    </td>
+                    <td>
+                        <input type="text" maxlength="500"
+                               class="form-control form-control-sm comment-val-input"
+                               id="cmt-<?= $sid ?>-<?= $csid ?>"
+                               value="<?= esc($sub['teacher_comment'] ?? '') ?>"
+                               placeholder="Teacher comment…"
+                               data-sid="<?= $sid ?>" data-csid="<?= $csid ?>">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-sm btn-icon btn-light-primary btn-save-mark"
+                                style="width:30px;height:30px;"
+                                title="Save mark"
+                                data-sid="<?= $sid ?>" data-csid="<?= $csid ?>" data-term="<?= $term ?>" data-class="<?= $classId ?>">
+                            <i class="ki-duotone ki-check fs-6"><span class="path1"></span><span class="path2"></span></i>
+                        </button>
+                    </td>
+                </tr>
+                <?php else: ?>
+                <tr class="<?= $absent ? 'bg-light-danger' : '' ?>">
                     <td class="fw-semibold"><?= esc($sub['subject_name']) ?></td>
                     <td class="text-muted"><?= esc($sub['teacher_name'] ?? '—') ?></td>
                     <td class="text-center fw-bold"><?= $absent ? '<span class="badge badge-light-danger fs-9">ABS</span>' : ($sm !== null ? $sm : '<span class="text-muted">—</span>') ?></td>
@@ -223,6 +300,7 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
                     <td class="text-center"><span class="badge badge-light-<?= $sgc ?> fs-9"><?= $sg ?></span></td>
                     <td class="text-muted fst-italic"><?= $sub['teacher_comment'] ? esc($sub['teacher_comment']) : '' ?></td>
                 </tr>
+                <?php endif; ?>
                 <?php endforeach; ?>
                 </tbody>
             </table>
@@ -260,8 +338,9 @@ $allMarksDone     = count(array_filter($students, fn($s) => $s['subjects_entered
 </div>
 
 <script>
-const CT_COMMENT_URL = '<?= base_url('classroom/class-exam/'.$classId.'/comment') ?>';
-const CT_SUBMIT_URL  = '<?= base_url('classroom/class-exam/'.$classId.'/term/'.$term.'/submit') ?>';
+const CT_COMMENT_URL  = '<?= base_url('classroom/class-exam/'.$classId.'/comment') ?>';
+const CT_SUBMIT_URL   = '<?= base_url('classroom/class-exam/'.$classId.'/term/'.$term.'/submit') ?>';
+const CT_SAVE_MARK_URL = '<?= base_url('classroom/class-exam/'.$classId.'/save-mark') ?>';
 
 const CtToast = Swal.mixin({
     toast: true,
@@ -326,6 +405,87 @@ document.getElementById('btn_ct_submit')?.addEventListener('click', function() {
                 Swal.fire('Error', res.message, 'error');
             }
         });
+    });
+});
+
+// Grade helper (mirrors PHP TermExamModel::grade/gradeColor)
+function calcGrade(pct) {
+    if (pct === null) return { grade: '—', color: 'secondary' };
+    const g = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B' : pct >= 60 ? 'C' : pct >= 50 ? 'D' : 'F';
+    const c = pct >= 70 ? 'success' : pct >= 50 ? 'warning' : 'danger';
+    return { grade: g, color: c };
+}
+
+// Toggle absent: disable mark/total inputs, update % and grade cells
+$(document).on('change', '.mark-absent-cb', function() {
+    const sid  = $(this).data('sid');
+    const csid = $(this).data('csid');
+    const isAbsent = this.checked;
+    const markInput  = $(`#mark-${sid}-${csid}`);
+    const totalInput = $(`#total-${sid}-${csid}`);
+    const pctCell    = $(`#pct-${sid}-${csid}`);
+    const gradeCell  = $(`#grade-${sid}-${csid}`);
+    markInput.prop('disabled', isAbsent);
+    totalInput.prop('disabled', isAbsent);
+    if (isAbsent) {
+        pctCell.html('<span class="text-danger">ABS</span>');
+        gradeCell.html('<span class="badge badge-light-danger fs-9">ABS</span>');
+    } else {
+        pctCell.html('—');
+        gradeCell.html('<span class="badge badge-light-secondary fs-9">—</span>');
+    }
+    $(`#mark-row-${sid}-${csid}`).toggleClass('bg-light-danger', isAbsent);
+});
+
+// Real-time % recalculation on mark/total change
+$(document).on('input', '.mark-val-input, .total-val-input', function() {
+    const sid  = $(this).data('sid');
+    const csid = $(this).data('csid');
+    const mark  = parseFloat($(`#mark-${sid}-${csid}`).val());
+    const total = parseFloat($(`#total-${sid}-${csid}`).val());
+    const pctCell   = $(`#pct-${sid}-${csid}`);
+    const gradeCell = $(`#grade-${sid}-${csid}`);
+    if (!isNaN(mark) && !isNaN(total) && total > 0) {
+        const pct = Math.round((mark / total) * 1000) / 10;
+        const { grade, color } = calcGrade(pct);
+        pctCell.html(pct + '%');
+        gradeCell.html(`<span class="badge badge-light-${color} fs-9">${grade}</span>`);
+    } else {
+        pctCell.html('—');
+        gradeCell.html('<span class="badge badge-light-secondary fs-9">—</span>');
+    }
+});
+
+// Save mark
+$(document).on('click', '.btn-save-mark', function() {
+    const btn   = $(this);
+    const sid   = btn.data('sid');
+    const csid  = btn.data('csid');
+    const term  = btn.data('term');
+    const isAbsent = $(`#abs-${sid}-${csid}`).is(':checked') ? 1 : 0;
+    const mark     = $(`#mark-${sid}-${csid}`).val();
+    const total    = $(`#total-${sid}-${csid}`).val() || 100;
+    const comment  = $(`#cmt-${sid}-${csid}`).val().trim();
+
+    btn.attr('data-kt-indicator', 'on').prop('disabled', true);
+    $.post(CT_SAVE_MARK_URL, {
+        class_sub_id:    csid,
+        student_id:      sid,
+        term:            term,
+        is_absent:       isAbsent,
+        mark:            mark,
+        total_mark:      total,
+        teacher_comment: comment,
+    }, res => {
+        btn.removeAttr('data-kt-indicator').prop('disabled', false);
+        if (res.success) {
+            CtToast.fire({ icon: 'success', title: 'Mark saved' });
+        } else {
+            CtToast.fire({ icon: 'error', title: res.message || 'Failed to save' });
+        }
+    }).fail(() => {
+        btn.removeAttr('data-kt-indicator').prop('disabled', false);
+        CtToast.fire({ icon: 'error', title: 'Request failed' });
     });
 });
 </script>

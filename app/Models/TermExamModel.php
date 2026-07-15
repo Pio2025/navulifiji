@@ -199,7 +199,7 @@ class TermExamModel extends Model
 
         // Get all marks for this class/term
         $allMarks = $db->query("
-            SELECT tem.class_sub_id_fk, tem.student_id_fk, tem.mark, tem.total_mark, tem.teacher_comment
+            SELECT tem.class_sub_id_fk, tem.student_id_fk, tem.mark, tem.total_mark, tem.is_absent, tem.teacher_comment
             FROM term_exam_mark tem
             WHERE tem.class_id_fk = ? AND tem.term = ?
         ", [$classId, $term])->getResultArray();
@@ -226,7 +226,19 @@ class TermExamModel extends Model
         ", [$classId, $term])->getResultArray();
         $pIndex = array_column($pComments, null, 'student_id_fk');
 
-        // Build student rows with their marks
+        // Build per-student subject map from student_subject enrollment
+        $ssRows = $db->query("
+            SELECT ss.sch_sub_id_fk, a.user_id_fk AS user_id
+            FROM student_subject ss
+            INNER JOIN admission a ON a.admission_id = ss.admission_id_fk
+            WHERE ss.class_id_fk = ? AND ss.stud_sub_status = 'Active'
+        ", [$classId])->getResultArray();
+        $studentSubjectMap = [];
+        foreach ($ssRows as $r) {
+            $studentSubjectMap[(int)$r['user_id']][] = (int)$r['sch_sub_id_fk'];
+        }
+
+        // Build student rows with their marks (filtered to enrolled subjects)
         foreach ($students as &$stu) {
             $sid = $stu['user_id'];
             $stu['subjects']          = [];
@@ -238,9 +250,15 @@ class TermExamModel extends Model
             $stu['principal_comment'] = $pIndex[$sid]['comment']  ?? null;
             $stu['prc_id']            = $pIndex[$sid]['prc_id']   ?? null;
 
+            // Subjects this student is enrolled in (null = no enrollment data → show all)
+            $stuSchSubIds = $studentSubjectMap[$sid] ?? null;
+
             foreach ($subjects as $sub) {
-                $csid = $sub['class_sub_id'];
-                $m    = $markIndex[$csid][$sid] ?? null;
+                if ($stuSchSubIds !== null && !in_array((int)$sub['sch_sub_id'], $stuSchSubIds)) {
+                    continue;
+                }
+                $csid   = $sub['class_sub_id'];
+                $m      = $markIndex[$csid][$sid] ?? null;
                 $absent = $m && (int)($m['is_absent'] ?? 0) === 1;
                 $stu['subjects'][] = [
                     'class_sub_id'    => $csid,
@@ -262,7 +280,7 @@ class TermExamModel extends Model
 
             $stu['overall_pct']    = $stu['total_possible'] > 0
                 ? round(($stu['total_earned'] / $stu['total_possible']) * 100, 1) : null;
-            $stu['subjects_count'] = count($subjects);
+            $stu['subjects_count'] = count($stu['subjects']);
         }
 
         return ['students' => $students, 'subjects' => $subjects];

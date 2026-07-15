@@ -202,7 +202,7 @@
                 <?php if (empty($students)): ?>
                     <div class="text-center py-4 text-muted fs-8">No students enrolled.</div>
                 <?php else: ?>
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1" style="max-height:480px;overflow-y:auto;">
                     <?php foreach ($students as $s):
                         $initials = strtoupper(substr($s['fname'], 0, 1) . substr($s['lname'], 0, 1));
                     ?>

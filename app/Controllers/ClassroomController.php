@@ -5916,14 +5916,17 @@ class ClassroomController extends BaseController
         $userId = (int) $this->session->get('userID');
         $db     = \Config\Database::connect();
 
-        // Must be Class Teacher for this class
-        $isClassTeacher = $db->table('classroom_role')
+        // Must be Class Teacher or Assistant Class Teacher for this class
+        $ctRow = $db->table('classroom_role')
             ->where('class_id_fk', $classId)->where('user_id_fk', $userId)
-            ->where('cs_role', 'Class Teacher')->where('cs_status', 'Active')
+            ->whereIn('cs_role', ['Class Teacher', 'Assistant Class Teacher'])
+            ->where('cs_status', 'Active')
             ->get()->getRowArray();
-        if (!$isClassTeacher) {
-            return redirect()->to('classroom/my')->with('error', 'Access denied — Class Teacher only.');
+        if (!$ctRow) {
+            return redirect()->to('classroom/my')->with('error', 'Access denied — Class Teacher or Assistant Class Teacher only.');
         }
+        $canSubmitReport = $ctRow['cs_role'] === 'Class Teacher';
+        $canEnterMarks   = true;
 
         $term = max(1, min(3, $term));
 
@@ -5952,6 +5955,8 @@ class ClassroomController extends BaseController
         $data['subjects']          = $result['subjects'];
         $data['reportStatus']      = $this->termExamModel->getReportStatus($classId, $term);
         $data['canSubmit']         = $canSubmit;
+        $data['canSubmitReport']   = $canSubmitReport;
+        $data['canEnterMarks']     = $canEnterMarks;
         $data['coreSubjectStatus'] = $coreSubjectStatus;
         $data['isActive']          = ($classroom['class_status'] ?? '') === 'Active';
         $data['_view']             = 'app/classroom/teacher/class_exam_review';
@@ -5964,11 +5969,11 @@ class ClassroomController extends BaseController
         $userId = (int) $this->session->get('userID');
         $db     = \Config\Database::connect();
 
-        $isClassTeacher = $db->table('classroom_role')
+        $isCtOrAct = $db->table('classroom_role')
             ->where('class_id_fk', $classId)->where('user_id_fk', $userId)
-            ->where('cs_role', 'Class Teacher')->where('cs_status', 'Active')
-            ->get()->getRowArray();
-        if (!$isClassTeacher) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+            ->whereIn('cs_role', ['Class Teacher', 'Assistant Class Teacher'])
+            ->where('cs_status', 'Active')->countAllResults() > 0;
+        if (!$isCtOrAct) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
 
         $classStatus = $db->table('classroom')->select('class_status')->where('class_id', $classId)->get()->getRowArray();
         if (!$classStatus || $classStatus['class_status'] !== 'Active') {
@@ -5990,6 +5995,46 @@ class ClassroomController extends BaseController
 
         $this->termExamModel->saveCtComment($classId, $studentId, $term, $comment, $userId);
         return $this->response->setJSON(['success' => true]);
+    }
+
+    public function saveMarkAsClassTeacher(int $classId)
+    {
+        if (!$this->isLoggedIn()) return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        $userId = (int) $this->session->get('userID');
+        $db     = \Config\Database::connect();
+
+        $isCtOrAct = $db->table('classroom_role')
+            ->where('class_id_fk', $classId)->where('user_id_fk', $userId)
+            ->whereIn('cs_role', ['Class Teacher', 'Assistant Class Teacher'])
+            ->where('cs_status', 'Active')->countAllResults() > 0;
+        if (!$isCtOrAct) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+
+        $classStatus = $db->table('classroom')->select('class_status')->where('class_id', $classId)->get()->getRowArray();
+        if (!$classStatus || $classStatus['class_status'] !== 'Active') {
+            return $this->response->setJSON(['success' => false, 'message' => 'This classroom is no longer active.']);
+        }
+
+        $classSubId = (int) $this->request->getPost('class_sub_id');
+        $studentId  = (int) $this->request->getPost('student_id');
+        $term       = (int) $this->request->getPost('term');
+        $isAbsent   = (int) $this->request->getPost('is_absent');
+        $mark       = $this->request->getPost('mark');
+        $totalMark  = (float) ($this->request->getPost('total_mark') ?: 100);
+        $comment    = trim($this->request->getPost('teacher_comment') ?? '');
+
+        if (!$classSubId || !$studentId || $term < 1 || $term > 3) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid parameters.']);
+        }
+
+        $status = $this->termExamModel->getReportStatus($classId, $term);
+        if (in_array($status['status'], ['ct_submitted', 'published'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Report already submitted — marks are locked.']);
+        }
+
+        $markValue = ($isAbsent || $mark === '' || $mark === null) ? null : (float) $mark;
+        $this->termExamModel->saveExamMark($classSubId, $classId, $studentId, $term, $markValue, $totalMark, $comment ?: null, $userId, $isAbsent);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Mark saved.']);
     }
 
     public function classTeacherSubmit(int $classId, int $term)
