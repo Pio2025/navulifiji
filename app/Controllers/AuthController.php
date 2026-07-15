@@ -249,6 +249,35 @@ class AuthController extends BaseController
             $admissions   = $this->admissionModel->getAdmissionByUser($userID);
             $getAdmission = !empty($admissions) ? $admissions[0] : [];
             $schID        = !empty($getAdmission['sch_id_fk']) ? (int)$getAdmission['sch_id_fk'] : 0;
+
+            // For staff/teachers with no admission record, derive school from staff table,
+            // then fall back to their active classroom assignment chain.
+            if ($schID === 0) {
+                $staffRow = $this->db->table('staff')
+                    ->select('sch_id_fk')
+                    ->where('user_id_fk', $userID)
+                    ->where('staff_status', 'Active')
+                    ->limit(1)
+                    ->get()->getRowArray();
+                if ($staffRow) {
+                    $schID = (int) $staffRow['sch_id_fk'];
+                }
+            }
+            if ($schID === 0) {
+                $classroomRow = $this->db->table('classroom_subject_teacher cst')
+                    ->select('sl.sch_id_fk')
+                    ->join('classroom_subject cs', 'cs.class_sub_id = cst.class_sub_id_fk')
+                    ->join('classroom c', 'c.class_id = cs.class_id_fk')
+                    ->join('stream s', 's.stream_id = c.stream_id_fk')
+                    ->join('sch_level sl', 'sl.sch_level_id = s.sch_level_id_fk')
+                    ->where('cst.user_id_fk', $userID)
+                    ->where('cst.class_sub_teacher_status', 'Active')
+                    ->limit(1)
+                    ->get()->getRowArray();
+                if ($classroomRow) {
+                    $schID = (int) $classroomRow['sch_id_fk'];
+                }
+            }
             
             $sessionData = [
                 'fname' => $user['fname'],

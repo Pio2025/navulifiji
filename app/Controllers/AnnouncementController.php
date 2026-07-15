@@ -62,9 +62,6 @@ class AnnouncementController extends BaseController
         if (!$this->isLoggedIn()) {
             return redirect()->to('auth/login');
         }
-        if ($this->require_access('_view_announcement') !== true) {
-            return redirect()->to('dashboard')->with('error', 'Access denied.');
-        }
 
         $this->annModel->expireOld();
 
