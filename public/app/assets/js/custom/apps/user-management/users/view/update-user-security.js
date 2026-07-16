@@ -254,11 +254,7 @@ var KTUpdatePassword = (function () {
                     },
                     confirm_new_password: {
                         validators: {
-                            notEmpty: { message: "Please confirm the new password" },
-                            identical: {
-                                field: 'new_password',
-                                message: "Passwords do not match"
-                            }
+                            notEmpty: { message: "Please confirm the new password" }
                         }
                     }
                 },
