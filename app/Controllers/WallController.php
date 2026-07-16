@@ -2,12 +2,8 @@
 
 namespace App\Controllers;
 
-use App\Models\WallModel;
-
 class WallController extends BaseController
 {
-    private WallModel $wallModel;
-
     private const UPLOAD_DIR   = 'uploads/wall/';
     private const MAX_FILE_MB  = 20;
     private const IMAGE_MIME   = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -20,16 +16,6 @@ class WallController extends BaseController
         'application/vnd.ms-powerpoint',
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
     ];
-
-    public function initController(
-        \CodeIgniter\HTTP\RequestInterface $request,
-        \CodeIgniter\HTTP\ResponseInterface $response,
-        \Psr\Log\LoggerInterface $logger
-    ): void {
-        parent::initController($request, $response, $logger);
-        $this->wallModel = new WallModel();
-        $this->wallModel->ensureTables();
-    }
 
     // ─── helpers ──────────────────────────────────────────────────────────────
 

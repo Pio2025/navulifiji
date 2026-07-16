@@ -18,7 +18,7 @@ class WallModel extends Model
     public function ensureTables(): void
     {
         $db  = \Config\Database::connect();
-        $dbf = $db->getForge();
+        $dbf = \Config\Database::forge();
 
         // wall_post
         if (!$db->tableExists('wall_post')) {
