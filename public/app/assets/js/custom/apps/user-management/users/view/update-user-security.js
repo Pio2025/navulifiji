@@ -256,9 +256,7 @@ var KTUpdatePassword = (function () {
                         validators: {
                             notEmpty: { message: "Please confirm the new password" },
                             identical: {
-                                compare: function() {
-                                    return form.querySelector('[name="new_password"]').value;
-                                },
+                                field: 'new_password',
                                 message: "Passwords do not match"
                             }
                         }
@@ -339,12 +337,26 @@ var KTUpdatePassword = (function () {
                     if (validator) {
                         validator.validate().then(function (status) {
                             if (status == "Valid") {
+                                const newPwd     = form.querySelector('[name="new_password"]').value;
+                                const confirmPwd = form.querySelector('[name="confirm_new_password"]').value;
+                                if (newPwd !== confirmPwd) {
+                                    Swal.fire({
+                                        title: "Passwords Do Not Match",
+                                        html: "Please make sure both password fields contain the same value.",
+                                        icon: "warning",
+                                        buttonsStyling: false,
+                                        confirmButtonText: "Got it",
+                                        customClass: { confirmButton: "btn btn-warning" }
+                                    });
+                                    return;
+                                }
+
                                 submitButton.setAttribute("data-kt-indicator", "on");
                                 submitButton.disabled = true;
-                                
+
                                 const formData = new FormData(form);
                                 const baseUrl = window.location.origin;
-                                
+
                                 $.ajax({
                                     url: baseUrl + "/user/updatePassword",
                                     type: "POST",
