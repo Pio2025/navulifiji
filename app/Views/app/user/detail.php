@@ -3824,70 +3824,6 @@ if (notifForm) {
     });
 })();
 
-<?php if ($isOwnProfile ?? false): ?>
-// ── Reference Request Modal ──────────────────────────────────────────────────
-document.getElementById('sdOpenRefRequestModal')?.addEventListener('click', function (e) {
-    e.preventDefault();
-    document.getElementById('sdRefNote').value = '';
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
-});
-
-document.getElementById('btnSubmitRefRequest')?.addEventListener('click', function () {
-    const btn         = this;
-    const admEl       = document.getElementById('sdRefAdmissionId');
-    const refTypeSel  = document.getElementById('sdRefCatId');
-    const studentId   = document.getElementById('sdRefStudentId')?.value || '';
-    const admissionId = admEl ? admEl.value : '';
-
-    if (!admissionId) {
-        Swal.fire({ icon: 'warning', title: 'School Required', text: 'Please select a school / admission.', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
-        return;
-    }
-    if (!refTypeSel || !refTypeSel.value) {
-        Swal.fire({ icon: 'warning', title: 'Reference Type Required', text: 'Please select a reference type.', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
-        return;
-    }
-
-    btn.disabled    = true;
-    btn.textContent = 'Submitting...';
-
-    const formData = new URLSearchParams({
-        student_id:    studentId,
-        user_id:       studentId,
-        admission_id:  admissionId,
-        ref_cat_id:    refTypeSel.value,
-        ref_type_name: refTypeSel.options[refTypeSel.selectedIndex].text.trim(),
-        request_note:  (document.getElementById('sdRefNote')?.value || '').trim(),
-    });
-
-    fetch('<?= base_url('reference/request/store') ?>', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-        body:    formData,
-    })
-    .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-    })
-    .then(function (data) {
-        bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
-        if (data.success) {
-            Swal.fire({ icon: 'success', title: 'Request Submitted', text: data.message, timer: 3500, showConfirmButton: false });
-        } else {
-            Swal.fire({ icon: 'warning', title: 'Notice', text: data.message, confirmButtonText: 'OK',
-                        customClass: { confirmButton: 'btn btn-primary' } });
-        }
-    })
-    .catch(function (err) {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
-        console.error(err);
-    })
-    .finally(function () {
-        btn.disabled    = false;
-        btn.textContent = 'Submit Request';
-    });
-});
-<?php endif; ?>
 </script>
 
 <?php if ($isOwnProfile ?? false): ?>
@@ -3984,4 +3920,76 @@ document.getElementById('btnSubmitRefRequest')?.addEventListener('click', functi
     </div>
 </div>
 <!--end::Reference Request Modal-->
+<?php endif; ?>
+
+<?php if ($isOwnProfile ?? false): ?>
+<script>
+// Modal trigger
+document.getElementById('sdOpenRefRequestModal')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    if (document.getElementById('sdRefNote')) document.getElementById('sdRefNote').value = '';
+    if (document.getElementById('sdRefCatId')) document.getElementById('sdRefCatId').value = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
+});
+
+// Submit
+document.getElementById('btnSubmitRefRequest').addEventListener('click', function () {
+    var btn         = this;
+    var admEl       = document.getElementById('sdRefAdmissionId');
+    var refTypeSel  = document.getElementById('sdRefCatId');
+    var studentId   = (document.getElementById('sdRefStudentId') || {}).value || '';
+    var admissionId = admEl ? admEl.value : '';
+
+    if (!admissionId) {
+        Swal.fire({ icon: 'warning', title: 'School Required',
+            text: 'Please select a school / admission.',
+            confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+        return;
+    }
+    if (!refTypeSel || !refTypeSel.value) {
+        Swal.fire({ icon: 'warning', title: 'Reference Type Required',
+            text: 'Please select a reference type.',
+            confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+        return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Submitting...';
+
+    var params = 'student_id='    + encodeURIComponent(studentId)
+               + '&user_id='      + encodeURIComponent(studentId)
+               + '&admission_id=' + encodeURIComponent(admissionId)
+               + '&ref_cat_id='   + encodeURIComponent(refTypeSel.value)
+               + '&ref_type_name='+ encodeURIComponent(refTypeSel.options[refTypeSel.selectedIndex].text.trim())
+               + '&request_note=' + encodeURIComponent((document.getElementById('sdRefNote') || {}).value || '');
+
+    fetch('<?= base_url('reference/request/store') ?>', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        body:    params,
+    })
+    .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
+    .then(function (data) {
+        bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Request Submitted',
+                text: data.message, timer: 3500, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: 'warning', title: 'Notice', text: data.message,
+                confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+        }
+    })
+    .catch(function (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
+        console.error(err);
+    })
+    .finally(function () {
+        btn.disabled    = false;
+        btn.textContent = 'Submit Request';
+    });
+});
+</script>
 <?php endif; ?>
