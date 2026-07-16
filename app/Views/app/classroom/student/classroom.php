@@ -11,13 +11,15 @@
                 </li>
                 <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
                 <li class="breadcrumb-item text-muted">
-                    <a href="<?= base_url('classroom/my') ?>" class="text-muted text-hover-primary">My Classroom</a>
+                    <a href="<?= base_url($backUrl ?? 'classroom/my') ?>" class="text-muted text-hover-primary">
+                        <?= ($isParentView ?? false) ? "Children's Classrooms" : 'My Classroom' ?>
+                    </a>
                 </li>
                 <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
                 <li class="breadcrumb-item text-muted"><?= esc($subjectData['subject_name'] ?? 'Subject') ?></li>
             </ul>
         </div>
-        <a href="<?= base_url('classroom/my') ?>" class="btn btn-sm btn-light">
+        <a href="<?= base_url($backUrl ?? 'classroom/my') ?>" class="btn btn-sm btn-light">
             <i class="ki-duotone ki-arrow-left fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
             Back
         </a>
@@ -842,6 +844,7 @@
                                     <i class="ki-duotone ki-down fs-5"><span class="path1"></span><span class="path2"></span></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end py-2 fs-7 fw-semibold" style="min-width:175px;">
+                                    <?php if (!($isParentView ?? false)): ?>
                                     <li>
                                         <a class="dropdown-item py-2"
                                            href="<?= base_url('classroom/student/' . $classSubId . '/assignment/' . $asgn['assignment_id'] . '/submit') ?>">
@@ -849,6 +852,7 @@
                                             Submit Assignment
                                         </a>
                                     </li>
+                                    <?php endif; ?>
                                     <li>
                                         <a class="dropdown-item py-2"
                                            href="<?= base_url('classroom/student/' . $classSubId . '/assignment/' . $asgn['assignment_id'] . '/assessment') ?>">
@@ -1026,6 +1030,15 @@
 
                     <?php elseif ($section === 'feedback'): ?>
                     <!--begin::Feedback-->
+                    <?php if ($isParentView ?? false): ?>
+                    <div class="text-center py-14">
+                        <i class="ki-duotone ki-lock-2 fs-4x text-gray-300 mb-4">
+                            <span class="path1"></span><span class="path2"></span>
+                        </i>
+                        <div class="fs-6 fw-semibold text-gray-600 mb-2">Parent View</div>
+                        <div class="text-muted fs-8">Course feedback can only be submitted by the student.</div>
+                    </div>
+                    <?php else: ?>
                     <?php
                     $fb       = $existingFeedback ?? null;
                     $teacher  = $subjectTeacher   ?? null;
@@ -1200,7 +1213,6 @@
                     <?php endif; ?>
                     <!--end::Feedback read-only-->
                     <?php endif; ?>
-                    <!--end::Feedback-->
 
                     <script>
                     (function() {
@@ -1305,6 +1317,8 @@
                         border-top: 1px dashed #f1f1f4;
                     }
                     </style>
+                    <?php endif; // end isParentView else ?>
+                    <!--end::Feedback-->
 
                     <?php elseif ($section === 'discussions'): ?>
                     <?= view('app/classroom/teacher/_class_discussion', [
@@ -1313,7 +1327,7 @@
                         'sessionPhotoUrl' => $sessionPhotoUrl ?? null,
                         'sessionUserId'   => $sessionUserId   ?? 0,
                         'sdPostUrl'       => base_url('classroom/' . $classId . '/discussion/post'),
-                        'canPost'         => true,
+                        'canPost'         => !($isParentView ?? false),
                     ]) ?>
 
                     <?php else: ?>

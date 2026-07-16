@@ -2020,8 +2020,18 @@ class ClassroomController extends BaseController
         $userId    = (int) $this->session->get('userID');
         $roleCatId = (int) $this->session->get('roleCatID');
 
+        $isParentView    = false;
+        $effectiveUserId = $userId;
+        $backUrl         = 'classroom/my';
+
         if ($roleCatId !== 4) {
-            return redirect()->to('classroom/my');
+            $user = $this->userModel->find($userId);
+            if ($roleCatId === 6 || (int) ($user['is_a_parent'] ?? 0) === 1) {
+                $isParentView = true;
+                $backUrl      = 'classroom/child/my';
+            } else {
+                return redirect()->to('classroom/my');
+            }
         }
 
         $db = \Config\Database::connect();
@@ -2041,19 +2051,38 @@ class ClassroomController extends BaseController
         ", [$classSubId])->getRowArray();
 
         if (!$classroomSubject) {
-            return redirect()->to('classroom/my')->with('error', 'Subject not found.');
+            return redirect()->to($backUrl)->with('error', 'Subject not found.');
         }
 
         $classId = (int) $classroomSubject['class_id'];
 
-        // Verify this student is enrolled in the classroom (any status)
-        $enrolled = $db->table('classroom_student')
-            ->where('class_id_fk', $classId)
-            ->where('user_id_fk',  $userId)
-            ->get()->getRowArray();
+        if ($isParentView) {
+            // Verify parent has a child enrolled in this classroom and find child's userId
+            $childRow = $db->query("
+                SELECT stu.user_id AS child_user_id
+                FROM parent_student ps
+                INNER JOIN users stu ON stu.user_id = ps.student_user_id_fk
+                INNER JOIN admission a ON a.user_id_fk = stu.user_id AND a.admission_status = 'Active'
+                INNER JOIN enrolment e ON e.admission_id_fk = a.admission_id
+                INNER JOIN classroom c ON c.stream_id_fk = e.stream_id_fk AND c.class_year = e.enrol_year
+                WHERE ps.parent_user_id_fk = ? AND c.class_id = ?
+                LIMIT 1
+            ", [$userId, $classId])->getRowArray();
 
-        if (!$enrolled) {
-            return redirect()->to('classroom/my')->with('error', 'You are not enrolled in this classroom.');
+            if (!$childRow) {
+                return redirect()->to(base_url('classroom/child/my'))->with('error', 'Access denied.');
+            }
+            $effectiveUserId = (int) $childRow['child_user_id'];
+        } else {
+            // Verify this student is enrolled in the classroom (any status)
+            $enrolled = $db->table('classroom_student')
+                ->where('class_id_fk', $classId)
+                ->where('user_id_fk',  $userId)
+                ->get()->getRowArray();
+
+            if (!$enrolled) {
+                return redirect()->to('classroom/my')->with('error', 'You are not enrolled in this classroom.');
+            }
         }
 
         // Classroom card (teacher, captain, student count) — no status filter for past classroom access
@@ -2084,12 +2113,14 @@ class ClassroomController extends BaseController
         $data['section']       = $section;
         $data['classSubId']    = $classSubId;
         $data['classId']       = $classId;
+        $data['isParentView']  = $isParentView;
+        $data['backUrl']       = $backUrl;
 
         if ($section === 'lessons' || $section === 'dashboard') {
             $data['lessons']   = $this->classroomLessonModel->getLessonsForSubject($classSubId);
             $data['dashStats'] = $this->classroomLessonModel->getDashboardStats($classSubId);
             if ($section === 'dashboard') {
-                $data['assessmentStats'] = $this->classroomLessonModel->getStudentAssessmentStats($classSubId, $userId);
+                $data['assessmentStats'] = $this->classroomLessonModel->getStudentAssessmentStats($classSubId, $effectiveUserId);
             }
 
             if ($section === 'lessons') {
@@ -2195,16 +2226,16 @@ class ClassroomController extends BaseController
             $data['reportStatuses']     = [];
             for ($t = 1; $t <= 3; $t++) {
                 $data['reportStatuses'][$t]     = $this->termExamModel->getReportStatus($classId, $t);
-                $data['studentExamReports'][$t] = $this->termExamModel->getStudentReport($classId, $userId, $t);
+                $data['studentExamReports'][$t] = $this->termExamModel->getStudentReport($classId, $effectiveUserId, $t);
             }
         } elseif ($section === 'discussions') {
-            $data['discussions'] = $this->classDiscussionModel->getPosts($classId, $userId);
+            $data['discussions'] = $this->classDiscussionModel->getPosts($classId, $effectiveUserId);
             $sessionPhoto = $this->session->get('photo');
             $data['sessionFname']    = $this->session->get('fname') ?? 'Student';
             $data['sessionPhotoUrl'] = $sessionPhoto ? base_url('uploads/profilePhoto/' . $sessionPhoto) : null;
             $data['sessionUserId']   = $userId;
         } elseif ($section === 'feedback') {
-            $data['existingFeedback'] = $this->subjectFeedbackModel->getStudentFeedback($classSubId, $userId);
+            $data['existingFeedback'] = $this->subjectFeedbackModel->getStudentFeedback($classSubId, $effectiveUserId);
             $data['subjectTeacher']   = $db->query("
                 SELECT u.user_id, CONCAT(u.fname,' ',u.lname) AS teacher_name, u.profile_photo
                 FROM classroom_subject_teacher cst
@@ -2214,14 +2245,14 @@ class ClassroomController extends BaseController
             ", [$classSubId])->getRowArray();
         }
 
-        // Classmates: all students in the same classroom, excluding current user
+        // Classmates: all students in the same classroom, excluding the effective student
         $data['classmates'] = $db->query("
             SELECT u.user_id, u.fname, u.lname, u.profile_photo
             FROM classroom_student cs
             INNER JOIN users u ON u.user_id = cs.user_id_fk
             WHERE cs.class_id_fk = ? AND u.user_id != ?
             ORDER BY u.lname ASC, u.fname ASC
-        ", [$classId, $userId])->getResultArray();
+        ", [$classId, $effectiveUserId])->getResultArray();
 
         $data['_view'] = 'app/classroom/student/classroom';
         return view('app/layouts/main', $data);
