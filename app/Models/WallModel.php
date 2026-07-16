@@ -93,7 +93,7 @@ class WallModel extends Model
         $db = \Config\Database::connect();
         return $db->query("
             SELECT wp.*,
-                   u.fname, u.name AS lname, u.photo,
+                   u.fname, u.lname, u.profile_photo AS photo,
                    (SELECT COUNT(*) FROM wall_comment wc WHERE wc.wall_post_id_fk = wp.wall_post_id AND wc.comment_status = 'Active') AS comment_count,
                    (SELECT COUNT(*) FROM wall_reaction wr WHERE wr.target_type = 'post' AND wr.target_id = wp.wall_post_id) AS reaction_count
             FROM wall_post wp
@@ -108,7 +108,7 @@ class WallModel extends Model
     {
         $db = \Config\Database::connect();
         $row = $db->query("
-            SELECT wp.*, u.fname, u.name AS lname, u.photo
+            SELECT wp.*, u.fname, u.lname, u.profile_photo AS photo
             FROM wall_post wp
             INNER JOIN users u ON u.user_id = wp.user_id_fk
             WHERE wp.wall_post_id = ? AND wp.post_status = 'Active'
@@ -181,7 +181,7 @@ class WallModel extends Model
     {
         $db = \Config\Database::connect();
         return $db->query("
-            SELECT wc.*, u.fname, u.name AS lname, u.photo,
+            SELECT wc.*, u.fname, u.lname, u.profile_photo AS photo,
                    (SELECT COUNT(*) FROM wall_reaction wr WHERE wr.target_type = 'comment' AND wr.target_id = wc.wall_comment_id) AS reaction_count
             FROM wall_comment wc
             INNER JOIN users u ON u.user_id = wc.user_id_fk
