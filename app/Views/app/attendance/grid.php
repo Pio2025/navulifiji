@@ -129,25 +129,9 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
         <?php else: ?>
 
         <script>
-        function attToggle(cell) {
-            var inp = cell.querySelector('.att-val');
-            var sym = cell.querySelector('.att-sym');
-            if (cell.classList.contains('is-empty')) {
-                cell.classList.remove('is-empty');
-                cell.classList.add('is-present');
-                if (inp) inp.value = 'P';
-                if (sym) sym.textContent = '✓';
-            } else if (cell.classList.contains('is-present')) {
-                cell.classList.remove('is-present');
-                cell.classList.add('is-absent');
-                if (inp) inp.value = 'A';
-                if (sym) sym.textContent = '✗';
-            } else {
-                cell.classList.remove('is-absent');
-                cell.classList.add('is-empty');
-                if (inp) inp.value = '';
-                if (sym) sym.textContent = '—';
-            }
+        function attSelChange(sel) {
+            sel.className = 'att-select ' +
+                (sel.value === 'P' ? 'sel-present' : sel.value === 'A' ? 'sel-absent' : 'sel-empty');
         }
         </script>
 
@@ -223,24 +207,20 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
                                                . ($dk === 'M' ? ' week-sep' : '')
                                                . ($isToday   ? ' day-today' : '');
                                 ?>
-                                <?php $isClickable = !$isHoliday && !$isFuture; ?>
-                                <td class="att-td-cell <?= $tdClass ?><?= $isClickable ? ' att-td-toggle' : '' ?>"
-                                    <?php if ($isClickable): ?>
-                                    onclick="var b=this.querySelector('.att-cell');if(b)attToggle(b);"
-                                    <?php endif; ?>>
+                                <td class="att-td-cell <?= $tdClass ?>">
                                     <?php if ($isHoliday): ?>
                                     <span class="att-holiday" title="<?= esc($holidays[$date]) ?>">H</span>
                                     <?php elseif ($isFuture): ?>
                                     <span class="att-future">—</span>
                                     <?php else: ?>
-                                    <button type="button"
-                                            class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>">
-                                        <span class="att-sym"><?= $isPresent ? '✓' : ($status === 'Absent' ? '✗' : '—') ?></span>
-                                        <input type="hidden"
-                                               name="att[<?= $admId ?>][<?= esc($date) ?>]"
-                                               class="att-val"
-                                               value="<?= $isPresent ? 'P' : ($status === 'Absent' ? 'A' : '') ?>">
-                                    </button>
+                                    <?php $val = $isPresent ? 'P' : ($status === 'Absent' ? 'A' : ''); ?>
+                                    <select name="att[<?= $admId ?>][<?= esc($date) ?>]"
+                                            class="att-select <?= $val === 'P' ? 'sel-present' : ($val === 'A' ? 'sel-absent' : 'sel-empty') ?>"
+                                            onchange="attSelChange(this)">
+                                        <option value=""<?= $val === ''  ? ' selected' : '' ?>>—</option>
+                                        <option value="P"<?= $val === 'P' ? ' selected' : '' ?>>P</option>
+                                        <option value="A"<?= $val === 'A' ? ' selected' : '' ?>>A</option>
+                                    </select>
                                     <?php endif; ?>
                                 </td>
                                 <?php endforeach; ?>
@@ -542,36 +522,31 @@ thead .att-th-num, thead .att-th-name { z-index: 5; background: #f8f9fa; }
     padding: 3px 2px;
     border-bottom: 1px solid #f1f3f5;
 }
-.att-td-toggle { cursor: pointer !important; }
 .day-today { outline: 2px solid #ffc107; outline-offset: -2px; }
 .att-row-alt td { background-color: rgba(0,0,0,.015); }
 .att-row-alt .att-td-num, .att-row-alt .att-td-name { background: #fbfcfc; }
-/* Attendance toggle cell */
-.att-cell {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px; height: 30px;
-    border-radius: 5px;
+/* Attendance select cell */
+.att-select {
+    width: 38px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1.5px solid #ced4da;
+    font-size: 12px;
+    font-weight: 700;
     cursor: pointer;
-    font-size: 15px;
-    font-weight: 800;
-    transition: transform .1s;
-    user-select: none;
-    border: none;
+    text-align: center;
+    text-align-last: center;
+    appearance: none;
+    -webkit-appearance: none;
     padding: 0;
-    line-height: 1;
-    pointer-events: auto !important;
-    position: relative;
-    z-index: 6;
+    outline: none;
+    display: block;
+    margin: 0 auto;
 }
-.att-cell input[type=hidden] { display: none; }
-.att-cell.is-present { background: #d1fae5; color: #065f46; }
-.att-cell.is-absent  { background: #fee2e2; color: #991b1b; }
-.att-cell.is-empty   { background: #f3f4f6; color: #9ca3af; }
-.att-sym { font-size: 15px; font-weight: 800; line-height: 1; pointer-events: none; }
-.att-cell.is-empty .att-sym { font-size: 12px; }
-.att-cell:hover { transform: scale(1.2); }
+.att-select:focus { box-shadow: 0 0 0 2px rgba(59,130,246,.3); }
+.att-select.sel-present { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+.att-select.sel-absent  { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+.att-select.sel-empty   { background: #f3f4f6; color: #6b7280; border-color: #ced4da; }
 .att-future { color: #ced4da; font-size: 12px; }
 /* Legend demo dots */
 .att-demo {
@@ -640,10 +615,10 @@ thead .att-sum-p, thead .att-sum-a, thead .att-sum-pct { background: #eef2ff; z-
     .day-label   { font-size: 7pt !important; }
     .day-date    { font-size: 6pt !important; }
     .att-td-cell { padding: 1pt !important; }
-    .att-cell    { width: 16pt !important; height: 16pt !important; font-size: 10pt !important; border-radius: 2pt !important; }
+    .att-select  { width: 20pt !important; height: 14pt !important; font-size: 8pt !important; border-radius: 2pt !important; appearance: none !important; -webkit-appearance: none !important; }
     .att-future  { font-size: 7pt !important; }
-    .att-cell.is-present { background: #d1fae5 !important; color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .att-cell.is-absent  { background: #fee2e2 !important; color: #991b1b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .att-select.sel-present { background: #d1fae5 !important; color: #065f46 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .att-select.sel-absent  { background: #fee2e2 !important; color: #991b1b !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .att-holiday         { background: #ede9fe !important; color: #6d28d9 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .week-even { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .week-odd  { background-color: #eef2ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -797,15 +772,9 @@ thead .att-sum-p, thead .att-sum-a, thead .att-sum-pct { background: #eef2ff; z-
     var markBtn = document.getElementById('markAllPresent');
     if (markBtn) {
         markBtn.addEventListener('click', function () {
-            document.querySelectorAll('td.day-today .att-cell').forEach(function (cell) {
-                if (!cell.classList.contains('is-present')) {
-                    cell.classList.remove('is-empty', 'is-absent');
-                    cell.classList.add('is-present');
-                    var inp = cell.querySelector('.att-val');
-                    if (inp) inp.value = 'P';
-                    var sym = cell.querySelector('.att-sym');
-                    if (sym) sym.textContent = '✓';
-                }
+            document.querySelectorAll('td.day-today .att-select').forEach(function (sel) {
+                sel.value = 'P';
+                sel.className = 'att-select sel-present';
             });
         });
     }
