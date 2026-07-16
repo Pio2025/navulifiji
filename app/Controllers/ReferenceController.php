@@ -2615,4 +2615,98 @@ class ReferenceController extends BaseController
         $pdf->SetFont('helvetica', '', 8.5);
         $pdf->SetTextColor(40, 40, 40);
     }
+
+    // ── Reference Requests ──────────────────────────────────────────────
+
+    public function storeRequest(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $userId    = (int) $this->session->get('userID');
+        $refCatId  = (int) $this->request->getPost('ref_cat_id');
+        $typeName  = trim($this->request->getPost('ref_type_name') ?? '');
+        $note      = trim($this->request->getPost('request_note') ?? '');
+
+        if (!$refCatId || !$typeName) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        // Prevent duplicate pending requests for the same type
+        $db = \Config\Database::connect();
+        $existing = $db->table('reference_requests')
+            ->where('user_id_fk', $userId)
+            ->where('ref_cat_id', $refCatId)
+            ->whereIn('request_status', ['Pending', 'In Progress'])
+            ->countAllResults();
+
+        if ($existing > 0) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'You already have a pending request for this reference type.',
+            ]);
+        }
+
+        $this->referenceRequestModel->insert([
+            'user_id_fk'    => $userId,
+            'ref_cat_id'    => $refCatId,
+            'ref_type_name' => $typeName,
+            'request_note'  => $note ?: null,
+            'request_status'=> 'Pending',
+        ]);
+
+        $this->logReference('Reference Requested', "Student requested: {$typeName}");
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => "Your request for '{$typeName}' has been submitted. A staff member will process it shortly.",
+        ]);
+    }
+
+    public function requests()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+        $this->grant_access('_reference_requests');
+
+        $schId        = (int) $this->session->get('schID');
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+        $requests     = $this->referenceRequestModel->getAll($isSuperAdmin ? 0 : $schId);
+
+        $this->setPageData('Reference Requests', 'User', 'Reference Requests');
+
+        $data = [
+            'requests' => $requests,
+            '_view'    => 'app/reference/requests',
+        ];
+
+        return view('app/layouts/main', $data);
+    }
+
+    public function updateRequest(int $requestId)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+        $this->grant_access('_reference_requests');
+
+        $status     = $this->request->getPost('request_status');
+        $reviewNote = trim($this->request->getPost('review_note') ?? '');
+        $validStatuses = ['Pending', 'In Progress', 'Completed', 'Rejected'];
+
+        if (!in_array($status, $validStatuses)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid status']);
+        }
+
+        $this->referenceRequestModel->updateStatus(
+            $requestId,
+            $status,
+            (int) $this->session->get('userID'),
+            $reviewNote
+        );
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Request updated.']);
+    }
 }

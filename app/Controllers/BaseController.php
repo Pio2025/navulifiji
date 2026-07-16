@@ -63,6 +63,7 @@ use App\Models\SchoolCategoryTermModel;
 use App\Models\PublicHolidayModel;
 use App\Models\WallModel;
 use App\Models\EventModel;
+use App\Models\ReferenceRequestModel;
 
 
 
@@ -148,6 +149,7 @@ abstract class BaseController extends Controller
     protected $publicHolidayModel;
     protected $wallModel;
     protected $eventModel;
+    protected $referenceRequestModel;
 
 
     /**
@@ -282,6 +284,7 @@ abstract class BaseController extends Controller
         $this->wallModel->ensureTables();
         $this->eventModel                   = new EventModel();
         $this->eventModel->ensureTables();
+        $this->referenceRequestModel        = new ReferenceRequestModel();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

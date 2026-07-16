@@ -339,6 +339,10 @@ $routes->post('reference/delete/(:num)', 'ReferenceController::deleteReference/$
 $routes->get( 'reference/transcript-request/(:num)',   'ReferenceController::transcriptRequest/$1');
 $routes->post('reference/generate-transcript/(:num)',  'ReferenceController::generateTranscript/$1');
 
+$routes->post('reference/request/store',              'ReferenceController::storeRequest');
+$routes->get( 'reference/requests',                   'ReferenceController::requests');
+$routes->post('reference/request/update/(:num)',      'ReferenceController::updateRequest/$1');
+
 
 $routes->post('admission/delete/(:num)', 'AdmissionController::delete/$1');
 

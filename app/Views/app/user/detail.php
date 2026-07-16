@@ -137,6 +137,7 @@
 							View User Medical Record
 						</a>
 						
+						<?php if (!($isOwnProfile ?? false)): ?>
 						<a href="<?= base_url('user') ?>" class="btn btn-light-warning w-100">
 							<i class="ki-duotone ki-arrow-left fs-2">
 								<span class="path1"></span>
@@ -144,6 +145,7 @@
 							</i>
 							Back to User Listing
 						</a>
+						<?php endif; ?>
 						
 					</div>
 				</div>
@@ -213,7 +215,7 @@
                             <!--end::Menu header-->
                     
                             <?php if ($isStudent): ?>
-                    
+
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/certificate-of-enrollment/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -225,7 +227,84 @@
                                         Certificate of Enrollment
                                     </a>
                                 </div>
-                    
+
+                                <?php if ($isOwnProfile ?? false): ?>
+
+                                <div class="menu-item px-5">
+                                    <a href="#" class="menu-link px-5 sd-ref-request"
+                                       data-ref-cat="2" data-ref-type="Character Reference">
+                                        <span class="menu-icon">
+                                            <i class="ki-duotone ki-profile-circle fs-6 me-2 text-primary">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                                <span class="path3"></span>
+                                            </i>
+                                        </span>
+                                        Character Reference
+                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                    </a>
+                                </div>
+
+                                <div class="menu-item px-5">
+                                    <a href="#" class="menu-link px-5 sd-ref-request"
+                                       data-ref-cat="3" data-ref-type="Recommendation Letter">
+                                        <span class="menu-icon">
+                                            <i class="ki-duotone ki-send fs-6 me-2 text-primary">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                        </span>
+                                        Recommendation Letter
+                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                    </a>
+                                </div>
+
+                                <div class="menu-item px-5">
+                                    <a href="#" class="menu-link px-5 sd-ref-request"
+                                       data-ref-cat="4" data-ref-type="Transcript Request">
+                                        <span class="menu-icon">
+                                            <i class="ki-duotone ki-clipboard fs-6 me-2 text-primary">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                        </span>
+                                        Transcript Request
+                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                    </a>
+                                </div>
+
+                                <div class="separator my-2"></div>
+
+                                <div class="menu-item px-5">
+                                    <a href="#" class="menu-link px-5 sd-ref-request"
+                                       data-ref-cat="5" data-ref-type="Conduct Certificate">
+                                        <span class="menu-icon">
+                                            <i class="ki-duotone ki-shield-tick fs-6 me-2 text-primary">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                        </span>
+                                        Conduct Certificate
+                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                    </a>
+                                </div>
+
+                                <div class="menu-item px-5">
+                                    <a href="#" class="menu-link px-5 sd-ref-request"
+                                       data-ref-cat="6" data-ref-type="Clearance Certificate">
+                                        <span class="menu-icon">
+                                            <i class="ki-duotone ki-verify fs-6 me-2 text-primary">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                        </span>
+                                        Clearance Certificate
+                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                    </a>
+                                </div>
+
+                                <?php else: ?>
+
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/character-reference/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -238,7 +317,7 @@
                                         Character Reference
                                     </a>
                                 </div>
-                    
+
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/recommendation-letter/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -250,7 +329,7 @@
                                         Recommendation Letter
                                     </a>
                                 </div>
-                    
+
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/transcript-request/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -262,9 +341,9 @@
                                         Transcript Request
                                     </a>
                                 </div>
-                    
+
                                 <div class="separator my-2"></div>
-                    
+
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/conduct-certificate/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -276,7 +355,7 @@
                                         Conduct Certificate
                                     </a>
                                 </div>
-                    
+
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/clearance-certificate/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -288,6 +367,8 @@
                                         Clearance Certificate
                                     </a>
                                 </div>
+
+                                <?php endif; ?>
                     
                             <?php elseif ($isTeacher): ?>
                     
@@ -446,6 +527,7 @@
 								</div>
 								<!--end::Card title-->
 								<!--begin::Card toolbar-->
+								<?php if (!($isOwnProfile ?? false)): ?>
 								<div class="card-toolbar">
 									<a type="button" class="btn btn-light-primary btn-sm" href="<?php echo base_url('user/edit/'.$user['user_id']); ?>">
 									<i class="ki-duotone ki-pencil fs-2">
@@ -453,6 +535,7 @@
         								<span class="path2"></span>
         							</i>Edit Personal Detail</a>
 								</div>
+								<?php endif; ?>
 								<!--end::Card toolbar-->
 							</div>
 							<!--end::Card header-->
@@ -743,7 +826,7 @@
                                 <!--begin::Card toolbar-->
                                 <?php
                                 $currentKinCount = count($next_of_kin);
-                                if ($currentKinCount < 3):
+                                if ($currentKinCount < 3 && !($isOwnProfile ?? false)):
                                 ?>
                                     <div class="card-toolbar">
                                         <button type="button" class="btn btn-light-primary btn-sm" data-bs-toggle="modal" data-bs-target="#kt_modal_add_next_of_kin" onclick="openAddModal()">
@@ -3784,4 +3867,92 @@ if (notifForm) {
         });
     });
 })();
+
+<?php if ($isOwnProfile ?? false): ?>
+// ── Reference Request ────────────────────────────────────────────────────────
+(function () {
+    document.querySelectorAll('.sd-ref-request').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            const catId = this.dataset.refCat;
+            const type  = this.dataset.refType;
+            document.getElementById('sdRefCatId').value    = catId;
+            document.getElementById('sdRefTypeName').value = type;
+            document.getElementById('sdRefTypeLabel').textContent = type;
+            document.getElementById('sdRefNote').value = '';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
+        });
+    });
+
+    document.getElementById('btnSubmitRefRequest')?.addEventListener('click', function () {
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Submitting...';
+
+        const formData = new URLSearchParams({
+            ref_cat_id:    document.getElementById('sdRefCatId').value,
+            ref_type_name: document.getElementById('sdRefTypeName').value,
+            request_note:  document.getElementById('sdRefNote').value,
+            '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
+        });
+
+        fetch('<?= base_url('reference/request/store') ?>', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
+            body: formData,
+        })
+        .then(r => r.json())
+        .then(function (data) {
+            bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
+            if (data.success) {
+                Swal.fire({ icon: 'success', title: 'Request Submitted', text: data.message, timer: 3000, showConfirmButton: false });
+            } else {
+                Swal.fire({ icon: 'warning', title: 'Notice', text: data.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+            }
+        })
+        .catch(function () {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
+        })
+        .finally(function () {
+            btn.disabled = false;
+            btn.textContent = 'Submit Request';
+        });
+    });
+})();
+<?php endif; ?>
 </script>
+
+<?php if ($isOwnProfile ?? false): ?>
+<!--begin::Reference Request Modal-->
+<div class="modal fade" id="kt_modal_ref_request" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-500px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="fw-bold">Request Reference</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-10 py-8">
+                <input type="hidden" id="sdRefCatId">
+                <input type="hidden" id="sdRefTypeName">
+                <p class="text-gray-700 mb-5">
+                    You are requesting: <strong id="sdRefTypeLabel"></strong>
+                </p>
+                <p class="text-muted fs-7 mb-5">
+                    A staff member will review and process your request. You can track the status under
+                    <strong>View Generated References</strong>.
+                </p>
+                <div class="mb-3">
+                    <label class="form-label">Additional Note <span class="text-muted">(optional)</span></label>
+                    <textarea class="form-control form-control-solid" id="sdRefNote" rows="3"
+                              placeholder="Add any relevant details about your request..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSubmitRefRequest">Submit Request</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Reference Request Modal-->
+<?php endif; ?>
