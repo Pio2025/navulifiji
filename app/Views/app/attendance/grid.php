@@ -128,6 +128,25 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
         </div>
         <?php else: ?>
 
+        <script>
+        function attToggle(cell) {
+            var inp = cell.querySelector('.att-val');
+            if (cell.classList.contains('is-empty')) {
+                cell.classList.remove('is-empty');
+                cell.classList.add('is-present');
+                if (inp) inp.value = 'P';
+            } else if (cell.classList.contains('is-present')) {
+                cell.classList.remove('is-present');
+                cell.classList.add('is-absent');
+                if (inp) inp.value = 'A';
+            } else {
+                cell.classList.remove('is-absent');
+                cell.classList.add('is-empty');
+                if (inp) inp.value = '';
+            }
+        }
+        </script>
+
         <!--begin::Grid form-->
         <form method="POST" action="<?= base_url('attendance/grid/save') ?>" id="att_grid_form">
             <?= csrf_field() ?>
@@ -206,7 +225,7 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
                                     <?php elseif ($isFuture): ?>
                                     <span class="att-future">—</span>
                                     <?php else: ?>
-                                    <span class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>">
+                                    <span class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>" onclick="attToggle(this)">
                                         <input type="hidden"
                                                name="att[<?= $admId ?>][<?= esc($date) ?>]"
                                                class="att-val"
@@ -757,31 +776,8 @@ thead .att-sum-p, thead .att-sum-a, thead .att-sum-pct { background: #eef2ff; z-
     });
 })();
 
-// ── Attendance cell toggles ───────────────────────────────────────────────
+// ── Mark all present for today ────────────────────────────────────────────
 (function () {
-    // Toggle: not-marked(—) → present(✓) → absent(✗) → not-marked
-    document.addEventListener('click', function (e) {
-        var cell = e.target.closest('.att-cell');
-        if (!cell) return;
-        e.preventDefault();
-        e.stopPropagation();
-        var inp = cell.querySelector('.att-val');
-        if (cell.classList.contains('is-empty')) {
-            cell.classList.remove('is-empty');
-            cell.classList.add('is-present');
-            if (inp) inp.value = 'P';
-        } else if (cell.classList.contains('is-present')) {
-            cell.classList.remove('is-present');
-            cell.classList.add('is-absent');
-            if (inp) inp.value = 'A';
-        } else {
-            cell.classList.remove('is-absent');
-            cell.classList.add('is-empty');
-            if (inp) inp.value = '';
-        }
-    });
-
-    // Mark all students present for today only
     var markBtn = document.getElementById('markAllPresent');
     if (markBtn) {
         markBtn.addEventListener('click', function () {
