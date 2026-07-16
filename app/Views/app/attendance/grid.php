@@ -206,12 +206,12 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
                                     <?php elseif ($isFuture): ?>
                                     <span class="att-future">—</span>
                                     <?php else: ?>
-                                    <label class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>">
+                                    <span class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>">
                                         <input type="hidden"
                                                name="att[<?= $admId ?>][<?= esc($date) ?>]"
                                                class="att-val"
                                                value="<?= $isPresent ? 'P' : ($status === 'Absent' ? 'A' : '') ?>">
-                                    </label>
+                                    </span>
                                     <?php endif; ?>
                                 </td>
                                 <?php endforeach; ?>
@@ -529,7 +529,7 @@ thead .att-th-num, thead .att-th-name { z-index: 5; background: #f8f9fa; }
     transition: transform .1s;
     user-select: none;
 }
-.att-cell input[type=checkbox] { display: none; }
+.att-cell input[type=hidden] { display: none; }
 .att-cell.is-present { background: #d1fae5; color: #065f46; }
 .att-cell.is-absent  { background: #fee2e2; color: #991b1b; }
 .att-cell.is-empty   { background: #f3f4f6; color: #9ca3af; }
@@ -759,21 +759,26 @@ thead .att-sum-p, thead .att-sum-a, thead .att-sum-pct { background: #eef2ff; z-
 
 // ── Attendance cell toggles ───────────────────────────────────────────────
 (function () {
-    // Toggle: not-marked → present → absent → not-marked
-    document.querySelectorAll('.att-cell').forEach(function (cell) {
-        cell.addEventListener('click', function () {
-            var inp = this.querySelector('.att-val');
-            if (this.classList.contains('is-empty')) {
-                this.classList.replace('is-empty', 'is-present');
-                if (inp) inp.value = 'P';
-            } else if (this.classList.contains('is-present')) {
-                this.classList.replace('is-present', 'is-absent');
-                if (inp) inp.value = 'A';
-            } else {
-                this.classList.replace('is-absent', 'is-empty');
-                if (inp) inp.value = '';
-            }
-        });
+    // Toggle: not-marked(—) → present(✓) → absent(✗) → not-marked
+    document.addEventListener('click', function (e) {
+        var cell = e.target.closest('.att-cell');
+        if (!cell) return;
+        e.preventDefault();
+        e.stopPropagation();
+        var inp = cell.querySelector('.att-val');
+        if (cell.classList.contains('is-empty')) {
+            cell.classList.remove('is-empty');
+            cell.classList.add('is-present');
+            if (inp) inp.value = 'P';
+        } else if (cell.classList.contains('is-present')) {
+            cell.classList.remove('is-present');
+            cell.classList.add('is-absent');
+            if (inp) inp.value = 'A';
+        } else {
+            cell.classList.remove('is-absent');
+            cell.classList.add('is-empty');
+            if (inp) inp.value = '';
+        }
     });
 
     // Mark all students present for today only
