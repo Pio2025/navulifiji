@@ -458,6 +458,7 @@ $routes->get( 'classroom/my/year/(:num)',               'ClassroomController::cl
 $routes->get( 'classroom/my/(:num)',                    'ClassroomController::mySubject/$1');
 $routes->get( 'classroom/child/my',                     'ClassroomController::parentChildClassroom');
 $routes->get( 'classroom/child/my/year/(:num)',         'ClassroomController::parentChildClassroomByYear/$1');
+$routes->get( 'classroom/child/view/(:num)',            'ClassroomController::parentViewChildClassroom/$1');
 $routes->get( 'classroom/students/eligible/(:num)',       'ClassroomController::eligibleStudents/$1');
 $routes->post('classroom/students/admit/(:num)',          'ClassroomController::admitStudents/$1');
 $routes->post('classroom/students/remove/(:num)',         'ClassroomController::removeStudent/$1');

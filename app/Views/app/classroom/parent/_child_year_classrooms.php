@@ -32,6 +32,7 @@
     <div class="row g-6">
         <?php foreach ($child['classrooms'] as $c): ?>
         <div class="col-md-6 col-xl-4">
+            <?php $cardViewUrl = 'classroom/child/view/' . $c['class_id']; ?>
             <?php include(APPPATH . 'Views/app/classroom/_my_card.php'); ?>
         </div>
         <?php endforeach; ?>

@@ -5546,6 +5546,101 @@ class ClassroomController extends BaseController
         return $this->response->setJSON(['success' => true, 'html' => $html]);
     }
 
+    public function parentViewChildClassroom(int $classId)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $userId    = (int) $this->session->get('userID');
+        $roleCatId = (int) $this->session->get('roleCatID');
+
+        if ($roleCatId !== 6) {
+            $user = $this->userModel->find($userId);
+            if (!$user || (int) ($user['is_a_parent'] ?? 0) !== 1) {
+                return redirect()->to(base_url('classroom/my'));
+            }
+        }
+
+        // Verify this parent has a child enrolled in this classroom and find the child
+        $db  = \Config\Database::connect();
+        $row = $db->query("
+            SELECT
+                stu.user_id AS child_user_id,
+                stu.fname   AS child_fname,
+                stu.lname   AS child_lname,
+                stu.profile_photo AS child_photo,
+                ps.relationship,
+                c.class_id, c.class_name, c.class_year, c.class_status,
+                s.stream_id, s.stream_name,
+                l.level_name,
+                sch.sch_name, sch.sch_logo, sch.sch_address, sch.sch_phone, sch.sch_email,
+                e.enrol_status, e.enrol_year,
+                (SELECT COUNT(*) FROM enrolment e2
+                 WHERE e2.stream_id_fk = c.stream_id_fk AND e2.enrol_year = c.class_year
+                ) AS student_count,
+                (SELECT u2.user_id FROM classroom_role cr2
+                 INNER JOIN users u2 ON u2.user_id = cr2.user_id_fk
+                 WHERE cr2.class_id_fk = c.class_id AND cr2.cs_role = 'Class Teacher' AND cr2.cs_status = 'Active'
+                 LIMIT 1) AS class_teacher_id,
+                (SELECT u2.profile_photo FROM classroom_role cr2
+                 INNER JOIN users u2 ON u2.user_id = cr2.user_id_fk
+                 WHERE cr2.class_id_fk = c.class_id AND cr2.cs_role = 'Class Teacher' AND cr2.cs_status = 'Active'
+                 LIMIT 1) AS class_teacher_photo,
+                (SELECT CONCAT(u2.fname,' ',u2.lname) FROM classroom_role cr2
+                 INNER JOIN users u2 ON u2.user_id = cr2.user_id_fk
+                 WHERE cr2.class_id_fk = c.class_id AND cr2.cs_role = 'Class Teacher' AND cr2.cs_status = 'Active'
+                 LIMIT 1) AS class_teacher,
+                (SELECT u4.user_id FROM classroom_role cr4
+                 INNER JOIN users u4 ON u4.user_id = cr4.user_id_fk
+                 WHERE cr4.class_id_fk = c.class_id AND cr4.cs_role = 'Class Captain' AND cr4.cs_status = 'Active'
+                 LIMIT 1) AS class_captain_id,
+                (SELECT u4.profile_photo FROM classroom_role cr4
+                 INNER JOIN users u4 ON u4.user_id = cr4.user_id_fk
+                 WHERE cr4.class_id_fk = c.class_id AND cr4.cs_role = 'Class Captain' AND cr4.cs_status = 'Active'
+                 LIMIT 1) AS class_captain_photo,
+                (SELECT CONCAT(u4.fname,' ',u4.lname) FROM classroom_role cr4
+                 INNER JOIN users u4 ON u4.user_id = cr4.user_id_fk
+                 WHERE cr4.class_id_fk = c.class_id AND cr4.cs_role = 'Class Captain' AND cr4.cs_status = 'Active'
+                 LIMIT 1) AS class_captain
+            FROM parent_student ps
+            INNER JOIN users stu ON stu.user_id = ps.student_user_id_fk
+            INNER JOIN admission a  ON a.user_id_fk = stu.user_id AND a.admission_status = 'Active'
+            INNER JOIN enrolment e  ON e.admission_id_fk = a.admission_id
+            INNER JOIN classroom c  ON c.stream_id_fk = e.stream_id_fk AND c.class_year = e.enrol_year
+            INNER JOIN stream s     ON s.stream_id = c.stream_id_fk
+            INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
+            INNER JOIN level l      ON l.level_id = sl.level_id_fk
+            INNER JOIN school sch   ON sch.sch_id = a.sch_id_fk
+            WHERE ps.parent_user_id_fk = ? AND c.class_id = ?
+            LIMIT 1
+        ", [$userId, $classId])->getRowArray();
+
+        if (!$row) {
+            return redirect()->to(base_url('classroom/child/my'));
+        }
+
+        $childUserId = (int) $row['child_user_id'];
+        $cls = $row;
+        $cls['subjects']    = $this->getClassroomSubjects($classId);
+        $cls['students']    = $this->getClassroomAllStudents($classId, true);
+        $cls['discussions'] = $this->classDiscussionModel->getPosts($classId, $childUserId);
+
+        $this->setPageData($row['class_name'], 'Classroom', $row['class_name']);
+
+        $sessionPhoto = $this->session->get('photo');
+        $data = [
+            '_view'          => 'app/classroom/parent/child_view',
+            'cls'            => $cls,
+            'childUserId'    => $childUserId,
+            'sessionFname'   => $this->session->get('fname') ?? '',
+            'sessionPhotoUrl'=> $sessionPhoto ? base_url('uploads/profilePhoto/' . $sessionPhoto) : null,
+            'sessionUserId'  => $userId,
+        ];
+
+        return view('app/layouts/main', $data);
+    }
+
     private function _groupByStudent(array $classrooms): array
     {
         $byStudent = [];

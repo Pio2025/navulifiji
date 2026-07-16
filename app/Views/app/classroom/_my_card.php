@@ -89,7 +89,7 @@ $enrolClass  = match($c['enrol_status'] ?? '') {
                 <span class="text-muted fs-8 me-1">Enrolment:</span>
                 <span class="badge badge-sm <?= $enrolClass ?>"><?= esc($c['enrol_status'] ?? 'Unknown') ?></span>
             </div>
-            <a href="<?= base_url('classroom/detail/' . $c['class_id']) ?>"
+            <a href="<?= isset($cardViewUrl) ? base_url($cardViewUrl) : base_url('classroom/detail/' . $c['class_id']) ?>"
                class="btn btn-sm btn-light-primary">
                 View
                 <i class="ki-duotone ki-arrow-right fs-5 ms-1">
