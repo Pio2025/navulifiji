@@ -635,4 +635,18 @@ $routes->post('wall/comment/(:num)/delete',        'WallController::deleteCommen
 $routes->post('wall/react',                        'WallController::react');
 $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1');
 
+// ============================================================================
+// EVENT Routes
+// ============================================================================
+$routes->get( 'event',                             'EventController::index');
+$routes->get( 'event/add',                         'EventController::add');
+$routes->post('event/store',                       'EventController::store');
+$routes->get( 'event/edit/(:num)',                 'EventController::edit/$1');
+$routes->post('event/update/(:num)',               'EventController::update/$1');
+$routes->post('event/remove/(:num)',               'EventController::delete/$1');
+$routes->get( 'event/detail/(:num)',               'EventController::detail/$1');
+$routes->get( 'event/calendar',                    'EventController::calendar');
+$routes->get( 'event/calendar/feed',               'EventController::calendarFeed');
+$routes->get( 'event/report',                      'EventController::report');
+
 
