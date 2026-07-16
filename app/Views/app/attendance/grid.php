@@ -131,18 +131,22 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
         <script>
         function attToggle(cell) {
             var inp = cell.querySelector('.att-val');
+            var sym = cell.querySelector('.att-sym');
             if (cell.classList.contains('is-empty')) {
                 cell.classList.remove('is-empty');
                 cell.classList.add('is-present');
                 if (inp) inp.value = 'P';
+                if (sym) sym.textContent = '✓';
             } else if (cell.classList.contains('is-present')) {
                 cell.classList.remove('is-present');
                 cell.classList.add('is-absent');
                 if (inp) inp.value = 'A';
+                if (sym) sym.textContent = '✗';
             } else {
                 cell.classList.remove('is-absent');
                 cell.classList.add('is-empty');
                 if (inp) inp.value = '';
+                if (sym) sym.textContent = '—';
             }
         }
         </script>
@@ -225,12 +229,15 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
                                     <?php elseif ($isFuture): ?>
                                     <span class="att-future">—</span>
                                     <?php else: ?>
-                                    <span class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>" onclick="attToggle(this)">
+                                    <button type="button"
+                                            class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>"
+                                            onclick="attToggle(this)">
+                                        <span class="att-sym"><?= $isPresent ? '✓' : ($status === 'Absent' ? '✗' : '—') ?></span>
                                         <input type="hidden"
                                                name="att[<?= $admId ?>][<?= esc($date) ?>]"
                                                class="att-val"
                                                value="<?= $isPresent ? 'P' : ($status === 'Absent' ? 'A' : '') ?>">
-                                    </span>
+                                    </button>
                                     <?php endif; ?>
                                 </td>
                                 <?php endforeach; ?>
@@ -547,14 +554,19 @@ thead .att-th-num, thead .att-th-name { z-index: 5; background: #f8f9fa; }
     font-weight: 800;
     transition: transform .1s;
     user-select: none;
+    border: none;
+    padding: 0;
+    line-height: 1;
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 6;
 }
 .att-cell input[type=hidden] { display: none; }
 .att-cell.is-present { background: #d1fae5; color: #065f46; }
 .att-cell.is-absent  { background: #fee2e2; color: #991b1b; }
 .att-cell.is-empty   { background: #f3f4f6; color: #9ca3af; }
-.att-cell.is-present::after { content: '✓'; }
-.att-cell.is-absent::after  { content: '✗'; }
-.att-cell.is-empty::after   { content: '—'; font-size: 12px; }
+.att-sym { font-size: 15px; font-weight: 800; line-height: 1; pointer-events: none; }
+.att-cell.is-empty .att-sym { font-size: 12px; }
 .att-cell:hover { transform: scale(1.2); }
 .att-future { color: #ced4da; font-size: 12px; }
 /* Legend demo dots */
@@ -787,6 +799,8 @@ thead .att-sum-p, thead .att-sum-a, thead .att-sum-pct { background: #eef2ff; z-
                     cell.classList.add('is-present');
                     var inp = cell.querySelector('.att-val');
                     if (inp) inp.value = 'P';
+                    var sym = cell.querySelector('.att-sym');
+                    if (sym) sym.textContent = '✓';
                 }
             });
         });
