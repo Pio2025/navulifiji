@@ -61,6 +61,7 @@ use App\Models\ConductAppealFileModel;
 use App\Models\SchoolCategoryConfigModel;
 use App\Models\SchoolCategoryTermModel;
 use App\Models\PublicHolidayModel;
+use App\Models\WallModel;
 
 
 
@@ -144,6 +145,7 @@ abstract class BaseController extends Controller
     protected $schoolCategoryConfigModel;
     protected $schoolCategoryTermModel;
     protected $publicHolidayModel;
+    protected $wallModel;
 
 
     /**
@@ -267,6 +269,8 @@ abstract class BaseController extends Controller
         $this->schoolCategoryTermModel      = new SchoolCategoryTermModel();
         $this->publicHolidayModel           = new PublicHolidayModel();
         $this->publicHolidayModel->ensureTable();
+        $this->wallModel                    = new WallModel();
+        $this->wallModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

@@ -622,4 +622,17 @@ $routes->post('user/link-child',                  'UserController::linkChild');
 $routes->post('user/unlink-child/(:num)',          'UserController::unlinkChild/$1');
 $routes->get( 'user/searchStudents',              'UserController::searchStudents');
 
+// ============================================================================
+// WALL Routes
+// ============================================================================
+$routes->get( 'wall',                              'WallController::index');
+$routes->get( 'wall/feed',                         'WallController::feed');
+$routes->post('wall/post',                         'WallController::createPost');
+$routes->post('wall/post/(:num)/delete',           'WallController::deletePost/$1');
+$routes->get( 'wall/post/(:num)/comments',         'WallController::getComments/$1');
+$routes->post('wall/post/(:num)/comment',          'WallController::addComment/$1');
+$routes->post('wall/comment/(:num)/delete',        'WallController::deleteComment/$1');
+$routes->post('wall/react',                        'WallController::react');
+$routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1');
+
 

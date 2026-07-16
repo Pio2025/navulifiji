@@ -1300,10 +1300,28 @@
 										</div>
 										<!--end:Menu item-->
 										
-										<?php 
+										<?php
+                                        // Wall — visible to all logged-in school users
+                                        if (session()->get('userID')):
+                                            $wallActive = (session()->get('nav_menu') === 'Wall') ? 'active' : '';
+                                        ?>
+                                        <div class="menu-item">
+                                            <a class="menu-link <?= $wallActive ?>" href="<?= base_url('wall') ?>">
+                                                <span class="menu-icon">
+                                                    <i class="ki-duotone ki-abstract-26 fs-2">
+                                                        <span class="path1"></span>
+                                                        <span class="path2"></span>
+                                                    </i>
+                                                </span>
+                                                <span class="menu-title">School Wall</span>
+                                            </a>
+                                        </div>
+                                        <?php endif; ?>
+
+                                        <?php
                                         // Option 1: Using the helper (if you created it)
                                         // echo generate_navigation_menu();
-                                        
+
                                         // Option 2: Using the Navigation library (recommended)
                                         $navigation = new \App\Libraries\Navigation();
                                         echo $navigation->generateMenu();
@@ -1358,13 +1376,10 @@
 								<!--begin::Menu-->
 								<ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
 									<li class="menu-item">
-										<a href="https://keenthemes.com" target="_blank" class="menu-link px-2">About</a>
+										<a href="#" target="_blank" class="menu-link px-2">About</a>
 									</li>
 									<li class="menu-item">
-										<a href="https://devs.keenthemes.com" target="_blank" class="menu-link px-2">Support</a>
-									</li>
-									<li class="menu-item">
-										<a href="https://1.envato.market/EA4JP" target="_blank" class="menu-link px-2">Purchase</a>
+										<a href="#" target="_blank" class="menu-link px-2">Support</a>
 									</li>
 								</ul>
 								<!--end::Menu-->
