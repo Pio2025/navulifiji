@@ -791,7 +791,7 @@
                                             <span class="badge badge-light-success ms-2"><?= $currentKinCount ?>/3</span>
                                         </button>
                                     </div>
-                                <?php else: ?>
+                                <?php elseif ($currentKinCount >= 3): ?>
                                     <div class="card-toolbar">
                                         <span class="badge badge-light-warning">
                                             <i class="ki-duotone ki-information-5 fs-3">
