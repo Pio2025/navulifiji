@@ -107,7 +107,7 @@
             <!--end::Filters-->
 
             <div class="table-responsive">
-                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3" id="incidents_table">
                     <thead>
                         <tr class="fw-bold text-muted">
                             <th class="min-w-200px">Student</th>
@@ -120,9 +120,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if (empty($incidents)): ?>
-                        <tr><td colspan="7" class="text-center text-muted py-8">No conduct incidents found.</td></tr>
-                    <?php else: foreach ($incidents as $row): ?>
+                    <?php foreach ($incidents as $row): ?>
                         <tr>
                             <td>
                                 <a href="<?= base_url('conduct/detail/' . $row['incident_id']) ?>"
@@ -169,7 +167,7 @@
                                 <?php endif; ?>
                             </td>
                         </tr>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -180,11 +178,41 @@
 </div>
 </div>
 
-<form id="delete_form" method="post" action="">
-    <?= csrf_field() ?>
-</form>
-
 <script>
+"use strict";
+$(function () {
+    $('#incidents_table').DataTable({
+        pageLength: 15,
+        lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
+        order: [[4, 'desc']],
+        dom:
+            '<"row align-items-center mb-4"' +
+                '<"col-sm-6"l>' +
+                '<"col-sm-6 d-flex justify-content-end"f>' +
+            '>' +
+            't' +
+            '<"row align-items-center mt-4"' +
+                '<"col-sm-6 text-muted fs-7"i>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>',
+        language: {
+            search: '',
+            searchPlaceholder: 'Search incidents...',
+            lengthMenu: 'Show _MENU_ incidents',
+            info: 'Showing _START_ to _END_ of _TOTAL_ incidents',
+            infoEmpty: 'No incidents found',
+            emptyTable: '<div class="text-center text-muted py-8">No conduct incidents found.</div>',
+            paginate: {
+                previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+                next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            },
+        },
+        columnDefs: [
+            { orderable: false, targets: 6 },
+        ],
+    });
+});
+
 function confirmDelete(id) {
     Swal.fire({
         title: 'Delete Incident?',
@@ -195,11 +223,19 @@ function confirmDelete(id) {
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Yes, delete',
     }).then(result => {
-        if (result.isConfirmed) {
-            const form = document.getElementById('delete_form');
-            form.action = `<?= base_url('conduct/remove/') ?>${id}`;
-            form.submit();
-        }
+        if (!result.isConfirmed) return;
+        $.post('<?= base_url('conduct/remove/') ?>' + id, { '<?= csrf_token() ?>': '<?= csrf_hash() ?>' })
+            .done(function (d) {
+                if (d.success) {
+                    Swal.fire({ icon: 'success', title: 'Deleted', text: 'Incident removed.', timer: 1500, showConfirmButton: false });
+                    setTimeout(() => location.reload(), 1600);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: d.message || 'Failed to delete.' });
+                }
+            })
+            .fail(function () {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Request failed.' });
+            });
     });
 }
 </script>
