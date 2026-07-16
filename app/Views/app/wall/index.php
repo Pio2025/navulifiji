@@ -64,7 +64,8 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
 .video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; }
 .video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
 /* File list (outside the photo grid) */
-.file-list-section { padding: .25rem 1.25rem .85rem; display: flex; flex-direction: column; gap: .4rem; }
+.file-list-section { padding: .25rem 1.25rem .85rem; display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+@media (max-width: 480px) { .file-list-section { grid-template-columns: 1fr 1fr; } }
 .file-row { display: flex; align-items: center; gap: .85rem; background: #fff; border: 1.5px solid #e9edf0; border-radius: 10px; padding: .75rem 1rem; cursor: pointer; transition: border-color .18s, box-shadow .18s; }
 .file-row:hover { border-color: #93c5fd; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
 .file-row:hover .file-dl { color: #0095e8; }
@@ -73,7 +74,7 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
 .file-info .fc-name { font-size: .87rem; font-weight: 600; color: #181c32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
 .file-info .fc-label { font-size: .75rem; color: #a1a5b7; margin-top: .1rem; }
 .file-dl { color: #c0c5d5; flex-shrink: 0; transition: color .18s; display: flex; align-items: center; }
-.file-expand-btn { display: inline-flex; align-items: center; gap: .4rem; background: #f5f8fa; border: 1.5px solid #e4e6ef; border-radius: 20px; padding: .35rem .95rem; font-size: .82rem; color: #5e6278; cursor: pointer; font-weight: 500; transition: background .15s, border-color .15s, color .15s; margin-top: .1rem; }
+.file-expand-btn { display: inline-flex; align-items: center; gap: .4rem; background: #f5f8fa; border: 1.5px solid #e4e6ef; border-radius: 20px; padding: .35rem .95rem; font-size: .82rem; color: #5e6278; cursor: pointer; font-weight: 500; transition: background .15s, border-color .15s, color .15s; margin-top: .1rem; grid-column: 1 / -1; }
 .file-expand-btn:hover { background: #e8f3ff; border-color: #93c5fd; color: #0095e8; }
 /* Reactions bar */
 .post-reactions-bar, .comment-reactions-bar { display: flex; flex-wrap: wrap; gap: .3rem; padding: .25rem 0; }
