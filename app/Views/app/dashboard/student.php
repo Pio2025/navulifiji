@@ -148,7 +148,6 @@ $attColor   = $st_attendance_pct >= 90 ? '#50cd89' : ($st_attendance_pct >= 75 ?
 
 /* ── No-data placeholder ─────────────────────────────────────────── */
 .sd-empty { text-align:center; padding:2.5rem 1rem; color:#a1a5b7; }
-.sd-empty i { font-size:2.5rem; display:block; margin-bottom:.75rem; }
 
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media (max-width:767px) {
@@ -198,7 +197,7 @@ $attColor   = $st_attendance_pct >= 90 ? '#50cd89' : ($st_attendance_pct >= 75 ?
             <div class="sd-hero-sub"><?= esc($schName) ?></div>
             <div class="mt-1">
                 <?php if ($className): ?>
-                <span class="sd-hero-badge"><i class="ki-duotone ki-book fs-6 text-white-50"><span class="path1"></span><span class="path2"></span></i><?= esc($className) ?></span>
+                <span class="sd-hero-badge"><i class="ki-duotone ki-book fs-6 text-white-50"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i><?= esc($className) ?></span>
                 <?php endif; ?>
                 <?php if ($levelName): ?>
                 <span class="sd-hero-badge"><i class="ki-duotone ki-award fs-6 text-white-50"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i><?= esc($levelName) ?></span>
@@ -315,8 +314,8 @@ $attColor   = $st_attendance_pct >= 90 ? '#50cd89' : ($st_attendance_pct >= 75 ?
 
                 <?php if (empty($chartSubjects)): ?>
                     <div class="sd-empty">
-                        <i class="ki-duotone ki-chart-line-star text-gray-400"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-                        No marks recorded for this term yet.
+                        <i class="ki-duotone ki-chart-line-star fs-3x text-gray-400 mb-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        <div>No marks recorded for this term yet.</div>
                     </div>
                 <?php else: ?>
 
@@ -406,8 +405,8 @@ $attColor   = $st_attendance_pct >= 90 ? '#50cd89' : ($st_attendance_pct >= 75 ?
 
                 <?php if ($st_attendance_data['total'] === 0): ?>
                     <div class="sd-empty">
-                        <i class="ki-duotone ki-calendar text-gray-400"><span class="path1"></span><span class="path2"></span></i>
-                        No attendance records yet.
+                        <i class="ki-duotone ki-calendar fs-3x text-gray-400 mb-3"><span class="path1"></span><span class="path2"></span></i>
+                        <div>No attendance records yet.</div>
                     </div>
                 <?php else: ?>
 
@@ -498,7 +497,7 @@ $attColor   = $st_attendance_pct >= 90 ? '#50cd89' : ($st_attendance_pct >= 75 ?
 
                 <?php if (empty($st_conduct_incidents)): ?>
                     <div class="sd-empty" style="padding:1.5rem 1rem;">
-                        <i class="ki-duotone ki-check-circle text-success" style="font-size:2rem;"><span class="path1"></span><span class="path2"></span></i>
+                        <i class="ki-duotone ki-check-circle fs-2x text-success mb-2"><span class="path1"></span><span class="path2"></span></i>
                         <div class="mt-2">No conduct incidents on record. Keep it up!</div>
                     </div>
                 <?php else: ?>
@@ -556,8 +555,8 @@ $attColor   = $st_attendance_pct >= 90 ? '#50cd89' : ($st_attendance_pct >= 75 ?
 
                 <?php if (empty($st_announcements)): ?>
                     <div class="sd-empty">
-                        <i class="ki-duotone ki-notification text-gray-400"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-                        No announcements at this time.
+                        <i class="ki-duotone ki-notification fs-3x text-gray-400 mb-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        <div>No announcements at this time.</div>
                     </div>
                 <?php else: ?>
                     <?php
