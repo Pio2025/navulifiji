@@ -2652,18 +2652,24 @@ class ReferenceController extends BaseController
         }
         $typeName = $cat['ref_cat_name'];
 
-        // Prevent duplicate pending requests for same type + admission
-        $existing = $db->table('reference_requests')
-            ->where('user_id_fk', $userId)
-            ->where('admission_id_fk', $admissionId)
-            ->where('ref_cat_id', $refCatId)
-            ->whereIn('request_status', ['Pending', 'In Progress'])
-            ->countAllResults();
+        // One request per reference type per school per year (across all admissions at that school).
+        // A student admitted to a different school the same year may request the same type there.
+        $currentYear = date('Y');
+        $existing = $db->query("
+            SELECT COUNT(*) AS cnt
+            FROM reference_requests rr
+            JOIN admission a ON a.admission_id = rr.admission_id_fk
+            WHERE rr.user_id_fk   = {$userId}
+              AND rr.ref_cat_id   = {$refCatId}
+              AND a.sch_id_fk     = {$admission['sch_id_fk']}
+              AND rr.request_status != 'Rejected'
+              AND YEAR(rr.created_at) = {$currentYear}
+        ")->getRow()->cnt;
 
         if ($existing > 0) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'You already have a pending request for this reference type at the selected school.',
+                'message' => "You already have a {$typeName} request for this school in {$currentYear}.",
             ]);
         }
 
