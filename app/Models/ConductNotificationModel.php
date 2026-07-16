@@ -17,6 +17,21 @@ class ConductNotificationModel extends Model
         'message_preview',
     ];
 
+    public function ensureTables(): void
+    {
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS `conduct_notifications` (
+            `notification_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `incident_id`     INT UNSIGNED DEFAULT NULL,
+            `recipient_type`  VARCHAR(20)  DEFAULT NULL,
+            `sent_via`        VARCHAR(20)  DEFAULT NULL,
+            `sent_timestamp`  TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
+            `message_preview` VARCHAR(255) DEFAULT NULL,
+            PRIMARY KEY (`notification_id`),
+            KEY `incident_id` (`incident_id`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4");
+    }
+
     public function getByIncident(int $incidentId): array
     {
         return $this->where('incident_id', $incidentId)

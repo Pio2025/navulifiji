@@ -15,6 +15,19 @@ class ConductAppealFileModel extends Model
         'file_type',
     ];
 
+    public function ensureTables(): void
+    {
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS `conduct_appeal_files` (
+            `appeal_file_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `appeal_id`      INT UNSIGNED DEFAULT NULL,
+            `file_src`       VARCHAR(255) DEFAULT NULL,
+            `file_type`      VARCHAR(100) DEFAULT NULL,
+            PRIMARY KEY (`appeal_file_id`),
+            KEY `appeal_id` (`appeal_id`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4");
+    }
+
     public function getByAppeal(int $appealId): array
     {
         return $this->where('appeal_id', $appealId)->findAll();

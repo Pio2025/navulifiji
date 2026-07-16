@@ -20,6 +20,25 @@ class ConductIncidentModel extends Model
         'is_resolved',
     ];
 
+    public function ensureTables(): void
+    {
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS `conduct_incidents` (
+            `incident_id`          INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `student_id`           INT UNSIGNED NOT NULL,
+            `staff_id`             INT UNSIGNED NOT NULL,
+            `type_id_fk`           INT UNSIGNED DEFAULT NULL,
+            `points_awarded`       INT          NOT NULL DEFAULT 0,
+            `incident_description` TEXT,
+            `incident_date`        TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
+            `location`             VARCHAR(100) DEFAULT NULL,
+            `is_resolved`          TINYINT(1)   NOT NULL DEFAULT 0,
+            PRIMARY KEY (`incident_id`),
+            KEY `student_id` (`student_id`),
+            KEY `type_id_fk` (`type_id_fk`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4");
+    }
+
     /**
      * Incidents for a school (0 = all schools), joined with student, staff and type details.
      * Filters: student_id (admission_id), category, severity_level, is_positive, is_resolved, date_from, date_to.

@@ -21,6 +21,26 @@ class ConductAppealModel extends Model
         'points_restored',
     ];
 
+    public function ensureTables(): void
+    {
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS `conduct_appeals` (
+            `appeal_id`      INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `incident_id`    INT UNSIGNED DEFAULT NULL,
+            `student_id`     INT UNSIGNED DEFAULT NULL,
+            `appeal_reason`  TEXT,
+            `appeal_status`  VARCHAR(20)  NOT NULL DEFAULT 'Pending',
+            `submitted_date` TIMESTAMP    NULL DEFAULT CURRENT_TIMESTAMP,
+            `reviewed_by`    INT UNSIGNED DEFAULT NULL,
+            `reviewed_date`  DATETIME     DEFAULT NULL,
+            `review_notes`   TEXT,
+            `points_restored` INT         NOT NULL DEFAULT 0,
+            PRIMARY KEY (`appeal_id`),
+            KEY `incident_id` (`incident_id`),
+            KEY `student_id` (`student_id`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4");
+    }
+
     public function getByIncident(int $incidentId): ?array
     {
         $row = $this->where('incident_id', $incidentId)

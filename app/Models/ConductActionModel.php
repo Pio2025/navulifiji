@@ -18,6 +18,22 @@ class ConductActionModel extends Model
         'notes',
     ];
 
+    public function ensureTables(): void
+    {
+        $db = \Config\Database::connect();
+        $db->query("CREATE TABLE IF NOT EXISTS `conduct_actions` (
+            `action_id`      INT UNSIGNED   NOT NULL AUTO_INCREMENT,
+            `incident_id`    INT UNSIGNED   DEFAULT NULL,
+            `action_type`    VARCHAR(50)    DEFAULT NULL,
+            `action_date`    DATE           DEFAULT NULL,
+            `duration_hours` DECIMAL(5,2)   DEFAULT NULL,
+            `is_completed`   TINYINT(1)     NOT NULL DEFAULT 0,
+            `notes`          TEXT,
+            PRIMARY KEY (`action_id`),
+            KEY `incident_id` (`incident_id`)
+        ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4");
+    }
+
     public function getByIncident(int $incidentId): array
     {
         return $this->where('incident_id', $incidentId)
