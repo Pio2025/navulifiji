@@ -198,6 +198,7 @@ $routes->get('user', 'UserController::index');
 $routes->get('user/add', 'UserController::add');
 $routes->get('user/generate-username', 'UserController::generateUsername');
 $routes->get('user/detail/(:num)', 'UserController::detail/$1');
+$routes->get('profile/my',         'UserController::my');
 $routes->get('user/edit/(:num)', 'UserController::edit/$1');
 //$routes->get('user/medical/(:num)', 'UserController::medical/$1');
 

@@ -1314,7 +1314,78 @@ class UserController extends BaseController
         
         return view('app/layouts/main', $data);
     }
-    
+
+    /**
+     * Own profile — same view as detail() but always allowed (no permission gate).
+     */
+    public function my()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+
+        $userId = (int) $this->session->get('userID');
+
+        $this->setPageData('My Profile', 'Profile', 'My Profile');
+
+        $user = $this->userModel->findUserFull($userId);
+        if (!$user) {
+            return redirect()->to('dashboard')->with('error', 'Profile not found.');
+        }
+
+        $this->userSessionModel->expireOldSessions($userId);
+
+        $viewedRole = $this->userRoleModel->findActiveUserRole($userId);
+        $roleCatId  = (int) ($viewedRole['role_cat_id'] ?? 0);
+        $isStudent  = $roleCatId === 4;
+        $showAdmission = in_array($roleCatId, [2, 3, 4, 5]);
+
+        $admissions = [];
+        if ($showAdmission) {
+            $admissions = $isStudent
+                ? $this->admissionModel->getAdmissionWithEnrolment($userId)
+                : $this->admissionModel->getAdmissionWithSchool($userId);
+        }
+
+        $linkedChildren = [];
+        $linkedParents  = [];
+        if ($roleCatId === 6 || (int) ($user['is_a_parent'] ?? 0) === 1) {
+            $linkedChildren = $this->parentStudentModel->getChildrenOf($userId);
+        }
+        if ($isStudent) {
+            $linkedParents = $this->parentStudentModel->getParentsOf($userId);
+        }
+
+        $province = (int) ($user['province_id'] ?? 0);
+
+        $data['user']                = $user;
+        $data['userID']              = $userId;
+        $data['role']                = $viewedRole;
+        $data['roles']               = $this->roleModel->getAllRoles();
+        $data['sessions']            = $this->userSessionModel->getActiveSessions($userId);
+        $data['currentSessionToken'] = $this->session->get('sessionToken');
+        $data['notifications']       = $this->userNotificationModel->getByUser($userId);
+        $data['twoFactorData']       = $this->twoFactorModel->get2FAData($userId);
+        $data['next_of_kin']         = $this->nextOfKinModel->getByUserId($userId);
+        $data['isOwnProfile']        = true;
+        $data['canEditUser']         = true;
+        $data['showAdmission']       = $showAdmission;
+        $data['isStudent']           = $isStudent;
+        $data['admissions']          = $admissions;
+        $data['roleCatId']           = $roleCatId;
+        $data['linkedChildren']      = $linkedChildren;
+        $data['linkedParents']       = $linkedParents;
+        $data['isAParentFlag']       = (int) ($user['is_a_parent'] ?? 0);
+        $data['provinces']           = $this->provinceModel->findAll();
+        $data['districts']           = $province
+            ? $this->districtModel->where('province_id_fk', $province)->findAll()
+            : [];
+        $data['sessionUserID']       = $userId;
+        $data['_view']               = 'app/user/detail';
+
+        return view('app/layouts/main', $data);
+    }
+
     /**
      * Save email notification preferences via AJAX
      */
