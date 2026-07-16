@@ -1299,24 +1299,6 @@
 											<!--end:Menu content-->
 										</div>
 										<!--end:Menu item-->
-										
-										<?php
-                                        // Wall — visible to all logged-in school users
-                                        if (session()->get('userID')):
-                                            $wallActive = (session()->get('nav_menu') === 'Wall') ? 'active' : '';
-                                        ?>
-                                        <div class="menu-item">
-                                            <a class="menu-link <?= $wallActive ?>" href="<?= base_url('wall') ?>">
-                                                <span class="menu-icon">
-                                                    <i class="ki-duotone ki-abstract-26 fs-2">
-                                                        <span class="path1"></span>
-                                                        <span class="path2"></span>
-                                                    </i>
-                                                </span>
-                                                <span class="menu-title">School Wall</span>
-                                            </a>
-                                        </div>
-                                        <?php endif; ?>
 
                                         <?php
                                         // Option 1: Using the helper (if you created it)
@@ -1326,9 +1308,6 @@
                                         $navigation = new \App\Libraries\Navigation();
                                         echo $navigation->generateMenu();
                                         ?>
-										
-										
-										
 									</div>
 									<!--end::Menu-->
 								</div>
