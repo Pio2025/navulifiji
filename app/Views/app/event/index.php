@@ -130,9 +130,6 @@ use App\Models\EventModel;
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if (empty($events)): ?>
-                    <tr><td colspan="8" class="text-center text-muted py-10">No events found.</td></tr>
-                    <?php else: ?>
                     <?php foreach ($events as $i => $e): ?>
                     <tr>
                         <td class="ps-4 text-muted"><?= $i + 1 ?></td>
@@ -175,7 +172,6 @@ use App\Models\EventModel;
                         </td>
                     </tr>
                     <?php endforeach; ?>
-                    <?php endif; ?>
                     </tbody>
                 </table>
             </div>
