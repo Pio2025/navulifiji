@@ -119,8 +119,15 @@ $WALL_REACT_URL         = base_url('wall/react');
 /* Lightbox */
 #wall-lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 9999; align-items: center; justify-content: center; }
 #wall-lightbox.open { display: flex; }
-#wall-lightbox img { max-width: 92vw; max-height: 90vh; border-radius: 6px; object-fit: contain; }
-#wall-lightbox .lb-close { position: fixed; top: 1rem; right: 1.5rem; color: #fff; font-size: 2rem; cursor: pointer; z-index: 10000; background: none; border: none; }
+#wall-lightbox img { max-width: min(92vw, 960px); max-height: 88vh; border-radius: 6px; object-fit: contain; display: block; }
+#wall-lightbox .lb-close { position: fixed; top: 1rem; right: 1.5rem; color: #fff; font-size: 2rem; cursor: pointer; z-index: 10000; background: none; border: none; line-height: 1; }
+#wall-lightbox .lb-nav { position: fixed; top: 50%; transform: translateY(-50%); color: #fff; font-size: 2.4rem; font-weight: 300; cursor: pointer; z-index: 10000; background: rgba(0,0,0,.35); border: none; width: 46px; height: 70px; display: flex; align-items: center; justify-content: center; border-radius: 6px; transition: background .15s; line-height: 1; }
+#wall-lightbox .lb-nav:hover { background: rgba(0,0,0,.65); }
+#wall-lightbox .lb-prev { left: .75rem; }
+#wall-lightbox .lb-next { right: .75rem; }
+#wall-lightbox .lb-counter { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.9); font-size: .82rem; background: rgba(0,0,0,.45); padding: .2rem .85rem; border-radius: 12px; pointer-events: none; white-space: nowrap; }
+/* +N more overlay on 4th photo */
+.more-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.52); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.65rem; font-weight: 700; border-radius: 8px; letter-spacing: -.5px; pointer-events: none; }
 </style>
 
 <!--begin::Toolbar-->
@@ -311,7 +318,10 @@ $WALL_REACT_URL         = base_url('wall/react');
 <!-- Lightbox -->
 <div id="wall-lightbox">
     <button class="lb-close" id="lb-close">&times;</button>
+    <button class="lb-nav lb-prev" id="lb-prev">&#8249;</button>
     <img id="lb-img" src="" alt="">
+    <button class="lb-nav lb-next" id="lb-next">&#8250;</button>
+    <div class="lb-counter" id="lb-counter" style="display:none;"></div>
 </div>
 
 <!-- Video modal -->
@@ -343,6 +353,31 @@ const REACT_URL     = <?= json_encode($WALL_REACT_URL) ?>;
 const EMOJIS        = ['👍','❤️','😂','😮','😢','😡'];
 const CI_TOKEN      = '<?= csrf_hash() ?>';
 const CI_NAME       = '<?= csrf_token() ?>';
+
+// ─── Lightbox state ───────────────────────────────────────────────────────────
+let lbImages = [];
+let lbIndex  = 0;
+
+function openLightbox(images, startIdx) {
+    lbImages = images;
+    lbIndex  = Math.max(0, Math.min(startIdx, images.length - 1));
+    updateLb();
+    document.getElementById('wall-lightbox').classList.add('open');
+}
+function updateLb() {
+    document.getElementById('lb-img').src = lbImages[lbIndex] || '';
+    const counter  = document.getElementById('lb-counter');
+    const showNav  = lbImages.length > 1;
+    document.getElementById('lb-prev').style.display = showNav ? '' : 'none';
+    document.getElementById('lb-next').style.display = showNav ? '' : 'none';
+    if (showNav) {
+        counter.textContent  = `${lbIndex + 1} / ${lbImages.length}`;
+        counter.style.display = '';
+    } else {
+        counter.style.display = 'none';
+    }
+}
+function closeLb() { document.getElementById('wall-lightbox').classList.remove('open'); }
 
 let feedOffset = 0;
 let feedLoading = false;
@@ -384,28 +419,46 @@ function avatar(photo, name, size=40) {
     return `<img src="${photo}" class="rounded-circle" style="width:${size}px;height:${size}px;object-fit:cover;" alt="${name}">`;
 }
 
-function renderMedia(media) {
+function renderMedia(media, postId) {
     if (!media || !media.length) return '';
-    const cls = media.length === 1 ? 'count-1' : media.length === 2 ? 'count-2' : media.length === 3 ? 'count-3' : media.length === 4 ? 'count-4' : 'count-many';
-    const items = media.map(m => {
+
+    const images = media.filter(m => m.media_type === 'image');
+    const others = media.filter(m => m.media_type !== 'image');
+
+    // Cap displayed images at 4; keep all URLs for the lightbox
+    const displayImgs = images.slice(0, 4);
+    const hiddenCount = images.length - displayImgs.length;
+    const allImageUrls = esc(JSON.stringify(images.map(m => m.file_src)));
+
+    // Build the visible item list: capped images first, then videos/files
+    const displayAll = [...displayImgs, ...others];
+    const n   = displayAll.length;
+    const cls = n === 1 ? 'count-1' : n === 2 ? 'count-2' : n === 3 ? 'count-3' : n >= 4 ? 'count-4' : 'count-many';
+
+    let imgIdx = 0;
+    const items = displayAll.map(m => {
         if (m.media_type === 'image') {
-            return `<div class="media-item" data-type="image" data-src="${m.file_src}"><img src="${m.file_src}" alt="" loading="lazy"></div>`;
+            const myIdx  = imgIdx++;
+            const isLast = myIdx === 3 && hiddenCount > 0;
+            const overlay = isLast
+                ? `<div class="more-overlay">+${hiddenCount}</div>`
+                : '';
+            return `<div class="media-item" data-type="image" data-src="${m.file_src}" data-img-idx="${myIdx}"><img src="${m.file_src}" alt="" loading="lazy">${overlay}</div>`;
         }
         if (m.media_type === 'video_url') {
-            const thumb = embedUrl(m.file_src);
             return `<div class="media-item" data-type="video" data-src="${m.file_src}">
                 <div class="video-thumb"><i class="ki-duotone ki-youtube text-danger fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
             </div>`;
         }
-        // file
         return `<div class="media-item" data-type="file" data-src="${m.file_src}">
             <div class="file-card">
                 <i class="ki-duotone ki-file-down fs-3x text-primary"><span class="path1"></span><span class="path2"></span></i>
-                <span>${m.file_name}</span>
+                <span>${esc(m.file_name||'')}</span>
             </div>
         </div>`;
     }).join('');
-    return `<div class="post-media-grid ${cls}">${items}</div>`;
+
+    return `<div class="post-media-grid ${cls}" data-images="${allImageUrls}">${items}</div>`;
 }
 
 function embedUrl(url) {
@@ -423,8 +476,8 @@ function renderReactions(reactions, targetType, targetId) {
         pills += `<button class="reaction-pill ${isMine}" data-target-type="${targetType}" data-target-id="${targetId}" data-emoji="${emoji}">${emoji} <span>${cnt}</span></button>`;
     }
     const addBtn = `<div class="position-relative d-inline-block">
-        <button class="reaction-pill add-reaction-btn" data-target-type="${targetType}" data-target-id="${targetId}" title="React">
-            <i class="ki-duotone ki-smile fs-6"><span class="path1"></span><span class="path2"></span></i>
+        <button class="reaction-pill add-reaction-btn" data-target-type="${targetType}" data-target-id="${targetId}" title="React" style="gap:.2rem;">
+            <span style="font-size:1rem;line-height:1;">😊</span><span style="font-size:.75rem;color:#5e6278;">React</span>
         </button>
         <div class="emoji-picker-pop" id="ep-${targetType}-${targetId}">${EMOJIS.map(e=>`<button class="ep-btn" data-emoji="${e}" data-target-type="${targetType}" data-target-id="${targetId}">${e}</button>`).join('')}</div>
     </div>`;
@@ -445,7 +498,7 @@ function renderPost(p) {
             ${delBtn}
         </div>
         ${p.content ? `<div class="post-content">${esc(p.content)}</div>` : ''}
-        ${renderMedia(p.media)}
+        ${renderMedia(p.media, p.wall_post_id)}
         <div class="px-4 pb-1">${renderReactions(p.reactions, 'post', p.wall_post_id)}</div>
         <div class="post-actions">
             <button class="post-action-btn toggle-comments-btn" data-post-id="${p.wall_post_id}">
@@ -666,8 +719,10 @@ document.getElementById('wall-feed').addEventListener('click', async function(e)
         const type = target.dataset.type;
         const src  = target.dataset.src;
         if (type === 'image') {
-            document.getElementById('lb-img').src = src;
-            document.getElementById('wall-lightbox').classList.add('open');
+            const grid   = target.closest('.post-media-grid');
+            const imgs   = grid ? JSON.parse(grid.dataset.images || '[]') : [src];
+            const idx    = parseInt(target.dataset.imgIdx ?? '0');
+            openLightbox(imgs.length ? imgs : [src], idx);
         } else if (type === 'video') {
             document.getElementById('video-modal-body').innerHTML =
                 `<iframe src="${embedUrl(src)}" allowfullscreen></iframe>`;
@@ -807,10 +862,26 @@ document.addEventListener('click', e => {
     }
 });
 
-// Lightbox close
-document.getElementById('lb-close').addEventListener('click', () => document.getElementById('wall-lightbox').classList.remove('open'));
+// Lightbox controls
+document.getElementById('lb-close').addEventListener('click', closeLb);
+document.getElementById('lb-prev').addEventListener('click', e => {
+    e.stopPropagation();
+    lbIndex = (lbIndex - 1 + lbImages.length) % lbImages.length;
+    updateLb();
+});
+document.getElementById('lb-next').addEventListener('click', e => {
+    e.stopPropagation();
+    lbIndex = (lbIndex + 1) % lbImages.length;
+    updateLb();
+});
 document.getElementById('wall-lightbox').addEventListener('click', e => {
-    if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+    if (e.target === e.currentTarget) closeLb();
+});
+document.addEventListener('keydown', e => {
+    if (!document.getElementById('wall-lightbox').classList.contains('open')) return;
+    if (e.key === 'ArrowLeft')  { lbIndex = (lbIndex - 1 + lbImages.length) % lbImages.length; updateLb(); }
+    if (e.key === 'ArrowRight') { lbIndex = (lbIndex + 1) % lbImages.length; updateLb(); }
+    if (e.key === 'Escape')     { closeLb(); }
 });
 
 // Video modal: stop video on close
