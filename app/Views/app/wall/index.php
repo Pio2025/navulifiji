@@ -17,14 +17,9 @@ $WALL_DELETE_CMT_BASE   = base_url('wall/comment/');    // + commentId + '/delet
 $WALL_REACT_URL         = base_url('wall/react');
 ?>
 <style>
-/* ── Wall layout ───────────────────────────────────── */
-.wall-outer { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 1.75rem; padding: 1.5rem 0 3rem; align-items: start; }
-.wall-feed-col { min-width: 0; }
+/* ── Wall sidebar ───────────────────────────────────── */
 .wall-sidebar { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 1rem; }
-@media (max-width: 900px) {
-    .wall-outer { grid-template-columns: 1fr; padding: 1.5rem 0 3rem; }
-    .wall-sidebar { position: static; }
-}
+@media (max-width: 991px) { .wall-sidebar { position: static; } }
 /* sidebar cards */
 .wsb-card { background: #fff; border-radius: 14px; border: 1px solid #e9edf0; box-shadow: 0 1px 6px rgba(0,0,0,.06); overflow: hidden; }
 .wsb-head { display: flex; align-items: center; gap: .5rem; padding: .85rem 1rem; border-bottom: 1px solid #f1f3f5; font-weight: 700; font-size: .88rem; color: #181c32; }
@@ -128,22 +123,29 @@ $WALL_REACT_URL         = base_url('wall/react');
 #wall-lightbox .lb-close { position: fixed; top: 1rem; right: 1.5rem; color: #fff; font-size: 2rem; cursor: pointer; z-index: 10000; background: none; border: none; }
 </style>
 
-<!-- Wall outer grid -->
-<div class="wall-outer">
-
-    <!-- ── Left: feed column ── -->
-    <div class="wall-feed-col">
-
-        <!-- Page header -->
-        <div class="d-flex align-items-center gap-3 mb-4">
-            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-                <i class="ki-duotone ki-abstract-26 fs-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
-            </div>
-            <div>
-                <h4 class="fw-bold mb-0 text-gray-900">School Wall</h4>
-                <div class="text-muted fs-7">Share with everyone in your school</div>
-            </div>
+<!--begin::Toolbar-->
+<div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
+    <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
+        <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
+            <h1 class="page-heading d-flex text-gray-900 fw-bold fs-3 flex-column justify-content-center my-0">School Wall</h1>
+            <ul class="breadcrumb breadcrumb-separatorless fw-semibold fs-7 my-0 pt-1">
+                <li class="breadcrumb-item text-muted"><a href="<?= base_url('dashboard') ?>" class="text-muted text-hover-primary">Home</a></li>
+                <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <li class="breadcrumb-item text-muted">School Wall</li>
+            </ul>
         </div>
+    </div>
+</div>
+<!--end::Toolbar-->
+
+<!--begin::Content-->
+<div id="kt_app_content" class="app-content flex-column-fluid">
+<div id="kt_app_content_container" class="app-container container-xxl">
+
+    <div class="row g-5 g-xl-8 align-items-start">
+
+        <!-- ── Left: feed column ── -->
+        <div class="col-lg-8">
 
         <!-- Composer -->
         <div class="wall-composer" id="wall-composer">
@@ -182,10 +184,11 @@ $WALL_REACT_URL         = base_url('wall/react');
             <button class="btn btn-light btn-sm" id="load-more-btn">Load more</button>
         </div>
 
-    </div><!-- /wall-feed-col -->
+        </div><!-- /col-lg-8 -->
 
-    <!-- ── Right: sidebar ── -->
-    <aside class="wall-sidebar">
+        <!-- ── Right: sidebar ── -->
+        <div class="col-lg-4">
+        <aside class="wall-sidebar">
 
         <!-- Community card -->
         <div class="wsb-card">
@@ -296,9 +299,14 @@ $WALL_REACT_URL         = base_url('wall/react');
             <div id="wsb-active-list" class="p-2"></div>
         </div>
 
-    </aside><!-- /wall-sidebar -->
+        </aside>
+        </div><!-- /col-lg-4 -->
 
-</div><!-- /wall-outer -->
+    </div><!-- /row -->
+
+</div><!-- /container-xxl -->
+</div><!-- /kt_app_content -->
+<!--end::Content-->
 
 <!-- Lightbox -->
 <div id="wall-lightbox">
