@@ -1,8 +1,13 @@
 <?php
-$schId   = $schId   ?? 0;
-$myId    = $myId    ?? 0;
-$myName  = $myName  ?? 'Me';
-$myPhoto = $myPhoto ?? base_url('assets/media/avatars/blank.png');
+$schId        = $schId        ?? 0;
+$myId         = $myId         ?? 0;
+$myName       = $myName       ?? 'Me';
+$myPhoto      = $myPhoto      ?? base_url('assets/media/avatars/blank.png');
+$schoolName   = $schoolName   ?? 'School Community';
+$schoolMotto  = $schoolMotto  ?? '';
+$schoolLogo   = $schoolLogo   ?? '';
+$wallPostCount   = $wallPostCount   ?? 0;
+$wallMemberCount = $wallMemberCount ?? 0;
 
 $WALL_FEED_URL          = base_url('wall/feed');
 $WALL_POST_URL          = base_url('wall/post');
@@ -13,7 +18,25 @@ $WALL_REACT_URL         = base_url('wall/react');
 ?>
 <style>
 /* ── Wall layout ───────────────────────────────────── */
-.wall-wrap { max-width: 680px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.wall-outer { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 1.5rem; max-width: 1060px; margin: 0 auto; padding: 1.5rem 1rem 3rem; align-items: start; }
+.wall-feed-col { min-width: 0; }
+.wall-sidebar { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 1rem; }
+@media (max-width: 860px) {
+    .wall-outer { grid-template-columns: 1fr; }
+    .wall-sidebar { position: static; }
+}
+/* sidebar cards */
+.wsb-card { background: #fff; border-radius: 14px; border: 1px solid #e9edf0; box-shadow: 0 1px 6px rgba(0,0,0,.06); overflow: hidden; }
+.wsb-head { display: flex; align-items: center; gap: .5rem; padding: .85rem 1rem; border-bottom: 1px solid #f1f3f5; font-weight: 700; font-size: .88rem; color: #181c32; }
+.wsb-stat { text-align: center; flex: 1; }
+.wsb-stat .num { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.wsb-stat .lbl { font-size: .74rem; color: #a1a5b7; margin-top: .15rem; }
+.wsb-link { display: flex; align-items: center; gap: .65rem; padding: .6rem 1rem; color: #3f4254; font-size: .86rem; text-decoration: none; border-radius: 8px; transition: background .15s; }
+.wsb-link:hover { background: #f5f8fa; color: #0095e8; text-decoration: none; }
+.wsb-link i { font-size: 1.1rem; flex-shrink: 0; }
+.wsb-rule { display: flex; align-items: flex-start; gap: .5rem; padding: .45rem 0; font-size: .83rem; color: #5e6278; border-bottom: 1px solid #f5f5f5; }
+.wsb-rule:last-child { border-bottom: none; }
+.wsb-rule .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
 .wall-composer, .wall-post-card { background: #fff; border-radius: 14px; border: 1px solid #e9edf0; box-shadow: 0 1px 6px rgba(0,0,0,.06); margin-bottom: 1.25rem; }
 .wall-composer { padding: 1.25rem; }
 .composer-top { display: flex; gap: .75rem; align-items: flex-start; }
@@ -105,56 +128,177 @@ $WALL_REACT_URL         = base_url('wall/react');
 #wall-lightbox .lb-close { position: fixed; top: 1rem; right: 1.5rem; color: #fff; font-size: 2rem; cursor: pointer; z-index: 10000; background: none; border: none; }
 </style>
 
-<!-- Wall wrapper -->
-<div class="wall-wrap">
-    <!-- Page header -->
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-            <i class="ki-duotone ki-abstract-26 fs-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
-        </div>
-        <div>
-            <h4 class="fw-bold mb-0 text-gray-900">School Wall</h4>
-            <div class="text-muted fs-7">Share with everyone in your school</div>
-        </div>
-    </div>
+<!-- Wall outer grid -->
+<div class="wall-outer">
 
-    <!-- Composer -->
-    <div class="wall-composer" id="wall-composer">
-        <div class="composer-top">
-            <img src="<?= $myPhoto ?>" class="composer-avatar" alt="">
-            <textarea id="composer-text" placeholder="What's on your mind?"></textarea>
-        </div>
-        <div id="composer-media-preview" class="composer-media-preview"></div>
-        <div id="composer-video-urls"></div>
-        <div class="composer-toolbar">
-            <label class="btn btn-light-primary btn-sm" for="composer-image-input">
-                <i class="ki-duotone ki-picture fs-4"><span class="path1"></span><span class="path2"></span></i>
-                Photo
-                <input type="file" id="composer-image-input" accept="image/*" multiple style="display:none;">
-            </label>
-            <button class="btn btn-light-success btn-sm" id="composer-video-btn">
-                <i class="ki-duotone ki-youtube fs-4"><span class="path1"></span><span class="path2"></span></i>
-                Video URL
-            </button>
-            <label class="btn btn-light-warning btn-sm" for="composer-file-input">
-                <i class="ki-duotone ki-paper-clip fs-4"><span class="path1"></span><span class="path2"></span></i>
-                File
-                <input type="file" id="composer-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple style="display:none;">
-            </label>
-            <button class="btn btn-primary btn-sm ms-auto" id="composer-post-btn">Post</button>
-        </div>
-    </div>
+    <!-- ── Left: feed column ── -->
+    <div class="wall-feed-col">
 
-    <!-- Feed -->
-    <div id="wall-feed"></div>
-    <div class="feed-spinner" id="feed-spinner">
-        <span class="spinner-border spinner-border-sm text-primary"></span>
-        <div class="text-muted fs-8 mt-2">Loading...</div>
-    </div>
-    <div id="load-more-wrap" class="text-center mb-4" style="display:none;">
-        <button class="btn btn-light btn-sm" id="load-more-btn">Load more</button>
-    </div>
-</div>
+        <!-- Page header -->
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                <i class="ki-duotone ki-abstract-26 fs-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
+            </div>
+            <div>
+                <h4 class="fw-bold mb-0 text-gray-900">School Wall</h4>
+                <div class="text-muted fs-7">Share with everyone in your school</div>
+            </div>
+        </div>
+
+        <!-- Composer -->
+        <div class="wall-composer" id="wall-composer">
+            <div class="composer-top">
+                <img src="<?= $myPhoto ?>" class="composer-avatar" alt="">
+                <textarea id="composer-text" placeholder="What's on your mind?"></textarea>
+            </div>
+            <div id="composer-media-preview" class="composer-media-preview"></div>
+            <div id="composer-video-urls"></div>
+            <div class="composer-toolbar">
+                <label class="btn btn-light-primary btn-sm" for="composer-image-input">
+                    <i class="ki-duotone ki-picture fs-4"><span class="path1"></span><span class="path2"></span></i>
+                    Photo
+                    <input type="file" id="composer-image-input" accept="image/*" multiple style="display:none;">
+                </label>
+                <button class="btn btn-light-success btn-sm" id="composer-video-btn">
+                    <i class="ki-duotone ki-youtube fs-4"><span class="path1"></span><span class="path2"></span></i>
+                    Video URL
+                </button>
+                <label class="btn btn-light-warning btn-sm" for="composer-file-input">
+                    <i class="ki-duotone ki-paper-clip fs-4"><span class="path1"></span><span class="path2"></span></i>
+                    File
+                    <input type="file" id="composer-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple style="display:none;">
+                </label>
+                <button class="btn btn-primary btn-sm ms-auto" id="composer-post-btn">Post</button>
+            </div>
+        </div>
+
+        <!-- Feed -->
+        <div id="wall-feed"></div>
+        <div class="feed-spinner" id="feed-spinner">
+            <span class="spinner-border spinner-border-sm text-primary"></span>
+            <div class="text-muted fs-8 mt-2">Loading...</div>
+        </div>
+        <div id="load-more-wrap" class="text-center mb-4" style="display:none;">
+            <button class="btn btn-light btn-sm" id="load-more-btn">Load more</button>
+        </div>
+
+    </div><!-- /wall-feed-col -->
+
+    <!-- ── Right: sidebar ── -->
+    <aside class="wall-sidebar">
+
+        <!-- Community card -->
+        <div class="wsb-card">
+            <?php if ($schoolLogo): ?>
+            <div style="background:linear-gradient(135deg,#0095e8 0%,#1b5fc1 100%);padding:1.25rem 1rem .75rem;text-align:center;">
+                <img src="<?= esc($schoolLogo) ?>" alt="School logo" style="height:56px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));">
+            </div>
+            <?php else: ?>
+            <div style="background:linear-gradient(135deg,#0095e8 0%,#1b5fc1 100%);padding:1.5rem 1rem .75rem;text-align:center;">
+                <div class="rounded-circle bg-white bg-opacity-25 d-inline-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+                    <i class="ki-duotone ki-abstract-26 fs-2 text-white"><span class="path1"></span><span class="path2"></span></i>
+                </div>
+            </div>
+            <?php endif; ?>
+            <div class="p-3 text-center border-bottom" style="border-color:#f1f3f5!important;">
+                <div class="fw-bold text-gray-800 fs-6 mb-1"><?= esc($schoolName) ?></div>
+                <?php if ($schoolMotto): ?>
+                <div class="text-muted fs-8 fst-italic">"<?= esc($schoolMotto) ?>"</div>
+                <?php endif; ?>
+            </div>
+            <div class="d-flex p-3" style="gap:.5rem;">
+                <div class="wsb-stat">
+                    <div class="num text-primary"><?= number_format($wallPostCount) ?></div>
+                    <div class="lbl">Wall Posts</div>
+                </div>
+                <div style="width:1px;background:#f1f3f5;flex-shrink:0;"></div>
+                <div class="wsb-stat">
+                    <div class="num text-success"><?= number_format($wallMemberCount) ?></div>
+                    <div class="lbl">Students</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick links card -->
+        <div class="wsb-card">
+            <div class="wsb-head">
+                <i class="ki-duotone ki-compass fs-5 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                Quick Navigation
+            </div>
+            <div class="p-2">
+                <a href="<?= base_url('dashboard') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-home-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                    Dashboard
+                </a>
+                <a href="<?= base_url('attendance') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-calendar-tick text-success"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span></i>
+                    Attendance
+                </a>
+                <a href="<?= base_url('timetable') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-time text-warning"><span class="path1"></span><span class="path2"></span></i>
+                    Timetable
+                </a>
+                <a href="<?= base_url('exam') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-award text-danger"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    Exams &amp; Grades
+                </a>
+                <a href="<?= base_url('announcement') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-notification text-info"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    Announcements
+                </a>
+                <a href="<?= base_url('chat') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-message-text-2 text-primary"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    Messages
+                </a>
+            </div>
+        </div>
+
+        <!-- Community guidelines card -->
+        <div class="wsb-card">
+            <div class="wsb-head">
+                <i class="ki-duotone ki-shield-tick fs-5 text-success"><span class="path1"></span><span class="path2"></span></i>
+                Community Guidelines
+            </div>
+            <div class="px-3 py-2">
+                <div class="wsb-rule">
+                    <span class="dot bg-success"></span>
+                    Be kind, respectful and supportive
+                </div>
+                <div class="wsb-rule">
+                    <span class="dot bg-primary"></span>
+                    Share academic work and achievements
+                </div>
+                <div class="wsb-rule">
+                    <span class="dot bg-warning"></span>
+                    No bullying, hate speech or harassment
+                </div>
+                <div class="wsb-rule">
+                    <span class="dot bg-info"></span>
+                    Keep personal information private
+                </div>
+                <div class="wsb-rule">
+                    <span class="dot bg-danger"></span>
+                    No inappropriate or offensive content
+                </div>
+                <div class="wsb-rule">
+                    <span class="dot bg-success"></span>
+                    Celebrate each other's successes
+                </div>
+            </div>
+        </div>
+
+        <!-- Active posters — populated by JS as feed loads -->
+        <div class="wsb-card" id="wsb-active-card" style="display:none;">
+            <div class="wsb-head">
+                <i class="ki-duotone ki-people fs-5 text-warning"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                Recent Posters
+            </div>
+            <div id="wsb-active-list" class="p-2"></div>
+        </div>
+
+    </aside><!-- /wall-sidebar -->
+
+</div><!-- /wall-outer -->
 
 <!-- Lightbox -->
 <div id="wall-lightbox">
@@ -374,6 +518,7 @@ async function loadFeed(reset=false) {
             feedOffset += data.posts.length;
             feedHasMore = data.has_more;
             document.getElementById('load-more-wrap').style.display = feedHasMore ? 'block' : 'none';
+            updateActivePosters(data.posts);
         }
     } catch(e) { console.error(e); }
 
@@ -680,6 +825,32 @@ function embedUrl(url) {
     m = url.match(/vimeo\.com\/(\d+)/);
     if (m) return `https://player.vimeo.com/video/${m[1]}`;
     return url;
+}
+
+// ── Recent Posters sidebar widget ────────────────────────────────────────────
+const _seenPosters = new Map(); // userId → {name, photo}
+function updateActivePosters(posts) {
+    posts.forEach(p => {
+        if (!_seenPosters.has(p.user_id_fk)) {
+            _seenPosters.set(p.user_id_fk, {name: p.author_name, photo: p.author_photo});
+        }
+    });
+    const card = document.getElementById('wsb-active-card');
+    const list = document.getElementById('wsb-active-list');
+    if (!card || !list) return;
+    const entries = [..._seenPosters.entries()].slice(0, 6);
+    if (!entries.length) return;
+    card.style.display = '';
+    list.innerHTML = entries.map(([uid, u]) => {
+        const init = ((u.name||'').split(' ').map(w=>w[0]||'').join('').slice(0,2)).toUpperCase();
+        const av = u.photo && !u.photo.endsWith('blank.png')
+            ? `<img src="${u.photo}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`
+            : `<div style="width:34px;height:34px;border-radius:50%;background:#e8f3ff;color:#0095e8;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${esc(init)}</div>`;
+        return `<div class="d-flex align-items-center gap-2 px-1 py-1 rounded" style="font-size:.84rem;">
+            ${av}
+            <span class="text-gray-700 fw-semibold text-truncate" style="max-width:180px;">${esc(u.name)}</span>
+        </div>`;
+    }).join('');
 }
 
 // Kick off

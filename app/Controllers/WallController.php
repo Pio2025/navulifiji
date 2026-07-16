@@ -84,12 +84,23 @@ class WallController extends BaseController
         $schId = $this->resolveSchoolId();
         if (!$schId) return redirect()->to('school/dashboard')->with('error', 'No school linked to your account.');
 
+        $db = \Config\Database::connect();
+
+        $schoolRow  = $db->table('school')->select('sch_name, sch_motto, sch_logo')->where('sch_id', $schId)->get()->getRowArray();
+        $postCount  = (int) $db->table('wall_post')->where('sch_id_fk', $schId)->where('post_status', 'Active')->countAllResults();
+        $memberCount = (int) $db->table('admission')->where('sch_id_fk', $schId)->where('admission_status', 'Active')->countAllResults();
+
         $this->setPageData('School Wall', 'Wall', 'School Wall');
         $data = $this->loadCommonData('app/wall/index', [
-            'schId'  => $schId,
-            'myId'   => (int) $this->session->get('userID'),
-            'myName' => trim($this->session->get('fname') . ' ' . $this->session->get('name')),
-            'myPhoto'=> $this->photoUrl($this->session->get('photo')),
+            'schId'       => $schId,
+            'myId'        => (int) $this->session->get('userID'),
+            'myName'      => trim($this->session->get('fname') . ' ' . $this->session->get('name')),
+            'myPhoto'     => $this->photoUrl($this->session->get('photo')),
+            'schoolName'  => $schoolRow['sch_name']  ?? 'School Community',
+            'schoolMotto' => $schoolRow['sch_motto']  ?? '',
+            'schoolLogo'  => $schoolRow['sch_logo']   ? base_url('uploads/schoolLogo/' . $schoolRow['sch_logo']) : '',
+            'wallPostCount'  => $postCount,
+            'wallMemberCount'=> $memberCount,
         ]);
 
         return view('app/layouts/main', $data);
