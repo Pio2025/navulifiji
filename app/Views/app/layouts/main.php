@@ -941,6 +941,18 @@
 		<!--end::Activities drawer-->
 
 		<script>
+		// Ensure activities drawer is always closed on every page load
+		(function () {
+			var el = document.getElementById('kt_activities');
+			if (el) {
+				el.classList.remove('drawer-on');
+				document.body.removeAttribute('data-kt-drawer-activities');
+				document.body.removeAttribute('data-kt-drawer');
+			}
+		})();
+		</script>
+
+		<script>
 		(function () {
 			'use strict';
 
@@ -1659,7 +1671,14 @@
 		<style>
 		/* ── Drawers above the dock ── */
 		#kt_drawer_chat  { z-index: 9300 !important; }
-		#kt_activities   { z-index: 9600 !important; }
+		/* Keep activities drawer off-screen until explicitly opened via the message icon */
+		#kt_activities:not(.drawer-on) {
+			position: fixed !important;
+			top: 0 !important; right: 0 !important; bottom: 0 !important;
+			transform: translateX(100%) !important;
+			z-index: 9600 !important;
+		}
+		#kt_activities.drawer-on { z-index: 9600 !important; }
 		/* ── Bottom dock wrapper ── */
 		#chat_bottom_dock {
 			position: fixed; bottom: 33px; right: 70px;
