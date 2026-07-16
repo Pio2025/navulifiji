@@ -365,6 +365,31 @@ class WallController extends BaseController
         return $this->json(array_merge($result, $summary));
     }
 
+    // ─── REACTION DETAIL (AJAX – who reacted) ───────────────────────────────
+
+    public function reactionDetail(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->isLoggedIn()) return $this->json(['error' => 'Unauthorized'], 401);
+
+        $targetType = $this->request->getGet('target_type');
+        $targetId   = (int) $this->request->getGet('target_id');
+
+        if (!in_array($targetType, ['post', 'comment'])) {
+            return $this->json(['error' => 'Invalid target type'], 422);
+        }
+
+        $rows    = $this->wallModel->getReactionDetail($targetType, $targetId);
+        $grouped = [];
+        foreach ($rows as $r) {
+            $grouped[$r['emoji']][] = [
+                'name'  => trim($r['fname'] . ' ' . $r['lname']),
+                'photo' => $this->photoUrl($r['photo']),
+            ];
+        }
+
+        return $this->json(['success' => true, 'reactions' => $grouped]);
+    }
+
     // ─── GET POST DATA (AJAX – for edit modal) ──────────────────────────────
 
     public function getPostData(int $postId): \CodeIgniter\HTTP\ResponseInterface

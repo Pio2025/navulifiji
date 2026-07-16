@@ -15,6 +15,7 @@ $WALL_DELETE_POST_BASE  = base_url('wall/post/');       // + postId + '/delete'
 $WALL_COMMENT_BASE      = base_url('wall/post/');       // + postId + '/comments' or /comment
 $WALL_DELETE_CMT_BASE   = base_url('wall/comment/');    // + commentId + '/delete'
 $WALL_REACT_URL         = base_url('wall/react');
+$WALL_REACTIONS_URL     = base_url('wall/reactions');
 $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or '/update'
 ?>
 <style>
@@ -141,6 +142,19 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
 #wall-lightbox .lb-counter { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.9); font-size: .82rem; background: rgba(0,0,0,.45); padding: .2rem .85rem; border-radius: 12px; pointer-events: none; white-space: nowrap; }
 /* +N more overlay on 4th photo */
 .more-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.52); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.65rem; font-weight: 700; border-radius: 8px; letter-spacing: -.5px; pointer-events: none; }
+/* Reactions detail modal */
+.rxn-tabs { display: flex; gap: .3rem; flex-wrap: wrap; border-bottom: 1px solid #e9edf0; padding: .25rem .25rem .5rem; margin-bottom: .75rem; }
+.rxn-tab { background: none; border: none; border-radius: 20px; padding: .3rem .85rem; font-size: .86rem; cursor: pointer; color: #5e6278; font-weight: 500; transition: background .13s, color .13s; white-space: nowrap; }
+.rxn-tab.active { background: #e8f3ff; color: #0095e8; font-weight: 700; }
+.rxn-tab:hover:not(.active) { background: #f5f8fa; }
+.rxn-user-list { display: flex; flex-direction: column; gap: .55rem; max-height: 380px; overflow-y: auto; }
+.rxn-user-row { display: flex; align-items: center; gap: .75rem; padding: .35rem .25rem; border-radius: 8px; }
+.rxn-user-row:hover { background: #f8f9fa; }
+.rxn-user-name { font-size: .9rem; font-weight: 600; color: #181c32; flex: 1; }
+.rxn-emoji-badge { font-size: 1.35rem; line-height: 1; flex-shrink: 0; }
+/* Reaction pill count — clickable to open who-reacted */
+.rxn-count { text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; padding: 0 .1rem; }
+.rxn-count:hover { color: #0095e8; }
 /* Post edit button */
 .post-edit-btn { background: none; border: none; color: #a1a5b7; cursor: pointer; padding: .3rem; border-radius: 6px; font-size: .9rem; }
 .post-edit-btn:hover { color: #0095e8; background: #f0f8ff; }
@@ -351,6 +365,24 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
     <div class="lb-counter" id="lb-counter" style="display:none;"></div>
 </div>
 
+<!-- Reactions detail modal -->
+<div class="modal fade" id="wall-rxn-modal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
+        <div class="modal-content">
+            <div class="modal-header py-3">
+                <h6 class="modal-title fw-bold">Reactions</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body pt-2 pb-3 px-3">
+                <div id="rxn-modal-tabs" class="rxn-tabs"></div>
+                <div id="rxn-modal-list" class="rxn-user-list"></div>
+                <div id="rxn-modal-empty" class="text-center text-muted fs-8 py-3" style="display:none;">No reactions yet.</div>
+                <div id="rxn-modal-spinner" class="text-center py-4"><span class="spinner-border spinner-border-sm text-primary"></span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Edit post modal -->
 <div class="modal fade" id="wall-edit-modal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -424,7 +456,8 @@ const POST_URL      = <?= json_encode($WALL_POST_URL) ?>;
 const DEL_POST_BASE = <?= json_encode($WALL_DELETE_POST_BASE) ?>;
 const CMT_BASE      = <?= json_encode($WALL_COMMENT_BASE) ?>;
 const DEL_CMT_BASE  = <?= json_encode($WALL_DELETE_CMT_BASE) ?>;
-const REACT_URL     = <?= json_encode($WALL_REACT_URL) ?>;
+const REACT_URL      = <?= json_encode($WALL_REACT_URL) ?>;
+const REACTIONS_URL  = <?= json_encode($WALL_REACTIONS_URL) ?>;
 const EDIT_POST_BASE = <?= json_encode($WALL_EDIT_POST_BASE) ?>;
 const EMOJIS        = ['👍','❤️','😂','😮','😢','😡'];
 const CI_TOKEN      = '<?= csrf_hash() ?>';
@@ -599,7 +632,7 @@ function renderReactions(reactions, targetType, targetId) {
     let pills = '';
     for (const [emoji, cnt] of Object.entries(summary || {})) {
         const isMine = emoji === my_emoji ? 'my-reaction' : '';
-        pills += `<button class="reaction-pill ${isMine}" data-target-type="${targetType}" data-target-id="${targetId}" data-emoji="${emoji}">${emoji} <span>${cnt}</span></button>`;
+        pills += `<button class="reaction-pill ${isMine}" data-target-type="${targetType}" data-target-id="${targetId}" data-emoji="${emoji}">${emoji} <span class="rxn-count" data-target-type="${targetType}" data-target-id="${targetId}" data-open-emoji="${emoji}">${cnt}</span></button>`;
     }
     const addBtn = `<div class="position-relative d-inline-block">
         <button class="reaction-pill add-reaction-btn" data-target-type="${targetType}" data-target-id="${targetId}" title="React" style="gap:.2rem;">
@@ -823,7 +856,7 @@ document.getElementById('composer-post-btn').addEventListener('click', async () 
 
 // ─── Feed interactions ─────────────────────────────────────────────────────────
 document.getElementById('wall-feed').addEventListener('click', async function(e) {
-    const target = e.target.closest('.post-del-btn, .post-edit-btn, .toggle-comments-btn, .media-item, .file-row, .file-expand-btn, .reaction-pill, .add-reaction-btn, .ep-btn, .submit-comment-btn, .reply-btn, .del-comment-btn');
+    const target = e.target.closest('.post-del-btn, .post-edit-btn, .toggle-comments-btn, .media-item, .file-row, .file-expand-btn, .rxn-count, .reaction-pill, .add-reaction-btn, .ep-btn, .submit-comment-btn, .reply-btn, .del-comment-btn');
     if (!target) return;
 
     // Delete post
@@ -890,6 +923,13 @@ document.getElementById('wall-feed').addEventListener('click', async function(e)
         } else {
             window.open(src, '_blank');
         }
+        return;
+    }
+
+    // Reaction count click → show who reacted
+    if (target.classList.contains('rxn-count')) {
+        e.stopPropagation();
+        openRxnModal(target.dataset.targetType, parseInt(target.dataset.targetId), target.dataset.openEmoji);
         return;
     }
 
@@ -1082,6 +1122,85 @@ function updateActivePosters(posts) {
         return `<div class="d-flex align-items-center gap-2 px-1 py-1 rounded" style="font-size:.84rem;">
             ${av}
             <span class="text-gray-700 fw-semibold text-truncate" style="max-width:180px;">${esc(u.name)}</span>
+        </div>`;
+    }).join('');
+}
+
+// ─── Reactions detail modal ───────────────────────────────────────────────────
+const rxnModal = new bootstrap.Modal(document.getElementById('wall-rxn-modal'));
+let rxnAllData = {}; // emoji → [{name, photo}]
+
+async function openRxnModal(targetType, targetId, openEmoji) {
+    rxnAllData = {};
+    document.getElementById('rxn-modal-tabs').innerHTML   = '';
+    document.getElementById('rxn-modal-list').innerHTML   = '';
+    document.getElementById('rxn-modal-empty').style.display  = 'none';
+    document.getElementById('rxn-modal-spinner').style.display = '';
+    rxnModal.show();
+
+    try {
+        const r    = await fetch(`${REACTIONS_URL}?target_type=${encodeURIComponent(targetType)}&target_id=${targetId}`);
+        const data = await r.json();
+        rxnAllData = data.reactions || {};
+    } catch(e) {
+        rxnAllData = {};
+    }
+
+    document.getElementById('rxn-modal-spinner').style.display = 'none';
+
+    const emojis = Object.keys(rxnAllData);
+    if (!emojis.length) {
+        document.getElementById('rxn-modal-empty').style.display = '';
+        return;
+    }
+
+    renderRxnTabs(emojis, openEmoji && rxnAllData[openEmoji] ? openEmoji : 'all');
+}
+
+function renderRxnTabs(emojis, activeKey) {
+    const tabsEl = document.getElementById('rxn-modal-tabs');
+    const total  = emojis.reduce((s, e) => s + (rxnAllData[e]?.length || 0), 0);
+
+    const allTab = `<button class="rxn-tab${activeKey === 'all' ? ' active' : ''}" data-key="all">All <span style="font-size:.78rem;opacity:.7;">${total}</span></button>`;
+    const emojiTabs = emojis.map(emoji => {
+        const cnt = rxnAllData[emoji]?.length || 0;
+        return `<button class="rxn-tab${activeKey === emoji ? ' active' : ''}" data-key="${esc(emoji)}">${emoji} <span style="font-size:.78rem;opacity:.7;">${cnt}</span></button>`;
+    }).join('');
+
+    tabsEl.innerHTML = allTab + emojiTabs;
+    tabsEl.querySelectorAll('.rxn-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabsEl.querySelectorAll('.rxn-tab').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderRxnList(btn.dataset.key);
+        });
+    });
+
+    renderRxnList(activeKey);
+}
+
+function renderRxnList(key) {
+    const listEl = document.getElementById('rxn-modal-list');
+    let rows = [];
+    if (key === 'all') {
+        Object.entries(rxnAllData).forEach(([emoji, users]) => {
+            users.forEach(u => rows.push({...u, emoji}));
+        });
+    } else {
+        (rxnAllData[key] || []).forEach(u => rows.push({...u, emoji: key}));
+    }
+
+    if (!rows.length) { listEl.innerHTML = '<div class="text-center text-muted fs-8 py-2">No reactions.</div>'; return; }
+
+    listEl.innerHTML = rows.map(u => {
+        const initials = (u.name || '').split(' ').map(w => w[0] || '').join('').slice(0, 2).toUpperCase();
+        const av = u.photo && !u.photo.endsWith('blank.png')
+            ? `<img src="${esc(u.photo)}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;" alt="">`
+            : `<div style="width:38px;height:38px;border-radius:50%;background:#e8f3ff;color:#0095e8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${esc(initials)}</div>`;
+        return `<div class="rxn-user-row">
+            ${av}
+            <span class="rxn-user-name">${esc(u.name)}</span>
+            <span class="rxn-emoji-badge">${u.emoji}</span>
         </div>`;
     }).join('');
 }

@@ -635,6 +635,7 @@ $routes->get( 'wall/post/(:num)/comments',         'WallController::getComments/
 $routes->post('wall/post/(:num)/comment',          'WallController::addComment/$1');
 $routes->post('wall/comment/(:num)/delete',        'WallController::deleteComment/$1');
 $routes->post('wall/react',                        'WallController::react');
+$routes->get( 'wall/reactions',                    'WallController::reactionDetail');
 $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1');
 
 // ============================================================================

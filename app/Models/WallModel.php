@@ -286,6 +286,23 @@ class WallModel extends Model
     }
 
     /**
+     * Returns every reaction on a target with the reacting user's name and photo.
+     * Grouped result: [emoji => [{name, photo}, ...], ...]
+     */
+    public function getReactionDetail(string $targetType, int $targetId): array
+    {
+        $db   = \Config\Database::connect();
+        $rows = $db->query("
+            SELECT wr.emoji, u.fname, u.lname, u.profile_photo AS photo
+            FROM wall_reaction wr
+            INNER JOIN users u ON u.user_id = wr.user_id_fk
+            WHERE wr.target_type = ? AND wr.target_id = ?
+            ORDER BY wr.emoji, wr.created_at DESC
+        ", [$targetType, $targetId])->getResultArray();
+        return $rows;
+    }
+
+    /**
      * Get reactions for multiple targets in one query.
      * Returns [target_id => ['summary' => [...], 'my_emoji' => ...], ...]
      */
