@@ -3132,14 +3132,19 @@ class UserController extends BaseController
             return redirect()->to('auth/login');
         }
 
-        $myId = (int) $this->session->get('userID');
+        $myId        = (int) $this->session->get('userID');
+        $defaultType = in_array($this->request->getGet('type'), ['Activity', 'Alert'])
+            ? $this->request->getGet('type')
+            : '';
 
         $data = [
             'pageTitle'    => 'My Notifications',
             'myId'         => $myId,
+            'defaultType'  => $defaultType,
+            '_view'        => 'app/user/notifications',
         ];
 
-        return view('app/user/notifications', $data);
+        return view('app/layouts/main', $data);
     }
 
     /**

@@ -35,9 +35,9 @@
                     </div>
                     <!-- Type filter -->
                     <select id="log-type-filter" class="form-select form-select-sm form-select-solid" style="width:130px;">
-                        <option value="">All Types</option>
-                        <option value="Activity">Activity</option>
-                        <option value="Alert">Alert</option>
+                        <option value="" <?= ($defaultType ?? '') === '' ? 'selected' : '' ?>>All Types</option>
+                        <option value="Activity" <?= ($defaultType ?? '') === 'Activity' ? 'selected' : '' ?>>Activity</option>
+                        <option value="Alert" <?= ($defaultType ?? '') === 'Alert' ? 'selected' : '' ?>>Alert</option>
                     </select>
                     <!-- Date from -->
                     <input type="date" id="log-date-from" class="form-control form-control-sm form-control-solid" style="width:145px;" title="From">
