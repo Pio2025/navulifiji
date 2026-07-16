@@ -60,9 +60,16 @@ $WALL_REACT_URL         = base_url('wall/react');
 .media-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .media-item .video-thumb { width: 100%; height: 200px; background: #1a1a2e; display: flex; align-items: center; justify-content: center; }
 .media-item .video-thumb i { font-size: 3rem; color: rgba(255,255,255,.7); }
-.media-item .file-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .5rem; padding: 1.5rem; background: #f8f9fa; height: 100px; }
-.media-item .file-card i { font-size: 2rem; color: #7239ea; }
-.media-item .file-card span { font-size: .8rem; color: #6d6e7c; text-align: center; word-break: break-all; max-width: 160px; }
+/* File card */
+.media-item.file-item { background: transparent; max-height: none; border-radius: 10px; }
+.file-card { display: flex; align-items: center; gap: .85rem; background: #fff; border: 1.5px solid #e9edf0; border-radius: 10px; padding: .85rem 1rem; min-height: 68px; transition: border-color .18s, box-shadow .18s; }
+.file-card:hover { border-color: #93c5fd; box-shadow: 0 3px 12px rgba(0,0,0,.08); }
+.file-type-badge { width: 46px; height: 46px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: .62rem; font-weight: 800; letter-spacing: .4px; color: #fff; flex-shrink: 0; text-transform: uppercase; line-height: 1; text-align: center; }
+.file-info { flex: 1; min-width: 0; }
+.file-info .fc-name { font-size: .87rem; font-weight: 600; color: #181c32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+.file-info .fc-label { font-size: .75rem; color: #a1a5b7; margin-top: .15rem; }
+.file-dl { color: #c0c5d5; font-size: 1.2rem; flex-shrink: 0; transition: color .18s; display: flex; align-items: center; }
+.file-card:hover .file-dl { color: #0095e8; }
 /* Reactions bar */
 .post-reactions-bar, .comment-reactions-bar { display: flex; flex-wrap: wrap; gap: .3rem; padding: .25rem 0; }
 .reaction-pill { display: inline-flex; align-items: center; gap: .25rem; background: #f1f3f5; border: 1.5px solid transparent; border-radius: 20px; padding: .15rem .6rem; font-size: .82rem; cursor: pointer; transition: border-color .15s, background .15s; user-select: none; }
@@ -450,10 +457,18 @@ function renderMedia(media, postId) {
                 <div class="video-thumb"><i class="ki-duotone ki-youtube text-danger fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
             </div>`;
         }
-        return `<div class="media-item" data-type="file" data-src="${m.file_src}">
+        const ft = fileTypeInfo(m.file_name || m.file_src);
+        const displayName = esc(m.file_name || 'File');
+        return `<div class="media-item file-item" data-type="file" data-src="${m.file_src}">
             <div class="file-card">
-                <i class="ki-duotone ki-file-down fs-3x text-primary"><span class="path1"></span><span class="path2"></span></i>
-                <span>${esc(m.file_name||'')}</span>
+                <div class="file-type-badge" style="background:${ft.color};">${ft.badge}</div>
+                <div class="file-info">
+                    <div class="fc-name" title="${displayName}">${displayName}</div>
+                    <div class="fc-label">${ft.label}</div>
+                </div>
+                <div class="file-dl">
+                    <i class="ki-duotone ki-arrow-down fs-3"><span class="path1"></span><span class="path2"></span></i>
+                </div>
             </div>
         </div>`;
     }).join('');
@@ -466,6 +481,26 @@ function embedUrl(url) {
     let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     if (m) return `https://www.youtube.com/embed/${m[1]}`;
     return url;
+}
+
+function fileTypeInfo(filename) {
+    const ext = (filename || '').split('.').pop().toLowerCase();
+    const map = {
+        pdf:  { badge: 'PDF',  label: 'PDF Document',   color: '#e53e3e' },
+        doc:  { badge: 'DOC',  label: 'Word Document',   color: '#2b6cb0' },
+        docx: { badge: 'DOCX', label: 'Word Document',   color: '#2b6cb0' },
+        xls:  { badge: 'XLS',  label: 'Spreadsheet',     color: '#276749' },
+        xlsx: { badge: 'XLSX', label: 'Spreadsheet',     color: '#276749' },
+        ppt:  { badge: 'PPT',  label: 'Presentation',    color: '#c05621' },
+        pptx: { badge: 'PPTX', label: 'Presentation',    color: '#c05621' },
+        txt:  { badge: 'TXT',  label: 'Text File',       color: '#4a5568' },
+        csv:  { badge: 'CSV',  label: 'CSV File',        color: '#276749' },
+        zip:  { badge: 'ZIP',  label: 'Archive',         color: '#6b46c1' },
+        rar:  { badge: 'RAR',  label: 'Archive',         color: '#6b46c1' },
+        mp3:  { badge: 'MP3',  label: 'Audio File',      color: '#d53f8c' },
+        mp4:  { badge: 'MP4',  label: 'Video File',      color: '#e53e3e' },
+    };
+    return map[ext] || { badge: (ext || 'FILE').slice(0,4).toUpperCase(), label: 'File', color: '#6b46c1' };
 }
 
 function renderReactions(reactions, targetType, targetId) {
