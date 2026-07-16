@@ -194,7 +194,7 @@
                 <?php if (empty($classmates)): ?>
                     <div class="text-center py-4 text-muted fs-8">No classmates found.</div>
                 <?php else: ?>
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1" style="max-height:490px;overflow-y:auto;overflow-x:hidden;padding-right:2px;">
                     <?php foreach ($classmates as $cm):
                         $initials = strtoupper(substr($cm['fname'], 0, 1) . substr($cm['lname'], 0, 1));
                     ?>
