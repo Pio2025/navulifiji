@@ -43,17 +43,13 @@
 
     <?= $this->include('templates/flash_messages') ?>
 
-    <?php
-    // Pass a single-classroom array into the student partial.
-    // $userId is set to the child's user_id so attendance/exam links resolve correctly.
-    $userId    = $childUserId;
-    $classrooms = [$cls];
-    ?>
     <?= view('app/classroom/student/_year_classrooms', [
-        'classrooms'      => $classrooms,
+        'classrooms'      => [$cls],
         'sessionFname'    => $sessionFname    ?? '',
         'sessionPhotoUrl' => $sessionPhotoUrl ?? null,
-        'sessionUserId'   => $sessionUserId   ?? 0,
+        'sessionUserId'   => $childUserId,   // exam report links use child's userId
+        'parentChildId'   => $childUserId,   // attendance links append &student_id=
+        'allowPost'       => false,          // parents cannot post in discussions
     ]) ?>
 
 </div>

@@ -1,10 +1,13 @@
 <?php
-$subjectColors = ['primary','success','info','warning','danger','dark'];
-$userId        = $sessionUserId ?? 0;
-$ci            = 0;
-$schCatData    = session('sch_cat_data') ?? [];
-$termLabel     = $schCatData['label'] ?? 'Term';
-$catTerms      = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 => [], 3 => []];
+$subjectColors   = ['primary','success','info','warning','danger','dark'];
+$userId          = $sessionUserId ?? 0;
+$ci              = 0;
+$schCatData      = session('sch_cat_data') ?? [];
+$termLabel       = $schCatData['label'] ?? 'Term';
+$catTerms        = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [], 2 => [], 3 => []];
+$parentChildId   = $parentChildId ?? 0;           // non-zero when a parent is viewing their child's classroom
+$allowPost       = isset($allowPost) ? (bool)$allowPost : true; // false for parent views
+$attendanceSuffix = $parentChildId > 0 ? '&student_id=' . $parentChildId : '';
 ?>
 
 <?php if (empty($classrooms)): ?>
@@ -377,14 +380,14 @@ $catTerms      = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [],
                                     <div class="fw-bold text-gray-800 fs-6"><?= esc($termLabel) ?> <?= (int)$termNo ?></div>
                                 </div>
                                 <div class="d-flex flex-column gap-2">
-                                    <a href="<?= base_url('attendance/my/daily?stream_id=' . $cls['stream_id'] . '&term=' . (int)$termNo) ?>"
+                                    <a href="<?= base_url('attendance/my/daily?stream_id=' . $cls['stream_id'] . '&term=' . (int)$termNo . $attendanceSuffix) ?>"
                                        class="btn btn-sm btn-light-success">
                                         <i class="ki-duotone ki-calendar-8 fs-5 me-1">
                                             <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                                         </i>
                                         Student Daily Attendance
                                     </a>
-                                    <a href="<?= base_url('attendance/my/subject?stream_id=' . $cls['stream_id'] . '&term=' . (int)$termNo) ?>"
+                                    <a href="<?= base_url('attendance/my/subject?stream_id=' . $cls['stream_id'] . '&term=' . (int)$termNo . $attendanceSuffix) ?>"
                                        class="btn btn-sm btn-light-info">
                                         <i class="ki-duotone ki-book-open fs-5 me-1">
                                             <span class="path1"></span><span class="path2"></span><span class="path3"></span>
@@ -448,7 +451,7 @@ $catTerms      = !empty($schCatData['terms']) ? $schCatData['terms'] : [1 => [],
                     'sessionPhotoUrl' => $sessionPhotoUrl ?? null,
                     'sessionUserId'   => $sessionUserId   ?? 0,
                     'sdPostUrl'       => base_url('classroom/' . $cls['class_id'] . '/discussion/post'),
-                    'canPost'         => $isActive,
+                    'canPost'         => $isActive && $allowPost,
                     'sdPfx'           => 'cd_c' . $cls['class_id'],
                     'sdShowShared'    => false,
                 ]) ?>

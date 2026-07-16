@@ -102,6 +102,19 @@ class SubjectAttendanceController extends BaseController
         $userId   = (int) $this->session->get('userID');
         $streamId = (int) $this->request->getGet('stream_id');
 
+        // Allow a parent to view a child's attendance via ?student_id=
+        $studentIdParam = (int) $this->request->getGet('student_id');
+        if ($studentIdParam > 0 && $studentIdParam !== $userId) {
+            $db       = \Config\Database::connect();
+            $isParent = $db->table('parent_student')
+                ->where('parent_user_id_fk', $userId)
+                ->where('student_user_id_fk', $studentIdParam)
+                ->countAllResults() > 0;
+            if ($isParent) {
+                $userId = $studentIdParam;
+            }
+        }
+
         $records    = $streamId ? $this->studentAttendanceModel->getStudentSubjectAttendance($userId, $streamId) : [];
         $streamInfo = $streamId ? $this->studentAttendanceModel->getStreamById($streamId) : null;
 
