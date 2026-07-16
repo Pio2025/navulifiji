@@ -2001,7 +2001,7 @@
 		#ucl_popup {
 			position: fixed;
 			bottom: 116px; /* 50px dock + 52px button + 14px gap */
-			right: 16px;
+			right: 70px;
 			width: 290px;
 			max-height: 380px;
 			background: #fff;
@@ -2151,7 +2151,7 @@
 		#kt_activities   { z-index: 9600 !important; }
 		/* ── Bottom dock wrapper ── */
 		#chat_bottom_dock {
-			position: fixed; bottom: 50px; right: 16px;
+			position: fixed; bottom: 50px; right: 70px;
 			display: flex; flex-direction: row; align-items: flex-end; gap: 8px;
 			z-index: 9100;
 		}

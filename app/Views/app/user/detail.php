@@ -567,7 +567,7 @@
         </div>
         <!--begin::Toolbar-->
         <div class="card-toolbar">
-            <?php if ($canEditUser): ?>
+            <?php if ($canEditUser && !($isOwnProfile ?? false)): ?>
             <a href="<?= base_url('admission/add/' . $user['user_id']) ?>"
                class="btn btn-sm btn-light-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1">
@@ -596,7 +596,7 @@
             <p class="text-muted fs-7 mb-6">
                 This user has not been admitted to any school yet.
             </p>
-            <?php if ($canEditUser): ?>
+            <?php if ($canEditUser && !($isOwnProfile ?? false)): ?>
             <a href="<?= base_url('admission/add/' . $user['user_id']) ?>"
                class="btn btn-primary btn-sm">
                 <i class="ki-duotone ki-plus fs-4 me-1">
@@ -623,7 +623,7 @@
                             <th class="min-w-120px">Stream / Level</th>
                             <th class="min-w-90px">Enrolment</th>
                         <?php endif; ?>
-                        <?php if ($canEditUser): ?>
+                        <?php if ($canEditUser && !($isOwnProfile ?? false)): ?>
                             <th class="min-w-80px text-end pe-3">Actions</th>
                         <?php endif; ?>
                     </tr>
@@ -729,7 +729,7 @@
                         <!--end::Enrolment Status-->
                         <?php endif; // isStudent ?>
 
-                        <?php if ($canEditUser): ?>
+                        <?php if ($canEditUser && !($isOwnProfile ?? false)): ?>
                         <!--begin::Actions-->
                         <td class="text-end pe-3">
                             <div class="d-flex justify-content-end gap-2">
@@ -1049,6 +1049,7 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            <?php if (!($isOwnProfile ?? false)): ?>
                                             <tr>
                                                 <td class="fw-bold text-gray-800">Role</td>
                                                 <td>
@@ -1068,6 +1069,7 @@
                                                     </button>
                                                 </td>
                                             </tr>
+                                            <?php endif; ?>
                                         </tbody>
                                     </table>
                                 </div>
