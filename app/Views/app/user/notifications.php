@@ -31,7 +31,7 @@
                         <span class="input-group-text bg-body border-end-0">
                             <i class="ki-duotone ki-magnifier fs-4 text-muted"><span class="path1"></span><span class="path2"></span></i>
                         </span>
-                        <input type="text" id="log-search" class="form-control form-control-sm form-control-solid border-start-0 ps-1" placeholder="Search logs…">
+                        <input type="text" id="log-search" class="form-control form-control-sm  border-start-0 ps-1" placeholder="Search logs…">
                     </div>
                     <!-- Type filter -->
                     <select id="log-type-filter" class="form-select form-select-sm form-select-solid" style="width:130px;">
@@ -40,9 +40,9 @@
                         <option value="Alert" <?= ($defaultType ?? '') === 'Alert' ? 'selected' : '' ?>>Alert</option>
                     </select>
                     <!-- Date from -->
-                    <input type="date" id="log-date-from" class="form-control form-control-sm form-control-solid" style="width:145px;" title="From">
+                    <input type="date" id="log-date-from" class="form-control form-control-sm " style="width:145px;" title="From">
                     <!-- Date to -->
-                    <input type="date" id="log-date-to"   class="form-control form-control-sm form-control-solid" style="width:145px;" title="To">
+                    <input type="date" id="log-date-to"   class="form-control form-control-sm " style="width:145px;" title="To">
                     <button class="btn btn-sm btn-light-primary" id="log-filter-btn">
                         <i class="ki-duotone ki-filter fs-5 me-1"><span class="path1"></span><span class="path2"></span></i>Filter
                     </button>
