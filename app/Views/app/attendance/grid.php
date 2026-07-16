@@ -223,15 +223,18 @@ $printTitle = esc($termLabel) . ' ' . (int)$termNo . ' Daily Attendance — ' . 
                                                . ($dk === 'M' ? ' week-sep' : '')
                                                . ($isToday   ? ' day-today' : '');
                                 ?>
-                                <td class="att-td-cell <?= $tdClass ?>">
+                                <?php $isClickable = !$isHoliday && !$isFuture; ?>
+                                <td class="att-td-cell <?= $tdClass ?><?= $isClickable ? ' att-td-toggle' : '' ?>"
+                                    <?php if ($isClickable): ?>
+                                    onclick="var b=this.querySelector('.att-cell');if(b)attToggle(b);"
+                                    <?php endif; ?>>
                                     <?php if ($isHoliday): ?>
                                     <span class="att-holiday" title="<?= esc($holidays[$date]) ?>">H</span>
                                     <?php elseif ($isFuture): ?>
                                     <span class="att-future">—</span>
                                     <?php else: ?>
                                     <button type="button"
-                                            class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>"
-                                            onclick="attToggle(this)">
+                                            class="att-cell <?= $isPresent ? 'is-present' : ($status === 'Absent' ? 'is-absent' : 'is-empty') ?>">
                                         <span class="att-sym"><?= $isPresent ? '✓' : ($status === 'Absent' ? '✗' : '—') ?></span>
                                         <input type="hidden"
                                                name="att[<?= $admId ?>][<?= esc($date) ?>]"
@@ -539,6 +542,7 @@ thead .att-th-num, thead .att-th-name { z-index: 5; background: #f8f9fa; }
     padding: 3px 2px;
     border-bottom: 1px solid #f1f3f5;
 }
+.att-td-toggle { cursor: pointer !important; }
 .day-today { outline: 2px solid #ffc107; outline-offset: -2px; }
 .att-row-alt td { background-color: rgba(0,0,0,.015); }
 .att-row-alt .att-td-num, .att-row-alt .att-td-name { background: #fbfcfc; }
