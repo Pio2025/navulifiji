@@ -57,7 +57,7 @@ class PermissionModel extends Model
         ],
     ];
     
-    protected $skipValidation = false;
+    protected $skipValidation = true;
     
     // Datatables properties
     protected $columnOrder = ['perm_id', 'module_id_fk', 'perm_name', 'perm_desc', 'perm_controller', 'perm_code', 'show_in_nav', 'perm_status', null];

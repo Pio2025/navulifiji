@@ -519,7 +519,7 @@ class PermissionController extends BaseController
             // Check affected rows instead of just boolean result
             $affectedRows = $this->permissionModel->db->affectedRows();
             
-            if ($updated !== false || $affectedRows >= 0) {
+            if ($updated !== false) {
                 // Log activity
                 $userLogData = [
                     'user_id_fk' => $this->session->get('userID'),
