@@ -664,6 +664,15 @@ abstract class BaseController extends Controller
      */
     protected function sendEmail(array $data): bool
     {
+        // Honour per-user notification preference when caller provides both keys
+        if (!empty($data['recipient_user_id']) && !empty($data['notif_key'])) {
+            $recipientId = (int) $data['recipient_user_id'];
+            if (!$this->userNotificationModel->isEnabled($recipientId, $data['notif_key'])) {
+                log_message('info', '[sendEmail] Skipped — user ' . $recipientId . ' has ' . $data['notif_key'] . ' notifications disabled.');
+                return true; // treat as "sent" so callers don't report failure
+            }
+        }
+
         try {
             $emailService = \Config\Services::email();
     

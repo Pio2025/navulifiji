@@ -481,15 +481,17 @@ class ConductController extends BaseController
 
             if ($sentVia === 'Email' && !empty($parentEmail)) {
                 $this->sendEmail([
-                    'to'      => $parentEmail,
-                    'subject' => 'Conduct Notification — ' . trim($incident['student_fname'] . ' ' . $incident['student_lname']),
-                    'view'    => 'email/conduct_notification',
-                    'viewData' => [
+                    'to'                => $parentEmail,
+                    'subject'           => 'Conduct Notification — ' . trim($incident['student_fname'] . ' ' . $incident['student_lname']),
+                    'view'              => 'email/conduct_notification',
+                    'viewData'          => [
                         'parentName'  => trim($parent['fname'] . ' ' . $parent['lname']),
                         'studentName' => trim($incident['student_fname'] . ' ' . $incident['student_lname']),
                         'message'     => $message,
                         'incident'    => $incident,
                     ],
+                    'notif_key'         => 'conduct',
+                    'recipient_user_id' => $parent['user_id'],
                 ]);
             }
 

@@ -66,11 +66,12 @@ class UserNotificationModel extends Model
     public function isEnabled(int $userId, string $module): bool
     {
         $record = $this->where('user_id_fk', $userId)->first();
-    
-        // No record = no preferences saved = treat as disabled
-        if (!$record) return false;
-    
+
+        // No record means the user hasn't customised preferences yet — default all modules ON
+        if (!$record) return true;
+
         $key = 'notif_' . strtolower($module);
-        return isset($record[$key]) && (int) $record[$key] === 1;
+        // If column is missing for some reason, default ON
+        return !isset($record[$key]) || (int) $record[$key] === 1;
     }
 }
