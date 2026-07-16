@@ -1433,13 +1433,15 @@
 		(function () {
 			'use strict';
 
-			const PHOTO_BASE = '<?= base_url('uploads/profilePhoto/') ?>';
-			const LIST_URL   = '<?= base_url('user/chatUserList') ?>';
+			const PHOTO_BASE    = '<?= base_url('uploads/profilePhoto/') ?>';
+			const LIST_URL      = '<?= base_url('user/chatUserList') ?>';
+			const MESSAGE_BASE  = '<?= base_url('message/') ?>';
 
-			let page        = 1;
-			let loading     = false;
-			let hasMore     = true;
-			let searchTimer = null;
+			let page              = 1;
+			let loading           = false;
+			let hasMore           = true;
+			let searchTimer       = null;
+			let drawerCurrentUser = null;
 
 			const listEl     = document.getElementById('ucl_list');
 			const loadingEl  = document.getElementById('ucl_loading');
@@ -1518,6 +1520,7 @@
 			}
 
 			function openChat(u, row) {
+				drawerCurrentUser = u;
 				const initials = ((u.fname || '').charAt(0) + (u.lname || '').charAt(0)).toUpperCase();
 				const isOnline = u.online_status === 'Online';
 
@@ -1555,6 +1558,20 @@
 
 			// Expose globally so other pages can open the chat drawer directly
 			window.openChat = openChat;
+
+			// "Open in Message" — navigate to the full Message page with the active conversation
+			document.addEventListener('click', function (e) {
+				const el = e.target.closest('[data-kt-element="open-in-message"]');
+				if (!el) return;
+				e.preventDefault();
+				if (!drawerCurrentUser) return;
+				const u    = drawerCurrentUser;
+				const name = `${u.fname || ''} ${u.lname || ''}`.trim();
+				const photo = u.profile_photo ? (PHOTO_BASE + u.profile_photo) : '';
+				window.location.href = MESSAGE_BASE + u.user_id
+					+ '?name='  + encodeURIComponent(name)
+					+ '&photo=' + encodeURIComponent(photo);
+			});
 
 			function fetchPage() {
 				if (loading || !hasMore) return;
