@@ -1384,18 +1384,18 @@ class UserController extends BaseController
         $data['_view']               = 'app/user/detail';
 
         // Always load for own-profile modal (don't gate on $isStudent — role lookup can fail)
-        $data['refCategories'] = $this->referenceCategoryModel
+        $db = \Config\Database::connect();
+        $data['refCategories'] = $db->table('reference_category')
             ->where('ref_cat_id !=', 1)
             ->orderBy('ref_cat_id', 'ASC')
-            ->findAll();
+            ->get()->getResultArray();
 
-        // Direct admission+school query — avoids empty result from enrolment LEFT JOIN edge cases
-        $db = \Config\Database::connect();
-        $rawAdmissions = $db->table('admission a')
-            ->select('a.admission_id, a.sch_id_fk, a.admission_status, a.admission_date, s.sch_name, s.sch_logo')
-            ->join('school s', 's.sch_id = a.sch_id_fk', 'left')
-            ->where('a.user_id_fk', $userId)
-            ->orderBy('a.admission_id', 'DESC')
+        // Direct admission+school query — use full table names (no alias) to avoid CI4 builder quirks
+        $rawAdmissions = $db->table('admission')
+            ->select('admission.admission_id, admission.sch_id_fk, admission.admission_status, admission.admission_date, school.sch_name, school.sch_logo')
+            ->join('school', 'school.sch_id = admission.sch_id_fk', 'left')
+            ->where('admission.user_id_fk', $userId)
+            ->orderBy('admission.admission_id', 'DESC')
             ->get()->getResultArray();
 
         // Deduplicate by admission_id
