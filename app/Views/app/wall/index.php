@@ -18,11 +18,11 @@ $WALL_REACT_URL         = base_url('wall/react');
 ?>
 <style>
 /* ── Wall layout ───────────────────────────────────── */
-.wall-outer { display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 1.5rem; max-width: 1060px; margin: 0 auto; padding: 1.5rem 1rem 3rem; align-items: start; }
+.wall-outer { display: grid; grid-template-columns: minmax(0,1fr) 360px; gap: 1.75rem; padding: 1.5rem 0 3rem; align-items: start; }
 .wall-feed-col { min-width: 0; }
 .wall-sidebar { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 1rem; }
-@media (max-width: 860px) {
-    .wall-outer { grid-template-columns: 1fr; }
+@media (max-width: 900px) {
+    .wall-outer { grid-template-columns: 1fr; padding: 1.5rem 0 3rem; }
     .wall-sidebar { position: static; }
 }
 /* sidebar cards */
