@@ -18,11 +18,11 @@ $st_conduct_resolved   = $st_conduct_resolved   ?? 0;
 $st_total_incidents    = $st_total_incidents    ?? 0;
 $st_announcements      = $st_announcements      ?? [];
 
-$fname      = $this->session->get('fname') ?? 'Student';
-$photo      = $this->session->get('photo');
-$photoUrl   = ($photo && file_exists(FCPATH . 'uploads/profilePhoto/' . $photo))
-              ? base_url('uploads/profilePhoto/' . $photo)
-              : base_url('app/assets/media/avatars/blank.png');
+$fname    = session('fname') ?? 'Student';
+$photo    = session('photo');
+$photoUrl = ($photo && file_exists(FCPATH . 'uploads/profilePhoto/' . $photo))
+            ? base_url('uploads/profilePhoto/' . $photo)
+            : base_url('app/assets/media/avatars/blank.png');
 
 $enrolTerm  = (int) ($st_row['enrol_term']  ?? 1);
 $enrolYear  = (int) ($st_row['enrol_year']  ?? date('Y'));

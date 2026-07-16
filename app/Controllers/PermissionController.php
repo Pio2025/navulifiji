@@ -374,7 +374,7 @@ class PermissionController extends BaseController
                 'module_id_fk' => $this->request->getPost('module_id_fk'),
                 'perm_name' => $this->request->getPost('perm_name'),
                 'perm_code' => $this->request->getPost('perm_code'),
-                'perm_desc' => $this->request->getPost('perm_desc') ?: null,
+                'perm_desc' => $this->request->getPost('perm_desc') ?: '',
                 'perm_controller' => $this->request->getPost('perm_controller') ?: null,
                 'show_in_nav' => $this->request->getPost('show_in_nav') ? 1 : 0,
                 'perm_status' => $this->request->getPost('perm_status') ?: 'Active'

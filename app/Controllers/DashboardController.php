@@ -510,17 +510,23 @@ class DashboardController extends BaseController
         }
 
         // ── 5. Conduct ──────────────────────────────────────────────────────────
-        $incidents = $db->query("
-            SELECT ci.incident_id, ci.points_awarded, ci.incident_description,
-                   ci.incident_date, ci.location, ci.is_resolved,
-                   ct.type_name, ct.is_positive, ct.severity_level, ct.category,
-                   CONCAT(u.fname,' ',u.lname) AS staff_name
-            FROM conduct_incidents ci
-            LEFT JOIN conduct_types ct ON ct.type_id  = ci.type_id_fk
-            LEFT JOIN users u          ON u.user_id   = ci.staff_id
-            WHERE ci.student_id = ?
-            ORDER BY ci.incident_date DESC
-        ", [$admissionId])->getResultArray();
+        $incidents = [];
+        try {
+            $incidents = $db->query("
+                SELECT ci.incident_id, ci.points_awarded, ci.incident_description,
+                       ci.incident_date, ci.location, ci.is_resolved,
+                       ct.type_name, ct.is_positive, ct.severity_level, ct.category,
+                       CONCAT(u.fname,' ',u.lname) AS staff_name
+                FROM conduct_incidents ci
+                LEFT JOIN conduct_types ct ON ct.type_id  = ci.type_id_fk
+                LEFT JOIN users u          ON u.user_id   = ci.staff_id
+                WHERE ci.student_id = ?
+                ORDER BY ci.incident_date DESC
+            ", [$admissionId])->getResultArray();
+        } catch (\Throwable $e) {
+            // conduct tables not yet created — dashboard still loads
+            log_message('error', 'Student dashboard conduct query failed: ' . $e->getMessage());
+        }
 
         $conductPositive = $conductNegative = $conductResolved = 0;
         foreach ($incidents as $inc) {
