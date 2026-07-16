@@ -340,6 +340,7 @@ $routes->get( 'reference/transcript-request/(:num)',   'ReferenceController::tra
 $routes->post('reference/generate-transcript/(:num)',  'ReferenceController::generateTranscript/$1');
 
 $routes->post('reference/request/store',              'ReferenceController::storeRequest');
+$routes->get( 'reference/request',                    'ReferenceController::requests');
 $routes->get( 'reference/requests',                   'ReferenceController::requests');
 $routes->post('reference/request/update/(:num)',      'ReferenceController::updateRequest/$1');
 

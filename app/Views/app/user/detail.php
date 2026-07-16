@@ -216,6 +216,9 @@
                     
                             <?php if ($isStudent): ?>
 
+                                <?php if ($isOwnProfile ?? false): ?>
+
+                                <!--begin::Student own-profile: 3 items only-->
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/certificate-of-enrollment/' . $user['user_id']) ?>" class="menu-link px-5">
                                         <span class="menu-icon">
@@ -224,86 +227,38 @@
                                                 <span class="path2"></span>
                                             </i>
                                         </span>
-                                        Certificate of Enrollment
-                                    </a>
-                                </div>
-
-                                <?php if ($isOwnProfile ?? false): ?>
-
-                                <div class="menu-item px-5">
-                                    <a href="#" class="menu-link px-5 sd-ref-request"
-                                       data-ref-cat="2" data-ref-type="Character Reference">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-profile-circle fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                                <span class="path3"></span>
-                                            </i>
-                                        </span>
-                                        Character Reference
-                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                        Certificate of Enrolment
                                     </a>
                                 </div>
 
                                 <div class="menu-item px-5">
-                                    <a href="#" class="menu-link px-5 sd-ref-request"
-                                       data-ref-cat="3" data-ref-type="Recommendation Letter">
+                                    <a href="#" class="menu-link px-5" id="sdOpenRefRequestModal">
                                         <span class="menu-icon">
-                                            <i class="ki-duotone ki-send fs-6 me-2 text-primary">
+                                            <i class="ki-duotone ki-send fs-6 me-2 text-warning">
                                                 <span class="path1"></span>
                                                 <span class="path2"></span>
                                             </i>
                                         </span>
-                                        Recommendation Letter
-                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
+                                        Request a Reference
+                                        <span class="ms-auto badge badge-light-warning fs-8">New</span>
                                     </a>
                                 </div>
-
-                                <div class="menu-item px-5">
-                                    <a href="#" class="menu-link px-5 sd-ref-request"
-                                       data-ref-cat="4" data-ref-type="Transcript Request">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-clipboard fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                            </i>
-                                        </span>
-                                        Transcript Request
-                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
-                                    </a>
-                                </div>
-
-                                <div class="separator my-2"></div>
-
-                                <div class="menu-item px-5">
-                                    <a href="#" class="menu-link px-5 sd-ref-request"
-                                       data-ref-cat="5" data-ref-type="Conduct Certificate">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-shield-tick fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                            </i>
-                                        </span>
-                                        Conduct Certificate
-                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
-                                    </a>
-                                </div>
-
-                                <div class="menu-item px-5">
-                                    <a href="#" class="menu-link px-5 sd-ref-request"
-                                       data-ref-cat="6" data-ref-type="Clearance Certificate">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-verify fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                            </i>
-                                        </span>
-                                        Clearance Certificate
-                                        <span class="ms-auto badge badge-light-warning fs-8">Request</span>
-                                    </a>
-                                </div>
+                                <!--end::Student own-profile-->
 
                                 <?php else: ?>
+
+                                <!--begin::Admin view: all reference links-->
+                                <div class="menu-item px-5">
+                                    <a href="<?= base_url('reference/certificate-of-enrollment/' . $user['user_id']) ?>" class="menu-link px-5">
+                                        <span class="menu-icon">
+                                            <i class="ki-duotone ki-document fs-6 me-2 text-primary">
+                                                <span class="path1"></span>
+                                                <span class="path2"></span>
+                                            </i>
+                                        </span>
+                                        Certificate of Enrolment
+                                    </a>
+                                </div>
 
                                 <div class="menu-item px-5">
                                     <a href="<?= base_url('reference/character-reference/' . $user['user_id']) ?>" class="menu-link px-5">
@@ -367,6 +322,7 @@
                                         Clearance Certificate
                                     </a>
                                 </div>
+                                <!--end::Admin view-->
 
                                 <?php endif; ?>
                     
@@ -3869,78 +3825,122 @@ if (notifForm) {
 })();
 
 <?php if ($isOwnProfile ?? false): ?>
-// ── Reference Request ────────────────────────────────────────────────────────
-(function () {
-    document.querySelectorAll('.sd-ref-request').forEach(function (link) {
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            const catId = this.dataset.refCat;
-            const type  = this.dataset.refType;
-            document.getElementById('sdRefCatId').value    = catId;
-            document.getElementById('sdRefTypeName').value = type;
-            document.getElementById('sdRefTypeLabel').textContent = type;
-            document.getElementById('sdRefNote').value = '';
-            bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
-        });
+// ── Reference Request Modal ──────────────────────────────────────────────────
+document.getElementById('sdOpenRefRequestModal')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    document.getElementById('sdRefNote').value = '';
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
+});
+
+document.getElementById('btnSubmitRefRequest')?.addEventListener('click', function () {
+    const btn          = this;
+    const admissionSel = document.getElementById('sdRefAdmissionId');
+    const refTypeSel   = document.getElementById('sdRefCatId');
+
+    if (!admissionSel || !admissionSel.value) {
+        alert('Please select a school / admission.');
+        return;
+    }
+    if (!refTypeSel || !refTypeSel.value) {
+        alert('Please select a reference type.');
+        return;
+    }
+
+    btn.disabled    = true;
+    btn.textContent = 'Submitting...';
+
+    const formData = new URLSearchParams({
+        user_id:       '<?= $user['user_id'] ?>',
+        admission_id:  admissionSel.value,
+        ref_cat_id:    refTypeSel.value,
+        ref_type_name: refTypeSel.options[refTypeSel.selectedIndex].text,
+        request_note:  document.getElementById('sdRefNote').value,
     });
 
-    document.getElementById('btnSubmitRefRequest')?.addEventListener('click', function () {
-        const btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Submitting...';
-
-        const formData = new URLSearchParams({
-            ref_cat_id:    document.getElementById('sdRefCatId').value,
-            ref_type_name: document.getElementById('sdRefTypeName').value,
-            request_note:  document.getElementById('sdRefNote').value,
-            '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
-        });
-
-        fetch('<?= base_url('reference/request/store') ?>', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
-            body: formData,
-        })
-        .then(r => r.json())
-        .then(function (data) {
-            bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
-            if (data.success) {
-                Swal.fire({ icon: 'success', title: 'Request Submitted', text: data.message, timer: 3000, showConfirmButton: false });
-            } else {
-                Swal.fire({ icon: 'warning', title: 'Notice', text: data.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
-            }
-        })
-        .catch(function () {
-            Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
-        })
-        .finally(function () {
-            btn.disabled = false;
-            btn.textContent = 'Submit Request';
-        });
+    fetch('<?= base_url('reference/request/store') ?>', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+        body:    formData,
+    })
+    .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
+    .then(function (data) {
+        bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
+        if (data.success) {
+            Swal.fire({ icon: 'success', title: 'Request Submitted', text: data.message, timer: 3500, showConfirmButton: false });
+        } else {
+            Swal.fire({ icon: 'warning', title: 'Notice', text: data.message, confirmButtonText: 'OK',
+                        customClass: { confirmButton: 'btn btn-primary' } });
+        }
+    })
+    .catch(function (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
+        console.error(err);
+    })
+    .finally(function () {
+        btn.disabled    = false;
+        btn.textContent = 'Submit Request';
     });
-})();
+});
 <?php endif; ?>
 </script>
 
 <?php if ($isOwnProfile ?? false): ?>
 <!--begin::Reference Request Modal-->
 <div class="modal fade" id="kt_modal_ref_request" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered mw-500px">
+    <div class="modal-dialog modal-dialog-centered mw-550px">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="fw-bold">Request Reference</h2>
+                <h2 class="fw-bold">Request a Reference</h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-10 py-8">
-                <input type="hidden" id="sdRefCatId">
-                <input type="hidden" id="sdRefTypeName">
-                <p class="text-gray-700 mb-5">
-                    You are requesting: <strong id="sdRefTypeLabel"></strong>
+                <p class="text-muted fs-7 mb-7">
+                    Select the school and reference type below. A staff member will review and process your request.
+                    Track status under <strong>View Generated References</strong>.
                 </p>
-                <p class="text-muted fs-7 mb-5">
-                    A staff member will review and process your request. You can track the status under
-                    <strong>View Generated References</strong>.
-                </p>
+
+                <?php
+                $admissionsForModal = $admissionsForModal ?? [];
+                $refCategories      = $refCategories ?? [];
+                ?>
+
+                <div class="mb-5">
+                    <label class="form-label required">School / Admission</label>
+                    <?php if (count($admissionsForModal) === 1): ?>
+                        <input type="hidden" id="sdRefAdmissionId" value="<?= $admissionsForModal[0]['admission_id'] ?>">
+                        <div class="form-control form-control-solid bg-light-secondary">
+                            <strong><?= esc($admissionsForModal[0]['sch_name'] ?? 'Unknown School') ?></strong>
+                            <span class="ms-2 badge badge-light-<?= $admissionsForModal[0]['admission_status'] === 'Active' ? 'success' : 'secondary' ?>">
+                                <?= esc($admissionsForModal[0]['admission_status']) ?>
+                            </span>
+                        </div>
+                    <?php else: ?>
+                        <select class="form-select form-select-solid" id="sdRefAdmissionId">
+                            <option value="">— Select School —</option>
+                            <?php foreach ($admissionsForModal as $adm): ?>
+                            <option value="<?= $adm['admission_id'] ?>">
+                                <?= esc($adm['sch_name'] ?? 'Unknown School') ?>
+                                (<?= esc($adm['admission_status']) ?>
+                                <?= !empty($adm['admission_date']) ? ' · ' . date('Y', strtotime($adm['admission_date'])) : '' ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-5">
+                    <label class="form-label required">Reference Type</label>
+                    <select class="form-select form-select-solid" id="sdRefCatId">
+                        <option value="">— Select Type —</option>
+                        <?php foreach ($refCategories as $cat): ?>
+                        <option value="<?= $cat['ref_cat_id'] ?>"><?= esc($cat['ref_cat_name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
                 <div class="mb-3">
                     <label class="form-label">Additional Note <span class="text-muted">(optional)</span></label>
                     <textarea class="form-control form-control-solid" id="sdRefNote" rows="3"

@@ -2618,25 +2618,44 @@ class ReferenceController extends BaseController
 
     // ── Reference Requests ──────────────────────────────────────────────
 
-    public function storeRequest(): \CodeIgniter\HTTP\ResponseInterface
+    public function storeRequest()
     {
         if (!$this->isLoggedIn()) {
             return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
         }
 
-        $userId    = (int) $this->session->get('userID');
-        $refCatId  = (int) $this->request->getPost('ref_cat_id');
-        $typeName  = trim($this->request->getPost('ref_type_name') ?? '');
-        $note      = trim($this->request->getPost('request_note') ?? '');
+        $userId      = (int) $this->session->get('userID');
+        $admissionId = (int) $this->request->getPost('admission_id');
+        $refCatId    = (int) $this->request->getPost('ref_cat_id');
+        $typeName    = trim($this->request->getPost('ref_type_name') ?? '');
+        $note        = trim($this->request->getPost('request_note') ?? '');
 
-        if (!$refCatId || !$typeName) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid request']);
+        if (!$admissionId || !$refCatId || !$typeName) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Please fill in all required fields.']);
         }
 
-        // Prevent duplicate pending requests for the same type
+        // Validate admission belongs to this user
         $db = \Config\Database::connect();
+        $admission = $db->table('admission')
+            ->where('admission_id', $admissionId)
+            ->where('user_id_fk', $userId)
+            ->get()->getRowArray();
+
+        if (!$admission) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid admission selected.']);
+        }
+
+        // Validate reference category exists
+        $cat = $this->referenceCategoryModel->find($refCatId);
+        if (!$cat) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Invalid reference type.']);
+        }
+        $typeName = $cat['ref_cat_name'];
+
+        // Prevent duplicate pending requests for same type + admission
         $existing = $db->table('reference_requests')
             ->where('user_id_fk', $userId)
+            ->where('admission_id_fk', $admissionId)
             ->where('ref_cat_id', $refCatId)
             ->whereIn('request_status', ['Pending', 'In Progress'])
             ->countAllResults();
@@ -2644,16 +2663,17 @@ class ReferenceController extends BaseController
         if ($existing > 0) {
             return $this->response->setJSON([
                 'success' => false,
-                'message' => 'You already have a pending request for this reference type.',
+                'message' => 'You already have a pending request for this reference type at the selected school.',
             ]);
         }
 
         $this->referenceRequestModel->insert([
-            'user_id_fk'    => $userId,
-            'ref_cat_id'    => $refCatId,
-            'ref_type_name' => $typeName,
-            'request_note'  => $note ?: null,
-            'request_status'=> 'Pending',
+            'user_id_fk'     => $userId,
+            'admission_id_fk'=> $admissionId,
+            'ref_cat_id'     => $refCatId,
+            'ref_type_name'  => $typeName,
+            'request_note'   => $note ?: null,
+            'request_status' => 'Pending',
         ]);
 
         $this->logReference('Reference Requested', "Student requested: {$typeName}");

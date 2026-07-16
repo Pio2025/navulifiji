@@ -1383,6 +1383,22 @@ class UserController extends BaseController
         $data['sessionUserID']       = $userId;
         $data['_view']               = 'app/user/detail';
 
+        // Reference categories for own-profile request modal (exclude cert of enrolment = 1)
+        if ($isStudent) {
+            $data['refCategories'] = $this->referenceCategoryModel
+                ->where('ref_cat_id !=', 1)
+                ->findAll();
+            // Deduplicate admissions by admission_id for the modal select
+            $seenAdm = [];
+            $data['admissionsForModal'] = [];
+            foreach ($admissions as $adm) {
+                if (!isset($seenAdm[$adm['admission_id']])) {
+                    $seenAdm[$adm['admission_id']] = true;
+                    $data['admissionsForModal'][] = $adm;
+                }
+            }
+        }
+
         return view('app/layouts/main', $data);
     }
 

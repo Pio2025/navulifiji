@@ -27,16 +27,14 @@
 
 <div class="card">
     <div class="card-header border-0 pt-6">
-        <div class="card-title">
+        <div class="card-title gap-3 flex-wrap">
             <div class="d-flex align-items-center position-relative my-1">
                 <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
                     <span class="path1"></span><span class="path2"></span>
                 </i>
-                <input type="text" id="refReqSearch" class="form-control form-control-solid w-250px ps-13" placeholder="Search requests...">
+                <input type="text" id="refReqSearch" class="form-control form-control-solid w-250px ps-13" placeholder="Search by name or school...">
             </div>
-        </div>
-        <div class="card-toolbar gap-2">
-            <select id="refReqStatusFilter" class="form-select form-select-solid w-150px">
+            <select id="refReqStatusFilter" class="form-select form-select-solid w-160px">
                 <option value="">All Status</option>
                 <option value="Pending">Pending</option>
                 <option value="In Progress">In Progress</option>
@@ -46,24 +44,27 @@
         </div>
     </div>
     <div class="card-body pt-0">
-        <table class="table align-middle table-row-dashed fs-6 gy-5" id="refReqTable">
+        <div class="table-responsive">
+        <table class="table align-middle table-row-dashed fs-6 gy-4" id="refReqTable">
             <thead>
                 <tr class="text-start text-muted fw-bold fs-7 text-uppercase gs-0">
                     <th class="min-w-200px">Student</th>
+                    <th class="min-w-160px">School</th>
                     <th class="min-w-150px">Reference Type</th>
                     <th class="min-w-100px">Status</th>
-                    <th class="min-w-200px">Student Note</th>
+                    <th class="min-w-160px">Note</th>
                     <th class="min-w-120px">Requested</th>
-                    <th class="min-w-100px text-end pe-3">Actions</th>
+                    <th class="min-w-120px text-end pe-3">Actions</th>
                 </tr>
             </thead>
             <tbody class="text-gray-600 fw-semibold">
                 <?php if (empty($requests)): ?>
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-10">No reference requests found.</td>
+                    <td colspan="7" class="text-center text-muted py-10">No reference requests found.</td>
                 </tr>
                 <?php else: foreach ($requests as $r): ?>
-                <tr data-status="<?= esc($r['request_status']) ?>">
+                <tr data-status="<?= esc($r['request_status']) ?>"
+                    data-search="<?= esc(strtolower(($r['fname'] ?? '') . ' ' . ($r['lname'] ?? '') . ' ' . ($r['sch_name'] ?? ''))) ?>">
                     <td>
                         <div class="d-flex align-items-center">
                             <?php
@@ -71,15 +72,27 @@
                                 ? base_url('uploads/profile_photo/' . $r['profile_photo'])
                                 : base_url('assets/media/avatars/blank.png');
                             ?>
-                            <div class="symbol symbol-45px me-5">
-                                <img src="<?= esc($photo) ?>" alt="photo" style="object-fit:cover;">
+                            <div class="symbol symbol-40px me-3">
+                                <img src="<?= esc($photo) ?>" alt="" style="object-fit:cover;border-radius:50%;">
                             </div>
                             <div class="d-flex flex-column">
-                                <span class="text-gray-800 fw-bold fs-6">
-                                    <?= esc(trim($r['fname'] . ' ' . ($r['oname'] ?? '') . ' ' . $r['lname'])) ?>
+                                <a href="<?= base_url('user/detail/' . $r['user_id_fk']) ?>"
+                                   class="text-gray-800 text-hover-primary fw-bold fs-6 mb-0">
+                                    <?= esc(trim(($r['fname'] ?? '') . ' ' . ($r['oname'] ? $r['oname'] . ' ' : '') . ($r['lname'] ?? ''))) ?>
+                                </a>
+                                <span class="text-muted fs-7">
+                                    Admitted <?= !empty($r['admission_date']) ? date('d M Y', strtotime($r['admission_date'])) : '—' ?>
                                 </span>
                             </div>
                         </div>
+                    </td>
+                    <td>
+                        <span class="fw-semibold"><?= esc($r['sch_name'] ?? '—') ?></span>
+                        <?php if (!empty($r['adm_status'])): ?>
+                        <br><span class="badge badge-light-<?= $r['adm_status'] === 'Active' ? 'success' : 'secondary' ?> fs-8">
+                            <?= esc($r['adm_status']) ?>
+                        </span>
+                        <?php endif; ?>
                     </td>
                     <td><?= esc($r['ref_type_name']) ?></td>
                     <td>
@@ -93,27 +106,56 @@
                         };
                         ?>
                         <span class="badge <?= $badgeClass ?>"><?= esc($r['request_status']) ?></span>
+                        <?php if (!empty($r['date_processed'])): ?>
+                        <br><small class="text-muted"><?= date('d M Y', strtotime($r['date_processed'])) ?></small>
+                        <?php endif; ?>
                     </td>
-                    <td>
-                        <?= $r['request_note'] ? esc($r['request_note']) : '<span class="text-muted">—</span>' ?>
+                    <td class="text-wrap" style="max-width:200px">
+                        <?php if (!empty($r['request_note'])): ?>
+                            <span class="text-gray-600"><?= esc($r['request_note']) ?></span>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                        <?php if (!empty($r['review_note'])): ?>
+                            <br><small class="text-muted fst-italic"><?= esc($r['review_note']) ?></small>
+                        <?php endif; ?>
                     </td>
-                    <td><?= date('d M Y', strtotime($r['created_at'])) ?></td>
+                    <td><?= !empty($r['created_at']) ? date('d M Y', strtotime($r['created_at'])) : '—' ?></td>
                     <td class="text-end pe-3">
-                        <button class="btn btn-light btn-sm btn-update-request"
-                            data-id="<?= $r['request_id'] ?>"
-                            data-status="<?= esc($r['request_status']) ?>"
-                            data-type="<?= esc($r['ref_type_name']) ?>"
-                            data-student="<?= esc(trim($r['fname'] . ' ' . $r['lname'])) ?>"
-                            data-review-note="<?= esc($r['review_note'] ?? '') ?>"
-                            data-bs-toggle="modal"
-                            data-bs-target="#kt_modal_update_request">
-                            Update
-                        </button>
+                        <div class="d-flex gap-2 justify-content-end">
+                            <?php
+                            // Map ref_cat_id to generator URL (for Completed action)
+                            $genUrls = [
+                                2 => 'reference/character-reference/',
+                                3 => 'reference/recommendation-letter/',
+                                4 => 'reference/transcript-request/',
+                                5 => 'reference/conduct-certificate/',
+                                6 => 'reference/clearance-certificate/',
+                            ];
+                            $genUrl = $genUrls[$r['ref_cat_id']] ?? null;
+                            ?>
+                            <?php if ($genUrl && $r['request_status'] !== 'Completed'): ?>
+                            <a href="<?= base_url($genUrl . $r['user_id_fk']) ?>" class="btn btn-light-success btn-sm">
+                                Generate
+                            </a>
+                            <?php endif; ?>
+                            <button class="btn btn-light btn-sm btn-update-request"
+                                data-id="<?= $r['request_id'] ?>"
+                                data-status="<?= esc($r['request_status']) ?>"
+                                data-type="<?= esc($r['ref_type_name']) ?>"
+                                data-student="<?= esc(trim(($r['fname'] ?? '') . ' ' . ($r['lname'] ?? ''))) ?>"
+                                data-review-note="<?= esc($r['review_note'] ?? '') ?>"
+                                data-bs-toggle="modal"
+                                data-bs-target="#kt_modal_update_request">
+                                Update
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 <?php endforeach; endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 
@@ -130,8 +172,10 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-10 py-8">
-                <p class="mb-1">
-                    <strong id="uReqStudent"></strong> — <span id="uReqType" class="text-muted"></span>
+                <p class="mb-1 fs-6">
+                    <strong id="uReqStudent"></strong>
+                    <span class="text-muted ms-1">—</span>
+                    <span id="uReqType" class="text-muted ms-1"></span>
                 </p>
                 <div class="mb-5 mt-5">
                     <label class="form-label required">Status</label>
@@ -149,7 +193,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btnSaveRequest">Save</button>
+                <button type="button" class="btn btn-primary" id="btnSaveRequest">Save Changes</button>
             </div>
         </div>
     </div>
@@ -160,7 +204,6 @@
 (function () {
     let currentRequestId = null;
 
-    // Populate modal on open
     document.addEventListener('show.bs.modal', function (e) {
         if (e.target.id !== 'kt_modal_update_request') return;
         const btn = e.relatedTarget;
@@ -172,24 +215,22 @@
         document.getElementById('uReqNote').value           = btn.dataset.reviewNote || '';
     });
 
-    // Save
     document.getElementById('btnSaveRequest')?.addEventListener('click', function () {
         if (!currentRequestId) return;
-        const btn    = this;
-        btn.disabled = true;
+        const btn = this;
+        btn.disabled    = true;
         btn.textContent = 'Saving...';
 
         fetch('<?= base_url('reference/request/update/') ?>' + currentRequestId, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest'},
-            body: new URLSearchParams({
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body:    new URLSearchParams({
                 request_status: document.getElementById('uReqStatus').value,
                 review_note:    document.getElementById('uReqNote').value,
-                '<?= csrf_token() ?>': '<?= csrf_hash() ?>',
             })
         })
-        .then(r => r.json())
-        .then(data => {
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
             if (data.success) {
                 bootstrap.Modal.getInstance(document.getElementById('kt_modal_update_request'))?.hide();
                 location.reload();
@@ -197,26 +238,28 @@
                 alert(data.message || 'Error updating request.');
             }
         })
-        .finally(() => {
-            btn.disabled = false;
-            btn.textContent = 'Save';
+        .finally(function () {
+            btn.disabled    = false;
+            btn.textContent = 'Save Changes';
         });
     });
 
-    // Search filter
-    const searchInput = document.getElementById('refReqSearch');
+    // Table filtering
+    const searchInput  = document.getElementById('refReqSearch');
     const statusFilter = document.getElementById('refReqStatusFilter');
+
     function filterTable() {
         const query  = searchInput.value.toLowerCase();
         const status = statusFilter.value;
-        document.querySelectorAll('#refReqTable tbody tr').forEach(row => {
-            const text   = row.textContent.toLowerCase();
+        document.querySelectorAll('#refReqTable tbody tr').forEach(function (row) {
+            const text   = (row.dataset.search || '') + ' ' + row.textContent.toLowerCase();
             const rowSt  = row.dataset.status || '';
             const matchQ = !query  || text.includes(query);
             const matchS = !status || rowSt === status;
             row.style.display = (matchQ && matchS) ? '' : 'none';
         });
     }
+
     searchInput?.addEventListener('input', filterTable);
     statusFilter?.addEventListener('change', filterTable);
 })();
