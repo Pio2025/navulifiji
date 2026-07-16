@@ -5494,6 +5494,140 @@ class ClassroomController extends BaseController
     }
 
     // ================================================================
+    // PARENT — CHILD CLASSROOMS WITH YEAR TABS
+    // ================================================================
+
+    public function parentChildClassroom()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $userId    = (int) $this->session->get('userID');
+        $roleCatId = (int) $this->session->get('roleCatID');
+
+        // Only parents (roleCatId 6) or staff flagged is_a_parent may access
+        if ($roleCatId !== 6) {
+            $user = $this->userModel->find($userId);
+            if (!$user || (int) ($user['is_a_parent'] ?? 0) !== 1) {
+                return redirect()->to(base_url('classroom/my'));
+            }
+        }
+
+        $this->setPageData("Children's Classrooms", 'Classroom', "Children's Classrooms");
+
+        $years       = $this->getChildrensClassroomYears($userId);
+        $defaultYear = $years[0] ?? (int) date('Y');
+
+        $classrooms = $this->getChildrensClassroomsForYear($userId, $defaultYear);
+        $byStudent  = $this->_groupByStudent($classrooms);
+
+        $data = [
+            '_view'       => 'app/classroom/parent/child_my',
+            'years'       => $years,
+            'defaultYear' => $defaultYear,
+            'byStudent'   => $byStudent,
+        ];
+
+        return view('app/layouts/main', $data);
+    }
+
+    public function parentChildClassroomByYear(int $year)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $userId    = (int) $this->session->get('userID');
+        $classrooms = $this->getChildrensClassroomsForYear($userId, $year);
+        $byStudent  = $this->_groupByStudent($classrooms);
+
+        $html = view('app/classroom/parent/_child_year_classrooms', ['byStudent' => $byStudent]);
+        return $this->response->setJSON(['success' => true, 'html' => $html]);
+    }
+
+    private function _groupByStudent(array $classrooms): array
+    {
+        $byStudent = [];
+        foreach ($classrooms as $row) {
+            $sid = $row['student_id'];
+            if (!isset($byStudent[$sid])) {
+                $byStudent[$sid] = [
+                    'student_fname' => $row['student_fname'],
+                    'student_lname' => $row['student_lname'],
+                    'student_photo' => $row['student_photo'],
+                    'relationship'  => $row['relationship'],
+                    'classrooms'    => [],
+                ];
+            }
+            $byStudent[$sid]['classrooms'][] = $row;
+        }
+        return $byStudent;
+    }
+
+    private function getChildrensClassroomYears(int $parentId): array
+    {
+        $db   = \Config\Database::connect();
+        $rows = $db->query("
+            SELECT DISTINCT c.class_year
+            FROM parent_student ps
+            INNER JOIN users stu      ON stu.user_id           = ps.student_user_id_fk
+            INNER JOIN admission a    ON a.user_id_fk          = stu.user_id AND a.admission_status = 'Active'
+            INNER JOIN enrolment e    ON e.admission_id_fk     = a.admission_id
+            INNER JOIN classroom c    ON c.stream_id_fk        = e.stream_id_fk AND c.class_year = e.enrol_year
+            WHERE ps.parent_user_id_fk = ?
+            ORDER BY c.class_year DESC
+        ", [$parentId])->getResultArray();
+        return array_column($rows, 'class_year');
+    }
+
+    private function getChildrensClassroomsForYear(int $parentId, int $year): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                c.class_id, c.class_name, c.class_year, c.class_status,
+                s.stream_id, s.stream_name,
+                l.level_name,
+                sch.sch_id, sch.sch_name, sch.sch_logo,
+                e.enrol_status, e.enrol_year,
+                stu.user_id AS student_id,
+                stu.fname   AS student_fname,
+                stu.lname   AS student_lname,
+                stu.profile_photo AS student_photo,
+                ps.relationship,
+                (SELECT COUNT(*) FROM enrolment e2
+                 WHERE e2.stream_id_fk = c.stream_id_fk AND e2.enrol_year = c.class_year
+                ) AS student_count,
+                (SELECT CONCAT(u2.fname, ' ', u2.lname)
+                 FROM classroom_role cs2
+                 INNER JOIN users u2 ON u2.user_id = cs2.user_id_fk
+                 WHERE cs2.class_id_fk = c.class_id
+                   AND cs2.cs_role = 'Class Teacher' AND cs2.cs_status = 'Active'
+                 LIMIT 1
+                ) AS class_teacher,
+                (SELECT CONCAT(u3.fname, ' ', u3.lname)
+                 FROM classroom_role cs3
+                 INNER JOIN users u3 ON u3.user_id = cs3.user_id_fk
+                 WHERE cs3.class_id_fk = c.class_id
+                   AND cs3.cs_role = 'Class Captain' AND cs3.cs_status = 'Active'
+                 LIMIT 1
+                ) AS class_captain
+            FROM parent_student ps
+            INNER JOIN users stu ON stu.user_id = ps.student_user_id_fk
+            INNER JOIN admission a  ON a.user_id_fk = stu.user_id AND a.admission_status = 'Active'
+            INNER JOIN enrolment e  ON e.admission_id_fk = a.admission_id
+            INNER JOIN classroom c  ON c.stream_id_fk    = e.stream_id_fk AND c.class_year = e.enrol_year
+            INNER JOIN stream s     ON s.stream_id        = c.stream_id_fk
+            INNER JOIN sch_level sl ON sl.sch_level_id    = s.sch_level_id_fk
+            INNER JOIN level l      ON l.level_id          = sl.level_id_fk
+            INNER JOIN school sch   ON sch.sch_id          = a.sch_id_fk
+            WHERE ps.parent_user_id_fk = ? AND c.class_year = ?
+            ORDER BY stu.fname, stu.lname, c.class_name
+        ", [$parentId, $year])->getResultArray();
+    }
+
+    // ================================================================
     // UPDATE STAFF STATUS
     // ================================================================
 
