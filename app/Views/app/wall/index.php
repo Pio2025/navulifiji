@@ -58,18 +58,22 @@ $WALL_REACT_URL         = base_url('wall/react');
 .post-media-grid.count-4, .post-media-grid.count-many { grid-template-columns: 1fr 1fr; }
 .media-item { border-radius: 8px; overflow: hidden; max-height: 320px; cursor: pointer; background: #f1f3f5; position: relative; }
 .media-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.media-item .video-thumb { width: 100%; height: 200px; background: #1a1a2e; display: flex; align-items: center; justify-content: center; }
-.media-item .video-thumb i { font-size: 3rem; color: rgba(255,255,255,.7); }
-/* File card */
-.media-item.file-item { background: transparent; max-height: none; border-radius: 10px; }
-.file-card { display: flex; align-items: center; gap: .85rem; background: #fff; border: 1.5px solid #e9edf0; border-radius: 10px; padding: .85rem 1rem; min-height: 68px; transition: border-color .18s, box-shadow .18s; }
-.file-card:hover { border-color: #93c5fd; box-shadow: 0 3px 12px rgba(0,0,0,.08); }
-.file-type-badge { width: 46px; height: 46px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: .62rem; font-weight: 800; letter-spacing: .4px; color: #fff; flex-shrink: 0; text-transform: uppercase; line-height: 1; text-align: center; }
+/* Embedded video */
+.media-item.video-embed-item { max-height: none; background: #000; padding: 0; cursor: default; }
+.video-embed-wrap { position: relative; width: 100%; padding-bottom: 56.25%; background: #000; }
+.video-embed-wrap iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+/* File list (outside the photo grid) */
+.file-list-section { padding: .25rem 1.25rem .85rem; display: flex; flex-direction: column; gap: .4rem; }
+.file-row { display: flex; align-items: center; gap: .85rem; background: #fff; border: 1.5px solid #e9edf0; border-radius: 10px; padding: .75rem 1rem; cursor: pointer; transition: border-color .18s, box-shadow .18s; }
+.file-row:hover { border-color: #93c5fd; box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+.file-row:hover .file-dl { color: #0095e8; }
+.file-type-badge { width: 42px; height: 42px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .6rem; font-weight: 800; letter-spacing: .4px; color: #fff; flex-shrink: 0; text-transform: uppercase; line-height: 1; text-align: center; }
 .file-info { flex: 1; min-width: 0; }
 .file-info .fc-name { font-size: .87rem; font-weight: 600; color: #181c32; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
-.file-info .fc-label { font-size: .75rem; color: #a1a5b7; margin-top: .15rem; }
-.file-dl { color: #c0c5d5; font-size: 1.2rem; flex-shrink: 0; transition: color .18s; display: flex; align-items: center; }
-.file-card:hover .file-dl { color: #0095e8; }
+.file-info .fc-label { font-size: .75rem; color: #a1a5b7; margin-top: .1rem; }
+.file-dl { color: #c0c5d5; flex-shrink: 0; transition: color .18s; display: flex; align-items: center; }
+.file-expand-btn { display: inline-flex; align-items: center; gap: .4rem; background: #f5f8fa; border: 1.5px solid #e4e6ef; border-radius: 20px; padding: .35rem .95rem; font-size: .82rem; color: #5e6278; cursor: pointer; font-weight: 500; transition: background .15s, border-color .15s, color .15s; margin-top: .1rem; }
+.file-expand-btn:hover { background: #e8f3ff; border-color: #93c5fd; color: #0095e8; }
 /* Reactions bar */
 .post-reactions-bar, .comment-reactions-bar { display: flex; flex-wrap: wrap; gap: .3rem; padding: .25rem 0; }
 .reaction-pill { display: inline-flex; align-items: center; gap: .25rem; background: #f1f3f5; border: 1.5px solid transparent; border-radius: 20px; padding: .15rem .6rem; font-size: .82rem; cursor: pointer; transition: border-color .15s, background .15s; user-select: none; }
@@ -426,61 +430,83 @@ function avatar(photo, name, size=40) {
     return `<img src="${photo}" class="rounded-circle" style="width:${size}px;height:${size}px;object-fit:cover;" alt="${name}">`;
 }
 
+function embedUrl(url) {
+    let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (m) return `https://www.youtube.com/embed/${m[1]}?rel=0&modestbranding=1`;
+    m = url.match(/vimeo\.com\/(\d+)/);
+    if (m) return `https://player.vimeo.com/video/${m[1]}`;
+    return null; // non-embeddable
+}
+
+function renderFileList(files) {
+    if (!files.length) return '';
+    const MAX = 10;
+    const rows = files.map((m, idx) => {
+        const ft      = fileTypeInfo(m.file_name || m.file_src);
+        const name    = esc(m.file_name || 'File');
+        const xClass  = idx >= MAX ? ' file-row-extra' : '';
+        const xStyle  = idx >= MAX ? ' style="display:none;"' : '';
+        return `<div class="file-row${xClass}"${xStyle} data-type="file" data-src="${esc(m.file_src)}">
+            <div class="file-type-badge" style="background:${ft.color};">${ft.badge}</div>
+            <div class="file-info">
+                <div class="fc-name" title="${name}">${name}</div>
+                <div class="fc-label">${ft.label}</div>
+            </div>
+            <div class="file-dl"><i class="ki-duotone ki-arrow-down fs-4"><span class="path1"></span><span class="path2"></span></i></div>
+        </div>`;
+    }).join('');
+    const extra = files.length - MAX;
+    const expandBtn = extra > 0
+        ? `<button class="file-expand-btn">+ ${extra} more file${extra !== 1 ? 's' : ''}</button>`
+        : '';
+    return `<div class="file-list-section">${rows}${expandBtn}</div>`;
+}
+
 function renderMedia(media, postId) {
     if (!media || !media.length) return '';
 
     const images = media.filter(m => m.media_type === 'image');
-    const others = media.filter(m => m.media_type !== 'image');
+    const videos = media.filter(m => m.media_type === 'video_url');
+    const files  = media.filter(m => m.media_type === 'file');
 
-    // Cap displayed images at 4; keep all URLs for the lightbox
-    const displayImgs = images.slice(0, 4);
-    const hiddenCount = images.length - displayImgs.length;
-    const allImageUrls = esc(JSON.stringify(images.map(m => m.file_src)));
+    let html = '';
 
-    // Build the visible item list: capped images first, then videos/files
-    const displayAll = [...displayImgs, ...others];
-    const n   = displayAll.length;
-    const cls = n === 1 ? 'count-1' : n === 2 ? 'count-2' : n === 3 ? 'count-3' : n >= 4 ? 'count-4' : 'count-many';
+    // ── Photo + video grid ──────────────────────────────────────────────────────
+    const gridItems = [];
 
+    // Images capped at 4; all URLs stored for lightbox navigation
+    const displayImgs    = images.slice(0, 4);
+    const hiddenImgCount = images.length - displayImgs.length;
+    const allImageUrls   = esc(JSON.stringify(images.map(m => m.file_src)));
     let imgIdx = 0;
-    const items = displayAll.map(m => {
-        if (m.media_type === 'image') {
-            const myIdx  = imgIdx++;
-            const isLast = myIdx === 3 && hiddenCount > 0;
-            const overlay = isLast
-                ? `<div class="more-overlay">+${hiddenCount}</div>`
-                : '';
-            return `<div class="media-item" data-type="image" data-src="${m.file_src}" data-img-idx="${myIdx}"><img src="${m.file_src}" alt="" loading="lazy">${overlay}</div>`;
-        }
-        if (m.media_type === 'video_url') {
-            return `<div class="media-item" data-type="video" data-src="${m.file_src}">
-                <div class="video-thumb"><i class="ki-duotone ki-youtube text-danger fs-2x"><span class="path1"></span><span class="path2"></span></i></div>
-            </div>`;
-        }
-        const ft = fileTypeInfo(m.file_name || m.file_src);
-        const displayName = esc(m.file_name || 'File');
-        return `<div class="media-item file-item" data-type="file" data-src="${m.file_src}">
-            <div class="file-card">
-                <div class="file-type-badge" style="background:${ft.color};">${ft.badge}</div>
-                <div class="file-info">
-                    <div class="fc-name" title="${displayName}">${displayName}</div>
-                    <div class="fc-label">${ft.label}</div>
-                </div>
-                <div class="file-dl">
-                    <i class="ki-duotone ki-arrow-down fs-3"><span class="path1"></span><span class="path2"></span></i>
-                </div>
-            </div>
-        </div>`;
-    }).join('');
+    displayImgs.forEach(m => {
+        const myIdx   = imgIdx++;
+        const isLast  = myIdx === 3 && hiddenImgCount > 0;
+        const overlay = isLast ? `<div class="more-overlay">+${hiddenImgCount}</div>` : '';
+        gridItems.push(`<div class="media-item" data-type="image" data-src="${m.file_src}" data-img-idx="${myIdx}"><img src="${m.file_src}" alt="" loading="lazy">${overlay}</div>`);
+    });
 
-    return `<div class="post-media-grid ${cls}" data-images="${allImageUrls}">${items}</div>`;
-}
+    // Videos embedded inline as responsive iframes
+    videos.forEach(m => {
+        const src = embedUrl(m.file_src);
+        if (src) {
+            gridItems.push(`<div class="media-item video-embed-item"><div class="video-embed-wrap"><iframe src="${src}" loading="lazy" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe></div></div>`);
+        } else {
+            // Fallback thumbnail for non-embeddable URLs
+            gridItems.push(`<div class="media-item" data-type="video" data-src="${m.file_src}"><div style="width:100%;height:200px;background:#1a1a2e;display:flex;align-items:center;justify-content:center;"><i class="ki-duotone ki-youtube text-danger fs-2x"><span class="path1"></span><span class="path2"></span></i></div></div>`);
+        }
+    });
 
-function embedUrl(url) {
-    // YouTube
-    let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (m) return `https://www.youtube.com/embed/${m[1]}`;
-    return url;
+    if (gridItems.length) {
+        const n   = gridItems.length;
+        const cls = n === 1 ? 'count-1' : n === 2 ? 'count-2' : n === 3 ? 'count-3' : 'count-4';
+        html += `<div class="post-media-grid ${cls}" data-images="${allImageUrls}">${gridItems.join('')}</div>`;
+    }
+
+    // ── File list ──────────────────────────────────────────────────────────────
+    html += renderFileList(files);
+
+    return html;
 }
 
 function fileTypeInfo(filename) {
@@ -623,17 +649,28 @@ async function loadFeed(reset=false) {
 }
 
 // ─── Composer ─────────────────────────────────────────────────────────────────
+const MAX_PHOTOS = 50;
+const MAX_FILES  = 20;
+
 document.getElementById('composer-image-input').addEventListener('change', function() {
+    let skipped = 0;
     [...this.files].forEach(f => {
+        if (composerImages.length >= MAX_PHOTOS) { skipped++; return; }
         composerImages.push({file: f, url: URL.createObjectURL(f)});
     });
     this.value = '';
+    if (skipped) Swal.fire({icon:'warning', title:'Photo limit reached', text:`You can attach up to ${MAX_PHOTOS} photos per post. ${skipped} photo${skipped>1?'s were':' was'} not added.`, confirmButtonText:'OK'});
     renderComposerPreview();
 });
 
 document.getElementById('composer-file-input').addEventListener('change', function() {
-    [...this.files].forEach(f => composerFiles.push({file: f}));
+    let skipped = 0;
+    [...this.files].forEach(f => {
+        if (composerFiles.length >= MAX_FILES) { skipped++; return; }
+        composerFiles.push({file: f});
+    });
     this.value = '';
+    if (skipped) Swal.fire({icon:'warning', title:'File limit reached', text:`You can attach up to ${MAX_FILES} files per post. ${skipped} file${skipped>1?'s were':' was'} not added.`, confirmButtonText:'OK'});
     renderComposerPreview();
 });
 
@@ -717,7 +754,7 @@ document.getElementById('composer-post-btn').addEventListener('click', async () 
 
 // ─── Feed interactions ─────────────────────────────────────────────────────────
 document.getElementById('wall-feed').addEventListener('click', async function(e) {
-    const target = e.target.closest('[data-post-id][class*="del-post"], .post-del-btn, .toggle-comments-btn, .media-item, .reaction-pill, .add-reaction-btn, .ep-btn, .submit-comment-btn, .reply-btn, .del-comment-btn');
+    const target = e.target.closest('.post-del-btn, .toggle-comments-btn, .media-item, .file-row, .file-expand-btn, .reaction-pill, .add-reaction-btn, .ep-btn, .submit-comment-btn, .reply-btn, .del-comment-btn');
     if (!target) return;
 
     // Delete post
@@ -749,6 +786,20 @@ document.getElementById('wall-feed').addEventListener('click', async function(e)
         return;
     }
 
+    // File row click → open in new tab
+    if (target.classList.contains('file-row')) {
+        window.open(target.dataset.src, '_blank');
+        return;
+    }
+
+    // File expand button → reveal hidden rows
+    if (target.classList.contains('file-expand-btn')) {
+        const section = target.closest('.file-list-section');
+        section.querySelectorAll('.file-row-extra').forEach(el => el.style.display = '');
+        target.remove();
+        return;
+    }
+
     // Media click
     if (target.classList.contains('media-item')) {
         const type = target.dataset.type;
@@ -759,9 +810,8 @@ document.getElementById('wall-feed').addEventListener('click', async function(e)
             const idx    = parseInt(target.dataset.imgIdx ?? '0');
             openLightbox(imgs.length ? imgs : [src], idx);
         } else if (type === 'video') {
-            document.getElementById('video-modal-body').innerHTML =
-                `<iframe src="${embedUrl(src)}" allowfullscreen></iframe>`;
-            new bootstrap.Modal(document.getElementById('wall-video-modal')).show();
+            // Fallback: non-embeddable video URL — open directly
+            window.open(src, '_blank');
         } else {
             window.open(src, '_blank');
         }
@@ -933,13 +983,7 @@ document.getElementById('load-more-btn').addEventListener('click', () => loadFee
     ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=ta.scrollHeight+'px'; });
 })();
 
-function embedUrl(url) {
-    let m = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-    if (m) return `https://www.youtube.com/embed/${m[1]}`;
-    m = url.match(/vimeo\.com\/(\d+)/);
-    if (m) return `https://player.vimeo.com/video/${m[1]}`;
-    return url;
-}
+// (embedUrl defined above near renderMedia)
 
 // ── Recent Posters sidebar widget ────────────────────────────────────────────
 const _seenPosters = new Map(); // userId → {name, photo}
