@@ -34,7 +34,7 @@
                         <input type="text" id="log-search" class="form-control form-control-sm  border-start-0 ps-1" placeholder="Search logs…">
                     </div>
                     <!-- Type filter -->
-                    <select id="log-type-filter" class="form-select form-select-sm form-select-solid" style="width:130px;">
+                    <select id="log-type-filter" class="form-select form-select-sm " style="width:130px;">
                         <option value="" <?= ($defaultType ?? '') === '' ? 'selected' : '' ?>>All Types</option>
                         <option value="Activity" <?= ($defaultType ?? '') === 'Activity' ? 'selected' : '' ?>>Activity</option>
                         <option value="Alert" <?= ($defaultType ?? '') === 'Alert' ? 'selected' : '' ?>>Alert</option>
