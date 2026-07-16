@@ -417,8 +417,8 @@ if (!function_exists('cdTimeAgo')) {
 .sd-photo-grid-3 { grid-template-columns:repeat(3,1fr); }
 .sd-photo-grid-4 { grid-template-columns:repeat(4,1fr); }
 .sd-photo-item   { position:relative; aspect-ratio:1; cursor:pointer; overflow:hidden; }
-.sd-photo-grid-1 .sd-photo-item { aspect-ratio:unset; max-height:480px; }
-.sd-photo-grid-1 .sd-photo-thumb { height:auto; max-height:480px; object-fit:cover; }
+.sd-photo-grid-1 .sd-photo-item { aspect-ratio:unset; display:flex; align-items:center; justify-content:center; background:#f5f8fa; }
+.sd-photo-grid-1 .sd-photo-thumb { width:auto; max-width:100%; height:auto; max-height:480px; object-fit:contain; }
 .sd-photo-thumb  { width:100%; height:100%; object-fit:cover; display:block; transition:opacity .15s; }
 .sd-photo-item:hover .sd-photo-thumb { opacity:.88; }
 .sd-photo-more-overlay { position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center; }
