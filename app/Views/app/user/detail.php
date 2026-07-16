@@ -2258,7 +2258,19 @@
 					<div class="fv-row mb-10">
 						<label class="required form-label fs-6 mb-2">Current Password</label>
 						<input type="hidden" name="user_id" value="<?php echo $user['user_id']; ?>">
-						<input class="form-control form-control-lg form-control-solid" type="password" placeholder="" name="current_password" autocomplete="off" />
+						<div class="position-relative">
+							<input class="form-control form-control-lg form-control-solid" type="password" placeholder="" name="current_password" autocomplete="off" />
+							<span class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2" onclick="togglePwdVisibility(this)">
+								<i class="ki-duotone ki-eye-slash fs-1">
+									<span class="path1"></span><span class="path2"></span>
+									<span class="path3"></span><span class="path4"></span>
+								</i>
+								<i class="ki-duotone ki-eye d-none fs-1">
+									<span class="path1"></span><span class="path2"></span>
+									<span class="path3"></span>
+								</i>
+							</span>
+						</div>
 					</div>
 					<!--end::Input group=-->
 					<!--begin::Input group-->
@@ -2304,7 +2316,19 @@
 					<!--begin::Input group=-->
 					<div class="fv-row mb-10">
 						<label class="form-label fw-semibold fs-6 mb-2">Confirm New Password</label>
-						<input class="form-control form-control-lg form-control-solid" type="password" placeholder="" name="confirm_new_password" autocomplete="off" />
+						<div class="position-relative">
+							<input class="form-control form-control-lg form-control-solid" type="password" placeholder="" name="confirm_new_password" autocomplete="off" />
+							<span class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2" onclick="togglePwdVisibility(this)">
+								<i class="ki-duotone ki-eye-slash fs-1">
+									<span class="path1"></span><span class="path2"></span>
+									<span class="path3"></span><span class="path4"></span>
+								</i>
+								<i class="ki-duotone ki-eye d-none fs-1">
+									<span class="path1"></span><span class="path2"></span>
+									<span class="path3"></span>
+								</i>
+							</span>
+						</div>
 					</div>
 					<!--end::Input group=-->
 					<!--begin::Actions-->
@@ -2674,6 +2698,15 @@
 <script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/add-next-of-kin.js"></script>
 
 <script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/update-user-security.js"></script>
+<script>
+function togglePwdVisibility(btn) {
+    var input = btn.parentElement.querySelector('input');
+    var isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.querySelector('.ki-eye-slash').classList.toggle('d-none', isHidden);
+    btn.querySelector('.ki-eye').classList.toggle('d-none', !isHidden);
+}
+</script>
 <script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/add-auth-app.js"></script>
 <script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/add-one-time-password.js"></script>
 
