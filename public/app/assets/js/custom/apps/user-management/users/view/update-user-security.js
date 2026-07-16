@@ -218,215 +218,93 @@ var KTUpdateEmail = (function () {
 })();
 
 // =============================================================================
-// UPDATE PASSWORD MANAGEMENT
+// UPDATE PASSWORD MANAGEMENT  (backend validation only)
 // =============================================================================
 var KTUpdatePassword = (function () {
     const modal = document.getElementById("kt_modal_update_password");
-    const form = document.getElementById("kt_modal_update_password_form");
-    
-    if (!modal || !form) {
-        return { init: function() {} };
-    }
-    
-    let validator;
-    
+    const form  = document.getElementById("kt_modal_update_password_form");
+
+    if (!modal || !form) { return { init: function () {} }; }
+
     return {
         init: function () {
-            validator = FormValidation.formValidation(form, {
-                fields: {
-                    current_password: {
-                        validators: {
-                            notEmpty: { message: "Current password is required" }
-                        }
-                    },
-                    new_password: {
-                        validators: {
-                            notEmpty: { message: "New password is required" },
-                            stringLength: {
-                                min: 8,
-                                message: "Password must be at least 8 characters long"
-                            },
-                            regexp: {
-                                regexp: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]/,
-                                message: "Password must contain uppercase, lowercase, number, and special character"
-                            }
-                        }
-                    },
-                    confirm_new_password: {
-                        validators: {
-                            notEmpty: { message: "Please confirm the new password" }
-                        }
-                    }
-                },
-                plugins: {
-                    trigger: new FormValidation.plugins.Trigger(),
-                    bootstrap: new FormValidation.plugins.Bootstrap5({
-                        rowSelector: ".fv-row",
-                        eleInvalidClass: "",
-                        eleValidClass: ""
-                    })
-                }
-            });
-            
-            // Close button with confirmation
-            const closeBtn = modal.querySelector('[data-kt-users-modal-action="close"]');
-            if (closeBtn) {
-                closeBtn.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    
-                    Swal.fire({
-                        title: "Discard Changes?",
-                        html: "Password changes will not be saved!",
-                        icon: "warning",
-                        showCancelButton: true,
-                        buttonsStyling: false,
-                        confirmButtonhtml: "Yes, discard",
-                        cancelButtonhtml: "No, keep editing",
-                        customClass: {
-                            confirmButton: "btn btn-danger",
-                            cancelButton: "btn btn-active-light"
-                        }
-                    }).then(function (result) {
-                        if (result.value) {
-                            form.reset();
-                            validator.resetForm();
-                            forceCloseModal('kt_modal_update_password');
-                        }
-                    });
-                });
-            }
-            
-            // Cancel button with confirmation
+            // Discard button
             const cancelBtn = modal.querySelector('[data-kt-users-modal-action="cancel"]');
             if (cancelBtn) {
-                cancelBtn.addEventListener("click", (e) => {
+                cancelBtn.addEventListener("click", function (e) {
                     e.preventDefault();
-                    
-                    Swal.fire({
-                        title: "Discard Changes?",
-                        html: "Password changes will not be saved!",
-                        icon: "warning",
-                        showCancelButton: true,
-                        buttonsStyling: false,
-                        confirmButtonhtml: "Yes, discard",
-                        cancelButtonhtml: "No, keep editing",
-                        customClass: {
-                            confirmButton: "btn btn-danger",
-                            cancelButton: "btn btn-active-light"
-                        }
-                    }).then(function (result) {
-                        if (result.value) {
-                            form.reset();
-                            validator.resetForm();
-                            forceCloseModal('kt_modal_update_password');
-                        }
-                    });
+                    form.reset();
+                    forceCloseModal('kt_modal_update_password');
                 });
             }
-            
-            // Submit button
+
+            // Close (×) button
+            const closeBtn = modal.querySelector('[data-kt-users-modal-action="close"]');
+            if (closeBtn) {
+                closeBtn.addEventListener("click", function (e) {
+                    e.preventDefault();
+                    form.reset();
+                    forceCloseModal('kt_modal_update_password');
+                });
+            }
+
+            // Submit button — send to backend, show its response
             const submitButton = modal.querySelector('[data-kt-users-modal-action="submit"]');
             if (submitButton) {
-                submitButton.addEventListener("click", (e) => {
+                submitButton.addEventListener("click", function (e) {
                     e.preventDefault();
-                    
-                    if (validator) {
-                        validator.validate().then(function (status) {
-                            if (status == "Valid") {
-                                const newPwd     = form.querySelector('[name="new_password"]').value;
-                                const confirmPwd = form.querySelector('[name="confirm_new_password"]').value;
-                                if (newPwd !== confirmPwd) {
-                                    Swal.fire({
-                                        title: "Passwords Do Not Match",
-                                        html: "Please make sure both password fields contain the same value.",
-                                        icon: "warning",
-                                        buttonsStyling: false,
-                                        confirmButtonText: "Got it",
-                                        customClass: { confirmButton: "btn btn-warning" }
-                                    });
-                                    return;
-                                }
 
-                                submitButton.setAttribute("data-kt-indicator", "on");
-                                submitButton.disabled = true;
+                    submitButton.setAttribute("data-kt-indicator", "on");
+                    submitButton.disabled = true;
 
-                                const formData = new FormData(form);
-                                const baseUrl = window.location.origin;
+                    $.ajax({
+                        url: window.location.origin + "/user/updatePassword",
+                        type: "POST",
+                        data: new FormData(form),
+                        processData: false,
+                        contentType: false,
+                        success: function (response) {
+                            submitButton.removeAttribute("data-kt-indicator");
+                            submitButton.disabled = false;
 
-                                $.ajax({
-                                    url: baseUrl + "/user/updatePassword",
-                                    type: "POST",
-                                    data: formData,
-                                    processData: false,
-                                    contentType: false,
-                                    success: function(response) {
-                                        submitButton.removeAttribute("data-kt-indicator");
-                                        submitButton.disabled = false;
-                                        
-                                        if (response.success) {
-                                            Swal.fire({
-                                                title: "Password Updated!",
-                                                html: response.message || "Your password has been updated successfully!",
-                                                icon: "success",
-                                                buttonsStyling: false,
-                                                confirmButtonhtml: "Excellent!",
-                                                customClass: { 
-                                                    confirmButton: "btn btn-success"
-                                                }
-                                            }).then(function () {
-                                                form.reset();
-                                                validator.resetForm();
-                                                forceCloseModal('kt_modal_update_password');
-                                            });
-                                        } else {
-                                            Swal.fire({
-                                                title: "Update Failed",
-                                                html: response.message || "Failed to update password",
-                                                icon: "error",
-                                                buttonsStyling: false,
-                                                confirmButtonhtml: "Try Again",
-                                                customClass: { 
-                                                    confirmButton: "btn btn-danger"
-                                                }
-                                            });
-                                        }
-                                    },
-                                    error: function(xhr) {
-                                        submitButton.removeAttribute("data-kt-indicator");
-                                        submitButton.disabled = false;
-                                        
-                                        let errorMessage = "An error occurred while updating password";
-                                        try {
-                                            const errorResponse = JSON.parse(xhr.responseText);
-                                            if (errorResponse.message) errorMessage = errorResponse.message;
-                                        } catch (e) {}
-                                        
-                                        Swal.fire({
-                                            title: "Error!",
-                                            html: errorMessage,
-                                            icon: "error",
-                                            buttonsStyling: false,
-                                            confirmButtonhtml: "Close",
-                                            customClass: { 
-                                                confirmButton: "btn btn-danger"
-                                            }
-                                        });
-                                    }
+                            if (response.success) {
+                                form.reset();
+                                forceCloseModal('kt_modal_update_password');
+                                Swal.fire({
+                                    title: "Password Updated!",
+                                    html: response.message || "Your password has been updated successfully!",
+                                    icon: "success",
+                                    buttonsStyling: false,
+                                    confirmButtonText: "Great!",
+                                    customClass: { confirmButton: "btn btn-success" }
                                 });
                             } else {
                                 Swal.fire({
-                                    title: "Validation Error",
-                                    html: "Please check your password requirements and try again.",
-                                    icon: "warning",
+                                    title: "Could Not Update Password",
+                                    html: response.message || "Please check your details and try again.",
+                                    icon: "error",
                                     buttonsStyling: false,
-                                    confirmButtonhtml: "Got it",
-                                    customClass: { 
-                                        confirmButton: "btn btn-warning"
-                                    }
+                                    confirmButtonText: "Try Again",
+                                    customClass: { confirmButton: "btn btn-danger" }
                                 });
                             }
-                        });
-                    }
+                        },
+                        error: function (xhr) {
+                            submitButton.removeAttribute("data-kt-indicator");
+                            submitButton.disabled = false;
+
+                            var msg = "An error occurred. Please try again.";
+                            try { var r = JSON.parse(xhr.responseText); if (r.message) msg = r.message; } catch (ex) {}
+                            Swal.fire({
+                                title: "Error",
+                                html: msg,
+                                icon: "error",
+                                buttonsStyling: false,
+                                confirmButtonText: "Close",
+                                customClass: { confirmButton: "btn btn-danger" }
+                            });
+                        }
+                    });
                 });
             }
         }

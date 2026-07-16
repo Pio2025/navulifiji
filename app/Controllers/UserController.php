@@ -2639,9 +2639,8 @@ class UserController extends BaseController
         try {
             $userId = $this->request->getPost('user_id');
             $currentPassword = $this->request->getPost('current_password');
-            $hashedPassword = password_hash($currentPassword, PASSWORD_DEFAULT);
             $newPassword = $this->request->getPost('new_password');
-            
+
             // Get user
             $user = $this->userModel->find($userId);
             if (!$user) {
@@ -2650,9 +2649,9 @@ class UserController extends BaseController
                     'message' => 'User not found'
                 ]);
             }
-            
-            // ✅ FIX: Verify current password using password_verify()
-            if (!password_verify($hashedPassword, $user['password'])) {
+
+            // Verify current password against stored hash
+            if (!password_verify($currentPassword, $user['password'])) {
                 log_message('warning', "Failed password verification for user {$userId}");
                 return $this->response->setJSON([
                     'success' => false,
