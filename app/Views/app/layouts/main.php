@@ -1352,16 +1352,6 @@
 									<a href="https://keenthemes.com" target="_blank" class="text-gray-800 text-hover-primary">Navuli</a>
 								</div>
 								<!--end::Copyright-->
-								<!--begin::Menu-->
-								<ul class="menu menu-gray-600 menu-hover-primary fw-semibold order-1">
-									<li class="menu-item">
-										<a href="#" target="_blank" class="menu-link px-2">About</a>
-									</li>
-									<li class="menu-item">
-										<a href="#" target="_blank" class="menu-link px-2">Support</a>
-									</li>
-								</ul>
-								<!--end::Menu-->
 							</div>
 							<!--end::Footer container-->
 						</div>
@@ -2000,7 +1990,7 @@
 		<style>
 		#ucl_popup {
 			position: fixed;
-			bottom: 116px; /* 50px dock + 52px button + 14px gap */
+			bottom: 109px; /* 43px dock + 52px button + 14px gap */
 			right: 70px;
 			width: 290px;
 			max-height: 380px;
@@ -2151,7 +2141,7 @@
 		#kt_activities   { z-index: 9600 !important; }
 		/* ── Bottom dock wrapper ── */
 		#chat_bottom_dock {
-			position: fixed; bottom: 50px; right: 70px;
+			position: fixed; bottom: 43px; right: 70px;
 			display: flex; flex-direction: row; align-items: flex-end; gap: 8px;
 			z-index: 9100;
 		}
