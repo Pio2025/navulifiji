@@ -84,6 +84,8 @@ class UserModel extends Model
 
         'femis_id',
 
+        'email_verified',
+
     ];
 
     

@@ -1255,9 +1255,28 @@
                                 </div>
                             </div>
                             <div class="card-body">
+                                <?php
+                                $notifBlocked  = false;
+                                $notifBlockMsg = '';
+                                if (empty($user['email'])) {
+                                    $notifBlocked  = true;
+                                    $notifBlockMsg = 'You need to add an email address before enabling email notifications. Update your email in the <strong>Security</strong> tab above.';
+                                } elseif (empty($emailVerified)) {
+                                    $notifBlocked  = true;
+                                    $notifBlockMsg = 'Your email address <strong>' . esc($user['email']) . '</strong> has not been verified yet. Please verify your email to enable notifications.';
+                                }
+                                ?>
+                                <?php if ($notifBlocked): ?>
+                                <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed mb-6 p-4">
+                                    <i class="ki-duotone ki-information-5 fs-2tx text-warning me-4 flex-shrink-0">
+                                        <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                                    </i>
+                                    <div class="fs-6 text-gray-700"><?= $notifBlockMsg ?></div>
+                                </div>
+                                <?php endif; ?>
                                 <form id="notification_form">
                                     <input type="hidden" name="user_id" value="<?= $sessionUserID ?>" />
-                    
+
                                     <?php
                                     $notifModules = [
                                         ['key' => 'dashboard',     'label' => 'Dashboard',      'desc' => 'Receive system dashboard summary and alerts.',                    'icon' => 'ki-element-11'],
@@ -1315,7 +1334,8 @@
                                                    name="notif_<?= $mod['key'] ?>"
                                                    id="notif_<?= $mod['key'] ?>"
                                                    value="1"
-                                                   <?= $isEnabled ? 'checked' : '' ?> />
+                                                   <?= $isEnabled ? 'checked' : '' ?>
+                                                   <?= $notifBlocked ? 'disabled' : '' ?> />
                                             <label class="form-check-label" for="notif_<?= $mod['key'] ?>"></label>
                                         </div>
                                         <!--end::Toggle-->
@@ -1327,14 +1347,14 @@
                                     <!--begin::Actions-->
                                     <div class="d-flex justify-content-between align-items-center mt-8">
                                         <div class="d-flex gap-3">
-                                            <button type="button" class="btn btn-sm btn-light-primary" id="btn_notif_enable_all">
+                                            <button type="button" class="btn btn-sm btn-light-primary" id="btn_notif_enable_all" <?= $notifBlocked ? 'disabled' : '' ?>>
                                                 Enable All
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-light-danger" id="btn_notif_disable_all">
+                                            <button type="button" class="btn btn-sm btn-light-danger" id="btn_notif_disable_all" <?= $notifBlocked ? 'disabled' : '' ?>>
                                                 Disable All
                                             </button>
                                         </div>
-                                        <button type="submit" class="btn btn-primary" id="btn_save_notifications">
+                                        <button type="submit" class="btn btn-primary" id="btn_save_notifications" <?= $notifBlocked ? 'disabled' : '' ?>>
                                             <span class="indicator-label">
                                                 <i class="ki-duotone ki-check fs-4 me-1">
                                                     <span class="path1"></span><span class="path2"></span>
@@ -3562,10 +3582,32 @@ if (notifForm) {
                         timer:             2000,
                         showConfirmButton: false,
                     });
+                } else if (response.code === 'no_email') {
+                    Swal.fire({
+                        title:             'Email Required',
+                        html:              response.message,
+                        icon:              'warning',
+                        buttonsStyling:    false,
+                        confirmButtonText: 'Update Email',
+                        customClass:       { confirmButton: 'btn btn-primary' }
+                    }).then(function() {
+                        // Open the update email modal
+                        var m = document.getElementById('kt_modal_update_email');
+                        if (m) bootstrap.Modal.getOrCreateInstance(m).show();
+                    });
+                } else if (response.code === 'unverified') {
+                    Swal.fire({
+                        title:             'Email Not Verified',
+                        html:              response.message,
+                        icon:              'warning',
+                        buttonsStyling:    false,
+                        confirmButtonText: 'OK',
+                        customClass:       { confirmButton: 'btn btn-warning' }
+                    });
                 } else {
                     Swal.fire({
                         title:             'Error',
-                        text:              response.message,
+                        html:              response.message,
                         icon:              'error',
                         buttonsStyling:    false,
                         confirmButtonText: 'Close',

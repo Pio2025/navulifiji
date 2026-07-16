@@ -1115,6 +1115,26 @@ class UserController extends BaseController
                     }
 
                 }
+                // Auto-create notification preferences: all ON if user has email, all OFF otherwise
+                $notifVal = !empty($email) ? 1 : 0;
+                $this->userNotificationModel->saveForUser($userId, [
+                    'notif_dashboard'     => $notifVal,
+                    'notif_rbac'          => $notifVal,
+                    'notif_user'          => $notifVal,
+                    'notif_school'        => $notifVal,
+                    'notif_admission'     => $notifVal,
+                    'notif_enrolment'     => $notifVal,
+                    'notif_classroom'     => $notifVal,
+                    'notif_exam'          => $notifVal,
+                    'notif_conduct'       => $notifVal,
+                    'notif_timetable'     => $notifVal,
+                    'notif_event'         => $notifVal,
+                    'notif_communication' => $notifVal,
+                    'notif_security'      => $notifVal,
+                    'notif_medical'       => $notifVal,
+                    'notif_reference'     => $notifVal,
+                ]);
+
                 if (!empty($email)) {
                     // Prepare email data
                     log_message('info', 'Preparing to send activation email');
@@ -1365,6 +1385,7 @@ class UserController extends BaseController
         $data['sessions']            = $this->userSessionModel->getActiveSessions($userId);
         $data['currentSessionToken'] = $this->session->get('sessionToken');
         $data['notifications']       = $this->userNotificationModel->getByUser($userId);
+        $data['emailVerified']       = (int) ($user['email_verified'] ?? 0);
         $data['twoFactorData']       = $this->twoFactorModel->get2FAData($userId);
         $data['next_of_kin']         = $this->nextOfKinModel->getByUserId($userId);
         $data['isOwnProfile']        = true;
@@ -1434,7 +1455,24 @@ class UserController extends BaseController
                 'message' => 'You can only update your own notifications. Session: ' . $userId . ' | Submitted: ' . $targetUserId
             ]);
         }
-    
+
+        // Gate on email presence and verification
+        $currentUser = $this->userModel->find($userId);
+        if (empty($currentUser['email'])) {
+            return $this->response->setJSON([
+                'success' => false,
+                'code'    => 'no_email',
+                'message' => 'You need to add an email address before enabling email notifications. Please update your email in the Security tab.',
+            ]);
+        }
+        if (empty($currentUser['email_verified']) || (int) $currentUser['email_verified'] !== 1) {
+            return $this->response->setJSON([
+                'success' => false,
+                'code'    => 'unverified',
+                'message' => 'Your email address has not been verified yet. Please verify your email before enabling notifications.',
+            ]);
+        }
+
         try {
             $modules = [
                 'dashboard', 'rbac', 'user', 'school',
@@ -2521,6 +2559,7 @@ class UserController extends BaseController
                 'pending_email_update'  => null,
                 'security_token'        => null,
                 'security_token_expiry' => null,
+                'email_verified'        => 1,
                 'updated_date'          => date('Y-m-d'),
                 'updated_time'          => time(),
             ]);

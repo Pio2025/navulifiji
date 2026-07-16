@@ -83,7 +83,8 @@ class AccountController extends BaseController
             }else{
                 $userData = [
                     'password_reset_code' => '',
-                    'user_status' => 'Active'
+                    'user_status'         => 'Active',
+                    'email_verified'      => 1,
                 ];
                 $update = $this->userModel->updateUser($userID,$userData);
                 if($update){
