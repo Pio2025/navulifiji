@@ -438,6 +438,7 @@ class TwoFactorController extends BaseController
             'log_time'    => time(),
             'log_icon'    => '<i class="ki-duotone ki-shield-tick"><span class="path1"></span><span class="path2"></span></i>',
             'log_theme'   => 'success',
+            'log_type'    => 'Alert',
         ]);
     }
 

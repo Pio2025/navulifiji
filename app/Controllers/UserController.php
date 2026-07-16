@@ -1527,16 +1527,25 @@ class UserController extends BaseController
             $dateFrom = $this->request->getGet('dateFrom')  ?? '';
             $dateTo   = $this->request->getGet('dateTo')    ?? '';
             $theme    = $this->request->getGet('theme')     ?? '';
-    
-            $logs   = $this->userLogModel->getUserLogs($userId, $perPage, $search, $dateFrom, $dateTo, $theme);
+            $logType  = $this->request->getGet('logType')   ?? '';
+
+            $logs   = $this->userLogModel->getUserLogs($userId, $perPage, $search, $dateFrom, $dateTo, $theme, $logType);
             $pager  = $this->userLogModel->pager;
     
             $html = '';
             if (!empty($logs)) {
                 foreach ($logs as $log) {
-                    $date    = date('d M Y', strtotime($log['log_date']));
-                    $time    = date('h:i A', $log['log_time']);
-                    $theme   = $log['log_theme'] ?? 'primary';
+                    $date      = date('d M Y', strtotime($log['log_date']));
+                    $time      = date('h:i A', $log['log_time']);
+                    $theme     = $log['log_theme']   ?? 'primary';
+                    $logType   = $log['log_type']    ?? 'Activity';
+                    $logStatus = $log['log_status']  ?? 'Read';
+                    $typeBadge = $logType === 'Alert'
+                        ? '<span class="badge badge-light-danger fs-9">Alert</span>'
+                        : '<span class="badge badge-light-primary fs-9">Activity</span>';
+                    $unreadDot = $logStatus === 'Unread'
+                        ? '<span class="bullet bullet-dot bg-danger h-6px w-6px ms-1" title="Unread"></span>'
+                        : '';
                     $html .= '
                     <tr>
                         <td class="min-w-40px">
@@ -1545,9 +1554,10 @@ class UserController extends BaseController
                             </div>
                         </td>
                         <td>
-                            <div class="fw-bold text-gray-800 fs-7">' . esc($log['log_title']) . '</div>
+                            <div class="fw-bold text-gray-800 fs-7">' . esc($log['log_title']) . $unreadDot . '</div>
                             <div class="text-muted fs-8">' . esc($log['log_desc']) . '</div>
                         </td>
+                        <td class="fs-8">' . $typeBadge . '</td>
                         <td class="fs-8 text-muted">
                             <div>' . esc($log['ip_aadress'] ?? '—') . '</div>
                             <div>' . esc($log['user_device'] ?? '—') . '</div>
@@ -1561,7 +1571,7 @@ class UserController extends BaseController
             } else {
                 $html = '
                 <tr>
-                    <td colspan="4" class="text-center text-muted py-10">
+                    <td colspan="5" class="text-center text-muted py-10">
                         <i class="ki-duotone ki-information-5 fs-3x text-muted mb-3">
                             <span class="path1"></span>
                             <span class="path2"></span>
@@ -1699,7 +1709,8 @@ class UserController extends BaseController
                 'log_date'    => date('Y-m-d'),
                 'log_time'    => time(),
                 'log_icon'    => '<i class="ki-duotone ki-entrance-right"><span class="path1"></span><span class="path2"></span></i>',
-                'log_theme'   => 'warning'
+                'log_theme'   => 'warning',
+                'log_type'    => 'Alert',
             ]);
     
             return $this->response->setJSON(['success' => true, 'message' => 'Session signed out successfully.']);
@@ -1741,7 +1752,8 @@ class UserController extends BaseController
                 'log_date'    => date('Y-m-d'),
                 'log_time'    => time(),
                 'log_icon'    => '<i class="ki-duotone ki-entrance-right"><span class="path1"></span><span class="path2"></span></i>',
-                'log_theme'   => 'danger'
+                'log_theme'   => 'danger',
+                'log_type'    => 'Alert',
             ]);
     
             return $this->response->setJSON(['success' => true, 'message' => 'All sessions signed out successfully.']);
@@ -2482,7 +2494,8 @@ class UserController extends BaseController
                     'log_date'    => date('Y-m-d'),
                     'log_time'    => time(),
                     'log_icon'    => '<i class="ki-duotone ki-directbox-default"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>',
-                    'log_theme'   => 'info'
+                    'log_theme'   => 'info',
+                    'log_type'    => 'Alert',
                 ]);
     
                 return $this->response->setJSON([
@@ -2602,7 +2615,8 @@ class UserController extends BaseController
                 'log_date'    => date('Y-m-d'),
                 'log_time'    => time(),
                 'log_icon'    => '<i class="ki-duotone ki-check-circle"><span class="path1"></span><span class="path2"></span></i>',
-                'log_theme'   => 'success'
+                'log_theme'   => 'success',
+                'log_type'    => 'Alert',
             ]);
     
             // Update session if user is currently logged in
@@ -2758,7 +2772,8 @@ class UserController extends BaseController
                     'log_date' => date('Y-m-d'),
                     'log_time' => time(),
                     'log_icon' => '<i class="ki-duotone ki-security-user"><span class="path1"></span><span class="path2"></span></i>',
-                    'log_theme' => 'info'
+                    'log_theme' => 'info',
+                    'log_type'  => 'Alert',
                 ];
                 
                 $this->userLogModel->insert($userLogData);
@@ -2958,7 +2973,8 @@ class UserController extends BaseController
                 'log_date' => date('Y-m-d'),
                 'log_time' => time(),
                 'log_icon' => '<i class="ki-duotone ki-key-square"><span class="path1"></span><span class="path2"></span></i>',
-                'log_theme' => 'info'
+                'log_theme' => 'info',
+                'log_type'  => 'Alert',
             ];
             
             $this->userLogModel->insert($userLogData);
@@ -3103,6 +3119,91 @@ class UserController extends BaseController
         }
 
         return $this->response->setJSON(['success' => true, 'results' => $output]);
+    }
+
+    // ─── Notifications page ────────────────────────────────────────────────────
+
+    /**
+     * GET user/notification — full notification log DataTable page for the current user.
+     */
+    public function notification()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $myId = (int) $this->session->get('userID');
+
+        $data = [
+            'pageTitle'    => 'My Notifications',
+            'myId'         => $myId,
+        ];
+
+        return view('app/user/notifications', $data);
+    }
+
+    /**
+     * GET user/getNotifications — AJAX: unread count + recent Activity + recent Alert rows.
+     */
+    public function getNotifications()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $myId         = (int) $this->session->get('userID');
+        $unreadCount  = $this->userLogModel->getUnreadCount($myId);
+        $activities   = $this->userLogModel->getRecentByType($myId, 'Activity', 6);
+        $alerts       = $this->userLogModel->getRecentByType($myId, 'Alert', 6);
+
+        $format = function (array $logs): array {
+            $out = [];
+            foreach ($logs as $log) {
+                $out[] = [
+                    'title'   => $log['log_title']  ?? '',
+                    'desc'    => $log['log_desc']   ?? '',
+                    'icon'    => $log['log_icon']   ?? '',
+                    'theme'   => $log['log_theme']  ?? 'primary',
+                    'status'  => $log['log_status'] ?? 'Read',
+                    'date'    => date('d M Y', strtotime($log['log_date'])),
+                    'time'    => date('h:i A', (int)$log['log_time']),
+                    'age'     => $this->_timeAgo((int)$log['log_time']),
+                ];
+            }
+            return $out;
+        };
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'unread_count' => $unreadCount,
+            'activities'   => $format($activities),
+            'alerts'       => $format($alerts),
+        ]);
+    }
+
+    /**
+     * POST user/markNotificationsRead — marks all unread log entries as Read.
+     */
+    public function markNotificationsRead()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false]);
+        }
+
+        $this->userLogModel->markAllRead((int) $this->session->get('userID'));
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /** Human-readable time-ago string from a Unix timestamp. */
+    private function _timeAgo(int $ts): string
+    {
+        $diff = time() - $ts;
+        if ($diff < 60)      return 'Just now';
+        if ($diff < 3600)    return floor($diff / 60)   . ' min ago';
+        if ($diff < 86400)   return floor($diff / 3600) . ' hr ago';
+        if ($diff < 604800)  return floor($diff / 86400)  . ' day' . (floor($diff / 86400)  > 1 ? 's' : '') . ' ago';
+        return date('d M Y', $ts);
     }
 
 

@@ -248,6 +248,10 @@ $routes->post('user/signOutAllSessions/(:num)', 'UserController::signOutAllSessi
 $routes->get('user/getUserLogs/(:num)',      'UserController::getUserLogs/$1');
 $routes->get('user/downloadUserLogs/(:num)', 'UserController::downloadUserLogs/$1');
 
+$routes->get( 'user/notification',               'UserController::notification');
+$routes->get( 'user/getNotifications',           'UserController::getNotifications');
+$routes->post('user/markNotificationsRead',      'UserController::markNotificationsRead');
+
 $routes->get( 'user/medical/(:num)',              'MedicalController::index/$1');
 $routes->get( 'user/medical/add/(:num)',           'MedicalController::add/$1');
 $routes->post('user/medical/store/(:num)',         'MedicalController::store/$1');

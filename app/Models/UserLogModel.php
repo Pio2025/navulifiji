@@ -1,96 +1,129 @@
-<?php
-
-namespace App\Models;
-
-use CodeIgniter\Model;
-
-class UserLogModel extends Model
-{
-    // Database table
-    protected $table = 'user_log';
-    
-    // Primary key
-    protected $primaryKey = 'user_log_id';
-    
-    // Allowed fields (for security)
-    protected $allowedFields = [
-        'user_id_fk',
-        'ip_aadress',
-        'user_agent',
-        'user_device',
-        'log_title',
-        'log_desc',
-        'log_date',
-        'log_time',
-        'log_icon',
-        'log_theme'
-    ];
-    
-    // Dates configuration
-    protected $useTimestamps = false;
-    protected $returnType = 'array';
-    
-    
-    public function addUserLog($data)
-    {
-        return $this->insert($data);
-    }
-    
-    public function getUserLogs($userId, $perPage = 20, $search = '', $dateFrom = '', $dateTo = '', $theme = '')
-    {
-        $builder = $this->where('user_id_fk', $userId);
-    
-        if (!empty($search)) {
-            $builder->groupStart()
-                    ->like('log_title', $search)
-                    ->orLike('log_desc', $search)
-                    ->orLike('ip_aadress', $search)
-                    ->orLike('user_device', $search)
-                    ->groupEnd();
-        }
-    
-        if (!empty($dateFrom)) {
-            $builder->where('log_date >=', $dateFrom);
-        }
-    
-        if (!empty($dateTo)) {
-            $builder->where('log_date <=', $dateTo);
-        }
-    
-        if (!empty($theme)) {
-            $builder->where('log_theme', $theme);
-        }
-    
-        return $builder->orderBy('log_time', 'DESC')
-                       ->paginate($perPage, 'log');
-    }
-    
-    public function getAllUserLogsForExport($userId, $search = '', $dateFrom = '', $dateTo = '', $theme = '')
-    {
-        $builder = $this->where('user_id_fk', $userId);
-    
-        if (!empty($search)) {
-            $builder->groupStart()
-                    ->like('log_title', $search)
-                    ->orLike('log_desc', $search)
-                    ->orLike('ip_aadress', $search)
-                    ->orLike('user_device', $search)
-                    ->groupEnd();
-        }
-    
-        if (!empty($dateFrom)) {
-            $builder->where('log_date >=', $dateFrom);
-        }
-    
-        if (!empty($dateTo)) {
-            $builder->where('log_date <=', $dateTo);
-        }
-    
-        if (!empty($theme)) {
-            $builder->where('log_theme', $theme);
-        }
-    
-        return $builder->orderBy('log_time', 'DESC')->findAll();
-    }
-
+<?php
+
+namespace App\Models;
+
+use CodeIgniter\Model;
+
+class UserLogModel extends Model
+{
+    // Database table
+    protected $table = 'user_log';
+
+    // Primary key
+    protected $primaryKey = 'user_log_id';
+
+    // Allowed fields (for security)
+    protected $allowedFields = [
+        'user_id_fk',
+        'ip_aadress',
+        'user_agent',
+        'user_device',
+        'log_title',
+        'log_desc',
+        'log_date',
+        'log_time',
+        'log_icon',
+        'log_theme',
+        'log_type',
+        'log_status',
+    ];
+
+    // Dates configuration
+    protected $useTimestamps = false;
+    protected $returnType = 'array';
+
+
+    public function addUserLog($data)
+    {
+        return $this->insert($data);
+    }
+
+    /** Count unread entries for a user (used for the badge counter). */
+    public function getUnreadCount(int $userId): int
+    {
+        return (int) $this->where('user_id_fk', $userId)
+                          ->where('log_status', 'Unread')
+                          ->countAllResults();
+    }
+
+    /** Fetch the N most recent logs of a given type for the dropdown. */
+    public function getRecentByType(int $userId, string $type, int $limit = 6): array
+    {
+        return $this->where('user_id_fk', $userId)
+                    ->where('log_type', $type)
+                    ->orderBy('log_time', 'DESC')
+                    ->limit($limit)
+                    ->findAll();
+    }
+
+    /** Mark all unread entries for a user as Read. */
+    public function markAllRead(int $userId): void
+    {
+        $this->where('user_id_fk', $userId)
+             ->where('log_status', 'Unread')
+             ->set('log_status', 'Read')
+             ->update();
+    }
+
+    public function getUserLogs($userId, $perPage = 20, $search = '', $dateFrom = '', $dateTo = '', $theme = '', $logType = '')
+    {
+        $builder = $this->where('user_id_fk', $userId);
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                    ->like('log_title', $search)
+                    ->orLike('log_desc', $search)
+                    ->orLike('ip_aadress', $search)
+                    ->orLike('user_device', $search)
+                    ->groupEnd();
+        }
+
+        if (!empty($dateFrom)) {
+            $builder->where('log_date >=', $dateFrom);
+        }
+
+        if (!empty($dateTo)) {
+            $builder->where('log_date <=', $dateTo);
+        }
+
+        if (!empty($theme)) {
+            $builder->where('log_theme', $theme);
+        }
+
+        if (!empty($logType)) {
+            $builder->where('log_type', $logType);
+        }
+
+        return $builder->orderBy('log_time', 'DESC')
+                       ->paginate($perPage, 'log');
+    }
+
+    public function getAllUserLogsForExport($userId, $search = '', $dateFrom = '', $dateTo = '', $theme = '')
+    {
+        $builder = $this->where('user_id_fk', $userId);
+
+        if (!empty($search)) {
+            $builder->groupStart()
+                    ->like('log_title', $search)
+                    ->orLike('log_desc', $search)
+                    ->orLike('ip_aadress', $search)
+                    ->orLike('user_device', $search)
+                    ->groupEnd();
+        }
+
+        if (!empty($dateFrom)) {
+            $builder->where('log_date >=', $dateFrom);
+        }
+
+        if (!empty($dateTo)) {
+            $builder->where('log_date <=', $dateTo);
+        }
+
+        if (!empty($theme)) {
+            $builder->where('log_theme', $theme);
+        }
+
+        return $builder->orderBy('log_time', 'DESC')->findAll();
+    }
+
 }

@@ -155,6 +155,10 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
 /* Reaction pill count — clickable to open who-reacted */
 .rxn-count { text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; padding: 0 .1rem; }
 .rxn-count:hover { color: #0095e8; }
+/* Hover tooltip for reaction pills */
+#rxn-hover-tip { position:fixed;z-index:9999;background:#1e2129;color:#fff;border-radius:8px;padding:7px 11px;font-size:.82rem;max-width:230px;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.3);line-height:1.45; }
+#rxn-hover-tip .rht-names { font-weight:600; }
+#rxn-hover-tip .rht-hint { font-size:.74rem;opacity:.6;margin-top:2px; }
 /* Post edit button */
 .post-edit-btn { background: none; border: none; color: #a1a5b7; cursor: pointer; padding: .3rem; border-radius: 6px; font-size: .9rem; }
 .post-edit-btn:hover { color: #0095e8; background: #f0f8ff; }
@@ -364,6 +368,9 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
     <button class="lb-nav lb-next" id="lb-next">&#8250;</button>
     <div class="lb-counter" id="lb-counter" style="display:none;"></div>
 </div>
+
+<!-- Reaction pill hover tooltip -->
+<div id="rxn-hover-tip" style="display:none;"></div>
 
 <!-- Reactions detail modal -->
 <div class="modal fade" id="wall-rxn-modal" tabindex="-1">
@@ -632,7 +639,7 @@ function renderReactions(reactions, targetType, targetId) {
     let pills = '';
     for (const [emoji, cnt] of Object.entries(summary || {})) {
         const isMine = emoji === my_emoji ? 'my-reaction' : '';
-        pills += `<button class="reaction-pill ${isMine}" data-target-type="${targetType}" data-target-id="${targetId}" data-emoji="${emoji}">${emoji} <span class="rxn-count" data-target-type="${targetType}" data-target-id="${targetId}" data-open-emoji="${emoji}">${cnt}</span></button>`;
+        pills += `<button class="reaction-pill ${isMine}" data-target-type="${targetType}" data-target-id="${targetId}" data-emoji="${emoji}">${emoji} <span class="rxn-count" data-target-type="${targetType}" data-target-id="${targetId}" data-open-emoji="${emoji}" title="See who reacted">${cnt}</span></button>`;
     }
     const addBtn = `<div class="position-relative d-inline-block">
         <button class="reaction-pill add-reaction-btn" data-target-type="${targetType}" data-target-id="${targetId}" title="React" style="gap:.2rem;">
@@ -1045,6 +1052,8 @@ async function doReact(targetType, targetId, emoji) {
         const fakeReactions = {summary: data.summary, my_emoji: data.my_emoji};
         bar.outerHTML = renderReactions(fakeReactions, targetType, targetId);
     }
+    // Invalidate hover cache so names refresh after a reaction change
+    delete rhtCache[`${targetType}-${targetId}`];
     // Update reaction count on post if it's a post
     if (targetType === 'post') {
         const countSpan = document.querySelector(`#post-${targetId} .reaction-count`);
@@ -1203,6 +1212,67 @@ function renderRxnList(key) {
             <span class="rxn-emoji-badge">${u.emoji}</span>
         </div>`;
     }).join('');
+}
+
+// ─── Reaction pill hover tooltip ─────────────────────────────────────────────
+const rhtEl    = document.getElementById('rxn-hover-tip');
+const rhtCache = {};
+let   rhtTimer = null;
+
+document.getElementById('wall-feed').addEventListener('mouseover', function(e) {
+    const pill = e.target.closest('.reaction-pill');
+    if (!pill || pill.classList.contains('add-reaction-btn') || !pill.dataset.emoji) return;
+    clearTimeout(rhtTimer);
+    rhtTimer = setTimeout(() => showRxnHoverTip(pill), 350);
+});
+
+document.getElementById('wall-feed').addEventListener('mouseout', function(e) {
+    if (!e.target.closest('.reaction-pill')) return;
+    clearTimeout(rhtTimer);
+    rhtEl.style.display = 'none';
+});
+
+async function showRxnHoverTip(pill) {
+    const targetType = pill.dataset.targetType;
+    const targetId   = pill.dataset.targetId;
+    const emoji      = pill.dataset.emoji;
+    const cacheKey   = `${targetType}-${targetId}`;
+
+    rhtEl.innerHTML     = '<span style="opacity:.55;font-size:.78rem;">Loading…</span>';
+    positionRxnTip(pill);
+    rhtEl.style.display = 'block';
+
+    if (!rhtCache[cacheKey]) {
+        try {
+            const r  = await fetch(`${REACTIONS_URL}?target_type=${encodeURIComponent(targetType)}&target_id=${targetId}`);
+            const d  = await r.json();
+            rhtCache[cacheKey] = d.reactions || {};
+        } catch { rhtCache[cacheKey] = {}; }
+    }
+
+    const users = (rhtCache[cacheKey][emoji] || []);
+    if (!users.length) { rhtEl.style.display = 'none'; return; }
+
+    const names = users.map(u => esc(u.name));
+    const summary = names.length <= 3
+        ? names.join(', ')
+        : names.slice(0, 3).join(', ') + ` and ${names.length - 3} more`;
+
+    rhtEl.innerHTML = `<div class="rht-names">${emoji} ${summary}</div><div class="rht-hint">Click the count to see all</div>`;
+    positionRxnTip(pill);
+}
+
+function positionRxnTip(el) {
+    rhtEl.style.display = 'block';
+    const rect  = el.getBoundingClientRect();
+    const tipH  = rhtEl.offsetHeight;
+    const tipW  = rhtEl.offsetWidth;
+    let top  = rect.top - tipH - 8;
+    let left = rect.left;
+    if (top < 4) top = rect.bottom + 8;
+    if (left + tipW > window.innerWidth - 8) left = window.innerWidth - tipW - 8;
+    rhtEl.style.top  = `${Math.max(4, top)}px`;
+    rhtEl.style.left = `${Math.max(4, left)}px`;
 }
 
 // ─── Edit post modal ──────────────────────────────────────────────────────────

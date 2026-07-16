@@ -782,6 +782,7 @@ class AuthController extends BaseController
                 'log_time'    => time(),
                 'log_icon'    => '<i class="ki-duotone ki-lock-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>',
                 'log_theme'   => 'success',
+                'log_type'    => 'Alert',
             ]);
     
             return redirect()->to('auth/login')
