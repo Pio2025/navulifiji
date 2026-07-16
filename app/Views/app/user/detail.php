@@ -3833,16 +3833,18 @@ document.getElementById('sdOpenRefRequestModal')?.addEventListener('click', func
 });
 
 document.getElementById('btnSubmitRefRequest')?.addEventListener('click', function () {
-    const btn          = this;
-    const admissionSel = document.getElementById('sdRefAdmissionId');
-    const refTypeSel   = document.getElementById('sdRefCatId');
+    const btn         = this;
+    const admEl       = document.getElementById('sdRefAdmissionId');
+    const refTypeSel  = document.getElementById('sdRefCatId');
+    const studentId   = document.getElementById('sdRefStudentId')?.value || '';
+    const admissionId = admEl ? admEl.value : '';
 
-    if (!admissionSel || !admissionSel.value) {
-        alert('Please select a school / admission.');
+    if (!admissionId) {
+        Swal.fire({ icon: 'warning', title: 'School Required', text: 'Please select a school / admission.', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
         return;
     }
     if (!refTypeSel || !refTypeSel.value) {
-        alert('Please select a reference type.');
+        Swal.fire({ icon: 'warning', title: 'Reference Type Required', text: 'Please select a reference type.', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
         return;
     }
 
@@ -3850,11 +3852,12 @@ document.getElementById('btnSubmitRefRequest')?.addEventListener('click', functi
     btn.textContent = 'Submitting...';
 
     const formData = new URLSearchParams({
-        user_id:       '<?= $user['user_id'] ?>',
-        admission_id:  admissionSel.value,
+        student_id:    studentId,
+        user_id:       studentId,
+        admission_id:  admissionId,
         ref_cat_id:    refTypeSel.value,
-        ref_type_name: refTypeSel.options[refTypeSel.selectedIndex].text,
-        request_note:  document.getElementById('sdRefNote').value,
+        ref_type_name: refTypeSel.options[refTypeSel.selectedIndex].text.trim(),
+        request_note:  (document.getElementById('sdRefNote')?.value || '').trim(),
     });
 
     fetch('<?= base_url('reference/request/store') ?>', {
@@ -3899,35 +3902,61 @@ document.getElementById('btnSubmitRefRequest')?.addEventListener('click', functi
             <div class="modal-body px-10 py-8">
                 <p class="text-muted fs-7 mb-7">
                     Select the school and reference type below. A staff member will review and process your request.
-                    Track status under <strong>View Generated References</strong>.
+                    Track the status under <strong>View Generated References</strong>.
                 </p>
 
                 <?php
                 $admissionsForModal = $admissionsForModal ?? [];
                 $refCategories      = $refCategories ?? [];
+
+                // Fallback: if categories still empty, hard-code the student ones
+                if (empty($refCategories)) {
+                    $refCategories = [
+                        ['ref_cat_id' => 2, 'ref_cat_name' => 'Character Reference'],
+                        ['ref_cat_id' => 3, 'ref_cat_name' => 'Recommendation Letter'],
+                        ['ref_cat_id' => 4, 'ref_cat_name' => 'Transcript Request'],
+                        ['ref_cat_id' => 5, 'ref_cat_name' => 'Conduct Certificate'],
+                        ['ref_cat_id' => 6, 'ref_cat_name' => 'Clearance Certificate'],
+                    ];
+                }
                 ?>
+
+                <!--begin::Hidden student ID-->
+                <input type="hidden" id="sdRefStudentId" value="<?= (int) $user['user_id'] ?>">
+                <!--end::Hidden student ID-->
 
                 <div class="mb-5">
                     <label class="form-label required">School / Admission</label>
                     <?php if (count($admissionsForModal) === 1): ?>
-                        <input type="hidden" id="sdRefAdmissionId" value="<?= $admissionsForModal[0]['admission_id'] ?>">
-                        <div class="form-control form-control-solid bg-light-secondary">
-                            <strong><?= esc($admissionsForModal[0]['sch_name'] ?? 'Unknown School') ?></strong>
-                            <span class="ms-2 badge badge-light-<?= $admissionsForModal[0]['admission_status'] === 'Active' ? 'success' : 'secondary' ?>">
-                                <?= esc($admissionsForModal[0]['admission_status']) ?>
+                        <input type="hidden" id="sdRefAdmissionId" value="<?= (int) $admissionsForModal[0]['admission_id'] ?>">
+                        <div class="form-control form-control-solid d-flex align-items-center gap-3 py-3"
+                             style="background:#f9f9f9;cursor:default;">
+                            <i class="ki-duotone ki-home-2 fs-3 text-primary">
+                                <span class="path1"></span><span class="path2"></span>
+                            </i>
+                            <span>
+                                <strong><?= esc($admissionsForModal[0]['sch_name'] ?? 'Unknown School') ?></strong>
+                                <span class="ms-2 badge badge-light-<?= ($admissionsForModal[0]['admission_status'] ?? '') === 'Active' ? 'success' : 'warning' ?>">
+                                    <?= esc($admissionsForModal[0]['admission_status'] ?? '') ?>
+                                </span>
                             </span>
                         </div>
-                    <?php else: ?>
+                    <?php elseif (count($admissionsForModal) > 1): ?>
                         <select class="form-select form-select-solid" id="sdRefAdmissionId">
                             <option value="">— Select School —</option>
                             <?php foreach ($admissionsForModal as $adm): ?>
-                            <option value="<?= $adm['admission_id'] ?>">
+                            <option value="<?= (int) $adm['admission_id'] ?>">
                                 <?= esc($adm['sch_name'] ?? 'Unknown School') ?>
-                                (<?= esc($adm['admission_status']) ?>
-                                <?= !empty($adm['admission_date']) ? ' · ' . date('Y', strtotime($adm['admission_date'])) : '' ?>)
+                                — <?= esc($adm['admission_status'] ?? '') ?>
+                                <?= !empty($adm['admission_date']) ? ' (' . date('Y', strtotime($adm['admission_date'])) . ')' : '' ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
+                    <?php else: ?>
+                        <div class="alert alert-warning py-3">
+                            No school admission found. Please contact an administrator.
+                        </div>
+                        <input type="hidden" id="sdRefAdmissionId" value="">
                     <?php endif; ?>
                 </div>
 
@@ -3936,15 +3965,15 @@ document.getElementById('btnSubmitRefRequest')?.addEventListener('click', functi
                     <select class="form-select form-select-solid" id="sdRefCatId">
                         <option value="">— Select Type —</option>
                         <?php foreach ($refCategories as $cat): ?>
-                        <option value="<?= $cat['ref_cat_id'] ?>"><?= esc($cat['ref_cat_name']) ?></option>
+                        <option value="<?= (int) $cat['ref_cat_id'] ?>"><?= esc($cat['ref_cat_name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Additional Note <span class="text-muted">(optional)</span></label>
+                    <label class="form-label">Additional Note <span class="text-muted fs-7">(optional)</span></label>
                     <textarea class="form-control form-control-solid" id="sdRefNote" rows="3"
-                              placeholder="Add any relevant details about your request..."></textarea>
+                              placeholder="Add any details relevant to your request..."></textarea>
                 </div>
             </div>
             <div class="modal-footer">

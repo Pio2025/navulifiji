@@ -1383,19 +1383,28 @@ class UserController extends BaseController
         $data['sessionUserID']       = $userId;
         $data['_view']               = 'app/user/detail';
 
-        // Reference categories for own-profile request modal (exclude cert of enrolment = 1)
-        if ($isStudent) {
-            $data['refCategories'] = $this->referenceCategoryModel
-                ->where('ref_cat_id !=', 1)
-                ->findAll();
-            // Deduplicate admissions by admission_id for the modal select
-            $seenAdm = [];
-            $data['admissionsForModal'] = [];
-            foreach ($admissions as $adm) {
-                if (!isset($seenAdm[$adm['admission_id']])) {
-                    $seenAdm[$adm['admission_id']] = true;
-                    $data['admissionsForModal'][] = $adm;
-                }
+        // Always load for own-profile modal (don't gate on $isStudent — role lookup can fail)
+        $data['refCategories'] = $this->referenceCategoryModel
+            ->where('ref_cat_id !=', 1)
+            ->orderBy('ref_cat_id', 'ASC')
+            ->findAll();
+
+        // Direct admission+school query — avoids empty result from enrolment LEFT JOIN edge cases
+        $db = \Config\Database::connect();
+        $rawAdmissions = $db->table('admission a')
+            ->select('a.admission_id, a.sch_id_fk, a.admission_status, a.admission_date, s.sch_name, s.sch_logo')
+            ->join('school s', 's.sch_id = a.sch_id_fk', 'left')
+            ->where('a.user_id_fk', $userId)
+            ->orderBy('a.admission_id', 'DESC')
+            ->get()->getResultArray();
+
+        // Deduplicate by admission_id
+        $seenAdm = [];
+        $data['admissionsForModal'] = [];
+        foreach ($rawAdmissions as $adm) {
+            if (!isset($seenAdm[$adm['admission_id']])) {
+                $seenAdm[$adm['admission_id']] = true;
+                $data['admissionsForModal'][] = $adm;
             }
         }
 
