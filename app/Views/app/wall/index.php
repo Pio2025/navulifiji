@@ -15,6 +15,7 @@ $WALL_DELETE_POST_BASE  = base_url('wall/post/');       // + postId + '/delete'
 $WALL_COMMENT_BASE      = base_url('wall/post/');       // + postId + '/comments' or /comment
 $WALL_DELETE_CMT_BASE   = base_url('wall/comment/');    // + commentId + '/delete'
 $WALL_REACT_URL         = base_url('wall/react');
+$WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or '/update'
 ?>
 <style>
 /* ── Wall sidebar ───────────────────────────────────── */
@@ -122,7 +123,7 @@ $WALL_REACT_URL         = base_url('wall/react');
 .empty-wall i { font-size: 3.5rem; color: #e4e6ef; }
 .empty-wall p { color: #a1a5b7; margin-top: .75rem; }
 /* Post delete btn */
-.post-del-btn { background: none; border: none; color: #a1a5b7; cursor: pointer; padding: .3rem; border-radius: 6px; font-size: .9rem; margin-left: auto; }
+.post-del-btn { background: none; border: none; color: #a1a5b7; cursor: pointer; padding: .3rem; border-radius: 6px; font-size: .9rem; }
 .post-del-btn:hover { color: #f1416c; background: #fff5f8; }
 /* Video modal */
 #wall-video-modal .modal-body { background: #000; padding: 0; }
@@ -139,6 +140,20 @@ $WALL_REACT_URL         = base_url('wall/react');
 #wall-lightbox .lb-counter { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%); color: rgba(255,255,255,.9); font-size: .82rem; background: rgba(0,0,0,.45); padding: .2rem .85rem; border-radius: 12px; pointer-events: none; white-space: nowrap; }
 /* +N more overlay on 4th photo */
 .more-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.52); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.65rem; font-weight: 700; border-radius: 8px; letter-spacing: -.5px; pointer-events: none; }
+/* Post edit button */
+.post-edit-btn { background: none; border: none; color: #a1a5b7; cursor: pointer; padding: .3rem; border-radius: 6px; font-size: .9rem; }
+.post-edit-btn:hover { color: #0095e8; background: #f0f8ff; }
+/* Edit modal media grid */
+#edit-media-grid { display: flex; flex-wrap: wrap; gap: .5rem; }
+.edit-media-thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; background: #eef1f5; flex-shrink: 0; border: 2px solid transparent; transition: border-color .15s; }
+.edit-media-thumb.marked-delete { border-color: #f1416c; opacity: .5; }
+.edit-media-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.edit-media-thumb .em-del { position: absolute; top: 2px; right: 2px; background: rgba(241,65,108,.85); border: none; color: #fff; border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; }
+.edit-media-thumb.video-thumb { background: #1a1a2e; display: flex; align-items: center; justify-content: center; }
+.edit-file-chip { display: flex; align-items: center; gap: .4rem; background: #f1faff; border: 1px solid #b8d9ef; border-radius: 20px; padding: .3rem .75rem; font-size: .8rem; color: #0095e8; position: relative; transition: opacity .15s; }
+.edit-file-chip.marked-delete { opacity: .4; text-decoration: line-through; border-color: #f1416c; color: #f1416c; background: #fff5f8; }
+.edit-file-chip .em-del { background: none; border: none; color: inherit; cursor: pointer; padding: 0; font-size: .9rem; line-height: 1; }
+.edit-new-preview { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
 </style>
 
 <!--begin::Toolbar-->
@@ -335,6 +350,54 @@ $WALL_REACT_URL         = base_url('wall/react');
     <div class="lb-counter" id="lb-counter" style="display:none;"></div>
 </div>
 
+<!-- Edit post modal -->
+<div class="modal fade" id="wall-edit-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Post</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="edit-post-content" class="form-control mb-3" rows="4" placeholder="What's on your mind?"></textarea>
+
+                <!-- Current media -->
+                <div id="edit-current-media-wrap" style="display:none;">
+                    <div class="fs-8 fw-bold text-muted mb-2 text-uppercase" style="letter-spacing:.5px;">Current Media <span class="fw-normal">(click × to remove)</span></div>
+                    <div id="edit-media-grid"></div>
+                    <div id="edit-file-chips" class="d-flex flex-wrap gap-2 mt-2"></div>
+                </div>
+
+                <!-- Add new media -->
+                <div class="border-top mt-3 pt-3">
+                    <div class="fs-8 fw-bold text-muted mb-2 text-uppercase" style="letter-spacing:.5px;">Add New Media</div>
+                    <div class="d-flex flex-wrap gap-2 mb-2">
+                        <label class="btn btn-light-primary btn-sm" for="edit-image-input">
+                            <i class="ki-duotone ki-picture fs-5"><span class="path1"></span><span class="path2"></span></i>
+                            Photos <span id="edit-img-slots" class="text-muted fs-9"></span>
+                            <input type="file" id="edit-image-input" accept="image/*" multiple style="display:none;">
+                        </label>
+                        <button class="btn btn-light-success btn-sm" id="edit-video-btn">
+                            <i class="ki-duotone ki-youtube fs-5"><span class="path1"></span><span class="path2"></span></i>
+                            Video URL
+                        </button>
+                        <label class="btn btn-light-warning btn-sm" for="edit-file-input">
+                            <i class="ki-duotone ki-paper-clip fs-5"><span class="path1"></span><span class="path2"></span></i>
+                            Files <span id="edit-file-slots" class="text-muted fs-9"></span>
+                            <input type="file" id="edit-file-input" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx" multiple style="display:none;">
+                        </label>
+                    </div>
+                    <div id="edit-new-preview" class="edit-new-preview"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button class="btn btn-primary" id="edit-save-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Video modal -->
 <div class="modal fade" id="wall-video-modal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
@@ -361,6 +424,7 @@ const DEL_POST_BASE = <?= json_encode($WALL_DELETE_POST_BASE) ?>;
 const CMT_BASE      = <?= json_encode($WALL_COMMENT_BASE) ?>;
 const DEL_CMT_BASE  = <?= json_encode($WALL_DELETE_CMT_BASE) ?>;
 const REACT_URL     = <?= json_encode($WALL_REACT_URL) ?>;
+const EDIT_POST_BASE = <?= json_encode($WALL_EDIT_POST_BASE) ?>;
 const EMOJIS        = ['👍','❤️','😂','😮','😢','😡'];
 const CI_TOKEN      = '<?= csrf_hash() ?>';
 const CI_NAME       = '<?= csrf_token() ?>';
@@ -546,9 +610,13 @@ function renderReactions(reactions, targetType, targetId) {
 }
 
 function renderPost(p) {
-    const delBtn = p.is_mine
-        ? `<button class="post-del-btn" data-post-id="${p.wall_post_id}" title="Delete"><i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i></button>`
-        : '';
+    const ownBtns = p.is_mine ? `
+        <button class="post-edit-btn" data-post-id="${p.wall_post_id}" title="Edit" style="margin-left:auto;">
+            <i class="ki-duotone ki-pencil fs-5"><span class="path1"></span><span class="path2"></span></i>
+        </button>
+        <button class="post-del-btn" data-post-id="${p.wall_post_id}" title="Delete">
+            <i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+        </button>` : '';
     return `<div class="wall-post-card" id="post-${p.wall_post_id}" data-post-id="${p.wall_post_id}">
         <div class="post-header">
             ${avatar(p.author_photo, p.author_name, 40)}
@@ -556,7 +624,7 @@ function renderPost(p) {
                 <div class="author">${esc(p.author_name)}</div>
                 <div class="age">${p.age}</div>
             </div>
-            ${delBtn}
+            ${ownBtns}
         </div>
         ${p.content ? `<div class="post-content">${esc(p.content)}</div>` : ''}
         ${renderMedia(p.media, p.wall_post_id)}
@@ -754,7 +822,7 @@ document.getElementById('composer-post-btn').addEventListener('click', async () 
 
 // ─── Feed interactions ─────────────────────────────────────────────────────────
 document.getElementById('wall-feed').addEventListener('click', async function(e) {
-    const target = e.target.closest('.post-del-btn, .toggle-comments-btn, .media-item, .file-row, .file-expand-btn, .reaction-pill, .add-reaction-btn, .ep-btn, .submit-comment-btn, .reply-btn, .del-comment-btn');
+    const target = e.target.closest('.post-del-btn, .post-edit-btn, .toggle-comments-btn, .media-item, .file-row, .file-expand-btn, .reaction-pill, .add-reaction-btn, .ep-btn, .submit-comment-btn, .reply-btn, .del-comment-btn');
     if (!target) return;
 
     // Delete post
@@ -765,6 +833,12 @@ document.getElementById('wall-feed').addEventListener('click', async function(e)
         const data = await postJSON(`${DEL_POST_BASE}${pid}/delete`, {});
         if (data.success) document.getElementById(`post-${pid}`)?.remove();
         else Swal.fire({icon:'error', title:'Error', text: data.error||'Failed.'});
+        return;
+    }
+
+    // Edit post
+    if (target.classList.contains('post-edit-btn')) {
+        openEditModal(parseInt(target.dataset.postId));
         return;
     }
 
@@ -1010,6 +1084,222 @@ function updateActivePosters(posts) {
         </div>`;
     }).join('');
 }
+
+// ─── Edit post modal ──────────────────────────────────────────────────────────
+let editPostId     = null;
+let editDeleteIds  = new Set();
+let editNewImages  = [];   // {file, url}
+let editNewFiles   = [];   // {file}
+let editNewVideos  = [];   // string[]
+let editCurrentMedia = []; // from server
+
+const editModal = new bootstrap.Modal(document.getElementById('wall-edit-modal'));
+
+async function openEditModal(postId) {
+    editPostId    = postId;
+    editDeleteIds = new Set();
+    editNewImages = [];
+    editNewFiles  = [];
+    editNewVideos = [];
+
+    document.getElementById('edit-post-content').value = '';
+    document.getElementById('edit-media-grid').innerHTML = '';
+    document.getElementById('edit-file-chips').innerHTML = '';
+    document.getElementById('edit-new-preview').innerHTML = '';
+
+    // Show loading state
+    const saveBtn = document.getElementById('edit-save-btn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Loading...';
+    editModal.show();
+
+    try {
+        const r = await fetch(`${EDIT_POST_BASE}${postId}/data`);
+        const data = await r.json();
+        if (!data.success) { editModal.hide(); Swal.fire({icon:'error', title:'Error', text: data.error||'Could not load post.'}); return; }
+
+        editCurrentMedia = data.media;
+        document.getElementById('edit-post-content').value = data.content || '';
+        renderEditCurrentMedia();
+        updateEditSlots();
+    } catch(e) {
+        editModal.hide();
+        Swal.fire({icon:'error', title:'Error', text:'Could not load post data.'});
+        return;
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Changes';
+}
+
+function renderEditCurrentMedia() {
+    const images = editCurrentMedia.filter(m => m.media_type === 'image');
+    const videos = editCurrentMedia.filter(m => m.media_type === 'video_url');
+    const files  = editCurrentMedia.filter(m => m.media_type === 'file');
+    const wrap   = document.getElementById('edit-current-media-wrap');
+    const grid   = document.getElementById('edit-media-grid');
+    const chips  = document.getElementById('edit-file-chips');
+
+    grid.innerHTML  = '';
+    chips.innerHTML = '';
+
+    images.forEach(m => {
+        const del   = editDeleteIds.has(m.wall_media_id);
+        const thumb = document.createElement('div');
+        thumb.className = 'edit-media-thumb' + (del ? ' marked-delete' : '');
+        thumb.innerHTML = `<img src="${esc(m.file_src)}" alt="" loading="lazy">
+            <button class="em-del" data-mid="${m.wall_media_id}" title="${del?'Undo remove':'Remove'}">${del?'↩':'×'}</button>`;
+        thumb.querySelector('.em-del').addEventListener('click', () => toggleEditDelete(m.wall_media_id));
+        grid.appendChild(thumb);
+    });
+
+    videos.forEach(m => {
+        const del   = editDeleteIds.has(m.wall_media_id);
+        const thumb = document.createElement('div');
+        thumb.className = 'edit-media-thumb video-thumb' + (del ? ' marked-delete' : '');
+        thumb.style.cssText = 'width:80px;height:80px;';
+        thumb.innerHTML = `<i class="ki-duotone ki-youtube text-danger fs-2x"><span class="path1"></span><span class="path2"></span></i>
+            <button class="em-del" data-mid="${m.wall_media_id}" title="${del?'Undo remove':'Remove'}" style="position:absolute;top:2px;right:2px;">${del?'↩':'×'}</button>`;
+        thumb.querySelector('.em-del').addEventListener('click', () => toggleEditDelete(m.wall_media_id));
+        grid.appendChild(thumb);
+    });
+
+    files.forEach(m => {
+        const del  = editDeleteIds.has(m.wall_media_id);
+        const chip = document.createElement('div');
+        chip.className = 'edit-file-chip' + (del ? ' marked-delete' : '');
+        chip.innerHTML = `<i class="ki-duotone ki-paper-clip fs-6"><span class="path1"></span><span class="path2"></span></i>
+            <span>${esc(m.file_name || 'File')}</span>
+            <button class="em-del" data-mid="${m.wall_media_id}" title="${del?'Undo remove':'Remove'}">${del?'↩':'×'}</button>`;
+        chip.querySelector('.em-del').addEventListener('click', () => toggleEditDelete(m.wall_media_id));
+        chips.appendChild(chip);
+    });
+
+    wrap.style.display = (images.length || videos.length || files.length) ? '' : 'none';
+}
+
+function toggleEditDelete(mid) {
+    if (editDeleteIds.has(mid)) editDeleteIds.delete(mid);
+    else editDeleteIds.add(mid);
+    renderEditCurrentMedia();
+    updateEditSlots();
+}
+
+function countActiveByType(type) {
+    return editCurrentMedia.filter(m => m.media_type === type && !editDeleteIds.has(m.wall_media_id)).length;
+}
+
+function updateEditSlots() {
+    const imgUsed  = countActiveByType('image') + editNewImages.length;
+    const fileUsed = countActiveByType('file')  + editNewFiles.length;
+    document.getElementById('edit-img-slots').textContent  = `(${imgUsed}/50)`;
+    document.getElementById('edit-file-slots').textContent = `(${fileUsed}/20)`;
+}
+
+function renderEditNewPreview() {
+    const wrap = document.getElementById('edit-new-preview');
+    wrap.innerHTML = editNewImages.map((item, i) =>
+        `<div class="cmp-thumb"><img src="${item.url}" alt=""><button class="rm-btn" data-type="image" data-idx="${i}" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);border:none;color:#fff;border-radius:50%;width:20px;height:20px;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button></div>`
+    ).join('') + editNewFiles.map((item, i) =>
+        `<div class="cmp-file-chip"><i class="ki-duotone ki-paper-clip fs-6"><span class="path1"></span><span class="path2"></span></i>${esc(item.file.name)}<button class="rm-btn" data-type="file" data-idx="${i}" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;font-size:.9rem;">&times;</button></div>`
+    ).join('') + editNewVideos.map((url, i) =>
+        `<div class="d-flex align-items-center gap-2 fs-8 text-success"><i class="ki-duotone ki-youtube fs-5"><span class="path1"></span><span class="path2"></span></i>${esc(url)}<button class="rm-btn" data-type="video" data-idx="${i}" style="background:none;border:none;color:inherit;cursor:pointer;padding:0;font-size:.9rem;">&times;</button></div>`
+    ).join('');
+    wrap.querySelectorAll('.rm-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const t = btn.dataset.type, idx = parseInt(btn.dataset.idx);
+            if (t === 'image') editNewImages.splice(idx, 1);
+            else if (t === 'file') editNewFiles.splice(idx, 1);
+            else if (t === 'video') editNewVideos.splice(idx, 1);
+            renderEditNewPreview();
+            updateEditSlots();
+        });
+    });
+    updateEditSlots();
+}
+
+document.getElementById('edit-image-input').addEventListener('change', function() {
+    let skipped = 0;
+    [...this.files].forEach(f => {
+        const used = countActiveByType('image') + editNewImages.length;
+        if (used >= MAX_PHOTOS) { skipped++; return; }
+        editNewImages.push({file: f, url: URL.createObjectURL(f)});
+    });
+    this.value = '';
+    if (skipped) Swal.fire({icon:'warning', title:'Photo limit', text:`Max ${MAX_PHOTOS} photos per post.`, confirmButtonText:'OK'});
+    renderEditNewPreview();
+});
+
+document.getElementById('edit-file-input').addEventListener('change', function() {
+    let skipped = 0;
+    [...this.files].forEach(f => {
+        const used = countActiveByType('file') + editNewFiles.length;
+        if (used >= MAX_FILES) { skipped++; return; }
+        editNewFiles.push({file: f});
+    });
+    this.value = '';
+    if (skipped) Swal.fire({icon:'warning', title:'File limit', text:`Max ${MAX_FILES} files per post.`, confirmButtonText:'OK'});
+    renderEditNewPreview();
+});
+
+document.getElementById('edit-video-btn').addEventListener('click', () => {
+    Swal.fire({
+        title: 'Add Video URL',
+        input: 'url',
+        inputPlaceholder: 'https://www.youtube.com/watch?v=...',
+        showCancelButton: true,
+        confirmButtonText: 'Add',
+    }).then(r => {
+        if (r.isConfirmed && r.value) {
+            editNewVideos.push(r.value.trim());
+            renderEditNewPreview();
+        }
+    });
+});
+
+document.getElementById('edit-save-btn').addEventListener('click', async () => {
+    const saveBtn = document.getElementById('edit-save-btn');
+    saveBtn.disabled = true; saveBtn.textContent = 'Saving...';
+
+    const fd = new FormData();
+    fd.append('content', document.getElementById('edit-post-content').value.trim());
+    editDeleteIds.forEach(id => fd.append('delete_media_ids[]', id));
+    editNewImages.forEach(item => fd.append('media[]', item.file));
+    editNewFiles.forEach(item => fd.append('media[]', item.file));
+    editNewVideos.forEach(url => fd.append('video_urls[]', url));
+
+    try {
+        const data = await postForm(`${EDIT_POST_BASE}${editPostId}/update`, fd);
+        if (data.success) {
+            editModal.hide();
+            const cardEl = document.getElementById(`post-${editPostId}`);
+            if (cardEl) {
+                const newHtml = renderPost({...data.post,
+                    reactions: cardEl.__reactions || data.post.reactions,
+                    comment_count: parseInt(cardEl.querySelector('.cmt-count')?.textContent ?? '0'),
+                });
+                const temp = document.createElement('div');
+                temp.innerHTML = newHtml;
+                cardEl.replaceWith(temp.firstElementChild);
+            }
+        } else {
+            Swal.fire({icon:'error', title:'Error', text: data.error || 'Could not save changes.'});
+        }
+    } catch(e) {
+        Swal.fire({icon:'error', title:'Error', text:'Could not connect to server.'});
+    }
+
+    saveBtn.disabled = false; saveBtn.textContent = 'Save Changes';
+});
+
+// Reset edit state when modal is closed
+document.getElementById('wall-edit-modal').addEventListener('hidden.bs.modal', () => {
+    editPostId = null; editDeleteIds = new Set();
+    editNewImages = []; editNewFiles = []; editNewVideos = [];
+    document.getElementById('edit-new-preview').innerHTML = '';
+    document.getElementById('edit-image-input').value = '';
+    document.getElementById('edit-file-input').value  = '';
+});
 
 // Kick off
 loadFeed(true);

@@ -72,7 +72,7 @@ class WallController extends BaseController
         if ($photo && file_exists(FCPATH . 'uploads/profilePhoto/' . $photo)) {
             return base_url('uploads/profilePhoto/' . $photo);
         }
-        return base_url('assets/media/avatars/blank.png');
+        return base_url('app/assets/media/avatars/blank.png');
     }
 
     // ─── INDEX ────────────────────────────────────────────────────────────────
@@ -363,6 +363,153 @@ class WallController extends BaseController
         $summary = $this->wallModel->getReactionSummary($targetType, $targetId, $myId);
 
         return $this->json(array_merge($result, $summary));
+    }
+
+    // ─── GET POST DATA (AJAX – for edit modal) ──────────────────────────────
+
+    public function getPostData(int $postId): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->isLoggedIn()) return $this->json(['error' => 'Unauthorized'], 401);
+
+        $myId = (int) $this->session->get('userID');
+        $post = $this->wallModel->getPost($postId);
+        if (!$post) return $this->json(['error' => 'Not found'], 404);
+        if ((int) $post['user_id_fk'] !== $myId) return $this->json(['error' => 'Access denied'], 403);
+
+        $mediaRaw = $this->wallModel->getMediaForPosts([$postId]);
+        $media = array_map(fn($m) => [
+            'wall_media_id' => (int) $m['wall_media_id'],
+            'media_type'    => $m['media_type'],
+            'file_src'      => $m['media_type'] === 'video_url'
+                                ? $m['file_src']
+                                : base_url(self::UPLOAD_DIR . $m['file_src']),
+            'file_name'     => $m['file_name'] ?: $m['file_src'],
+            'file_src_raw'  => $m['file_src'],
+        ], $mediaRaw);
+
+        return $this->json([
+            'success' => true,
+            'content' => $post['content'],
+            'media'   => $media,
+        ]);
+    }
+
+    // ─── UPDATE POST (AJAX) ──────────────────────────────────────────────────
+
+    public function updatePost(int $postId): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->isLoggedIn()) return $this->json(['error' => 'Unauthorized'], 401);
+
+        $myId = (int) $this->session->get('userID');
+        $post = $this->wallModel->getPost($postId);
+        if (!$post) return $this->json(['error' => 'Not found'], 404);
+        if ((int) $post['user_id_fk'] !== $myId) return $this->json(['error' => 'Access denied'], 403);
+
+        $content    = trim($this->request->getPost('content') ?? '');
+        $deleteIds  = array_map('intval', array_filter((array)($this->request->getPost('delete_media_ids') ?? [])));
+        $videoUrls  = array_filter(array_map('trim', (array)($this->request->getPost('video_urls') ?? [])));
+        $newFiles   = $this->request->getFileMultiple('media') ?? [];
+
+        // Get current media counts (before deletion)
+        $allMedia     = $this->wallModel->getMediaForPosts([$postId]);
+        $existImages  = count(array_filter($allMedia, fn($m) => $m['media_type'] === 'image'));
+        $existFiles   = count(array_filter($allMedia, fn($m) => $m['media_type'] === 'file'));
+        $existVideos  = count(array_filter($allMedia, fn($m) => $m['media_type'] === 'video_url'));
+
+        // Count deletions by type
+        $delById = [];
+        foreach ($allMedia as $m) {
+            if (in_array((int)$m['wall_media_id'], $deleteIds)) $delById[$m['media_type']] = ($delById[$m['media_type']] ?? 0) + 1;
+        }
+        $remainImages = $existImages - ($delById['image']     ?? 0);
+        $remainFiles  = $existFiles  - ($delById['file']      ?? 0);
+        $remainVideos = $existVideos - ($delById['video_url'] ?? 0);
+
+        // Count new uploads being added
+        $newImageCount = 0;
+        $newFileCount  = 0;
+        $validNewFiles = [];
+        foreach ($newFiles as $file) {
+            if (!$file || !$file->isValid() || $file->hasMoved()) continue;
+            if ($file->getSize() > self::MAX_FILE_MB * 1024 * 1024) continue;
+            $mime = $file->getMimeType();
+            $type = in_array($mime, self::IMAGE_MIME) ? 'image' : (in_array($mime, self::FILE_MIME) ? 'file' : null);
+            if (!$type) continue;
+            if ($type === 'image' && ($remainImages + $newImageCount) >= 50) continue;
+            if ($type === 'file'  && ($remainFiles  + $newFileCount)  >= 20) continue;
+            if ($type === 'image') $newImageCount++;
+            else $newFileCount++;
+            $validNewFiles[] = ['file' => $file, 'type' => $type];
+        }
+
+        // Validate new video URLs
+        $validNewVideos = [];
+        foreach ($videoUrls as $url) {
+            if (($remainVideos + count($validNewVideos)) >= 10) break;
+            if (filter_var($url, FILTER_VALIDATE_URL)) $validNewVideos[] = $url;
+        }
+
+        // Nothing left after edit?
+        $totalAfter = ($remainImages + $newImageCount) + ($remainFiles + $newFileCount) + ($remainVideos + count($validNewVideos));
+        if ($content === '' && $totalAfter === 0) {
+            return $this->json(['error' => 'Post must have content or media.'], 422);
+        }
+
+        // Apply deletions
+        foreach ($allMedia as $m) {
+            if (!in_array((int)$m['wall_media_id'], $deleteIds)) continue;
+            if ($m['media_type'] !== 'video_url') {
+                $path = FCPATH . self::UPLOAD_DIR . $m['file_src'];
+                if (file_exists($path)) unlink($path);
+            }
+            $this->wallModel->deleteMedia((int) $m['wall_media_id']);
+        }
+
+        // Upload new files
+        foreach ($validNewFiles as $item) {
+            $file    = $item['file'];
+            $type    = $item['type'];
+            $ext     = strtolower($file->getExtension());
+            $newName = time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+            $file->move($this->uploadDir(), $newName);
+            $this->wallModel->addMedia($postId, $type, $newName, $file->getClientName());
+        }
+
+        // Add new video URLs
+        foreach ($validNewVideos as $url) {
+            $this->wallModel->addMedia($postId, 'video_url', $url);
+        }
+
+        // Update content
+        $this->wallModel->updatePost($postId, $content);
+
+        // Return refreshed post for re-rendering
+        $updatedPost  = $this->wallModel->getPost($postId);
+        $updatedMedia = $this->wallModel->getMediaForPosts([$postId]);
+
+        return $this->json([
+            'success' => true,
+            'post' => [
+                'wall_post_id'   => $postId,
+                'user_id_fk'     => $myId,
+                'content'        => $updatedPost['content'],
+                'age'            => $this->age($updatedPost['created_at']),
+                'author_name'    => trim($this->session->get('fname') . ' ' . $this->session->get('name')),
+                'author_photo'   => $this->photoUrl($this->session->get('photo')),
+                'comment_count'  => (int) ($updatedPost['comment_count'] ?? 0),
+                'reaction_count' => 0,
+                'reactions'      => ['summary' => [], 'my_emoji' => null],
+                'media'          => array_map(fn($m) => [
+                    'wall_media_id' => (int) $m['wall_media_id'],
+                    'media_type'    => $m['media_type'],
+                    'file_src'      => $m['media_type'] === 'video_url'
+                                        ? $m['file_src']
+                                        : base_url(self::UPLOAD_DIR . $m['file_src']),
+                    'file_name'     => $m['file_name'] ?: $m['file_src'],
+                ], $updatedMedia),
+                'is_mine' => true,
+            ],
+        ]);
     }
 
     // ─── MEDIA VIEW ──────────────────────────────────────────────────────────

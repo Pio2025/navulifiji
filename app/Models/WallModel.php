@@ -130,6 +130,14 @@ class WallModel extends Model
         return (int) $db->insertID();
     }
 
+    public function updatePost(int $postId, string $content): void
+    {
+        \Config\Database::connect()->table('wall_post')->where('wall_post_id', $postId)->update([
+            'content'    => $content,
+            'updated_at' => date('Y-m-d H:i:s'),
+        ]);
+    }
+
     public function deletePost(int $postId): void
     {
         $db = \Config\Database::connect();

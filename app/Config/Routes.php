@@ -629,6 +629,8 @@ $routes->get( 'wall',                              'WallController::index');
 $routes->get( 'wall/feed',                         'WallController::feed');
 $routes->post('wall/post',                         'WallController::createPost');
 $routes->post('wall/post/(:num)/delete',           'WallController::deletePost/$1');
+$routes->get( 'wall/post/(:num)/data',            'WallController::getPostData/$1');
+$routes->post('wall/post/(:num)/update',          'WallController::updatePost/$1');
 $routes->get( 'wall/post/(:num)/comments',         'WallController::getComments/$1');
 $routes->post('wall/post/(:num)/comment',          'WallController::addComment/$1');
 $routes->post('wall/comment/(:num)/delete',        'WallController::deleteComment/$1');
