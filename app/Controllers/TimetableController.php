@@ -432,6 +432,83 @@ class TimetableController extends BaseController
     }
 
     // =========================================================================
+    // MY TIMETABLE (student / parent self-view)
+    // =========================================================================
+
+    public function my()
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('auth/login');
+        $this->boot();
+
+        $userID    = (int) $this->session->get('userID');
+        $roleCatID = (int) $this->session->get('roleCatID');
+
+        $isStudent = ($roleCatID === 4);
+        $isParent  = ($roleCatID === 6);
+
+        // Staff who are also parents can see their children's timetables
+        if (!$isStudent && !$isParent) {
+            $user = $this->userModel->find($userID);
+            if (!empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1) {
+                $isParent = true;
+            } else {
+                $data['_view'] = 'app/auth/access_control';
+                return view('app/layouts/main', $data);
+            }
+        }
+
+        $this->setPageData('My Timetable', 'Timetable', 'My Timetable');
+
+        $data['isStudent'] = $isStudent;
+        $data['isParent']  = $isParent;
+        $data['ttData']    = null;   // for student: single timetable bundle
+        $data['children']  = [];    // for parent: per-child bundles
+
+        if ($isStudent) {
+            $admissions = $this->admissionModel->getAdmissionByUser($userID);
+            $admission  = !empty($admissions) ? $admissions[0] : null;
+            $enrolment  = $admission
+                ? $this->enrolmentModel
+                    ->where('admission_id_fk', $admission['admission_id'])
+                    ->where('enrol_status', 'Active')
+                    ->first()
+                : null;
+
+            $data['admission'] = $admission;
+            $data['enrolment'] = $enrolment;
+            $data['ttData']    = $enrolment
+                ? $this->buildTimetableBundle((int) $enrolment['stream_id_fk'])
+                : null;
+        } else {
+            $children     = $this->parentStudentModel->getChildrenOf($userID);
+            $childrenData = [];
+            foreach ($children as $child) {
+                $childId    = (int) $child['user_id'];
+                $admissions = $this->admissionModel->getAdmissionByUser($childId);
+                $admission  = !empty($admissions) ? $admissions[0] : null;
+                $enrolment  = $admission
+                    ? $this->enrolmentModel
+                        ->where('admission_id_fk', $admission['admission_id'])
+                        ->where('enrol_status', 'Active')
+                        ->first()
+                    : null;
+                $childrenData[] = [
+                    'child'     => $child,
+                    'admission' => $admission,
+                    'enrolment' => $enrolment,
+                    'ttData'    => $enrolment
+                        ? $this->buildTimetableBundle((int) $enrolment['stream_id_fk'])
+                        : null,
+                ];
+            }
+            $data['children'] = $childrenData;
+        }
+
+        $data['_view'] = 'app/timetable/my';
+        return view('app/layouts/main', $data);
+    }
+
+    // =========================================================================
     // DELETE
     // =========================================================================
 
@@ -788,6 +865,26 @@ class TimetableController extends BaseController
             WHERE  sos.stream_id_fk = ?
             ORDER  BY subject_type, option_num, subject_name
         ", [$streamId, $streamId])->getResultArray();
+    }
+
+    /**
+     * Loads a full timetable bundle for a given stream (for student self-view).
+     * Returns null if no timetable found for the stream.
+     */
+    private function buildTimetableBundle(int $streamId): ?array
+    {
+        $tt = $this->ttModel->getCurrentForStream($streamId);
+        if (!$tt) return null;
+
+        $numDays  = max(1, (int) ($tt['num_days'] ?? 6));
+        $slots    = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
+        $entries  = $this->ttEntryModel->getByTimetable((int) $tt['timetable_id']);
+        $entryMap = $this->ttEntryModel->getMappedByTimetable((int) $tt['timetable_id']);
+        $weekMap  = (!empty($tt['rotation_start_date']) && !empty($tt['rotation_start_day']))
+            ? $this->ttModel->getWeekDayMap($tt['rotation_start_date'], (int) $tt['rotation_start_day'])
+            : [];
+
+        return compact('tt', 'numDays', 'slots', 'entries', 'entryMap', 'weekMap');
     }
 
     /**

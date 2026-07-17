@@ -45,6 +45,48 @@ class TimetableModel extends Model
             ->get()->getResultArray();
     }
 
+    /**
+     * Finds the best timetable for a student's stream.
+     * Priority: Active + current year > Active any year > any status current year > most recent.
+     */
+    public function getCurrentForStream(int $streamId): ?array
+    {
+        $year = (int) date('Y');
+
+        // Active, current year
+        $row = $this->baseSelect()
+            ->where('t.stream_id_fk', $streamId)
+            ->where('t.academic_year', $year)
+            ->where('t.timetable_status', 'Active')
+            ->orderBy('t.term', 'DESC')
+            ->limit(1)->get()->getRowArray();
+        if ($row) return $row;
+
+        // Active, any year (most recent)
+        $row = $this->baseSelect()
+            ->where('t.stream_id_fk', $streamId)
+            ->where('t.timetable_status', 'Active')
+            ->orderBy('t.academic_year', 'DESC')
+            ->orderBy('t.term', 'DESC')
+            ->limit(1)->get()->getRowArray();
+        if ($row) return $row;
+
+        // Any status, current year
+        $row = $this->baseSelect()
+            ->where('t.stream_id_fk', $streamId)
+            ->where('t.academic_year', $year)
+            ->orderBy('t.term', 'DESC')
+            ->limit(1)->get()->getRowArray();
+        if ($row) return $row;
+
+        // Fallback: most recent regardless
+        return $this->baseSelect()
+            ->where('t.stream_id_fk', $streamId)
+            ->orderBy('t.academic_year', 'DESC')
+            ->orderBy('t.term', 'DESC')
+            ->limit(1)->get()->getRowArray() ?: null;
+    }
+
     public function getAllWithDetails(): array
     {
         return $this->baseSelect()
