@@ -1,8 +1,10 @@
 <?php
-$announcements = $announcements ?? [];
-$canPost       = $canPost       ?? false;
-$canManage     = $canManage     ?? false;
-$myUserId      = $myUserId      ?? 0;
+$announcements  = $announcements  ?? [];
+$canPost        = $canPost        ?? false;
+$canManage      = $canManage      ?? false;
+$myUserId       = $myUserId       ?? 0;
+$parentSchools  = $parentSchools  ?? [];
+$activeSchoolId = $activeSchoolId ?? 0;
 
 function annAge(string $d): string {
     $s = time() - strtotime($d);
@@ -186,6 +188,24 @@ $priorityCfg = [
 <div id="kt_app_content_container" class="app-container container-xxl">
 
 <?= $this->include('templates/flash_messages') ?>
+
+<?php if (!empty($parentSchools)): ?>
+<div class="d-flex align-items-center gap-2 flex-wrap mb-3">
+    <?php foreach ($parentSchools as $ps): ?>
+    <a href="<?= base_url('dashboard/announcement?sch_id=' . (int)$ps['sch_id']) ?>"
+       class="btn btn-sm d-inline-flex align-items-center gap-2 <?= (int)$ps['sch_id'] === $activeSchoolId ? 'btn-primary' : 'btn-light' ?>">
+        <?php if (!empty($ps['sch_logo'])): ?>
+        <img src="<?= base_url('uploads/school/logo/' . esc($ps['sch_logo'])) ?>"
+             alt="" style="height:18px;width:18px;object-fit:contain;flex-shrink:0;">
+        <?php else: ?>
+        <i class="ki-outline ki-bank fs-6" style="flex-shrink:0;"></i>
+        <?php endif; ?>
+        <?= esc($ps['sch_name']) ?>
+    </a>
+    <?php endforeach; ?>
+</div>
+<hr class="mt-0 mb-5" style="border-color:#c4c8d6;">
+<?php endif; ?>
 
 <?php if (empty($announcements)): ?>
 <!--begin::Empty-->
