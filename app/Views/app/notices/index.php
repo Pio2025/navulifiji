@@ -106,7 +106,7 @@ foreach ($schools as $s) {
     <a href="<?= base_url('notices?sch_id=' . (int)$s['sch_id']) ?>"
        class="nb-tab <?= $isActive ? 'active' : 'inactive' ?>">
         <?php if (!empty($s['sch_logo'])): ?>
-        <img src="<?= base_url('uploads/schoolLogo/' . esc($s['sch_logo'])) ?>" alt="">
+        <img src="<?= base_url('uploads/school/logo/' . esc($s['sch_logo'])) ?>" alt="">
         <?php else: ?>
         <i class="ki-outline ki-bank fs-6" style="flex-shrink:0;<?= $isActive ? 'color:#fff;' : '' ?>"></i>
         <?php endif; ?>
