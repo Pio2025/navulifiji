@@ -452,7 +452,7 @@ class TimetableController extends BaseController
     }
 
     // =========================================================================
-    // REPORT
+    // REPORT (HTML printable)
     // =========================================================================
 
     public function report(int $id)
@@ -469,14 +469,253 @@ class TimetableController extends BaseController
         $tt = $this->ttModel->getDetail($id);
         if (!$tt) return redirect()->to('timetable')->with('error', 'Timetable not found.');
 
-        $numDays = max(1, (int) ($tt['num_days'] ?? 6));
+        $numDays  = max(1, (int) ($tt['num_days'] ?? 6));
+        $db       = \Config\Database::connect();
+        $school   = $db->table('school')->where('sch_id', (int) $tt['sch_id_fk'])->get()->getRowArray();
 
         $data['tt']       = $tt;
+        $data['school']   = $school;
         $data['slots']    = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
         $data['entryMap'] = $this->ttEntryModel->getMappedByTimetable($id);
         $data['days']     = range(1, $numDays);
         $data['_view']    = 'app/timetable/report';
         return view('app/layouts/main', $data);
+    }
+
+    // =========================================================================
+    // REPORT PDF (landscape A4 — matches exam PDF style)
+    // =========================================================================
+
+    public function reportPdf(int $id)
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('auth/login');
+        $this->boot();
+
+        if (!$this->require_access('_timetable_report')) {
+            return redirect()->to('timetable')->with('error', 'Access denied.');
+        }
+
+        $tt = $this->ttModel->getDetail($id);
+        if (!$tt) return redirect()->to('timetable')->with('error', 'Timetable not found.');
+
+        $slots    = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
+        $entryMap = $this->ttEntryModel->getMappedByTimetable($id);
+        $numDays  = max(1, (int) ($tt['num_days'] ?? 6));
+        $days     = range(1, $numDays);
+
+        $db     = \Config\Database::connect();
+        $school = $db->table('school')->where('sch_id', (int) $tt['sch_id_fk'])->get()->getRowArray() ?: [];
+
+        require_once ROOTPATH . 'vendor/tecnickcom/tcpdf/tcpdf.php';
+        set_error_handler(static function (int $errno, string $errstr): bool {
+            return str_contains($errstr, 'iCCP') || str_contains($errstr, 'gd-png') || str_contains($errstr, 'libpng warning');
+        }, E_WARNING);
+
+        // ── Landscape A4 (297 × 210 mm) ──────────────────────────────────────
+        $pdf = new \TCPDF('L', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('Navuli Fiji');
+        $pdf->SetTitle('Timetable — ' . ($tt['stream_name'] ?? '') . ' ' . $tt['academic_year']);
+        $pdf->SetAuthor($school['sch_name'] ?? 'Navuli Fiji');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(10, 10, 10);
+        $pdf->SetAutoPageBreak(false, 0);
+        $pdf->AddPage();
+
+        // ── Outer borders (same double-border style as exam PDF) ─────────────
+        $pdf->SetLineStyle(['width' => 1.0, 'color' => [26, 86, 219]]);
+        $pdf->Rect(6, 6, 285, 198, 'D');
+        $pdf->SetLineStyle(['width' => 0.3, 'color' => [147, 197, 253]]);
+        $pdf->Rect(8, 8, 281, 194, 'D');
+
+        $sx = 10; $pw = 277; $y = 10.0;
+
+        // ── Logos ─────────────────────────────────────────────────────────────
+        $logoPath = FCPATH . 'uploads/school/logo/' . ($school['sch_logo'] ?? '');
+        if (!empty($school['sch_logo']) && file_exists($logoPath)) {
+            $pdf->Image($logoPath, $sx, $y, 22, 22, '', '', 'T', false, 300);
+        }
+        $navuliLogo = FCPATH . 'icon.png';
+        if (file_exists($navuliLogo)) {
+            $pdf->Image($navuliLogo, $sx + $pw - 22, $y, 20, 20, '', '', 'T', false, 300);
+        }
+
+        // ── Header text ───────────────────────────────────────────────────────
+        $cx = $sx + 24; $centerW = $pw - 46;
+
+        $pdf->SetXY($cx, $y + 1);
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->SetTextColor(26, 86, 219);
+        $pdf->Cell($centerW, 7, strtoupper($school['sch_name'] ?? ($tt['sch_name'] ?? '')), 0, 1, 'C');
+
+        $pdf->SetXY($cx, $y + 9);
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetTextColor(55, 65, 81);
+        $subTitle = 'CLASS TIMETABLE — ' . strtoupper($tt['stream_name'] ?? '') . '  ·  ' . $tt['academic_year'] . ' TERM ' . $tt['term'];
+        $pdf->Cell($centerW, 5, $subTitle, 0, 1, 'C');
+
+        $contactParts = array_filter([
+            $school['sch_address'] ?? '',
+            !empty($school['sch_phone']) ? 'Ph: ' . $school['sch_phone'] : '',
+            $school['sch_email']   ?? '',
+        ]);
+        $pdf->SetXY($cx, $y + 15);
+        $pdf->SetFont('helvetica', '', 6.5);
+        $pdf->SetTextColor(120, 120, 120);
+        $pdf->Cell($centerW, 4, implode('  |  ', $contactParts), 0, 1, 'C');
+
+        // ── Divider lines ─────────────────────────────────────────────────────
+        $y += 25;
+        $pdf->SetLineStyle(['width' => 0.7, 'color' => [26, 86, 219]]);
+        $pdf->Line($sx, $y, $sx + $pw, $y);
+        $y += 1.5;
+        $pdf->SetLineStyle(['width' => 0.2, 'color' => [147, 197, 253]]);
+        $pdf->Line($sx, $y, $sx + $pw, $y);
+        $y += 3.5;
+
+        // ── Rotation info ─────────────────────────────────────────────────────
+        if (!empty($tt['rotation_start_date'])) {
+            $pdf->SetXY($sx, $y);
+            $pdf->SetFont('helvetica', 'I', 7);
+            $pdf->SetTextColor(120, 120, 120);
+            $pdf->Cell($pw, 4,
+                'Rotation: Day 1–' . $numDays . ' cycle  ·  Day ' . (int) $tt['rotation_start_day']
+                . ' began on ' . date('d F Y', strtotime($tt['rotation_start_date'])),
+                0, 1, 'C'
+            );
+            $y += 5;
+        }
+
+        // ── Grid column widths ────────────────────────────────────────────────
+        $colTime = 30;
+        $colDay  = round(($pw - $colTime) / count($days), 2);
+
+        // ── Pre-calculate row heights ─────────────────────────────────────────
+        $rowHeights = [];
+        foreach ($slots as $slot) {
+            if (!(int) $slot['is_teaching']) {
+                $rowHeights[$slot['slot_id']] = 6.0;
+            } else {
+                $rh = 11.0;
+                foreach ($days as $d) {
+                    $cell = $entryMap[$d][$slot['slot_id']] ?? null;
+                    if ($cell && !empty($cell['is_optional'])) {
+                        $needed = count($cell['entries']) * 5.0 + 3;
+                        if ($needed > $rh) $rh = $needed;
+                    }
+                }
+                $rowHeights[$slot['slot_id']] = $rh;
+            }
+        }
+
+        // ── Grid header row ───────────────────────────────────────────────────
+        $pdf->SetDrawColor(200, 220, 240);
+        $pdf->SetLineStyle(['width' => 0.3, 'color' => [200, 220, 240]]);
+        $pdf->SetFillColor(240, 247, 255);
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->SetTextColor(26, 86, 219);
+        $hdrH = 8;
+
+        $pdf->MultiCell($colTime, $hdrH, 'Period / Time', 1, 'C', true, 0, $sx, $y, true, 0, false, true, $hdrH, 'M');
+        $x = $sx + $colTime;
+        foreach ($days as $d) {
+            $pdf->MultiCell($colDay, $hdrH, 'Day ' . $d, 1, 'C', true, 0, $x, $y, true, 0, false, true, $hdrH, 'M');
+            $x += $colDay;
+        }
+        $y += $hdrH;
+
+        // ── Grid data rows ────────────────────────────────────────────────────
+        $rowIdx = 0;
+        foreach ($slots as $slot) {
+            $isBreak = !(int) $slot['is_teaching'];
+            $rowH    = $rowHeights[$slot['slot_id']];
+
+            $pdf->SetDrawColor(220, 228, 240);
+            $pdf->SetLineStyle(['width' => 0.25, 'color' => [220, 228, 240]]);
+
+            // ── Time column ───────────────────────────────────────────────────
+            if ($isBreak) {
+                $pdf->SetFillColor(232, 237, 252);
+                $pdf->SetFont('helvetica', 'I', 7.5);
+                $pdf->SetTextColor(80, 90, 130);
+                $pdf->MultiCell($colTime, $rowH, $slot['label'], 1, 'C', true, 0, $sx, $y, true, 0, false, true, $rowH, 'M');
+            } else {
+                $fill = ($rowIdx % 2 === 0) ? [248, 250, 253] : [255, 255, 255];
+                $pdf->SetFillColor(...$fill);
+                $pdf->SetFont('helvetica', 'B', 7.5);
+                $pdf->SetTextColor(55, 65, 81);
+                $timeLabel = $slot['label'];
+                if ($slot['start_time'] && $slot['end_time']) {
+                    $timeLabel .= "\n" . substr($slot['start_time'], 0, 5) . '–' . substr($slot['end_time'], 0, 5);
+                }
+                $pdf->MultiCell($colTime, $rowH, $timeLabel, 1, 'C', true, 0, $sx, $y, true, 0, false, true, $rowH, 'M');
+            }
+
+            // ── Day columns ───────────────────────────────────────────────────
+            $x = $sx + $colTime;
+            foreach ($days as $d) {
+                $cell = $entryMap[$d][$slot['slot_id']] ?? null;
+
+                if ($isBreak) {
+                    $pdf->SetFillColor(232, 237, 252);
+                    $pdf->SetFont('helvetica', 'I', 7);
+                    $pdf->SetTextColor(100, 110, 140);
+                    $pdf->MultiCell($colDay, $rowH, '— ' . $slot['label'] . ' —', 1, 'C', true, 0, $x, $y, true, 0, false, true, $rowH, 'M');
+                } elseif ($cell && !empty($cell['is_optional'])) {
+                    $fill = ($rowIdx % 2 === 0) ? [245, 248, 255] : [252, 252, 255];
+                    $pdf->SetFillColor(...$fill);
+                    $lines = [];
+                    foreach ($cell['entries'] as $e) {
+                        $sub = $e['subject_name'] ?? '';
+                        $tch = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? ''));
+                        $lines[] = $sub . ($tch ? ' (' . $tch . ')' : '');
+                    }
+                    $pdf->SetFont('helvetica', '', 6.5);
+                    $pdf->SetTextColor(50, 80, 180);
+                    $pdf->MultiCell($colDay, $rowH, implode("\n", $lines), 1, 'L', true, 0, $x, $y, true, 0, false, true, $rowH, 'T');
+                } elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])) {
+                    $fill = ($rowIdx % 2 === 0) ? [248, 250, 253] : [255, 255, 255];
+                    $pdf->SetFillColor(...$fill);
+                    $subj = $cell['subject_name'] ?? '';
+                    $tch  = trim(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? ''));
+                    $room = $cell['room'] ?? '';
+                    $txt  = $subj;
+                    if ($tch)  $txt .= "\n" . $tch;
+                    if ($room) $txt .= ' [' . $room . ']';
+                    $pdf->SetFont('helvetica', 'B', 7.5);
+                    $pdf->SetTextColor(26, 36, 56);
+                    $pdf->MultiCell($colDay, $rowH, $txt, 1, 'L', true, 0, $x, $y, true, 0, false, true, $rowH, 'M');
+                } else {
+                    $fill = ($rowIdx % 2 === 0) ? [248, 250, 253] : [255, 255, 255];
+                    $pdf->SetFillColor(...$fill);
+                    $pdf->SetFont('helvetica', '', 7);
+                    $pdf->SetTextColor(190, 195, 210);
+                    $pdf->MultiCell($colDay, $rowH, '—', 1, 'C', true, 0, $x, $y, true, 0, false, true, $rowH, 'M');
+                }
+                $x += $colDay;
+            }
+
+            $y += $rowH;
+            if (!(int) $slot['is_teaching']) continue;
+            $rowIdx++;
+        }
+
+        // ── Footer ────────────────────────────────────────────────────────────
+        $y += 3;
+        $pdf->SetXY($sx, $y);
+        $pdf->SetFont('helvetica', 'I', 6.5);
+        $pdf->SetTextColor(160, 160, 175);
+        $pdf->Cell($pw, 4,
+            'Generated: ' . date('d M Y, H:i') . '  ·  ' . ($tt['template_name'] ?? '') . '  ·  Navuli Fiji School Management System',
+            0, 1, 'C'
+        );
+
+        restore_error_handler();
+
+        $fname = 'timetable_' . preg_replace('/[^a-z0-9_]/i', '_', ($tt['stream_name'] ?? 'class'))
+               . '_' . $tt['academic_year'] . '_T' . $tt['term'] . '.pdf';
+        $pdf->Output($fname, 'I');
+        exit;
     }
 
     // =========================================================================

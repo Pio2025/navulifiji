@@ -671,6 +671,7 @@ $routes->post('timetable/update/(:num)',            'TimetableController::update
 $routes->get( 'timetable/detail/(:num)',            'TimetableController::detail/$1');
 $routes->post('timetable/remove/(:num)',            'TimetableController::delete/$1');
 $routes->get( 'timetable/report/(:num)',            'TimetableController::report/$1');
+$routes->get( 'timetable/report/(:num)/pdf',        'TimetableController::reportPdf/$1');
 $routes->get( 'timetable/stream-info/(:num)',       'TimetableController::streamInfo/$1');
 $routes->get( 'timetable/subject-teachers/(:num)', 'TimetableController::subjectTeachers/$1');
 

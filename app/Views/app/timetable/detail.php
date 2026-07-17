@@ -19,6 +19,10 @@
                 <i class="ki-duotone ki-pencil fs-2"><span class="path1"></span><span class="path2"></span></i> Edit
             </a>
             <?php endif; ?>
+            <a href="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
+               class="btn btn-danger btn-sm" target="_blank">
+                <i class="ki-duotone ki-file-down fs-2"><span class="path1"></span><span class="path2"></span></i> PDF
+            </a>
             <a href="<?= base_url('timetable/report/' . $tt['timetable_id']) ?>" class="btn btn-light-info btn-sm">
                 <i class="ki-duotone ki-printer fs-2"><span class="path1"></span><span class="path2"></span></i> Print
             </a>
