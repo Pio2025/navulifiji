@@ -659,6 +659,20 @@ $routes->get( 'wall/reactions',                    'WallController::reactionDeta
 $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1');
 
 // ============================================================================
+// TIMETABLE Routes
+// ============================================================================
+$routes->get( 'timetable',                          'TimetableController::index');
+$routes->get( 'timetable/add',                      'TimetableController::add');
+$routes->post('timetable/store',                    'TimetableController::store');
+$routes->get( 'timetable/edit/(:num)',              'TimetableController::edit/$1');
+$routes->post('timetable/update/(:num)',            'TimetableController::update/$1');
+$routes->get( 'timetable/detail/(:num)',            'TimetableController::detail/$1');
+$routes->post('timetable/remove/(:num)',            'TimetableController::delete/$1');
+$routes->get( 'timetable/report/(:num)',            'TimetableController::report/$1');
+$routes->get( 'timetable/stream-info/(:num)',       'TimetableController::streamInfo/$1');
+$routes->get( 'timetable/subject-teachers/(:num)', 'TimetableController::subjectTeachers/$1');
+
+// ============================================================================
 // EVENT Routes
 // ============================================================================
 $routes->get( 'event',                             'EventController::index');

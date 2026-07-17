@@ -64,6 +64,10 @@ use App\Models\PublicHolidayModel;
 use App\Models\WallModel;
 use App\Models\EventModel;
 use App\Models\ReferenceRequestModel;
+use App\Models\TimetableModel;
+use App\Models\TimetableEntryModel;
+use App\Models\TimetableTemplateModel;
+use App\Models\TimetableTemplateSlotModel;
 
 
 
@@ -150,6 +154,10 @@ abstract class BaseController extends Controller
     protected $wallModel;
     protected $eventModel;
     protected $referenceRequestModel;
+    protected $timetableModel;
+    protected $timetableEntryModel;
+    protected $timetableTemplateModel;
+    protected $timetableTemplateSlotModel;
 
 
     /**
@@ -285,6 +293,13 @@ abstract class BaseController extends Controller
         $this->eventModel                   = new EventModel();
         $this->eventModel->ensureTables();
         $this->referenceRequestModel        = new ReferenceRequestModel();
+        $this->timetableModel               = new TimetableModel();
+        $this->timetableModel->ensureTables();
+        $this->timetableEntryModel          = new TimetableEntryModel();
+        $this->timetableEntryModel->ensureTables();
+        $this->timetableTemplateModel       = new TimetableTemplateModel();
+        $this->timetableTemplateModel->ensureTables();
+        $this->timetableTemplateSlotModel   = new TimetableTemplateSlotModel();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING
