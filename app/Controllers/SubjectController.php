@@ -20,15 +20,13 @@ class SubjectController extends BaseController
             return view('app/layouts/main', $data);
         }
 
-        $subjects = $this->subjectModel->getAllWithLevel();
-        $levels   = $this->levelModel->findAll();
-
-        $data['subjects']  = $subjects;
-        $data['levels']    = $levels;
-        $data['canAdd']    = $isSuperAdmin || $this->grant_access('_add_subject');
-        $data['canEdit']   = $isSuperAdmin || $this->grant_access('_edit_subject');
-        $data['canDelete'] = $isSuperAdmin || $this->grant_access('_remove_subject');
-        $data['_view']     = 'app/subject/index';
+        $db = \Config\Database::connect();
+        $data['totalSubjects']   = $db->table('subject')->countAllResults();
+        $data['totalExaminable'] = $db->table('subject')->where('is_examinable', 1)->countAllResults();
+        $data['totalNonExam']    = $db->table('subject')->where('is_examinable', 0)->countAllResults();
+        $data['levels']          = $this->levelModel->findAll();
+        $data['canAdd']          = $isSuperAdmin || $this->grant_access('_add_subject');
+        $data['_view']           = 'app/subject/index';
         return view('app/layouts/main', $data);
     }
 
@@ -144,6 +142,112 @@ class SubjectController extends BaseController
         ]);
 
         return redirect()->to('subject')->with('success', 'Subject updated successfully.');
+    }
+
+    // =========================================================================
+    // SERVER-SIDE DATATABLE LISTING
+    // =========================================================================
+
+    public function getSubjectListing()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(401);
+        }
+
+        $req    = service('request');
+        $draw   = (int) ($req->getPost('draw') ?? 1);
+        $start  = (int) ($req->getPost('start') ?? 0);
+        $length = (int) ($req->getPost('length') ?? 15);
+
+        $searchData  = $req->getPost('search');
+        $searchValue = is_array($searchData) ? trim($searchData['value'] ?? '') : '';
+
+        $orderData        = $req->getPost('order');
+        $orderColumnIndex = is_array($orderData) ? (int) ($orderData[0]['column'] ?? 0) : 0;
+        $orderDir         = is_array($orderData) ? ($orderData[0]['dir'] ?? 'asc') : 'asc';
+        $orderDir         = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+
+        $columnMap = ['s.subject_name', 'l.level_name', null, null];
+        $orderCol  = $columnMap[$orderColumnIndex] ?? 's.subject_name';
+
+        $levelId    = (int) ($req->getPost('level_id') ?? 0);
+        $examFilter = $req->getPost('is_examinable');
+
+        $db = \Config\Database::connect();
+        $recordsTotal = $db->table('subject')->countAllResults();
+
+        $builder = $db->table('subject s')
+            ->select('s.subject_id, s.subject_name, s.is_examinable, l.level_id, l.level_name')
+            ->join('level l', 'l.level_id = s.level_id_fk', 'left');
+
+        if ($searchValue !== '') {
+            $builder->groupStart()
+                ->like('s.subject_name', $searchValue)
+                ->orLike('l.level_name', $searchValue)
+                ->groupEnd();
+        }
+
+        if ($levelId > 0) {
+            $builder->where('s.level_id_fk', $levelId);
+        }
+
+        if ($examFilter !== null && $examFilter !== '') {
+            $builder->where('s.is_examinable', (int) $examFilter);
+        }
+
+        $recordsFiltered = $builder->countAllResults(false);
+
+        if ($orderCol !== null) {
+            $builder->orderBy($orderCol, $orderDir);
+        } else {
+            $builder->orderBy('l.level_id', 'ASC')->orderBy('s.subject_name', 'ASC');
+        }
+
+        if ($length !== -1) {
+            $builder->limit($length, $start);
+        }
+
+        $rows = $builder->get()->getResultArray();
+
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+        $canEdit      = $isSuperAdmin || $this->grant_access('_edit_subject');
+        $canDelete    = $isSuperAdmin || $this->grant_access('_remove_subject');
+
+        $data = [];
+        foreach ($rows as $row) {
+            $badge = (int) $row['is_examinable']
+                ? '<span class="badge badge-light-success fs-8">Examinable</span>'
+                : '<span class="badge badge-light-warning fs-8">Non-Exam</span>';
+
+            $actions = '';
+            if ($canEdit) {
+                $actions .= '<a href="' . base_url('subject/edit/' . (int)$row['subject_id']) . '" class="btn btn-icon btn-sm btn-light-primary me-1">'
+                    . '<i class="ki-duotone ki-pencil fs-5"><span class="path1"></span><span class="path2"></span></i></a>';
+            }
+            if ($canDelete) {
+                $actions .= '<button type="button" class="btn btn-icon btn-sm btn-light-danger btn-delete-subject"'
+                    . ' data-id="' . (int)$row['subject_id'] . '"'
+                    . ' data-name="' . esc($row['subject_name']) . '">'
+                    . '<i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i></button>';
+            }
+            if (!$actions) {
+                $actions = '—';
+            }
+
+            $data[] = [
+                'subject_name'  => '<span class="fw-semibold text-gray-800 fs-7">' . esc($row['subject_name']) . '</span>',
+                'level_name'    => '<span class="text-muted fs-7">' . esc($row['level_name'] ?? '—') . '</span>',
+                'is_examinable' => $badge,
+                'actions'       => '<div class="d-flex justify-content-end">' . $actions . '</div>',
+            ];
+        }
+
+        return $this->response->setJSON([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+        ]);
     }
 
     // =========================================================================
