@@ -16,30 +16,37 @@
 <!--end::Toolbar-->
 
 <style>
+/* ── Layout shell ────────────────────────────────────────────────────── */
 .mp-layout {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    min-height: calc(100vh - 180px);
 }
+/* Desktop: fixed viewport height — no page scroll, both panels scroll internally */
 @media (min-width: 992px) {
-    .mp-layout { flex-direction: row; gap: 1.75rem; }
+    .mp-layout {
+        flex-direction: row;
+        gap: 1.75rem;
+        height: calc(100vh - 205px); /* 100vh minus header + toolbar + content padding */
+        min-height: 480px;
+    }
 }
+
+/* ── Contacts sidebar ────────────────────────────────────────────────── */
 .mp-sidebar {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
     width: 100%;
-    min-height: 300px;
 }
-@media (min-width: 992px) {
-    .mp-sidebar { width: 300px; }
+/* Mobile: capped so it doesn't dominate the screen */
+@media (max-width: 991.98px) {
+    .mp-sidebar { min-height: 260px; max-height: 40vh; }
 }
-@media (min-width: 1200px) {
-    .mp-sidebar { width: 375px; }
-}
-.mp-sidebar .card,
-#kt_chat_messenger {
+@media (min-width: 992px)  { .mp-sidebar { width: 300px; } }
+@media (min-width: 1200px) { .mp-sidebar { width: 375px; } }
+
+.mp-sidebar .card {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -57,11 +64,22 @@
     padding-right: 0.5rem;
     margin-right: -0.5rem;
 }
+
+/* ── Messenger panel ─────────────────────────────────────────────────── */
 .mp-messenger-col {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
+}
+@media (max-width: 991.98px) {
+    .mp-messenger-col { min-height: 420px; }
+}
+#kt_chat_messenger {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 .mp-messenger-body {
     flex: 1;
