@@ -487,7 +487,7 @@
 					<!--begin::Row - Parent Checkbox (Hidden by default)-->
 					<div class="row mb-6" id="parent-checkbox-row">
 						<div class="col-lg-12">
-							<div class="d-flex align-items-start gap-3 rounded border border-dashed border-warning py-4" style="padding-left:20px;padding-right:20px;">
+							<div class="d-flex align-items-start gap-3 rounded border border-dashed border-warning px-4 py-4 mx-3">
 								<div class="form-check form-check-custom flex-shrink-0 mt-1">
 									<input class="form-check-input" type="checkbox" name="is_a_parent" value="1" id="is_a_parent" <?= old('is_a_parent') ? 'checked' : '' ?> />
 								</div>
