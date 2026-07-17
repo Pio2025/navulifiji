@@ -79,6 +79,56 @@ class NoticeBoardModel extends Model
         return $row ?: null;
     }
 
+    /**
+     * Mark all active notices visible to this user's audience as read.
+     * Called when the user visits the notice board.
+     */
+    public function markAllReadForUser(int $userId, int $schId, string $audience = 'All'): void
+    {
+        if ($userId <= 0 || $schId <= 0) return;
+        $now = date('Y-m-d H:i:s');
+
+        $audienceClause = $audience === 'All'
+            ? ''
+            : "AND (nb.audience = 'All' OR nb.audience = " . $this->db->escape($audience) . ")";
+
+        $this->db->query("
+            INSERT IGNORE INTO notice_reads (user_id, notice_id, read_at)
+            SELECT ?, nb.notice_id, NOW()
+            FROM notice_board nb
+            WHERE nb.sch_id_fk = ?
+              AND nb.notice_status = 'Active'
+              AND (nb.expires_at IS NULL OR nb.expires_at > ?)
+              {$audienceClause}
+        ", [$userId, $schId, $now]);
+    }
+
+    /**
+     * Count active notices not yet read by this user for a given school and audience.
+     */
+    public function getUnreadCountForUser(int $userId, int $schId, string $audience = 'All'): int
+    {
+        if ($userId <= 0 || $schId <= 0) return 0;
+        $now = date('Y-m-d H:i:s');
+
+        $audienceClause = $audience === 'All'
+            ? ''
+            : "AND (nb.audience = 'All' OR nb.audience = " . $this->db->escape($audience) . ")";
+
+        $row = $this->db->query("
+            SELECT COUNT(*) AS cnt
+            FROM notice_board nb
+            LEFT JOIN notice_reads nr
+                ON nr.notice_id = nb.notice_id AND nr.user_id = ?
+            WHERE nb.sch_id_fk = ?
+              AND nb.notice_status = 'Active'
+              AND (nb.expires_at IS NULL OR nb.expires_at > ?)
+              {$audienceClause}
+              AND nr.nr_id IS NULL
+        ", [$userId, $schId, $now])->getRowArray();
+        return (int) ($row['cnt'] ?? 0);
+    }
+
     /** Mark all expired records as Expired (can be called on a cron or each page load). */
     public function expireOld(): void
     {

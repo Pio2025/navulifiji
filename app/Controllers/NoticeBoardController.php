@@ -101,6 +101,9 @@ class NoticeBoardController extends BaseController
 
         $notices = $this->noticeModel->getActiveForSchool($schId, $audience);
 
+        // Mark all visible notices as read for this user on page visit
+        $this->noticeModel->markAllReadForUser($userId, $schId, $audience);
+
         $this->setPageData('Notice Board', 'Dashboard', 'Notice Board');
         $data = $this->loadCommonData('app/notice_board/index', [
             'notices'        => $notices,

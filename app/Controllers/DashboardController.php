@@ -761,4 +761,83 @@ class DashboardController extends BaseController
             'pr_announcements' => $announcements,
         ];
     }
+
+    // ─── Unread counts for nav badges ─────────────────────────────────────────
+
+    public function unreadCounts(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['notices' => 0, 'announcements' => 0]);
+        }
+
+        $userId  = (int) $this->session->get('userID');
+        $roleCat = (int) $this->session->get('roleCatID');
+        $db      = \Config\Database::connect();
+
+        $isParent = $roleCat === 6
+            || (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+
+        $audience = match ($roleCat) {
+            3 => 'Teachers',
+            4 => 'Students',
+            6 => 'Parents',
+            default => 'All',
+        };
+
+        if ($isParent) {
+            $schools = $db->query("
+                SELECT DISTINCT a.sch_id_fk
+                FROM parent_student ps
+                INNER JOIN admission a ON a.user_id_fk = ps.student_user_id_fk
+                WHERE ps.parent_user_id_fk = ? AND a.admission_status = 'Active'
+            ", [$userId])->getResultArray();
+
+            $schIds = array_map('intval', array_column($schools, 'sch_id_fk'));
+
+            if (empty($schIds)) {
+                return $this->response->setJSON(['notices' => 0, 'announcements' => 0]);
+            }
+
+            $inList = implode(',', $schIds);
+            $now    = date('Y-m-d H:i:s');
+
+            $noticeCount = (int) $db->query("
+                SELECT COUNT(*) AS cnt
+                FROM notice_board nb
+                LEFT JOIN notice_reads nr ON nr.notice_id = nb.notice_id AND nr.user_id = ?
+                WHERE nb.sch_id_fk IN ({$inList})
+                  AND nb.notice_status = 'Active'
+                  AND (nb.expires_at IS NULL OR nb.expires_at > ?)
+                  AND (nb.audience = 'All' OR nb.audience = 'Parents')
+                  AND nr.nr_id IS NULL
+            ", [$userId, $now])->getRow()->cnt;
+
+            $annCount = (int) $db->query("
+                SELECT COUNT(*) AS cnt
+                FROM school_announcement sa
+                LEFT JOIN announcement_reads ar ON ar.announcement_id = sa.announcement_id AND ar.user_id = ?
+                WHERE sa.sch_id_fk IN ({$inList})
+                  AND sa.announcement_status = 'Active'
+                  AND (sa.expires_at IS NULL OR sa.expires_at > ?)
+                  AND ar.ar_id IS NULL
+            ", [$userId, $now])->getRow()->cnt;
+
+        } else {
+            $schId = (int) $this->session->get('schID');
+            if ($schId <= 0) {
+                return $this->response->setJSON(['notices' => 0, 'announcements' => 0]);
+            }
+
+            $annModel    = new \App\Models\AnnouncementModel();
+            $noticeModel = new \App\Models\NoticeBoardModel();
+
+            $noticeCount = $noticeModel->getUnreadCountForUser($userId, $schId, $audience);
+            $annCount    = $annModel->getUnreadCountForUser($userId, $schId);
+        }
+
+        return $this->response->setJSON([
+            'notices'       => $noticeCount,
+            'announcements' => $annCount,
+        ]);
+    }
 }

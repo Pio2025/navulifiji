@@ -151,6 +151,9 @@ class AnnouncementController extends BaseController
 
         $announcements = $this->annModel->getActiveForSchool($schId);
 
+        // Mark all visible announcements as read for this user on page visit
+        $this->annModel->markAllReadForUser($userId, $schId);
+
         $this->setPageData('Announcements', 'Dashboard', 'Announcements');
         $data = $this->loadCommonData('app/announcement/index', [
             'announcements'  => $announcements,

@@ -573,6 +573,42 @@
 									loadNotifications();
 								})();
 								</script>
+
+								<script>
+								/* ── Notice & Announcement unread badges ─────────────────────── */
+								(function () {
+									const COUNTS_URL = '<?php echo base_url("dashboard/unread-counts"); ?>';
+									const BADGE_STYLE = 'display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f1416c;color:#fff;font-size:9px;font-weight:700;line-height:1;flex-shrink:0;margin-left:6px;';
+									const path = window.location.pathname;
+
+									function applyBadge(urlPart, count) {
+										// Remove stale badges for this url part
+										document.querySelectorAll('[data-navuli-badge="' + urlPart + '"]').forEach(el => el.remove());
+										if (!count || count < 1) return;
+										const text = count >= 10 ? '9+' : String(count);
+										document.querySelectorAll('a[href*="' + urlPart + '"]').forEach(function (link) {
+											const badge = document.createElement('span');
+											badge.setAttribute('data-navuli-badge', urlPart);
+											badge.style.cssText = BADGE_STYLE;
+											badge.textContent = text;
+											const title = link.querySelector('.menu-title');
+											if (title) title.after(badge);
+											else link.appendChild(badge);
+										});
+									}
+
+									fetch(COUNTS_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+										.then(function (r) { return r.json(); })
+										.then(function (data) {
+											// Zero out the badge for the page currently being viewed
+											if (path.includes('dashboard/notice'))        data.notices       = 0;
+											if (path.includes('dashboard/announcement'))   data.announcements = 0;
+											applyBadge('dashboard/notice',       data.notices);
+											applyBadge('dashboard/announcement',  data.announcements);
+										})
+										.catch(function () {});
+								}());
+								</script>
 								<!--begin::Theme mode-->
 								<div class="app-navbar-item ms-1 ms-md-4">
 									<!--begin::Menu toggle-->

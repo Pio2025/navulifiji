@@ -38,6 +38,44 @@ class AnnouncementModel extends Model
             ->get()->getResultArray();
     }
 
+    /**
+     * Mark all active announcements for a school as read by this user.
+     * Called when the user visits the announcements page.
+     */
+    public function markAllReadForUser(int $userId, int $schId): void
+    {
+        if ($userId <= 0 || $schId <= 0) return;
+        $now = date('Y-m-d H:i:s');
+        $this->db->query("
+            INSERT IGNORE INTO announcement_reads (user_id, announcement_id, read_at)
+            SELECT ?, announcement_id, NOW()
+            FROM school_announcement
+            WHERE sch_id_fk = ?
+              AND announcement_status = 'Active'
+              AND (expires_at IS NULL OR expires_at > ?)
+        ", [$userId, $schId, $now]);
+    }
+
+    /**
+     * Count active announcements not yet read by this user for a given school.
+     */
+    public function getUnreadCountForUser(int $userId, int $schId): int
+    {
+        if ($userId <= 0 || $schId <= 0) return 0;
+        $now = date('Y-m-d H:i:s');
+        $row = $this->db->query("
+            SELECT COUNT(*) AS cnt
+            FROM school_announcement sa
+            LEFT JOIN announcement_reads ar
+                ON ar.announcement_id = sa.announcement_id AND ar.user_id = ?
+            WHERE sa.sch_id_fk = ?
+              AND sa.announcement_status = 'Active'
+              AND (sa.expires_at IS NULL OR sa.expires_at > ?)
+              AND ar.ar_id IS NULL
+        ", [$userId, $schId, $now])->getRowArray();
+        return (int) ($row['cnt'] ?? 0);
+    }
+
     public function expireOld(): void
     {
         $expired = $this->db->table('school_announcement')
