@@ -44,6 +44,23 @@ class NoticeBoardController extends BaseController
         };
     }
 
+    // ─── Parent school resolution ─────────────────────────────────────────────
+
+    private function resolveParentSchools(int $userId): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT DISTINCT s.sch_id, s.sch_name, s.sch_logo
+            FROM parent_student ps
+            INNER JOIN users stu ON stu.user_id = ps.student_user_id_fk
+            INNER JOIN admission a
+                ON a.user_id_fk = stu.user_id AND a.admission_status = 'Active'
+            INNER JOIN school s ON s.sch_id = a.sch_id_fk
+            WHERE ps.parent_user_id_fk = ?
+            ORDER BY s.sch_name
+        ", [$userId])->getResultArray();
+    }
+
     // ─── INDEX ─────────────────────────────────────────────────────────────────
 
     public function index(): string|\CodeIgniter\HTTP\RedirectResponse
@@ -58,17 +75,41 @@ class NoticeBoardController extends BaseController
         // Expire stale notices lazily
         $this->noticeModel->expireOld();
 
-        $schId    = (int) $this->session->get('schID');
+        $userId   = (int) $this->session->get('userID');
+        $roleCat  = (int) $this->session->get('roleCatID');
         $audience = $this->myAudience();
-        $notices  = $this->noticeModel->getActiveForSchool($schId, $audience);
+
+        $isParent = $roleCat === 6
+            || (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+
+        $parentSchools   = [];
+        $activeSchoolId  = 0;
+
+        if ($isParent) {
+            $parentSchools = $this->resolveParentSchools($userId);
+
+            // Honour ?sch_id= tab switch, validated against accessible schools
+            $reqSchId = (int) $this->request->getGet('sch_id');
+            $schIds   = array_column($parentSchools, 'sch_id');
+            $activeSchoolId = in_array($reqSchId, $schIds, false) ? $reqSchId
+                : (empty($parentSchools) ? 0 : (int) $parentSchools[0]['sch_id']);
+
+            $schId = $activeSchoolId;
+        } else {
+            $schId = (int) $this->session->get('schID');
+        }
+
+        $notices = $this->noticeModel->getActiveForSchool($schId, $audience);
 
         $this->setPageData('Notice Board', 'Dashboard', 'Notice Board');
         $data = $this->loadCommonData('app/notice_board/index', [
-            'notices'   => $notices,
-            'canPost'   => $this->canPost(),
-            'canPin'    => $this->grant_access('_pin_notice') || $this->isSuperAdmin(),
-            'canManage' => $this->isSuperAdmin() || $this->grant_access('_remove_notice'),
-            'myUserId'  => (int) $this->session->get('userID'),
+            'notices'        => $notices,
+            'canPost'        => $this->canPost(),
+            'canPin'         => $this->grant_access('_pin_notice') || $this->isSuperAdmin(),
+            'canManage'      => $this->isSuperAdmin() || $this->grant_access('_remove_notice'),
+            'myUserId'       => $userId,
+            'parentSchools'  => $parentSchools,
+            'activeSchoolId' => $activeSchoolId,
         ]);
 
         return view('app/layouts/main', $data);
