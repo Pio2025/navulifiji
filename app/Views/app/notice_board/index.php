@@ -1,11 +1,13 @@
 <?php
-$notices        = $notices        ?? [];
-$canPost        = $canPost        ?? false;
-$canPin         = $canPin         ?? false;
-$canManage      = $canManage      ?? false;
-$myUserId       = $myUserId       ?? 0;
-$parentSchools  = $parentSchools  ?? [];
-$activeSchoolId = $activeSchoolId ?? 0;
+$notices           = $notices           ?? [];
+$canPost           = $canPost           ?? false;
+$canPin            = $canPin            ?? false;
+$canManage         = $canManage         ?? false;
+$myUserId          = $myUserId          ?? 0;
+$parentSchools     = $parentSchools     ?? [];
+$activeSchoolId    = $activeSchoolId    ?? 0;
+$needsSchoolSelect = $needsSchoolSelect ?? false;
+$allSchools        = $allSchools        ?? [];
 
 $now = time();
 
@@ -424,6 +426,21 @@ $regular = array_filter($notices, fn($n) => (int)$n['is_pinned'] === 0);
     <div class="drawer-body">
         <form id="postForm" method="POST" action="<?= base_url('dashboard/notice/store') ?>">
             <?= csrf_field() ?>
+
+            <?php if ($needsSchoolSelect && !empty($allSchools)): ?>
+            <!--begin::School selector-->
+            <div class="mb-5">
+                <label class="form-label fw-semibold text-gray-700 required" for="noticeSchool">Post to School</label>
+                <select class="form-select form-select-solid" id="noticeSchool" name="sch_id" required>
+                    <option value="">— Select a school —</option>
+                    <?php foreach ($allSchools as $s): ?>
+                    <option value="<?= (int)$s['sch_id'] ?>"><?= esc($s['sch_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="text-muted fs-9 mt-1">This notice will only appear for the selected school.</div>
+            </div>
+            <!--end::School selector-->
+            <?php endif; ?>
 
             <!--begin::Priority-->
             <div class="mb-5">

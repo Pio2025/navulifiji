@@ -1,10 +1,12 @@
 <?php
-$announcements  = $announcements  ?? [];
-$canPost        = $canPost        ?? false;
-$canManage      = $canManage      ?? false;
-$myUserId       = $myUserId       ?? 0;
-$parentSchools  = $parentSchools  ?? [];
-$activeSchoolId = $activeSchoolId ?? 0;
+$announcements     = $announcements     ?? [];
+$canPost           = $canPost           ?? false;
+$canManage         = $canManage         ?? false;
+$myUserId          = $myUserId          ?? 0;
+$parentSchools     = $parentSchools     ?? [];
+$activeSchoolId    = $activeSchoolId    ?? 0;
+$needsSchoolSelect = $needsSchoolSelect ?? false;
+$allSchools        = $allSchools        ?? [];
 
 function annAge(string $d): string {
     $s = time() - strtotime($d);
@@ -369,6 +371,20 @@ $priorityCfg = [
             enctype="multipart/form-data">
             <?= csrf_field() ?>
             <input type="hidden" name="priority" id="annPriorityInput" value="Info">
+
+            <?php if ($needsSchoolSelect && !empty($allSchools)): ?>
+            <!--School selector-->
+            <div class="mb-5">
+                <label class="form-label fw-semibold text-gray-700 required" for="annSchool">Post to School</label>
+                <select class="form-select form-select-solid" id="annSchool" name="sch_id" required>
+                    <option value="">— Select a school —</option>
+                    <?php foreach ($allSchools as $s): ?>
+                    <option value="<?= (int)$s['sch_id'] ?>"><?= esc($s['sch_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="text-muted fs-9 mt-1">This announcement will only appear for the selected school.</div>
+            </div>
+            <?php endif; ?>
 
             <!--Priority-->
             <div class="mb-5">

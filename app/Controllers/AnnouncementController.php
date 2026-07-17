@@ -100,6 +100,18 @@ class AnnouncementController extends BaseController
         return 0;
     }
 
+    // ─── All schools (for admin school picker) ───────────────────────────────
+
+    private function getAllSchools(): array
+    {
+        return \Config\Database::connect()
+            ->table('school')
+            ->select('sch_id, sch_name')
+            ->where('sch_status', 'Active')
+            ->orderBy('sch_name', 'ASC')
+            ->get()->getResultArray();
+    }
+
     // ─── Parent school resolution ─────────────────────────────────────────────
 
     private function resolveParentSchools(int $userId): array
@@ -155,14 +167,20 @@ class AnnouncementController extends BaseController
         // Mark all visible announcements as read for this user on page visit
         $this->annModel->markAllReadForUser($userId, $schId);
 
+        // Super admins (and anyone without an assigned school) must choose a school when posting
+        $needsSchoolSelect = $this->isSuperAdmin() || (int) $this->session->get('schID') === 0;
+        $allSchools        = ($needsSchoolSelect && $this->canPost()) ? $this->getAllSchools() : [];
+
         $this->setPageData('Announcements', 'Dashboard', 'Announcements');
         $data = $this->loadCommonData('app/announcement/index', [
-            'announcements'  => $announcements,
-            'canPost'        => $this->canPost(),
-            'canManage'      => $this->canManage(),
-            'myUserId'       => $userId,
-            'parentSchools'  => $parentSchools,
-            'activeSchoolId' => $activeSchoolId,
+            'announcements'     => $announcements,
+            'canPost'           => $this->canPost(),
+            'canManage'         => $this->canManage(),
+            'myUserId'          => $userId,
+            'parentSchools'     => $parentSchools,
+            'activeSchoolId'    => $activeSchoolId,
+            'needsSchoolSelect' => $needsSchoolSelect,
+            'allSchools'        => $allSchools,
         ]);
 
         return view('app/layouts/main', $data);
@@ -176,8 +194,17 @@ class AnnouncementController extends BaseController
             return redirect()->back()->with('error', 'Access denied.');
         }
 
-        $schId  = (int) $this->session->get('schID');
         $userId = (int) $this->session->get('userID');
+
+        // Super admins / unassigned users must post to a chosen school
+        if ($this->isSuperAdmin() || (int) $this->session->get('schID') === 0) {
+            $schId = (int) $this->request->getPost('sch_id');
+            if ($schId <= 0) {
+                return redirect()->back()->with('error', 'Please select a school for this announcement.')->withInput();
+            }
+        } else {
+            $schId = (int) $this->session->get('schID');
+        }
 
         $title    = trim($this->request->getPost('title')   ?? '');
         $content  = trim($this->request->getPost('content') ?? '');

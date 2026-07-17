@@ -87,6 +87,18 @@ class NoticeBoardController extends BaseController
         return 0;
     }
 
+    // ─── All schools (for admin school picker) ───────────────────────────────
+
+    private function getAllSchools(): array
+    {
+        return \Config\Database::connect()
+            ->table('school')
+            ->select('sch_id, sch_name')
+            ->where('sch_status', 'Active')
+            ->orderBy('sch_name', 'ASC')
+            ->get()->getResultArray();
+    }
+
     // ─── Parent school resolution ─────────────────────────────────────────────
 
     private function resolveParentSchools(int $userId): array
@@ -148,15 +160,21 @@ class NoticeBoardController extends BaseController
         // Mark all visible notices as read for this user on page visit
         $this->noticeModel->markAllReadForUser($userId, $schId, $audience);
 
+        // Super admins (and anyone without an assigned school) must choose a school when posting
+        $needsSchoolSelect = $this->isSuperAdmin() || (int) $this->session->get('schID') === 0;
+        $allSchools        = ($needsSchoolSelect && $this->canPost()) ? $this->getAllSchools() : [];
+
         $this->setPageData('Notice Board', 'Dashboard', 'Notice Board');
         $data = $this->loadCommonData('app/notice_board/index', [
-            'notices'        => $notices,
-            'canPost'        => $this->canPost(),
-            'canPin'         => $this->grant_access('_pin_notice') || $this->isSuperAdmin(),
-            'canManage'      => $this->isSuperAdmin() || $this->grant_access('_remove_notice'),
-            'myUserId'       => $userId,
-            'parentSchools'  => $parentSchools,
-            'activeSchoolId' => $activeSchoolId,
+            'notices'           => $notices,
+            'canPost'           => $this->canPost(),
+            'canPin'            => $this->grant_access('_pin_notice') || $this->isSuperAdmin(),
+            'canManage'         => $this->isSuperAdmin() || $this->grant_access('_remove_notice'),
+            'myUserId'          => $userId,
+            'parentSchools'     => $parentSchools,
+            'activeSchoolId'    => $activeSchoolId,
+            'needsSchoolSelect' => $needsSchoolSelect,
+            'allSchools'        => $allSchools,
         ]);
 
         return view('app/layouts/main', $data);
@@ -170,8 +188,17 @@ class NoticeBoardController extends BaseController
             return redirect()->back()->with('error', 'Access denied.');
         }
 
-        $schId  = (int) $this->session->get('schID');
         $userId = (int) $this->session->get('userID');
+
+        // Super admins / unassigned users must post to a chosen school
+        if ($this->isSuperAdmin() || (int) $this->session->get('schID') === 0) {
+            $schId = (int) $this->request->getPost('sch_id');
+            if ($schId <= 0) {
+                return redirect()->back()->with('error', 'Please select a school for this notice.')->withInput();
+            }
+        } else {
+            $schId = (int) $this->session->get('schID');
+        }
 
         $title    = trim($this->request->getPost('title') ?? '');
         $content  = trim($this->request->getPost('content') ?? '');
