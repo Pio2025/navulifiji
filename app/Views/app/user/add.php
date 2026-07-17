@@ -481,34 +481,27 @@
 
                         </div>
                         <!--end::Enrollment Fields-->
-                    </div>
-                    <!--end::Row-->
-					
-					<!--begin::Row - Parent Checkbox (Hidden by default)-->
-					<div class="row mb-6" id="parent-checkbox-row2">
-
-                        <div class="col-lg-12 mb-3">
-							<label class="form-label">Address</label>
-							<textarea name="address" class="form-control" rows="3" 
-							          placeholder="Enter full address"><?= old('address') ?></textarea>
-						</div>
-
-						<div class="col-lg-12">
-							<div class="d-flex align-items-start gap-3 rounded border border-dashed border-warning px-6 py-4">
-								<div class="form-check form-check-custom flex-shrink-0 mt-1">
-									<input class="form-check-input" type="checkbox" name="is_a_parent" value="1" id="is_a_parent" <?= old('is_a_parent') ? 'checked' : '' ?> />
-								</div>
-								<div>
-									<label class="form-check-label fw-semibold text-gray-700 cursor-pointer fs-6 d-block mb-1" for="is_a_parent">
-										Check if user is a parent
-									</label>
-									<div class="form-text mt-0">Select this option if the user is also a parent and requires access to the Navuli SMIS parent portal</div>
+						
+						<!--begin::Row - Parent Checkbox (Hidden by default)-->
+						<div class="row mb-6" id="parent-checkbox-row">
+							<div class="col-lg-12">
+								<div class="d-flex align-items-start gap-3 rounded border border-dashed border-warning px-6 py-4">
+									<div class="form-check form-check-custom flex-shrink-0 mt-1">
+										<input class="form-check-input" type="checkbox" name="is_a_parent" value="1" id="is_a_parent" <?= old('is_a_parent') ? 'checked' : '' ?> />
+									</div>
+									<div>
+										<label class="form-check-label fw-semibold text-gray-700 cursor-pointer fs-6 d-block mb-1" for="is_a_parent">
+											Check if user is a parent
+										</label>
+										<div class="form-text mt-0">Select this option if the user is also a parent and requires access to the Navuli SMIS parent portal</div>
+									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-					<!--end::Row-->
-					
+						<!--end::Row-->
+						
+                    </div>
+                    <!--end::Card Body-->
 					
 					
 					<div class="mb-6"></div>
