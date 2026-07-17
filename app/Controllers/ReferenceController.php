@@ -1117,12 +1117,19 @@ class ReferenceController extends BaseController
         $user = $this->userModel->find($userId);
         if (!$user) return redirect()->back()->with('error', 'User not found.');
 
+        $viewerUserId  = (int) $this->session->get('userID');
+        $viewerRoleCat = (int) $this->session->get('roleCatID');
+        $viewerRow     = $this->userModel->find($viewerUserId);
+        $viewerIsParent = $viewerRoleCat === 6
+            || (int) ($viewerRow['is_a_parent'] ?? 0) === 1;
+
         $this->setPageData('Generated References', 'Reference', 'User References');
 
-        $data['_view']      = 'app/reference/user_references';
-        $data['user']       = $user;
-        $data['userID']     = $userId;
-        $data['references'] = $this->generatedReferenceModel->getUserReferences($userId);
+        $data['_view']          = 'app/reference/user_references';
+        $data['user']           = $user;
+        $data['userID']         = $userId;
+        $data['references']     = $this->generatedReferenceModel->getUserReferences($userId);
+        $data['viewerIsParent'] = $viewerIsParent;
 
         return view('app/layouts/main', $data);
     }

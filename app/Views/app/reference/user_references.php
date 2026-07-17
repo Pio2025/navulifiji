@@ -14,8 +14,9 @@
                     <a href="<?= base_url('user') ?>" class="text-muted text-hover-primary">Users</a>
                 </li>
                 <li class="breadcrumb-item"><span class="bullet bg-gray-500 w-5px h-2px"></span></li>
+                <?php $profileUrl = !empty($viewerIsParent) ? base_url('profile/my') : base_url('user/detail/' . $userID); ?>
                 <li class="breadcrumb-item text-muted">
-                    <a href="<?= base_url('user/detail/' . $userID) ?>"
+                    <a href="<?= $profileUrl ?>"
                        class="text-muted text-hover-primary">
                         <?= esc($user['fname'] . ' ' . $user['lname']) ?>
                     </a>
@@ -24,7 +25,7 @@
                 <li class="breadcrumb-item text-muted">References</li>
             </ul>
         </div>
-        <a href="<?= base_url('user/detail/' . $userID) ?>" class="btn btn-sm btn-light">
+        <a href="<?= $profileUrl ?>" class="btn btn-sm btn-light">
             <i class="ki-duotone ki-arrow-left fs-3 me-1">
                 <span class="path1"></span><span class="path2"></span>
             </i>
