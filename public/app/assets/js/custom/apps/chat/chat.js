@@ -1792,7 +1792,7 @@ var NavuliChat = (function () {
     function updateNavBadge() {
         const badge = document.getElementById("navuli_chat_badge");
         if (!badge) return;
-        if (totalUnreadCount > 0) { badge.textContent = totalUnreadCount > 99 ? "99+" : totalUnreadCount; badge.classList.remove("d-none"); }
+        if (totalUnreadCount > 0) { badge.textContent = totalUnreadCount >= 10 ? "9+" : totalUnreadCount; badge.classList.remove("d-none"); }
         else { badge.textContent = ""; badge.classList.add("d-none"); }
     }
 

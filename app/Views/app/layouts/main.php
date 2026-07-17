@@ -416,8 +416,8 @@
 											<span class="path5"></span>
 										</i>
 										<span id="navuli_chat_badge"
-										      class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-sm bg-danger d-none"
-										      style="font-size:9px;min-width:16px;height:16px;line-height:16px;padding:0 3px;">
+										      class="position-absolute top-0 start-100 translate-middle bg-danger text-white d-none"
+										      style="width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:700;line-height:18px;text-align:center;padding:0;">
 										</span>
 									</div>
 									<!--end::Drawer toggle-->
@@ -432,7 +432,7 @@
 											<span class="path2"></span>
 											<span class="path3"></span>
 										</i>
-										<span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge badge-circle badge-danger fs-10 min-w-15px h-15px" style="display:none;"></span>
+										<span id="notif-badge" class="position-absolute top-0 start-100 translate-middle bg-danger text-white" style="display:none;width:18px;height:18px;border-radius:50%;font-size:9px;font-weight:700;line-height:18px;text-align:center;padding:0;"></span>
 									</div>
 									<!--begin::Menu-->
 									<div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true" id="kt_menu_notifications">
@@ -539,7 +539,7 @@
 												const badge = document.getElementById('notif-badge');
 												const label = document.getElementById('notif-unread-label');
 												if (data.unread_count > 0) {
-													badge.textContent  = data.unread_count > 99 ? '99+' : data.unread_count;
+													badge.textContent  = data.unread_count >= 10 ? '9+' : data.unread_count;
 													badge.style.display = '';
 													label.textContent   = data.unread_count + ' unread';
 													label.style.display = '';
@@ -563,16 +563,12 @@
 										.catch(() => {});
 									}
 
-									// Load on first open; mark read when dropdown closes
+									// Load on first open; mark read immediately on open
 									const trigger = document.getElementById('kt_menu_item_wow');
 									const menu    = document.getElementById('kt_menu_notifications');
 									if (trigger) {
-										trigger.addEventListener('click', loadNotifications);
+										trigger.addEventListener('click', function() { loadNotifications(); markRead(); });
 									}
-									if (menu) {
-										menu.addEventListener('kt.menu.dropdown.hide', markRead);
-									}
-
 									// Also load badge on page load (fast count-only not worth a separate endpoint)
 									loadNotifications();
 								})();
