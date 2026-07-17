@@ -863,8 +863,19 @@ class TimetableController extends BaseController
             INNER  JOIN sch_subject ss ON ss.sch_sub_id = sos.sch_sub_id_fk
             INNER  JOIN subject sub    ON sub.subject_id = ss.subject_id_fk
             WHERE  sos.stream_id_fk = ?
+            UNION
+            SELECT ss.sch_sub_id, sub.subject_name, 'Core' AS subject_type, NULL AS option_num
+            FROM   sch_subject ss
+            INNER  JOIN subject sub ON sub.subject_id = ss.subject_id_fk
+            INNER  JOIN stream str  ON str.stream_id = ?
+            INNER  JOIN sch_level sl ON sl.sch_level_id = str.sch_level_id_fk
+                                    AND sl.sch_id_fk = ss.sch_id_fk
+                                    AND sl.level_id_fk = sub.level_id_fk
+            WHERE  ss.sch_sub_status = 'Active'
+              AND  ss.sch_sub_id NOT IN (SELECT sch_sub_id_fk FROM stream_core_subject     WHERE stream_id_fk = ?)
+              AND  ss.sch_sub_id NOT IN (SELECT sch_sub_id_fk FROM stream_optional_subject WHERE stream_id_fk = ?)
             ORDER  BY subject_type, option_num, subject_name
-        ", [$streamId, $streamId])->getResultArray();
+        ", [$streamId, $streamId, $streamId, $streamId, $streamId])->getResultArray();
     }
 
     /**

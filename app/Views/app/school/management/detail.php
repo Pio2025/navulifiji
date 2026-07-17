@@ -834,9 +834,15 @@
                                 </h4>
                                 <p class="text-gray-600 fs-7 mb-0">All subjects registered for this school, grouped by level</p>
                             </div>
-                            <span class="badge badge-light-warning fs-7" id="sch-subjects-count-badge">
-                                <?= $schoolSubjectsTotal ?> Subject<?= $schoolSubjectsTotal !== 1 ? 's' : '' ?>
-                            </span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-light-warning fs-7" id="sch-subjects-count-badge">
+                                    <?= $schoolSubjectsTotal ?> Subject<?= $schoolSubjectsTotal !== 1 ? 's' : '' ?>
+                                </span>
+                                <button type="button" class="btn btn-sm btn-light-primary" id="btn-open-add-school-subject">
+                                    <i class="ki-duotone ki-plus fs-4"><span class="path1"></span><span class="path2"></span></i>
+                                    Add Subject
+                                </button>
+                            </div>
                         </div>
 
                         <div id="sch-subjects-section">
@@ -849,7 +855,7 @@
                                 </i>
                                 <div class="d-flex flex-column">
                                     <h4 class="mb-1 text-dark">No Subjects Registered Yet</h4>
-                                    <span>Subjects are automatically registered when you add core or optional subjects to streams above.</span>
+                                    <span>Use the <strong>Add Subject</strong> button above to register subjects for this school, or they will be added automatically when assigned to streams.</span>
                                 </div>
                             </div>
                         <?php else: ?>
@@ -1822,6 +1828,69 @@ function initUserCharts() {
     </div>
 </div>
 <!--end::Edit School Subject Modal-->
+
+<!--begin::Add School Subject Modal-->
+<div class="modal fade" id="kt_modal_add_school_subject" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-650px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="fw-bold">Add School Subject</h2>
+                <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                    <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                </div>
+            </div>
+            <div class="modal-body py-10 px-lg-17">
+                <p class="text-muted fs-7 mb-5">Select subjects to register for this school. These will appear in the timetable subject dropdown for the matching year level.</p>
+                <div id="add-school-sub-loading" class="text-center py-10">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-gray-600">Loading available subjects...</p>
+                </div>
+                <div id="add-school-sub-container" class="d-none">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-light-primary" id="btn-sch-sub-select-all">Select All</button>
+                            <button type="button" class="btn btn-sm btn-light" id="btn-sch-sub-deselect-all">Deselect All</button>
+                        </div>
+                        <div class="form-check form-switch ms-2">
+                            <input class="form-check-input" type="checkbox" id="toggle-non-examinable" checked>
+                            <label class="form-check-label fs-7 text-muted" for="toggle-non-examinable">Non-examinable only</label>
+                        </div>
+                    </div>
+                    <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+                        <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2">
+                            <thead class="sticky-top bg-white">
+                                <tr class="fw-semibold text-gray-500 fs-8 text-uppercase">
+                                    <th class="w-30px"></th>
+                                    <th>Subject</th>
+                                    <th class="w-120px">Level</th>
+                                    <th class="w-100px text-center">Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="add-school-sub-rows"></tbody>
+                        </table>
+                    </div>
+                    <div id="add-school-sub-empty" class="alert alert-info d-none mt-3">
+                        <i class="ki-duotone ki-information-5 fs-2 me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        All available subjects for this school are already registered.
+                    </div>
+                    <div id="add-school-sub-error" class="alert alert-danger d-none mt-3"></div>
+                </div>
+            </div>
+            <div class="modal-footer flex-center">
+                <button type="button" class="btn btn-light me-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="btn-save-school-subject" class="btn btn-primary d-none">
+                    <span class="indicator-label">Add Selected</span>
+                    <span class="indicator-progress" style="display:none;">
+                        <span class="spinner-border spinner-border-sm align-middle me-2"></span>Saving...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Add School Subject Modal-->
 
 <script>
 (function() {
@@ -3463,6 +3532,187 @@ function initUserCharts() {
                     Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
                 });
         });
+    });
+
+    // =========================================================================
+    // Add School Subject
+    // =========================================================================
+    let addSchSubAllRows = []; // all rows fetched from server
+
+    function renderAddSchSubRows(filterNonExam) {
+        const tbody = document.getElementById('add-school-sub-rows');
+        tbody.innerHTML = '';
+        const visible = filterNonExam ? addSchSubAllRows.filter(r => r.is_examinable === 0) : addSchSubAllRows;
+        if (visible.length === 0) {
+            document.getElementById('add-school-sub-empty').classList.remove('d-none');
+            document.getElementById('btn-save-school-subject').classList.add('d-none');
+            return;
+        }
+        document.getElementById('add-school-sub-empty').classList.add('d-none');
+        document.getElementById('btn-save-school-subject').classList.remove('d-none');
+        visible.forEach(function(sub) {
+            const tr = document.createElement('tr');
+            tr.dataset.subjectId    = sub.subject_id;
+            tr.dataset.isExaminable = sub.is_examinable;
+            tr.innerHTML =
+                '<td><div class="form-check form-check-custom form-check-solid">' +
+                    '<input class="form-check-input sch-sub-checkbox" type="checkbox" value="' + sub.subject_id + '">' +
+                '</div></td>' +
+                '<td class="fw-semibold text-gray-800 fs-7">' + escHtml(sub.subject_name) + '</td>' +
+                '<td class="text-muted fs-8">' + escHtml(sub.level_name) + '</td>' +
+                '<td class="text-center">' +
+                    (sub.is_examinable ? '<span class="badge badge-light-info fs-9">Examinable</span>' : '<span class="badge badge-light-warning fs-9">Non-exam</span>') +
+                '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    document.getElementById('btn-open-add-school-subject').addEventListener('click', function() {
+        const loading   = document.getElementById('add-school-sub-loading');
+        const container = document.getElementById('add-school-sub-container');
+        const errDiv    = document.getElementById('add-school-sub-error');
+        loading.classList.remove('d-none');
+        container.classList.add('d-none');
+        errDiv.classList.add('d-none');
+        addSchSubAllRows = [];
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_add_school_subject')).show();
+
+        fetch('<?= base_url('school/available-subjects/') ?>' + schId)
+            .then(r => r.json())
+            .then(function(data) {
+                loading.classList.add('d-none');
+                container.classList.remove('d-none');
+                if (!data.success) {
+                    errDiv.textContent = data.message || 'Failed to load subjects.';
+                    errDiv.classList.remove('d-none');
+                    return;
+                }
+                // Flatten grouped subjects for rendering
+                data.subjects.forEach(function(grp) {
+                    grp.subjects.forEach(function(sub) {
+                        addSchSubAllRows.push(Object.assign({}, sub, { level_name: grp.level_name }));
+                    });
+                });
+                const filterNonExam = document.getElementById('toggle-non-examinable').checked;
+                renderAddSchSubRows(filterNonExam);
+            })
+            .catch(function() {
+                loading.classList.add('d-none');
+                container.classList.remove('d-none');
+                errDiv.textContent = 'Network error. Please try again.';
+                errDiv.classList.remove('d-none');
+            });
+    });
+
+    document.getElementById('toggle-non-examinable').addEventListener('change', function() {
+        renderAddSchSubRows(this.checked);
+    });
+
+    document.getElementById('btn-sch-sub-select-all').addEventListener('click', function() {
+        document.querySelectorAll('.sch-sub-checkbox').forEach(cb => cb.checked = true);
+    });
+
+    document.getElementById('btn-sch-sub-deselect-all').addEventListener('click', function() {
+        document.querySelectorAll('.sch-sub-checkbox').forEach(cb => cb.checked = false);
+    });
+
+    document.getElementById('btn-save-school-subject').addEventListener('click', function() {
+        const checked = Array.from(document.querySelectorAll('.sch-sub-checkbox:checked')).map(cb => cb.value);
+        if (checked.length === 0) {
+            Swal.fire({ icon: 'warning', title: 'Nothing selected', text: 'Please tick at least one subject.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500 });
+            return;
+        }
+        const btn = this;
+        btn.setAttribute('data-kt-indicator', 'on');
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append(csrfName, csrfHash);
+        checked.forEach(id => formData.append('subjectIds[]', id));
+
+        fetch('<?= base_url('school/add-school-subject/') ?>' + schId, { method: 'POST', body: formData })
+            .then(r => r.json())
+            .then(function(data) {
+                btn.removeAttribute('data-kt-indicator');
+                btn.disabled = false;
+                if (data.csrf_hash) csrfHash = data.csrf_hash;
+                if (!data.success) {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message });
+                    return;
+                }
+                bootstrap.Modal.getInstance(document.getElementById('kt_modal_add_school_subject')).hide();
+
+                const plusIcon = '<i class="ki-duotone ki-pencil fs-5"><span class="path1"></span><span class="path2"></span></i>';
+                const trashIcon = '<i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>';
+
+                data.added.forEach(function(sub) {
+                    const lid    = sub.level_id;
+                    let group    = document.getElementById('sch-level-group-' + lid);
+                    const secEl  = document.getElementById('sch-subjects-section');
+
+                    // Create level group if it doesn't exist yet
+                    if (!group) {
+                        const emptyEl = document.getElementById('sch-subjects-empty');
+                        if (emptyEl) emptyEl.classList.add('d-none');
+
+                        group = document.createElement('div');
+                        group.className = 'sch-level-group mb-6';
+                        group.id = 'sch-level-group-' + lid;
+                        group.innerHTML =
+                            '<div class="d-flex align-items-center mb-3">' +
+                                '<span class="bullet bullet-vertical bg-warning me-3 h-20px"></span>' +
+                                '<h6 class="fw-bold text-gray-700 mb-0">' + escHtml(sub.level_name) + '</h6>' +
+                                '<span class="badge badge-light ms-3 sch-level-count">0</span>' +
+                            '</div>' +
+                            '<div class="table-responsive ms-4">' +
+                                '<table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2 mb-0">' +
+                                    '<thead><tr class="fw-semibold text-gray-500 fs-8 text-uppercase border-bottom border-gray-200">' +
+                                        '<th>Subject</th><th>Department</th><th>Status</th><th class="text-end">Actions</th>' +
+                                    '</tr></thead>' +
+                                    '<tbody id="sch-level-tbody-' + lid + '"></tbody>' +
+                                '</table>' +
+                            '</div>';
+                        secEl.appendChild(group);
+                    }
+
+                    const tbody = document.getElementById('sch-level-tbody-' + lid);
+                    const tr    = document.createElement('tr');
+                    tr.id = 'sch-sub-row-' + sub.sch_sub_id;
+                    tr.innerHTML =
+                        '<td><span class="fw-semibold text-gray-800">' + escHtml(sub.subject_name) + '</span></td>' +
+                        '<td><span class="sch-sub-dept-name">—</span></td>' +
+                        '<td><span class="badge badge-light-success sch-sub-status-badge">Active</span></td>' +
+                        '<td class="text-end">' +
+                            '<button type="button" class="btn btn-sm btn-icon btn-light-primary btn-edit-sch-subject me-1"' +
+                                ' data-sch-sub-id="' + sub.sch_sub_id + '"' +
+                                ' data-subject-name="' + escHtml(sub.subject_name) + '"' +
+                                ' data-dept-id="0" data-status="Active">' + plusIcon + '</button>' +
+                            '<button type="button" class="btn btn-sm btn-icon btn-light-danger btn-delete-sch-subject"' +
+                                ' data-sch-sub-id="' + sub.sch_sub_id + '"' +
+                                ' data-subject-name="' + escHtml(sub.subject_name) + '"' +
+                                ' data-level-id="' + lid + '">' + trashIcon + '</button>' +
+                        '</td>';
+                    tbody.appendChild(tr);
+
+                    // Update level count badge
+                    const lvlCount = group.querySelector('.sch-level-count');
+                    if (lvlCount) lvlCount.textContent = tbody.querySelectorAll('tr').length;
+                });
+
+                // Update total count badge
+                const badge = document.getElementById('sch-subjects-count-badge');
+                if (badge) {
+                    const total = document.querySelectorAll('#sch-subjects-section tr[id^="sch-sub-row-"]').length;
+                    badge.textContent = total + ' Subject' + (total !== 1 ? 's' : '');
+                }
+
+                Swal.fire({ icon: 'success', title: 'Done', text: data.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true });
+            })
+            .catch(function() {
+                btn.removeAttribute('data-kt-indicator');
+                btn.disabled = false;
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
+            });
     });
 
 })();

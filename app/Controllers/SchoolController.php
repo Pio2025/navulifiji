@@ -3398,4 +3398,131 @@ class SchoolController extends BaseController
         ]);
     }
 
+    // -------------------------------------------------------------------------
+    // Available subjects for school (not yet in sch_subject for this school)
+    // -------------------------------------------------------------------------
+    public function getAvailableSubjectsForSchool($schId)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $schId = (int) $schId;
+        $db    = \Config\Database::connect();
+
+        // Level IDs this school has
+        $levelRows = $db->table('sch_level')
+            ->select('level_id_fk')
+            ->where('sch_id_fk', $schId)
+            ->get()->getResultArray();
+        $levelIds = array_column($levelRows, 'level_id_fk');
+
+        if (empty($levelIds)) {
+            return $this->response->setJSON(['success' => true, 'subjects' => []]);
+        }
+
+        // Subject IDs already registered for this school
+        $existingRows = $db->table('sch_subject')
+            ->select('subject_id_fk')
+            ->where('sch_id_fk', $schId)
+            ->get()->getResultArray();
+        $existingIds = array_column($existingRows, 'subject_id_fk');
+
+        // All subjects for those levels, excluding already-registered ones
+        $q = $db->table('subject')
+            ->select('subject.subject_id, subject.subject_name, subject.is_examinable, level.level_id, level.level_name')
+            ->join('level', 'level.level_id = subject.level_id_fk', 'left')
+            ->whereIn('subject.level_id_fk', $levelIds)
+            ->orderBy('level.level_id', 'ASC')
+            ->orderBy('subject.subject_name', 'ASC');
+
+        if (!empty($existingIds)) {
+            $q->whereNotIn('subject.subject_id', $existingIds);
+        }
+
+        $rows = $q->get()->getResultArray();
+
+        // Group by level
+        $grouped = [];
+        foreach ($rows as $row) {
+            $lid = $row['level_id'] ?? 0;
+            if (!isset($grouped[$lid])) {
+                $grouped[$lid] = [
+                    'level_id'   => $lid,
+                    'level_name' => $row['level_name'] ?? 'Unknown',
+                    'subjects'   => [],
+                ];
+            }
+            $grouped[$lid]['subjects'][] = [
+                'subject_id'    => (int) $row['subject_id'],
+                'subject_name'  => $row['subject_name'],
+                'is_examinable' => (int) $row['is_examinable'],
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'subjects' => array_values($grouped),
+        ]);
+    }
+
+    // -------------------------------------------------------------------------
+    // Add subjects directly to school (without stream assignment)
+    // -------------------------------------------------------------------------
+    public function addSchoolSubject($schId)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $schId      = (int) $schId;
+        $subjectIds = $this->request->getPost('subjectIds') ?? [];
+
+        if (empty($subjectIds)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Please select at least one subject.']);
+        }
+
+        $db    = \Config\Database::connect();
+        $added = [];
+
+        foreach ($subjectIds as $subjectId) {
+            $subjectId = (int) $subjectId;
+
+            // Skip if already registered
+            $existing = $db->table('sch_subject')
+                ->where('sch_id_fk', $schId)
+                ->where('subject_id_fk', $subjectId)
+                ->get()->getRowArray();
+            if ($existing) continue;
+
+            $db->table('sch_subject')->insert([
+                'sch_id_fk'      => $schId,
+                'subject_id_fk'  => $subjectId,
+                'sch_dept_id_fk' => null,
+                'sch_sub_status' => 'Active',
+            ]);
+            $schSubId = (int) $db->insertID();
+
+            $subject = $this->subjectModel->find($subjectId);
+            $level   = $db->table('level')
+                ->where('level_id', $subject['level_id_fk'] ?? 0)
+                ->get()->getRowArray();
+
+            $added[] = [
+                'sch_sub_id'     => $schSubId,
+                'subject_name'   => $subject['subject_name'] ?? '',
+                'level_id'       => (int) ($subject['level_id_fk'] ?? 0),
+                'level_name'     => $level['level_name'] ?? '',
+                'sch_sub_status' => 'Active',
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'message'   => count($added) . ' subject(s) added successfully.',
+            'added'     => $added,
+            'csrf_hash' => csrf_hash(),
+        ]);
+    }
+
 }

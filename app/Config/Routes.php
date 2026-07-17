@@ -84,6 +84,8 @@ $routes->post('school/add-optional-subjects/(:num)', 'SchoolController::addOptio
 $routes->post('school/delete-optional-subject/(:num)', 'SchoolController::deleteOptionalSubject/$1');
 $routes->post('school/edit-sch-subject/(:num)', 'SchoolController::editSchSubject/$1');
 $routes->post('school/delete-sch-subject/(:num)', 'SchoolController::deleteSchSubject/$1');
+$routes->get( 'school/available-subjects/(:num)', 'SchoolController::getAvailableSubjectsForSchool/$1');
+$routes->post('school/add-school-subject/(:num)', 'SchoolController::addSchoolSubject/$1');
 $routes->get('school/add', 'SchoolController::add');
 $routes->post('school/store', 'SchoolController::store');
 $routes->get('school/edit/(:num)', 'SchoolController::edit/$1');
