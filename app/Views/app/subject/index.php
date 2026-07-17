@@ -22,7 +22,10 @@
 <div id="kt_app_content" class="app-content flex-column-fluid">
 <div id="kt_app_content_container" class="app-container container-xxl">
 
-<?= $this->include('templates/flash_messages') ?>
+<?php
+$flashSuccess = session('success');
+$flashError   = session('error');
+?>
 
 <!--begin::Stats-->
 <div class="row g-5 mb-6">
@@ -176,6 +179,14 @@
             initDeleteHandlers();
         }
     });
+
+    // ── Flash messages ───────────────────────────────────────────────────────
+    <?php if ($flashSuccess): ?>
+    Swal.fire({ icon: 'success', title: 'Success', text: '<?= esc($flashSuccess, 'js') ?>', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
+    <?php endif; ?>
+    <?php if ($flashError): ?>
+    Swal.fire({ icon: 'error', title: 'Error', text: '<?= esc($flashError, 'js') ?>', toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
+    <?php endif; ?>
 
     // ── Custom search / filter hooks ─────────────────────────────────────────
     let searchTimer;

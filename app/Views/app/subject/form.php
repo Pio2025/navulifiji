@@ -24,49 +24,37 @@
 <div id="kt_app_content" class="app-content flex-column-fluid">
 <div id="kt_app_content_container" class="app-container container-xxl">
 
-<?= $this->include('templates/flash_messages') ?>
+<?php
+$validation  = session('validation');
+$formErrors  = $validation ? array_values($validation->getErrors()) : [];
+?>
 
 <div class="card">
     <div class="card-header">
         <h3 class="card-title"><?= $isEdit ? 'Edit Subject' : 'New Subject' ?></h3>
     </div>
-    <div class="card-body">
+    <div class="card-body pt-6">
 
-        <?php
-        $validation = session('validation');
-        if ($validation): ?>
-        <div class="alert alert-danger d-flex align-items-center p-5 mb-6">
-            <i class="ki-duotone ki-shield-cross fs-2hx text-danger me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-            <div class="d-flex flex-column">
-                <h4 class="mb-1 text-dark">Please fix the errors below</h4>
-                <ul class="mb-0 ps-4">
-                    <?php foreach ($validation->getErrors() as $err): ?>
-                    <li class="fs-7"><?= esc($err) ?></li>
-                    <?php endforeach; ?>
-                </ul>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <form method="POST" action="<?= $isEdit
+        <form id="subject-form" method="POST" action="<?= $isEdit
             ? base_url('subject/update/' . (int)$subject['subject_id'])
             : base_url('subject/store') ?>">
             <?= csrf_field() ?>
 
             <!--Subject Name-->
             <div class="mb-6">
-                <label class="form-label required fw-semibold">Subject Name</label>
-                <input type="text" name="subject_name" class="form-control form-control-solid"
+                <label class="form-label required fw-semibold" for="subject_name">Subject Name</label>
+                <input type="text" id="subject_name" name="subject_name"
+                    class="form-control form-control-solid"
                     placeholder="e.g. Year 9 Physical Education"
                     value="<?= esc(old('subject_name', $subject['subject_name'] ?? '')) ?>"
-                    maxlength="60" required>
+                    maxlength="60">
                 <div class="form-text text-muted">Max 60 characters.</div>
             </div>
 
             <!--Level-->
             <div class="mb-6">
-                <label class="form-label required fw-semibold">Year Level</label>
-                <select name="level_id_fk" class="form-select form-select-solid" required>
+                <label class="form-label required fw-semibold" for="level_id_fk">Year Level</label>
+                <select id="level_id_fk" name="level_id_fk" class="form-select form-select-solid">
                     <option value="">— Select Level —</option>
                     <?php foreach ($levels as $lvl): ?>
                     <?php $sel = old('level_id_fk', $subject['level_id_fk'] ?? '') == $lvl['level_id'] ? 'selected' : ''; ?>
@@ -105,7 +93,7 @@
 
             <div class="d-flex justify-content-end gap-3">
                 <a href="<?= base_url('subject') ?>" class="btn btn-light">Cancel</a>
-                <button type="submit" class="btn btn-primary">
+                <button type="submit" id="btn-submit" class="btn btn-primary">
                     <i class="ki-duotone ki-check fs-2"><span class="path1"></span><span class="path2"></span></i>
                     <?= $isEdit ? 'Save Changes' : 'Add Subject' ?>
                 </button>
@@ -117,3 +105,56 @@
 
 </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    // ── Backend validation errors (fired on page load after redirect) ─────────
+    <?php if (!empty($formErrors)): ?>
+    Swal.fire({
+        icon: 'error',
+        title: 'Please fix the following',
+        html: '<ul class="text-start ps-3 mb-0 fs-6">'
+            + <?= json_encode(array_map(fn($e) => '<li>' . esc($e) . '</li>', $formErrors)) ?>.join('')
+            + '</ul>',
+        confirmButtonText: 'OK',
+        confirmButtonColor: '#009ef7',
+        customClass: { confirmButton: 'btn btn-primary' },
+    });
+    <?php endif; ?>
+
+    // ── Frontend validation on submit ─────────────────────────────────────────
+    document.getElementById('subject-form').addEventListener('submit', function (e) {
+        const errors = [];
+
+        const name = document.getElementById('subject_name').value.trim();
+        if (!name) {
+            errors.push('Subject name is required.');
+        } else if (name.length < 2) {
+            errors.push('Subject name must be at least 2 characters.');
+        } else if (name.length > 60) {
+            errors.push('Subject name cannot exceed 60 characters.');
+        }
+
+        const level = document.getElementById('level_id_fk').value;
+        if (!level) {
+            errors.push('Please select a year level.');
+        }
+
+        if (errors.length > 0) {
+            e.preventDefault();
+            Swal.fire({
+                icon: 'error',
+                title: 'Please fix the following',
+                html: '<ul class="text-start ps-3 mb-0 fs-6">'
+                    + errors.map(function (msg) { return '<li>' + msg + '</li>'; }).join('')
+                    + '</ul>',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#009ef7',
+                customClass: { confirmButton: 'btn btn-primary' },
+            });
+        }
+    });
+
+});
+</script>
