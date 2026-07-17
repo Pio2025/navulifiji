@@ -189,13 +189,12 @@ function renderTimetableBlock(array $b, bool $showCard = true): string
                         <?php if ($isBreak): ?>
                             <span class="fs-8 text-gray-400">— <?= esc($slot['label']) ?> —</span>
                         <?php elseif ($cell && !empty($cell['is_optional'])): ?>
-                            <div class="text-primary fw-bold fs-9 mb-1">Optional</div>
-                            <?php foreach ($cell['entries'] as $e): ?>
-                            <div class="mb-1 pb-1 border-bottom border-dashed">
-                                <div class="fw-semibold text-gray-800 fs-9"><?= esc($e['subject_name'] ?? '—') ?></div>
+                            <span class="badge badge-light-warning mb-2" style="font-size:0.6rem;letter-spacing:0.3px;">OPT</span>
+                            <?php foreach ($cell['entries'] as $ei => $e): ?>
+                            <div class="text-start <?= $ei > 0 ? 'mt-1 pt-1' : '' ?>" style="<?= $ei > 0 ? 'border-top:1px solid rgba(0,0,0,0.07);' : '' ?>">
+                                <div class="fw-semibold text-gray-800 fs-9 lh-sm"><?= esc($e['subject_name'] ?? '—') ?></div>
                                 <?php $tchName = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
-                                <?php if ($tchName): ?><div class="text-muted fs-9"><?= esc($tchName) ?></div><?php endif; ?>
-                                <?php if (!empty($e['room'])): ?><span class="badge badge-light fs-9"><?= esc($e['room']) ?></span><?php endif; ?>
+                                <?php if ($tchName): ?><div class="text-muted lh-sm" style="font-size:0.68rem;"><?= esc($tchName) ?></div><?php endif; ?>
                             </div>
                             <?php endforeach; ?>
                         <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
