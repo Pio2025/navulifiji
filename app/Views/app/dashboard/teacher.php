@@ -11,6 +11,11 @@ $attendanceStats   = $ts_attendance         ?? [];
 $recentLessons     = $ts_recent_lessons     ?? [];
 
 $teacherName = ($fname ?? '') ?: ($name ?? 'Teacher');
+$teacherPhoto    = session('photo');
+$teacherPhotoUrl = ($teacherPhoto && file_exists(FCPATH . 'uploads/profilePhoto/' . $teacherPhoto))
+                   ? base_url('uploads/profilePhoto/' . $teacherPhoto)
+                   : base_url('app/assets/media/avatars/blank.png');
+$teacherRoleName = session('roleName') ?: 'Teacher';
 ?>
 
 <!--begin::Toolbar-->
@@ -45,26 +50,54 @@ $teacherName = ($fname ?? '') ?: ($name ?? 'Teacher');
 
 <?= $this->include('templates/flash_messages') ?>
 
-<!--begin::Welcome banner-->
-<div class="card bg-primary mb-6">
-    <div class="card-body d-flex align-items-center py-5 px-7 gap-5">
-        <div class="symbol symbol-60px flex-shrink-0">
-            <div class="symbol-label bg-white bg-opacity-20">
-                <i class="ki-duotone ki-teacher fs-2x text-white">
-                    <span class="path1"></span><span class="path2"></span>
-                </i>
+<!-- ── Teacher Hero ──────────────────────────────────────────────────────── -->
+<style>
+.td-hero { background: linear-gradient(135deg, #1e6c41 0%, #27ae60 55%, #2ecc71 100%); border-radius: 16px; overflow: hidden; position: relative; margin-bottom: 1.5rem; }
+.td-hero::before { content:''; position:absolute; inset:0; background:url("data:image/svg+xml,%3Csvg width='500' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='420' cy='30' r='130' fill='rgba(255,255,255,.05)'/%3E%3Ccircle cx='60' cy='180' r='90' fill='rgba(255,255,255,.04)'/%3E%3C/svg%3E") no-repeat right top; }
+.td-hero-inner { position:relative; z-index:1; padding:2rem 2.25rem; display:flex; align-items:center; gap:1.75rem; flex-wrap:wrap; }
+.td-hero-avatar { width:88px; height:88px; border-radius:50%; object-fit:cover; border:3px solid rgba(255,255,255,.3); flex-shrink:0; box-shadow:0 4px 20px rgba(0,0,0,.25); }
+.td-hero-name { font-size:1.6rem; font-weight:800; color:#fff; line-height:1.2; margin-bottom:.3rem; }
+.td-hero-sub { color:rgba(255,255,255,.78); font-size:.9rem; }
+.td-hero-badge { display:inline-flex; align-items:center; gap:.4rem; background:rgba(255,255,255,.15); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.2); border-radius:20px; padding:.22rem .8rem; font-size:.78rem; color:#fff; font-weight:500; margin-top:.4rem; margin-right:.3rem; }
+.td-hero-right { margin-left:auto; text-align:right; }
+.td-hero-date { color:rgba(255,255,255,.55); font-size:.72rem; text-transform:uppercase; letter-spacing:.8px; }
+.td-hero-dateval { color:#fff; font-size:1.1rem; font-weight:700; margin-top:.1rem; }
+@media (max-width:767px) {
+    .td-hero-inner { padding:1.4rem; gap:.9rem; }
+    .td-hero-avatar { width:64px; height:64px; }
+    .td-hero-name { font-size:1.2rem; }
+    .td-hero-right { margin-left:0; text-align:left; }
+}
+</style>
+
+<div class="td-hero mb-6">
+    <div class="td-hero-inner">
+        <img src="<?= esc($teacherPhotoUrl) ?>" alt="<?= esc($teacherName) ?>" class="td-hero-avatar">
+        <div>
+            <div class="td-hero-name">Welcome back, <?= esc($teacherName) ?>!</div>
+            <div class="td-hero-sub">Teacher Dashboard &mdash; <?= esc($teacherRoleName) ?></div>
+            <div class="mt-1">
+                <span class="td-hero-badge">
+                    <i class="ki-duotone ki-teacher fs-7 text-white-50"><span class="path1"></span><span class="path2"></span></i>
+                    <?= $activeClassrooms ?> Classroom<?= $activeClassrooms !== 1 ? 's' : '' ?>
+                </span>
+                <span class="td-hero-badge">
+                    <i class="ki-duotone ki-people fs-7 text-white-50"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
+                    <?= $totalStudents ?> Student<?= $totalStudents !== 1 ? 's' : '' ?>
+                </span>
+                <span class="td-hero-badge">
+                    <i class="ki-duotone ki-abstract-26 fs-7 text-white-50"><span class="path1"></span><span class="path2"></span></i>
+                    <?= $subjectsTaught ?> Subject<?= $subjectsTaught !== 1 ? 's' : '' ?>
+                </span>
             </div>
         </div>
-        <div>
-            <div class="fs-4 fw-bold text-white mb-1">Welcome back, <?= esc($teacherName) ?>!</div>
-            <div class="text-white text-opacity-75 fs-7">
-                You are managing <strong class="text-white"><?= $activeClassrooms ?></strong> classroom<?= $activeClassrooms !== 1 ? 's' : '' ?>
-                with <strong class="text-white"><?= $totalStudents ?></strong> student<?= $totalStudents !== 1 ? 's' : '' ?> enrolled.
-            </div>
+        <div class="td-hero-right ms-auto">
+            <div class="td-hero-date">Today</div>
+            <div class="td-hero-dateval"><?= date('D, d M Y') ?></div>
         </div>
     </div>
 </div>
-<!--end::Welcome banner-->
+<!-- ── End Teacher Hero ──────────────────────────────────────────────────── -->
 
 <!--begin::KPI cards-->
 <div class="row g-5 mb-6">
