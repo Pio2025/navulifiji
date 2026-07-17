@@ -661,6 +661,16 @@ $routes->get( 'wall/reactions',                    'WallController::reactionDeta
 $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1');
 
 // ============================================================================
+// SUBJECT Routes
+// ============================================================================
+$routes->get( 'subject',                  'SubjectController::index');
+$routes->get( 'subject/add',             'SubjectController::add');
+$routes->post('subject/store',           'SubjectController::store');
+$routes->get( 'subject/edit/(:num)',     'SubjectController::edit/$1');
+$routes->post('subject/update/(:num)',   'SubjectController::update/$1');
+$routes->post('subject/remove/(:num)',   'SubjectController::delete/$1');
+
+// ============================================================================
 // TIMETABLE Routes
 // ============================================================================
 $routes->get( 'timetable',                          'TimetableController::index');
