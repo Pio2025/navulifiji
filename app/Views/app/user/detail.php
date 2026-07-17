@@ -392,61 +392,20 @@
                                 </div>
                     
                             <?php elseif ($isParent): ?>
-                    
+
                                 <div class="menu-item px-5">
-                                    <a href="<?= base_url('reference/parent-guardian-certificate/' . $user['user_id']) ?>" class="menu-link px-5">
+                                    <a href="#" class="menu-link px-5" id="sdOpenRefRequestModal">
                                         <span class="menu-icon">
-                                            <i class="ki-duotone ki-people fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                                <span class="path3"></span>
-                                                <span class="path4"></span>
-                                                <span class="path5"></span>
-                                            </i>
-                                        </span>
-                                        Parent Guardian Certificate
-                                    </a>
-                                </div>
-                    
-                                <div class="menu-item px-5">
-                                    <a href="<?= base_url('reference/parent-involvement-certificate/' . $user['user_id']) ?>" class="menu-link px-5">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-heart fs-6 me-2 text-primary">
+                                            <i class="ki-duotone ki-send fs-6 me-2 text-warning">
                                                 <span class="path1"></span>
                                                 <span class="path2"></span>
                                             </i>
                                         </span>
-                                        Parent Involvement Certificate
+                                        Request a Reference
+                                        <span class="ms-auto badge badge-light-warning fs-8">New</span>
                                     </a>
                                 </div>
-                    
-                                <div class="separator my-2"></div>
-                    
-                                <div class="menu-item px-5">
-                                    <a href="<?= base_url('reference/conduct-certificate/' . $user['user_id']) ?>" class="menu-link px-5">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-shield-tick fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                            </i>
-                                        </span>
-                                        Conduct Certificate
-                                    </a>
-                                </div>
-                    
-                                <div class="menu-item px-5">
-                                    <a href="<?= base_url('reference/financial-clearance/' . $user['user_id']) ?>" class="menu-link px-5">
-                                        <span class="menu-icon">
-                                            <i class="ki-duotone ki-dollar fs-6 me-2 text-primary">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                                <span class="path3"></span>
-                                            </i>
-                                        </span>
-                                        Financial Clearance
-                                    </a>
-                                </div>
-                    
+
                             <?php endif; ?>
                             
                             <div class="separator my-2"></div>
@@ -890,12 +849,14 @@
                                     <h2 class="mb-1">Linked Children</h2>
                                     <div class="fs-6 fw-semibold text-muted">Student accounts linked to this parent/guardian</div>
                                 </div>
+                                <?php if (!($isOwnProfile ?? false)): ?>
                                 <div class="card-toolbar">
                                     <button type="button" class="btn btn-light-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal_link_child">
                                         <i class="ki-duotone ki-plus fs-2"><span class="path1"></span><span class="path2"></span></i>
                                         Link Child
                                     </button>
                                 </div>
+                                <?php endif; ?>
                             </div>
                             <div class="separator"></div>
                             <div class="card-body p-9 pt-4">
@@ -3913,16 +3874,13 @@ if (notifForm) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body px-10 py-8">
-                <p class="text-muted fs-7 mb-7">
-                    Select the school and reference type below. A staff member will review and process your request.
-                    Track the status under <strong>View Generated References</strong>.
-                </p>
-
                 <?php
                 $admissionsForModal = $admissionsForModal ?? [];
                 $refCategories      = $refCategories ?? [];
+                $linkedChildrenRef  = $linkedChildren ?? [];
+                $isParentModal      = $isParent ?? false;
+                if (!$isParentModal && !empty($isAParentFlag)) $isParentModal = true;
 
-                // Fallback: if categories still empty, hard-code the student ones
                 if (empty($refCategories)) {
                     $refCategories = [
                         ['ref_cat_id' => 2, 'ref_cat_name' => 'Character Reference'],
@@ -3934,9 +3892,82 @@ if (notifForm) {
                 }
                 ?>
 
-                <!--begin::Hidden student ID-->
+                <?php if ($isParentModal): ?>
+                <!--begin::Parent view: child → school → type → description-->
+                <p class="text-muted fs-7 mb-7">
+                    Select your child and reference type. A staff member will review and process your request.
+                </p>
+
                 <input type="hidden" id="sdRefStudentId" value="<?= (int) $user['user_id'] ?>">
-                <!--end::Hidden student ID-->
+
+                <div class="mb-5">
+                    <label class="form-label required">Child</label>
+                    <?php if (empty($linkedChildrenRef)): ?>
+                    <div class="alert alert-warning py-3">No children linked to your account. Please contact an administrator.</div>
+                    <?php elseif (count($linkedChildrenRef) === 1): ?>
+                    <input type="hidden" id="sdParentChildId" value="<?= (int) $linkedChildrenRef[0]['user_id'] ?>">
+                    <div class="form-control form-control-solid py-3" style="background:#f9f9f9;cursor:default;">
+                        <strong><?= esc($linkedChildrenRef[0]['fname'] . ' ' . $linkedChildrenRef[0]['lname']) ?></strong>
+                        <span class="text-muted ms-2"><?= esc($linkedChildrenRef[0]['relationship']) ?></span>
+                    </div>
+                    <?php else: ?>
+                    <select class="form-select form-select-solid" id="sdParentChildId">
+                        <option value="">— Select Child —</option>
+                        <?php foreach ($linkedChildrenRef as $ch): ?>
+                        <option value="<?= (int) $ch['user_id'] ?>">
+                            <?= esc($ch['fname'] . ' ' . $ch['lname']) ?> (<?= esc($ch['relationship']) ?>)
+                        </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <?php endif; ?>
+                </div>
+
+                <div class="mb-5" id="sdParentAdmWrap" <?= count($linkedChildrenRef) > 1 ? 'style="display:none;"' : '' ?>>
+                    <label class="form-label required">School</label>
+                    <select class="form-select form-select-solid" id="sdRefAdmissionId">
+                        <?php if (count($linkedChildrenRef) === 1): ?>
+                            <?php $firstAdm = $linkedChildrenRef[0]['admissions'] ?? []; ?>
+                            <?php if (empty($firstAdm)): ?>
+                            <option value="">No active admission found</option>
+                            <?php elseif (count($firstAdm) === 1): ?>
+                            <option value="<?= (int) $firstAdm[0]['admission_id'] ?>"><?= esc($firstAdm[0]['sch_name']) ?> (<?= esc($firstAdm[0]['admission_status']) ?>)</option>
+                            <?php else: ?>
+                            <option value="">— Select School —</option>
+                            <?php foreach ($firstAdm as $adm): ?>
+                            <option value="<?= (int) $adm['admission_id'] ?>"><?= esc($adm['sch_name']) ?> (<?= esc($adm['admission_status']) ?>)</option>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                        <?php else: ?>
+                        <option value="">— Select Child first —</option>
+                        <?php endif; ?>
+                    </select>
+                </div>
+
+                <div class="mb-5">
+                    <label class="form-label required">Reference Type</label>
+                    <select class="form-select form-select-solid" id="sdRefCatId">
+                        <option value="">— Select Type —</option>
+                        <?php foreach ($refCategories as $cat): ?>
+                        <option value="<?= (int) $cat['ref_cat_id'] ?>"><?= esc($cat['ref_cat_name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label required">Description</label>
+                    <textarea class="form-control form-control-solid" id="sdRefNote" rows="3" required
+                              placeholder="Describe the purpose of this reference request..."></textarea>
+                </div>
+                <!--end::Parent view-->
+
+                <?php else: ?>
+                <!--begin::Student / Staff view-->
+                <p class="text-muted fs-7 mb-7">
+                    Select the school and reference type below. A staff member will review and process your request.
+                    Track the status under <strong>View Generated References</strong>.
+                </p>
+
+                <input type="hidden" id="sdRefStudentId" value="<?= (int) $user['user_id'] ?>">
 
                 <div class="mb-5">
                     <label class="form-label required">School / Admission</label>
@@ -3966,9 +3997,7 @@ if (notifForm) {
                             <?php endforeach; ?>
                         </select>
                     <?php else: ?>
-                        <div class="alert alert-warning py-3">
-                            No school admission found. Please contact an administrator.
-                        </div>
+                        <div class="alert alert-warning py-3">No school admission found. Please contact an administrator.</div>
                         <input type="hidden" id="sdRefAdmissionId" value="">
                     <?php endif; ?>
                 </div>
@@ -3988,6 +4017,8 @@ if (notifForm) {
                     <textarea class="form-control form-control-solid" id="sdRefNote" rows="3"
                               placeholder="Add any details relevant to your request..."></textarea>
                 </div>
+                <!--end::Student / Staff view-->
+                <?php endif; ?>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
@@ -4001,72 +4032,139 @@ if (notifForm) {
 
 <?php if ($isOwnProfile ?? false): ?>
 <script>
-// Modal trigger
-document.getElementById('sdOpenRefRequestModal')?.addEventListener('click', function (e) {
-    e.preventDefault();
-    if (document.getElementById('sdRefNote')) document.getElementById('sdRefNote').value = '';
-    if (document.getElementById('sdRefCatId')) document.getElementById('sdRefCatId').value = '';
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
-});
+(function () {
+    var isParentView = <?= ($isParent ?? false) || !empty($isAParentFlag) ? 'true' : 'false' ?>;
 
-// Submit
-document.getElementById('btnSubmitRefRequest').addEventListener('click', function () {
-    var btn         = this;
-    var admEl       = document.getElementById('sdRefAdmissionId');
-    var refTypeSel  = document.getElementById('sdRefCatId');
-    var studentId   = (document.getElementById('sdRefStudentId') || {}).value || '';
-    var admissionId = admEl ? admEl.value : '';
+    // Child admissions data for parent view
+    var parentChildrenData = <?= json_encode(array_values($linkedChildren ?? [])) ?>;
 
-    if (!admissionId) {
-        Swal.fire({ icon: 'warning', title: 'School Required',
-            text: 'Please select a school / admission.',
-            confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
-        return;
-    }
-    if (!refTypeSel || !refTypeSel.value) {
-        Swal.fire({ icon: 'warning', title: 'Reference Type Required',
-            text: 'Please select a reference type.',
-            confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
-        return;
-    }
-
-    btn.disabled    = true;
-    btn.textContent = 'Submitting...';
-
-    var params = 'student_id='    + encodeURIComponent(studentId)
-               + '&user_id='      + encodeURIComponent(studentId)
-               + '&admission_id=' + encodeURIComponent(admissionId)
-               + '&ref_cat_id='   + encodeURIComponent(refTypeSel.value)
-               + '&ref_type_name='+ encodeURIComponent(refTypeSel.options[refTypeSel.selectedIndex].text.trim())
-               + '&request_note=' + encodeURIComponent((document.getElementById('sdRefNote') || {}).value || '');
-
-    fetch('<?= base_url('reference/request/store') ?>', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
-        body:    params,
-    })
-    .then(function (r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-    })
-    .then(function (data) {
-        bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
-        if (data.success) {
-            Swal.fire({ icon: 'success', title: 'Request Submitted',
-                text: data.message, timer: 3500, showConfirmButton: false });
-        } else {
-            Swal.fire({ icon: 'warning', title: 'Notice', text: data.message,
-                confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
-        }
-    })
-    .catch(function (err) {
-        Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
-        console.error(err);
-    })
-    .finally(function () {
-        btn.disabled    = false;
-        btn.textContent = 'Submit Request';
+    // Build a lookup: user_id → admissions array
+    var childAdmMap = {};
+    parentChildrenData.forEach(function (c) {
+        childAdmMap[String(c.user_id)] = c.admissions || [];
     });
-});
+
+    function resetModal() {
+        var noteEl = document.getElementById('sdRefNote');
+        var catEl  = document.getElementById('sdRefCatId');
+        if (noteEl) noteEl.value = '';
+        if (catEl)  catEl.value  = '';
+        if (isParentView) {
+            var childEl = document.getElementById('sdParentChildId');
+            var admEl   = document.getElementById('sdRefAdmissionId');
+            var wrap    = document.getElementById('sdParentAdmWrap');
+            if (childEl && childEl.tagName === 'SELECT') childEl.value = '';
+            if (admEl)  admEl.innerHTML = '<option value="">— Select Child first —</option>';
+            if (wrap && childEl && childEl.tagName === 'SELECT') wrap.style.display = 'none';
+        }
+    }
+
+    // Modal trigger
+    document.getElementById('sdOpenRefRequestModal')?.addEventListener('click', function (e) {
+        e.preventDefault();
+        resetModal();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('kt_modal_ref_request')).show();
+    });
+
+    // Parent: update admission dropdown when child changes
+    if (isParentView) {
+        var childSel = document.getElementById('sdParentChildId');
+        if (childSel && childSel.tagName === 'SELECT') {
+            childSel.addEventListener('change', function () {
+                var uid   = this.value;
+                var admEl = document.getElementById('sdRefAdmissionId');
+                var wrap  = document.getElementById('sdParentAdmWrap');
+                admEl.innerHTML = '';
+                if (!uid) {
+                    admEl.innerHTML = '<option value="">— Select Child first —</option>';
+                    if (wrap) wrap.style.display = 'none';
+                    return;
+                }
+                var adms = childAdmMap[uid] || [];
+                if (!adms.length) {
+                    admEl.innerHTML = '<option value="">No active admission found</option>';
+                } else if (adms.length === 1) {
+                    admEl.innerHTML = '<option value="' + adms[0].admission_id + '">' + adms[0].sch_name + ' (' + adms[0].admission_status + ')</option>';
+                } else {
+                    admEl.innerHTML = '<option value="">— Select School —</option>';
+                    adms.forEach(function (a) {
+                        admEl.innerHTML += '<option value="' + a.admission_id + '">' + a.sch_name + ' (' + a.admission_status + ')</option>';
+                    });
+                }
+                if (wrap) wrap.style.display = '';
+            });
+        }
+    }
+
+    // Submit
+    document.getElementById('btnSubmitRefRequest').addEventListener('click', function () {
+        var btn        = this;
+        var admEl      = document.getElementById('sdRefAdmissionId');
+        var refTypeSel = document.getElementById('sdRefCatId');
+        var noteEl     = document.getElementById('sdRefNote');
+        var studentId  = (document.getElementById('sdRefStudentId') || {}).value || '';
+        var admissionId = admEl ? admEl.value : '';
+
+        if (!admissionId) {
+            Swal.fire({ icon: 'warning', title: 'School Required',
+                text: 'Please select a school / admission.',
+                confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+            return;
+        }
+        if (!refTypeSel || !refTypeSel.value) {
+            Swal.fire({ icon: 'warning', title: 'Reference Type Required',
+                text: 'Please select a reference type.',
+                confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+            return;
+        }
+        if (isParentView && (!noteEl || !noteEl.value.trim())) {
+            Swal.fire({ icon: 'warning', title: 'Description Required',
+                text: 'Please provide a description for your request.',
+                confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+            return;
+        }
+
+        btn.disabled    = true;
+        btn.textContent = 'Submitting...';
+
+        var params = 'admission_id=' + encodeURIComponent(admissionId)
+                   + '&ref_cat_id='  + encodeURIComponent(refTypeSel.value)
+                   + '&ref_type_name=' + encodeURIComponent(refTypeSel.options[refTypeSel.selectedIndex].text.trim())
+                   + '&request_note='  + encodeURIComponent((noteEl ? noteEl.value : '') || '');
+
+        if (!isParentView) {
+            params += '&user_id=' + encodeURIComponent(studentId)
+                    + '&student_id=' + encodeURIComponent(studentId);
+        }
+
+        fetch('<?= base_url('reference/request/store') ?>', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+            body:    params,
+        })
+        .then(function (r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function (resp) {
+            bootstrap.Modal.getInstance(document.getElementById('kt_modal_ref_request'))?.hide();
+            if (resp.success) {
+                Swal.fire({ icon: 'success', title: 'Request Submitted',
+                    text: resp.message, timer: 3500, showConfirmButton: false });
+            } else {
+                Swal.fire({ icon: 'warning', title: 'Notice', text: resp.message,
+                    confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+            }
+        })
+        .catch(function (err) {
+            Swal.fire({ icon: 'error', title: 'Error', text: 'Could not submit request. Please try again.' });
+            console.error(err);
+        })
+        .finally(function () {
+            btn.disabled    = false;
+            btn.textContent = 'Submit Request';
+        });
+    });
+})();
 </script>
 <?php endif; ?>

@@ -2634,7 +2634,7 @@ class ReferenceController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Please fill in all required fields.']);
         }
 
-        // Validate admission belongs to this user
+        // Validate admission belongs to this user (or to a child linked to this parent)
         $db = \Config\Database::connect();
         $admission = $db->table('admission')
             ->where('admission_id', $admissionId)
@@ -2642,7 +2642,21 @@ class ReferenceController extends BaseController
             ->get()->getRowArray();
 
         if (!$admission) {
-            return $this->response->setJSON(['success' => false, 'message' => 'Invalid admission selected.']);
+            // Allow parent requesting on behalf of their child
+            $roleCat  = (int) $this->session->get('roleCatID');
+            $userRow  = $this->userModel->find($userId);
+            $isParent = $roleCat === 6 || (int) ($userRow['is_a_parent'] ?? 0) === 1;
+            if ($isParent) {
+                $admission = $db->query("
+                    SELECT a.admission_id, a.sch_id_fk, a.user_id_fk
+                    FROM admission a
+                    INNER JOIN parent_student ps ON ps.student_user_id_fk = a.user_id_fk
+                    WHERE a.admission_id = ? AND ps.parent_user_id_fk = ?
+                ", [$admissionId, $userId])->getRowArray();
+            }
+            if (!$admission) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Invalid admission selected.']);
+            }
         }
 
         // Validate reference category exists

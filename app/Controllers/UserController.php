@@ -1411,6 +1411,20 @@ class UserController extends BaseController
             ->orderBy('ref_cat_id', 'ASC')
             ->get()->getResultArray();
 
+        // For parent reference request modal: embed each child's admissions
+        if (!empty($linkedChildren)) {
+            foreach ($linkedChildren as &$child) {
+                $child['admissions'] = $db->table('admission')
+                    ->select('admission.admission_id, admission.sch_id_fk, admission.admission_status, school.sch_name')
+                    ->join('school', 'school.sch_id = admission.sch_id_fk', 'left')
+                    ->where('admission.user_id_fk', (int) $child['user_id'])
+                    ->orderBy('admission.admission_id', 'DESC')
+                    ->get()->getResultArray();
+            }
+            unset($child);
+            $data['linkedChildren'] = $linkedChildren;
+        }
+
         // Direct admission+school query — use full table names (no alias) to avoid CI4 builder quirks
         $rawAdmissions = $db->table('admission')
             ->select('admission.admission_id, admission.sch_id_fk, admission.admission_status, admission.admission_date, school.sch_name, school.sch_logo')
