@@ -24,10 +24,48 @@ class WallController extends BaseController
         return $this->response->setStatusCode($code)->setJSON($data);
     }
 
+    private function resolveParentSchoolIds(int $userId): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT DISTINCT sch.sch_id, sch.sch_name, sch.sch_logo
+            FROM parent_student ps
+            INNER JOIN users stu ON stu.user_id = ps.student_user_id_fk
+            INNER JOIN admission a ON a.user_id_fk = stu.user_id AND a.admission_status = 'Active'
+            INNER JOIN school sch ON sch.sch_id = a.sch_id_fk
+            WHERE ps.parent_user_id_fk = ?
+            ORDER BY sch.sch_name
+        ", [$userId])->getResultArray();
+    }
+
     private function resolveSchoolId(): int
     {
-        $schId  = (int) $this->session->get('schID');
-        $userId = (int) $this->session->get('userID');
+        $userId    = (int) $this->session->get('userID');
+        $roleCatId = (int) $this->session->get('roleCatID');
+
+        // Parent role: resolve via children's active enrollment, support school switching
+        if ($roleCatId === 6) {
+            $schools     = $this->resolveParentSchoolIds($userId);
+            if (empty($schools)) return 0;
+            $requestedId = (int) ($this->request->getGet('sch_id') ?? 0);
+            if ($requestedId > 0) {
+                foreach ($schools as $s) {
+                    if ((int) $s['sch_id'] === $requestedId) {
+                        $this->session->set('wall_active_sch_id', $requestedId);
+                        return $requestedId;
+                    }
+                }
+            }
+            $cached = (int) $this->session->get('wall_active_sch_id');
+            if ($cached > 0) {
+                foreach ($schools as $s) {
+                    if ((int) $s['sch_id'] === $cached) return $cached;
+                }
+            }
+            return (int) $schools[0]['sch_id'];
+        }
+
+        $schId = (int) $this->session->get('schID');
         if ($schId !== 0) return $schId;
 
         $db = \Config\Database::connect();
@@ -81,26 +119,40 @@ class WallController extends BaseController
     {
         if (!$this->isLoggedIn()) return redirect()->to('auth/login');
 
+        $userId    = (int) $this->session->get('userID');
+        $roleCatId = (int) $this->session->get('roleCatID');
+
+        // Build parent school list for tab UI
+        $parentSchools  = [];
+        if ($roleCatId === 6) {
+            $parentSchools = $this->resolveParentSchoolIds($userId);
+            if (empty($parentSchools)) {
+                return redirect()->to('dashboard')->with('error', 'No school linked to your children\'s accounts.');
+            }
+        }
+
         $schId = $this->resolveSchoolId();
         if (!$schId) return redirect()->to('school/dashboard')->with('error', 'No school linked to your account.');
 
         $db = \Config\Database::connect();
 
-        $schoolRow  = $db->table('school')->select('sch_name, sch_motto, sch_logo')->where('sch_id', $schId)->get()->getRowArray();
-        $postCount  = (int) $db->table('wall_post')->where('sch_id_fk', $schId)->where('post_status', 'Active')->countAllResults();
+        $schoolRow   = $db->table('school')->select('sch_name, sch_motto, sch_logo')->where('sch_id', $schId)->get()->getRowArray();
+        $postCount   = (int) $db->table('wall_post')->where('sch_id_fk', $schId)->where('post_status', 'Active')->countAllResults();
         $memberCount = (int) $db->table('admission')->where('sch_id_fk', $schId)->where('admission_status', 'Active')->countAllResults();
 
         $this->setPageData('School Wall', 'Wall', 'School Wall');
         $data = $this->loadCommonData('app/wall/index', [
-            'schId'       => $schId,
-            'myId'        => (int) $this->session->get('userID'),
-            'myName'      => trim($this->session->get('fname') . ' ' . $this->session->get('name')),
-            'myPhoto'     => $this->photoUrl($this->session->get('photo')),
-            'schoolName'  => $schoolRow['sch_name']  ?? 'School Community',
-            'schoolMotto' => $schoolRow['sch_motto']  ?? '',
-            'schoolLogo'  => $schoolRow['sch_logo']   ? base_url('uploads/schoolLogo/' . $schoolRow['sch_logo']) : '',
+            'schId'          => $schId,
+            'myId'           => $userId,
+            'myName'         => trim($this->session->get('fname') . ' ' . $this->session->get('name')),
+            'myPhoto'        => $this->photoUrl($this->session->get('photo')),
+            'schoolName'     => $schoolRow['sch_name']  ?? 'School Community',
+            'schoolMotto'    => $schoolRow['sch_motto']  ?? '',
+            'schoolLogo'     => $schoolRow['sch_logo']   ? base_url('uploads/schoolLogo/' . $schoolRow['sch_logo']) : '',
             'wallPostCount'  => $postCount,
             'wallMemberCount'=> $memberCount,
+            'parentSchools'  => $parentSchools,   // non-empty only for roleCatId === 6
+            'activeSchoolId' => $schId,
         ]);
 
         return view('app/layouts/main', $data);

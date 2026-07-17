@@ -1,13 +1,15 @@
 <?php
-$schId        = $schId        ?? 0;
-$myId         = $myId         ?? 0;
-$myName       = $myName       ?? 'Me';
-$myPhoto      = $myPhoto      ?? base_url('assets/media/avatars/blank.png');
-$schoolName   = $schoolName   ?? 'School Community';
-$schoolMotto  = $schoolMotto  ?? '';
-$schoolLogo   = $schoolLogo   ?? '';
+$schId           = $schId           ?? 0;
+$myId            = $myId            ?? 0;
+$myName          = $myName          ?? 'Me';
+$myPhoto         = $myPhoto         ?? base_url('assets/media/avatars/blank.png');
+$schoolName      = $schoolName      ?? 'School Community';
+$schoolMotto     = $schoolMotto     ?? '';
+$schoolLogo      = $schoolLogo      ?? '';
 $wallPostCount   = $wallPostCount   ?? 0;
 $wallMemberCount = $wallMemberCount ?? 0;
+$parentSchools   = $parentSchools   ?? [];
+$activeSchoolId  = $activeSchoolId  ?? $schId;
 
 $WALL_FEED_URL          = base_url('wall/feed');
 $WALL_POST_URL          = base_url('wall/post');
@@ -193,6 +195,23 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
 <!--begin::Content-->
 <div id="kt_app_content" class="app-content flex-column-fluid">
 <div id="kt_app_content_container" class="app-container container-xxl">
+
+    <?php if (!empty($parentSchools)): ?>
+    <!--begin::School tabs (parent view)-->
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-6">
+        <?php foreach ($parentSchools as $ps): ?>
+        <a href="<?= base_url('wall?sch_id=' . (int)$ps['sch_id']) ?>"
+           class="btn btn-sm <?= (int)$ps['sch_id'] === (int)$activeSchoolId ? 'btn-primary' : 'btn-light text-gray-600' ?>">
+            <?php if (!empty($ps['sch_logo'])): ?>
+            <img src="<?= base_url('uploads/schoolLogo/' . esc($ps['sch_logo'])) ?>"
+                 alt="" style="height:18px;width:18px;object-fit:contain;border-radius:3px;margin-right:5px;">
+            <?php endif; ?>
+            <?= esc($ps['sch_name']) ?>
+        </a>
+        <?php endforeach; ?>
+    </div>
+    <!--end::School tabs-->
+    <?php endif; ?>
 
     <div class="row g-5 g-xl-8 align-items-start">
 

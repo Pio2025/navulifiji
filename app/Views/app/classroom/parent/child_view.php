@@ -49,7 +49,7 @@
         'sessionPhotoUrl' => $sessionPhotoUrl ?? null,
         'sessionUserId'   => $childUserId,   // exam report links use child's userId
         'parentChildId'   => $childUserId,   // attendance links append &student_id=
-        'allowPost'       => false,          // parents cannot post in discussions
+        'allowPost'       => true,            // parents can post in active classrooms; _year_classrooms gates on $isActive
     ]) ?>
 
 </div>

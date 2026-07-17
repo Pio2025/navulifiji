@@ -5837,6 +5837,22 @@ class ClassroomController extends BaseController
             return true;
         }
 
+        // Parent with a child actively enrolled in this classroom (active classrooms only)
+        $roleCatId = (int) $this->session->get('roleCatID');
+        $user      = $this->userModel->find($userId);
+        $isParent  = $roleCatId === 6 || (int) ($user['is_a_parent'] ?? 0) === 1;
+        if ($isParent) {
+            $cnt = (int) $db->query("
+                SELECT COUNT(*) AS c
+                FROM parent_student ps
+                INNER JOIN admission a ON a.user_id_fk = ps.student_user_id_fk AND a.admission_status = 'Active'
+                INNER JOIN enrolment e ON e.admission_id_fk = a.admission_id
+                INNER JOIN classroom c ON c.stream_id_fk = e.stream_id_fk AND c.class_year = e.enrol_year
+                WHERE ps.parent_user_id_fk = ? AND c.class_id = ? AND c.class_status = 'Active'
+            ", [$userId, $classId])->getRowArray()['c'];
+            if ($cnt > 0) return true;
+        }
+
         return false;
     }
 
