@@ -133,7 +133,7 @@ class TimetableController extends BaseController
             return redirect()->back()->withInput()->with('error', 'Failed to create timetable. A timetable for this stream/year/term may already exist.');
         }
 
-        $this->logAction('Created timetable #' . $id);
+        $this->logAction('Timetable Created', 'Created timetable #' . $id . ' for stream ' . $streamId);
 
         return redirect()->to('timetable/edit/' . $id)
             ->with('success', 'Timetable created — fill in the periods below and save.');
@@ -219,7 +219,7 @@ class TimetableController extends BaseController
         }
 
         $this->ttEntryModel->replaceEntries($id, $entries);
-        $this->logAction('Updated timetable #' . $id);
+        $this->logAction('Timetable Updated', 'Updated timetable #' . $id);
 
         return redirect()->to('timetable/detail/' . $id)
             ->with('success', 'Timetable saved successfully.');
@@ -280,7 +280,7 @@ class TimetableController extends BaseController
 
         $this->ttEntryModel->where('timetable_id_fk', $id)->delete();
         $this->ttModel->delete($id);
-        $this->logAction('Deleted timetable #' . $id);
+        $this->logAction('Timetable Deleted', 'Deleted timetable #' . $id);
 
         return redirect()->to('timetable')->with('success', 'Timetable deleted.');
     }
@@ -422,12 +422,19 @@ class TimetableController extends BaseController
         return $level ? (int) $level['sch_id_fk'] : 0;
     }
 
-    private function logAction(string $msg): void
+    private function logAction(string $title, string $desc = ''): void
     {
-        $this->userLogModel->logAction(
-            (int) $this->session->get('userID'),
-            $msg,
-            'TimetableController'
-        );
+        $this->userLogModel->insert([
+            'user_id_fk'  => $this->session->get('userID'),
+            'ip_aadress'  => $this->ipAddress,
+            'user_agent'  => $this->userAgent->getAgentString(),
+            'user_device' => $this->deviceInfo['device_type'] ?? 'Unknown',
+            'log_title'   => $title,
+            'log_desc'    => $desc ?: $title,
+            'log_date'    => date('Y-m-d'),
+            'log_time'    => time(),
+            'log_icon'    => '<i class="ki-duotone ki-calendar-8"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span><span class="path6"></span></i>',
+            'log_theme'   => 'primary',
+        ]);
     }
 }
