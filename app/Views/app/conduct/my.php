@@ -267,7 +267,9 @@ function cc_compute_stats(array $incidents): array {
         <?php if ($total === 0): ?>
         <div class="cc-card">
             <div class="cc-card-body text-center py-10">
-                <i class="ki-duotone ki-shield-tick fs-3x text-muted mb-4 d-block"><span class="path1"></span><span class="path2"></span></i>
+                <div class="mb-4">
+                    <i class="ki-duotone ki-shield-tick fs-3x text-muted"><span class="path1"></span><span class="path2"></span></i>
+                </div>
                 <p class="text-muted fs-6 mb-0">No conduct incidents on record for <?= esc($child['fname']) ?>. Great behaviour!</p>
             </div>
         </div>
