@@ -19,10 +19,10 @@
                 <li class="breadcrumb-item text-muted"><?= esc($subjectData['subject_name'] ?? 'Subject') ?></li>
             </ul>
         </div>
-        <a href="<?= base_url($backUrl ?? 'classroom/my') ?>" class="btn btn-sm btn-light">
+        <button type="button" onclick="history.back()" class="btn btn-sm btn-light">
             <i class="ki-duotone ki-arrow-left fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
             Back
-        </a>
+        </button>
     </div>
 </div>
 <!--end::Toolbar-->

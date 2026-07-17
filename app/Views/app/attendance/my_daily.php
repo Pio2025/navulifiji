@@ -35,10 +35,10 @@ $pctColor = $ss['pct'] >= 80 ? 'success' : ($ss['pct'] >= 70 ? 'warning' : 'dang
                 Print
             </button>
             <?php endif; ?>
-            <a href="<?= base_url('classroom/my') ?>" class="btn btn-sm btn-light">
+            <button type="button" onclick="history.back()" class="btn btn-sm btn-light">
                 <i class="ki-duotone ki-arrow-left fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
                 Back
-            </a>
+            </button>
         </div>
     </div>
 </div>

@@ -17,10 +17,10 @@
                 <li class="breadcrumb-item text-muted">Subject Attendance</li>
             </ul>
         </div>
-        <a href="<?= base_url('classroom/my') ?>" class="btn btn-sm btn-light">
+        <button type="button" onclick="history.back()" class="btn btn-sm btn-light">
             <i class="ki-duotone ki-arrow-left fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
-            Back to Classroom
-        </a>
+            Back
+        </button>
     </div>
 </div>
 <!--end::Toolbar-->
