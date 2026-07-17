@@ -119,7 +119,7 @@ foreach ($schools as $s) {
 <!-- Single school — show as header badge -->
 <div class="d-flex align-items-center gap-2 mb-4">
     <?php if (!empty($schools[0]['sch_logo'])): ?>
-    <img src="<?= base_url('uploads/schoolLogo/' . esc($schools[0]['sch_logo'])) ?>"
+    <img src="<?= base_url('uploads/school/logo/' . esc($schools[0]['sch_logo'])) ?>"
          alt="" style="height:32px;width:32px;object-fit:contain;border-radius:4px;border:1px solid #e9edf0;">
     <?php else: ?>
     <i class="ki-duotone ki-bank fs-2 text-primary"><span class="path1"></span><span class="path2"></span></i>

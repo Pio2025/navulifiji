@@ -203,7 +203,7 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
         <a href="<?= base_url('wall?sch_id=' . (int)$ps['sch_id']) ?>"
            class="btn btn-sm d-inline-flex align-items-center gap-2 <?= (int)$ps['sch_id'] === (int)$activeSchoolId ? 'btn-primary' : 'btn-light text-gray-600' ?>">
             <?php if (!empty($ps['sch_logo'])): ?>
-            <img src="<?= base_url('uploads/schoolLogo/' . esc($ps['sch_logo'])) ?>"
+            <img src="<?= base_url('uploads/school/logo/' . esc($ps['sch_logo'])) ?>"
                  alt="" style="height:18px;width:18px;object-fit:contain;flex-shrink:0;">
             <?php else: ?>
             <i class="ki-outline ki-bank fs-6" style="flex-shrink:0;"></i>
