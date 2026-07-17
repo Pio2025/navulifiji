@@ -395,6 +395,7 @@ $routes->get( 'exam/detail/(:num)/school/(:num)/students/by-year', 'ExamControll
 // ============================================================================
 $routes->get( 'conduct',                        'ConductController::index');
 $routes->get( 'conduct/my',                      'ConductController::my');
+$routes->get( 'conduct/child/my',               'ConductController::my');
 $routes->get( 'conduct/report',                  'ConductController::report');
 $routes->get( 'conduct/add',                     'ConductController::add');
 $routes->post('conduct/store',                   'ConductController::store');
