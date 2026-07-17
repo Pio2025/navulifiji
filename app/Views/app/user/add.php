@@ -485,14 +485,14 @@
                     <!--end::Row-->
 					
 					<!--begin::Row - Parent Checkbox (Hidden by default)-->
-					<div class="row mb-6" id="parent-checkbox-row">
+					<div class="row mb-6" id="parent-checkbox-row2">
 
                         <div class="col-lg-12 mb-3">
 							<label class="form-label">Address</label>
 							<textarea name="address" class="form-control" rows="3" 
 							          placeholder="Enter full address"><?= old('address') ?></textarea>
 						</div>
-                                            
+
 						<div class="col-lg-12">
 							<div class="d-flex align-items-start gap-3 rounded border border-dashed border-warning px-6 py-4">
 								<div class="form-check form-check-custom flex-shrink-0 mt-1">
