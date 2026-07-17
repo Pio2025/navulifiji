@@ -6577,7 +6577,9 @@ class ClassroomController extends BaseController
                   AND cs_status = 'Active'
             ", [$classId, $userId])->getRow()->cnt > 0;
             if (!$isClassTeacher && !$isAdmin) {
-                return redirect()->to('classroom/my')->with('error', 'Report not yet published.');
+                $isParent    = $roleCatId === 6 || (int)(($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+                $fallbackUrl = $isParent ? 'classroom/child/view/' . $classId : 'classroom/my';
+                return redirect()->to($fallbackUrl)->with('error', 'Report not yet published.');
             }
         }
 
@@ -6638,7 +6640,9 @@ class ClassroomController extends BaseController
                   AND cs_status = 'Active'
             ", [$classId, $userId])->getRow()->cnt > 0;
             if (!$isClassTeacher && !$isAdmin) {
-                return redirect()->to('classroom/my')->with('error', 'Report not yet published.');
+                $isParent    = $roleCatId === 6 || (int)(($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+                $fallbackUrl = $isParent ? 'classroom/child/view/' . $classId : 'classroom/my';
+                return redirect()->to($fallbackUrl)->with('error', 'Report not yet published.');
             }
         }
 
