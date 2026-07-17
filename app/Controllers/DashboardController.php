@@ -53,6 +53,9 @@ class DashboardController extends BaseController
         } elseif ($roleCatID === 4) {
             $view = 'app/dashboard/student';
             $additionalData = $this->getStudentDashboardStats();
+        } elseif ($roleCatID === 6) {
+            $view = 'app/dashboard/parent';
+            $additionalData = $this->getParentDashboardStats();
         } else {
             $view = 'app/dashboard/index';
         }
@@ -561,6 +564,201 @@ class DashboardController extends BaseController
             'st_conduct_resolved'   => $conductResolved,
             'st_total_incidents'    => count($incidents),
             'st_announcements'      => $announcements,
+        ];
+    }
+
+    private function getParentDashboardStats(): array
+    {
+        $db     = \Config\Database::connect();
+        $userId = (int) $this->session->get('userID');
+
+        $children = $this->parentStudentModel->getChildrenOf($userId);
+        if (empty($children)) {
+            return ['pr_no_children' => true, 'pr_children' => [], 'pr_announcements' => []];
+        }
+
+        $childStats = [];
+        $schoolIds  = [];
+
+        foreach ($children as $child) {
+            $childUserId = (int) $child['user_id'];
+            $childData   = [
+                'user_id'      => $childUserId,
+                'fname'        => $child['fname'] ?? '',
+                'lname'        => $child['lname'] ?? '',
+                'relationship' => $child['relationship'] ?? '',
+                'photo'        => $child['profile_photo'] ?? null,
+            ];
+
+            // Admission + enrolment
+            $row = $db->query("
+                SELECT a.admission_id, a.sch_id_fk, a.admission_status,
+                       s.sch_name, s.sch_logo,
+                       e.enrol_id, e.stream_id_fk, e.enrol_year, e.enrol_term, e.enrol_status,
+                       st.stream_id, st.stream_name,
+                       l.level_name
+                FROM admission a
+                LEFT JOIN school    s  ON s.sch_id           = a.sch_id_fk
+                LEFT JOIN enrolment e  ON e.admission_id_fk  = a.admission_id
+                                       AND e.enrol_status    = 'Active'
+                LEFT JOIN stream    st ON st.stream_id        = e.stream_id_fk
+                LEFT JOIN sch_level sl ON sl.sch_level_id     = st.sch_level_id_fk
+                LEFT JOIN level     l  ON l.level_id          = sl.level_id_fk
+                WHERE a.user_id_fk = ?
+                ORDER BY a.admission_id DESC, e.enrol_id DESC
+                LIMIT 1
+            ", [$childUserId])->getRowArray();
+
+            if (!$row) {
+                $childData['no_data'] = true;
+                $childStats[] = $childData;
+                continue;
+            }
+
+            $admissionId = (int) $row['admission_id'];
+            $streamId    = (int) ($row['stream_id'] ?? 0);
+            $enrolTerm   = max(1, min(3, (int) ($row['enrol_term'] ?? 1)));
+            $schId       = (int) $row['sch_id_fk'];
+            if ($schId) $schoolIds[$schId] = true;
+
+            // Classroom
+            $classroom = $db->query("
+                SELECT cs.class_id_fk, c.class_name, c.class_year
+                FROM classroom_student cs
+                JOIN classroom c ON c.class_id = cs.class_id_fk
+                WHERE cs.user_id_fk = ? AND cs.class_stud_status = 'Active'
+                ORDER BY cs.class_stud_id DESC LIMIT 1
+            ", [$childUserId])->getRowArray();
+
+            $classId = $classroom ? (int) $classroom['class_id_fk'] : 0;
+
+            // Term marks
+            $allTermMarks = [];
+            $classStatsR  = [];
+            if ($classId) {
+                for ($t = 1; $t <= 3; $t++) {
+                    $allTermMarks[$t] = $this->termExamModel->getStudentReport($classId, $childUserId, $t);
+                }
+                $classStatsR = $this->termExamModel->getClassStats($classId, $enrolTerm, $childUserId);
+            }
+
+            $currentMarks = $allTermMarks[$enrolTerm] ?? [];
+            $overallPct   = $currentMarks['overall_pct'] ?? null;
+            $classRank    = $classStatsR['position'] ?? null;
+            $classSize    = $classStatsR['enrolled'] ?? null;
+
+            // Attendance
+            $attendancePct     = null;
+            $attendanceData    = ['present' => 0, 'absent' => 0, 'total' => 0];
+            $attendanceMonthly = [];
+            $subjectAttendance = [];
+
+            if ($streamId && $admissionId) {
+                $daily = $db->query("
+                    SELECT attendance_status, COUNT(*) AS cnt
+                    FROM student_attendance
+                    WHERE admission_id_fk = ? AND stream_id_fk = ? AND attendance_type = 'Daily'
+                    GROUP BY attendance_status
+                ", [$admissionId, $streamId])->getResultArray();
+
+                $present = 0; $absent = 0;
+                foreach ($daily as $d) {
+                    if ($d['attendance_status'] === 'Present') $present = (int) $d['cnt'];
+                    else $absent = (int) $d['cnt'];
+                }
+                $total = $present + $absent;
+                $attendancePct  = $total > 0 ? round(($present / $total) * 100, 1) : null;
+                $attendanceData = compact('present', 'absent', 'total');
+
+                $monthly = $db->query("
+                    SELECT DATE_FORMAT(attendance_date,'%Y-%m') AS mk,
+                           DATE_FORMAT(attendance_date,'%b %Y') AS label,
+                           SUM(attendance_status = 'Present')   AS present,
+                           COUNT(*)                             AS total
+                    FROM student_attendance
+                    WHERE admission_id_fk = ? AND stream_id_fk = ? AND attendance_type = 'Daily'
+                    GROUP BY mk, label
+                    ORDER BY mk DESC LIMIT 6
+                ", [$admissionId, $streamId])->getResultArray();
+                $attendanceMonthly = array_reverse($monthly);
+
+                $subjectAttendance = $db->query("
+                    SELECT COALESCE(sub.subject_name,'—') AS subject_name,
+                           SUM(sa.attendance_status = 'Present') AS present,
+                           COUNT(*)                              AS total
+                    FROM student_attendance sa
+                    LEFT JOIN sch_subject ss ON ss.sch_sub_id  = sa.subject_id_fk
+                    LEFT JOIN subject sub    ON sub.subject_id = ss.subject_id_fk
+                    WHERE sa.admission_id_fk = ? AND sa.stream_id_fk = ? AND sa.attendance_type = 'Subject'
+                    GROUP BY sa.subject_id_fk, sub.subject_name
+                    ORDER BY total DESC
+                ", [$admissionId, $streamId])->getResultArray();
+            }
+
+            // Conduct
+            $incidents = [];
+            try {
+                $incidents = $db->query("
+                    SELECT ci.incident_id, ci.points_awarded, ci.incident_description,
+                           ci.incident_date, ci.location, ci.is_resolved,
+                           ct.type_name, ct.is_positive, ct.severity_level, ct.category,
+                           CONCAT(u.fname,' ',u.lname) AS staff_name
+                    FROM conduct_incidents ci
+                    LEFT JOIN conduct_types ct ON ct.type_id = ci.type_id_fk
+                    LEFT JOIN users u          ON u.user_id  = ci.staff_id
+                    WHERE ci.student_id = ?
+                    ORDER BY ci.incident_date DESC
+                ", [$admissionId])->getResultArray();
+            } catch (\Throwable $e) {
+                log_message('error', 'Parent dashboard conduct query: ' . $e->getMessage());
+            }
+
+            $conductPositive = $conductNegative = $conductResolved = 0;
+            foreach ($incidents as $inc) {
+                if ($inc['is_positive']) $conductPositive += (int) $inc['points_awarded'];
+                else $conductNegative += (int) $inc['points_awarded'];
+                if ($inc['is_resolved']) $conductResolved++;
+            }
+
+            $childData = array_merge($childData, [
+                'row'                => $row,
+                'classroom'          => $classroom,
+                'current_marks'      => $currentMarks,
+                'all_term_marks'     => $allTermMarks,
+                'overall_pct'        => $overallPct,
+                'class_rank'         => $classRank,
+                'class_size'         => $classSize,
+                'attendance_pct'     => $attendancePct,
+                'attendance_data'    => $attendanceData,
+                'attendance_monthly' => $attendanceMonthly,
+                'subject_attendance' => $subjectAttendance,
+                'conduct_incidents'  => array_slice($incidents, 0, 5),
+                'conduct_positive'   => $conductPositive,
+                'conduct_negative'   => $conductNegative,
+                'conduct_resolved'   => $conductResolved,
+                'total_incidents'    => count($incidents),
+            ]);
+
+            $childStats[] = $childData;
+        }
+
+        // Announcements from all enrolled schools
+        $announcements = [];
+        if (!empty($schoolIds)) {
+            $schIdList = implode(',', array_map('intval', array_keys($schoolIds)));
+            $announcements = $db->query("
+                SELECT sa.title, sa.content, sa.priority, sa.created_at, sa.sch_id_fk,
+                       s.sch_name
+                FROM school_announcement sa
+                LEFT JOIN school s ON s.sch_id = sa.sch_id_fk
+                WHERE sa.sch_id_fk IN ($schIdList) AND sa.announcement_status = 'Active'
+                ORDER BY sa.created_at DESC LIMIT 10
+            ")->getResultArray();
+        }
+
+        return [
+            'pr_children'      => $childStats,
+            'pr_announcements' => $announcements,
         ];
     }
 }
