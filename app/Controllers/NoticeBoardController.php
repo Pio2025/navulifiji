@@ -44,6 +44,49 @@ class NoticeBoardController extends BaseController
         };
     }
 
+    // ─── School ID resolution (handles schID=0 in stale sessions) ───────────
+
+    private function resolveSchoolId(): int
+    {
+        $schId  = (int) $this->session->get('schID');
+        $userId = (int) $this->session->get('userID');
+
+        if ($schId !== 0) return $schId;
+
+        $db = \Config\Database::connect();
+
+        // Staff table first
+        $row = $db->table('staff')
+            ->select('sch_id_fk')
+            ->where('user_id_fk', $userId)
+            ->where('staff_status', 'Active')
+            ->limit(1)
+            ->get()->getRowArray();
+        if ($row) {
+            $schId = (int) $row['sch_id_fk'];
+            $this->session->set('schID', $schId);
+            return $schId;
+        }
+
+        // Classroom assignment chain
+        $row = $db->table('classroom_subject_teacher cst')
+            ->select('sl.sch_id_fk')
+            ->join('classroom_subject cs', 'cs.class_sub_id = cst.class_sub_id_fk')
+            ->join('classroom c',          'c.class_id = cs.class_id_fk')
+            ->join('stream s',             's.stream_id = c.stream_id_fk')
+            ->join('sch_level sl',         'sl.sch_level_id = s.sch_level_id_fk')
+            ->where('cst.user_id_fk', $userId)
+            ->limit(1)
+            ->get()->getRowArray();
+        if ($row) {
+            $schId = (int) $row['sch_id_fk'];
+            $this->session->set('schID', $schId);
+            return $schId;
+        }
+
+        return 0;
+    }
+
     // ─── Parent school resolution ─────────────────────────────────────────────
 
     private function resolveParentSchools(int $userId): array
@@ -79,8 +122,9 @@ class NoticeBoardController extends BaseController
         $roleCat  = (int) $this->session->get('roleCatID');
         $audience = $this->myAudience();
 
+        // Teachers (3) always use their school flow even if is_a_parent is set
         $isParent = $roleCat === 6
-            || (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+            || ($roleCat !== 3 && (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1);
 
         $parentSchools   = [];
         $activeSchoolId  = 0;
@@ -96,7 +140,7 @@ class NoticeBoardController extends BaseController
 
             $schId = $activeSchoolId;
         } else {
-            $schId = (int) $this->session->get('schID');
+            $schId = $this->resolveSchoolId();
         }
 
         $notices = $this->noticeModel->getActiveForSchool($schId, $audience);

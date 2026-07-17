@@ -18,7 +18,8 @@ function noticeAge(string $dateStr): string {
     return date('d M Y', strtotime($dateStr));
 }
 
-function noticeExpiry(string $expiresAt): string {
+function noticeExpiry(?string $expiresAt): string {
+    if (!$expiresAt) return '';
     $diff = strtotime($expiresAt) - time();
     if ($diff <= 0)      return 'Expired';
     if ($diff < 3600)    return 'Expires in ' . floor($diff / 60) . 'm';

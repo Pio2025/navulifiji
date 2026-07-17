@@ -130,8 +130,9 @@ class AnnouncementController extends BaseController
         $userId  = (int) $this->session->get('userID');
         $roleCat = (int) $this->session->get('roleCatID');
 
+        // Teachers (3) always use their school flow even if is_a_parent is set
         $isParent = $roleCat === 6
-            || (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+            || ($roleCat !== 3 && (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1);
 
         $parentSchools  = [];
         $activeSchoolId = 0;
