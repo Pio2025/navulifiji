@@ -198,16 +198,21 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
 
     <?php if (!empty($parentSchools)): ?>
     <!--begin::School tabs (parent view)-->
-    <div class="d-flex align-items-center gap-2 flex-wrap mb-6">
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-3">
         <?php foreach ($parentSchools as $ps): ?>
         <a href="<?= base_url('wall?sch_id=' . (int)$ps['sch_id']) ?>"
            class="btn btn-sm d-inline-flex align-items-center gap-2 <?= (int)$ps['sch_id'] === (int)$activeSchoolId ? 'btn-primary' : 'btn-light text-gray-600' ?>">
-            <img src="<?= !empty($ps['sch_logo']) ? base_url('uploads/schoolLogo/' . esc($ps['sch_logo'])) : base_url('navuli_logo_white_icon.png') ?>"
-                 alt="" style="height:20px;width:20px;object-fit:contain;border-radius:3px;flex-shrink:0;">
+            <?php if (!empty($ps['sch_logo'])): ?>
+            <img src="<?= base_url('uploads/schoolLogo/' . esc($ps['sch_logo'])) ?>"
+                 alt="" style="height:18px;width:18px;object-fit:contain;flex-shrink:0;">
+            <?php else: ?>
+            <i class="ki-outline ki-bank fs-6" style="flex-shrink:0;"></i>
+            <?php endif; ?>
             <?= esc($ps['sch_name']) ?>
         </a>
         <?php endforeach; ?>
     </div>
+    <hr class="mt-0 mb-5" style="border-color:#c4c8d6;">
     <!--end::School tabs-->
     <?php endif; ?>
 
@@ -312,9 +317,9 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
                     <i class="ki-duotone ki-award text-danger"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     Exams &amp; Grades
                 </a>
-                <a href="<?= base_url('announcement') ?>" class="wsb-link">
-                    <i class="ki-duotone ki-notification text-info"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-                    Announcements
+                <a href="<?= base_url('notices') ?>" class="wsb-link">
+                    <i class="ki-duotone ki-notification-bing text-info"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    Notices &amp; Announcements
                 </a>
                 <a href="<?= base_url('chat') ?>" class="wsb-link">
                     <i class="ki-duotone ki-message-text-2 text-primary"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>

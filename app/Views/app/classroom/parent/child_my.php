@@ -48,7 +48,7 @@
         </a>
         <?php endforeach; ?>
     </div>
-    <hr class="mb-6" style="border-color:#e9edf0;">
+    <hr class="mb-6" style="border-color:#c4c8d6;">
     <!--end::Year tabs-->
 
     <!--begin::Year content-->

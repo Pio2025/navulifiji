@@ -7,37 +7,38 @@
     </div>
 </div>
 <?php else: ?>
-<?php foreach ($byStudent as $child): ?>
-<div class="mb-10">
-    <!--begin::Child header-->
-    <div class="d-flex align-items-center mb-5">
-        <div class="symbol symbol-50px symbol-circle me-4">
-            <?php if (!empty($child['student_photo'])): ?>
-                <img src="<?= base_url('uploads/profilePhoto/' . esc($child['student_photo'])) ?>"
-                     alt="<?= esc($child['student_fname']) ?>" />
+
+<!-- Flat 3-column grid — all children's classrooms together -->
+<div class="row g-6">
+    <?php foreach ($byStudent as $child):
+        $initials   = strtoupper(substr($child['student_fname'], 0, 1) . substr($child['student_lname'], 0, 1));
+        $childPhoto = $child['student_photo'] ?? null;
+        $childPhotoUrl = ($childPhoto && file_exists(FCPATH . 'uploads/profilePhoto/' . $childPhoto))
+                         ? base_url('uploads/profilePhoto/' . $childPhoto)
+                         : null;
+    ?>
+    <?php foreach ($child['classrooms'] as $c): ?>
+    <div class="col-12 col-sm-6 col-lg-4">
+        <!-- Child name label above each card -->
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <?php if ($childPhotoUrl): ?>
+            <img src="<?= esc($childPhotoUrl) ?>" alt=""
+                 style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0;border:1px solid #e9edf0;">
             <?php else: ?>
-                <div class="symbol-label fs-3 fw-bold bg-light-primary text-primary">
-                    <?= strtoupper(substr($child['student_fname'], 0, 1) . substr($child['student_lname'], 0, 1)) ?>
-                </div>
+            <div style="width:24px;height:24px;border-radius:50%;background:#e8f3ff;color:#0095e8;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0;">
+                <?= esc($initials) ?>
+            </div>
+            <?php endif; ?>
+            <span class="text-gray-600 fs-7 fw-semibold"><?= esc($child['student_fname'] . ' ' . $child['student_lname']) ?></span>
+            <?php if (!empty($child['relationship'])): ?>
+            <span class="text-muted fs-8">&middot; <?= esc($child['relationship']) ?></span>
             <?php endif; ?>
         </div>
-        <div>
-            <div class="fw-bold fs-4 text-gray-800"><?= esc($child['student_fname'] . ' ' . $child['student_lname']) ?></div>
-            <div class="text-muted fs-7"><?= esc($child['relationship']) ?></div>
-        </div>
+        <?php $cardViewUrl = 'classroom/child/view/' . $c['class_id']; ?>
+        <?php include(APPPATH . 'Views/app/classroom/_my_card.php'); ?>
     </div>
-    <!--end::Child header-->
-
-    <!--begin::Classroom cards-->
-    <div class="row g-6">
-        <?php foreach ($child['classrooms'] as $c): ?>
-        <div class="col-12 col-sm-6 col-lg-4">
-            <?php $cardViewUrl = 'classroom/child/view/' . $c['class_id']; ?>
-            <?php include(APPPATH . 'Views/app/classroom/_my_card.php'); ?>
-        </div>
-        <?php endforeach; ?>
-    </div>
-    <!--end::Classroom cards-->
+    <?php endforeach; ?>
+    <?php endforeach; ?>
 </div>
-<?php endforeach; ?>
+
 <?php endif; ?>
