@@ -889,6 +889,7 @@
                                                 </a>
                                                 <div class="text-muted fs-8"><?= esc($child['relationship']) ?></div>
                                             </div>
+                                            <?php if (!($isOwnProfile ?? false)): ?>
                                             <button type="button" class="btn btn-icon btn-sm btn-light-danger btn-unlink-child"
                                                     data-link-id="<?= $child['parent_student_id'] ?>"
                                                     title="Unlink">
@@ -896,6 +897,7 @@
                                                     <span class="path1"></span><span class="path2"></span>
                                                 </i>
                                             </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
