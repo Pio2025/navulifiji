@@ -774,8 +774,9 @@ class DashboardController extends BaseController
         $roleCat = (int) $this->session->get('roleCatID');
         $db      = \Config\Database::connect();
 
+        $userRow  = (new \App\Models\UserModel())->find($userId);
         $isParent = $roleCat === 6
-            || (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1;
+            || ($roleCat !== 3 && (int) (($userRow)['is_a_parent'] ?? 0) === 1);
 
         $audience = match ($roleCat) {
             3 => 'Teachers',
@@ -801,26 +802,34 @@ class DashboardController extends BaseController
             $inList = implode(',', $schIds);
             $now    = date('Y-m-d H:i:s');
 
-            $noticeCount = (int) $db->query("
-                SELECT COUNT(*) AS cnt
-                FROM notice_board nb
-                LEFT JOIN notice_reads nr ON nr.notice_id = nb.notice_id AND nr.user_id = ?
-                WHERE nb.sch_id_fk IN ({$inList})
-                  AND nb.notice_status = 'Active'
-                  AND (nb.expires_at IS NULL OR nb.expires_at > ?)
-                  AND (nb.audience = 'All' OR nb.audience = 'Parents')
-                  AND nr.nr_id IS NULL
-            ", [$userId, $now])->getRow()->cnt;
+            try {
+                $noticeCount = (int) $db->query("
+                    SELECT COUNT(*) AS cnt
+                    FROM notice_board nb
+                    LEFT JOIN notice_reads nr ON nr.notice_id = nb.notice_id AND nr.user_id = ?
+                    WHERE nb.sch_id_fk IN ({$inList})
+                      AND nb.notice_status = 'Active'
+                      AND (nb.expires_at IS NULL OR nb.expires_at > ?)
+                      AND (nb.audience = 'All' OR nb.audience = 'Parents')
+                      AND nr.nr_id IS NULL
+                ", [$userId, $now])->getRow()->cnt;
+            } catch (\Throwable $e) {
+                $noticeCount = 0;
+            }
 
-            $annCount = (int) $db->query("
-                SELECT COUNT(*) AS cnt
-                FROM school_announcement sa
-                LEFT JOIN announcement_reads ar ON ar.announcement_id = sa.announcement_id AND ar.user_id = ?
-                WHERE sa.sch_id_fk IN ({$inList})
-                  AND sa.announcement_status = 'Active'
-                  AND (sa.expires_at IS NULL OR sa.expires_at > ?)
-                  AND ar.ar_id IS NULL
-            ", [$userId, $now])->getRow()->cnt;
+            try {
+                $annCount = (int) $db->query("
+                    SELECT COUNT(*) AS cnt
+                    FROM school_announcement sa
+                    LEFT JOIN announcement_reads ar ON ar.announcement_id = sa.announcement_id AND ar.user_id = ?
+                    WHERE sa.sch_id_fk IN ({$inList})
+                      AND sa.announcement_status = 'Active'
+                      AND (sa.expires_at IS NULL OR sa.expires_at > ?)
+                      AND ar.ar_id IS NULL
+                ", [$userId, $now])->getRow()->cnt;
+            } catch (\Throwable $e) {
+                $annCount = 0;
+            }
 
         } else {
             $schId = (int) $this->session->get('schID');

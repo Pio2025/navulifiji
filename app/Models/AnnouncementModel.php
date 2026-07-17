@@ -46,14 +46,18 @@ class AnnouncementModel extends Model
     {
         if ($userId <= 0 || $schId <= 0) return;
         $now = date('Y-m-d H:i:s');
-        $this->db->query("
-            INSERT IGNORE INTO announcement_reads (user_id, announcement_id, read_at)
-            SELECT ?, announcement_id, NOW()
-            FROM school_announcement
-            WHERE sch_id_fk = ?
-              AND announcement_status = 'Active'
-              AND (expires_at IS NULL OR expires_at > ?)
-        ", [$userId, $schId, $now]);
+        try {
+            $this->db->query("
+                INSERT IGNORE INTO announcement_reads (user_id, announcement_id, read_at)
+                SELECT ?, announcement_id, NOW()
+                FROM school_announcement
+                WHERE sch_id_fk = ?
+                  AND announcement_status = 'Active'
+                  AND (expires_at IS NULL OR expires_at > ?)
+            ", [$userId, $schId, $now]);
+        } catch (\Throwable $e) {
+            // announcement_reads table may not exist yet — migrate to enable read tracking
+        }
     }
 
     /**
@@ -63,17 +67,21 @@ class AnnouncementModel extends Model
     {
         if ($userId <= 0 || $schId <= 0) return 0;
         $now = date('Y-m-d H:i:s');
-        $row = $this->db->query("
-            SELECT COUNT(*) AS cnt
-            FROM school_announcement sa
-            LEFT JOIN announcement_reads ar
-                ON ar.announcement_id = sa.announcement_id AND ar.user_id = ?
-            WHERE sa.sch_id_fk = ?
-              AND sa.announcement_status = 'Active'
-              AND (sa.expires_at IS NULL OR sa.expires_at > ?)
-              AND ar.ar_id IS NULL
-        ", [$userId, $schId, $now])->getRowArray();
-        return (int) ($row['cnt'] ?? 0);
+        try {
+            $row = $this->db->query("
+                SELECT COUNT(*) AS cnt
+                FROM school_announcement sa
+                LEFT JOIN announcement_reads ar
+                    ON ar.announcement_id = sa.announcement_id AND ar.user_id = ?
+                WHERE sa.sch_id_fk = ?
+                  AND sa.announcement_status = 'Active'
+                  AND (sa.expires_at IS NULL OR sa.expires_at > ?)
+                  AND ar.ar_id IS NULL
+            ", [$userId, $schId, $now])->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
     }
 
     public function expireOld(): void
