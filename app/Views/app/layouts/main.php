@@ -1720,13 +1720,13 @@
 		/* ── Compose button ── */
 		#chat_compose_btn {
 			width: 52px; height: 52px; border-radius: 50%;
-			background: var(--bs-primary-light); color: var(--bs-primary); border: none; cursor: pointer;
+			background: #fff; color: #3f4254; border: none; cursor: pointer;
 			display: flex; align-items: center; justify-content: center;
-			box-shadow: 0 2px 10px rgba(27,132,255,.18);
-			transition: transform .15s, box-shadow .15s, background .15s;
+			box-shadow: 0 2px 10px rgba(0,0,0,.2);
+			transition: transform .15s, box-shadow .15s;
 			flex-shrink: 0;
 		}
-		#chat_compose_btn:hover { background: var(--bs-primary); color: #fff; transform: scale(1.08); box-shadow: 0 4px 16px rgba(27,132,255,.35); }
+		#chat_compose_btn:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(0,0,0,.28); }
 		/* ── Minimized bar ── */
 		#chat_minimized_bar {
 			display: flex; flex-direction: row; align-items: flex-end; gap: 8px;
