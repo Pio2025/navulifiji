@@ -26,7 +26,7 @@
 
 <?= $this->include('templates/flash_messages') ?>
 
-<div class="card mw-600px mx-auto">
+<div class="card">
     <div class="card-header">
         <h3 class="card-title"><?= $isEdit ? 'Edit Subject' : 'New Subject' ?></h3>
     </div>

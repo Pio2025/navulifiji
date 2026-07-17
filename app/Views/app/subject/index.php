@@ -77,25 +77,27 @@
 <!--begin::Table card-->
 <div class="card">
     <div class="card-header border-0 pt-6">
-        <div class="d-flex align-items-center gap-3 flex-wrap w-100">
-            <!--Search-->
-            <div class="d-flex align-items-center position-relative">
-                <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
-                <input type="text" id="search-subject" class="form-control form-control-solid w-200px ps-12" placeholder="Search subjects...">
+        <div class="card-title">
+            <div class="d-flex align-items-center gap-3">
+                <!--Search-->
+                <div class="d-flex align-items-center position-relative">
+                    <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
+                    <input type="text" id="search-subject" class="form-control form-control-solid w-200px ps-12" placeholder="Search subjects...">
+                </div>
+                <!--Level filter-->
+                <select id="filter-level" class="form-select form-select-solid w-180px">
+                    <option value="">All Levels</option>
+                    <?php foreach ($levels as $lvl): ?>
+                    <option value="<?= (int)$lvl['level_id'] ?>"><?= esc($lvl['level_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <!--Type filter-->
+                <select id="filter-type" class="form-select form-select-solid w-160px">
+                    <option value="">All Types</option>
+                    <option value="1">Examinable</option>
+                    <option value="0">Non-Examinable</option>
+                </select>
             </div>
-            <!--Level filter-->
-            <select id="filter-level" class="form-select form-select-solid w-180px">
-                <option value="">All Levels</option>
-                <?php foreach ($levels as $lvl): ?>
-                <option value="<?= (int)$lvl['level_id'] ?>"><?= esc($lvl['level_name']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <!--Type filter-->
-            <select id="filter-type" class="form-select form-select-solid w-160px">
-                <option value="">All Types</option>
-                <option value="1">Examinable</option>
-                <option value="0">Non-Examinable</option>
-            </select>
         </div>
     </div>
     <div class="card-body pt-4">
@@ -155,7 +157,7 @@
         order:      [[0, 'asc']],
         pageLength: 15,
         searching:  true,
-        dom: 't<"row mt-4"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: 't<"d-flex justify-content-between align-items-center mt-4"ip>',
         language: {
             processing:  '<span class="spinner-border spinner-border-sm align-middle me-2"></span>Loading...',
             lengthMenu:  '_MENU_ per page',
