@@ -72,6 +72,14 @@
                 <td class="py-2 <?= $isBreak ? 'text-muted' : '' ?>">
                     <?php if ($isBreak): ?>
                         <em><?= esc($slot['label']) ?></em>
+                    <?php elseif ($cell && !empty($cell['is_optional'])): ?>
+                        <?php foreach ($cell['entries'] as $e): ?>
+                        <div style="font-size:0.78rem;border-bottom:1px dashed #ddd;padding-bottom:2px;margin-bottom:2px;">
+                            <span class="fw-semibold"><?= esc($e['subject_name'] ?? '') ?></span>
+                            <?php $t = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
+                            <?php if ($t): ?><br><span class="text-muted"><?= esc($t) ?></span><?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
                     <?php elseif ($cell && $cell['sch_sub_id_fk']): ?>
                         <div class="fw-semibold text-gray-900"><?= esc($cell['subject_name'] ?? '') ?></div>
                         <div class="text-muted"><?= esc(trim(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? ''))) ?></div>

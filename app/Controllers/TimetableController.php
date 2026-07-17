@@ -44,17 +44,132 @@ class TimetableController extends BaseController
             ? $this->ttModel->getAllWithDetails()
             : $this->ttModel->getBySchool($schId);
 
-        $data['timetables']   = $timetables;
-        $data['isSuperAdmin'] = $isSuperAdmin;
-        $data['canAdd']       = $isSuperAdmin || $this->grant_access('_add_timetable');
-        $data['canEdit']      = $isSuperAdmin || $this->grant_access('_edit_timetable');
-        $data['canDelete']    = $isSuperAdmin || $this->grant_access('_remove_timetable');
-        $data['_view']        = 'app/timetable/index';
+        $data['timetables']        = $timetables;
+        $data['isSuperAdmin']      = $isSuperAdmin;
+        $data['canAdd']            = $isSuperAdmin || $this->grant_access('_add_timetable');
+        $data['canEdit']           = $isSuperAdmin || $this->grant_access('_edit_timetable');
+        $data['canDelete']         = $isSuperAdmin || $this->grant_access('_remove_timetable');
+        $data['hasSchoolTemplate'] = !$isSuperAdmin && $this->schoolHasTemplate($schId);
+        $data['_view']             = 'app/timetable/index';
         return view('app/layouts/main', $data);
     }
 
     // =========================================================================
-    // ADD (step 1 — header form; edit page is the grid editor)
+    // SETUP (timetable structure configuration per school)
+    // =========================================================================
+
+    public function setup()
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('auth/login');
+        $this->boot();
+        $this->setPageData('Timetable Setup', 'Timetable', 'Configure Structure');
+
+        if (!$this->require_access('_edit_timetable')) {
+            $data['_view'] = 'app/auth/access_control';
+            return view('app/layouts/main', $data);
+        }
+
+        $schId    = (int) $this->session->get('schID');
+        $existing = $this->getSchoolTemplate($schId);
+
+        // Reconstruct config values from existing template slots
+        $cfg = $this->parseTemplateConfig($existing);
+
+        $data['existing'] = $existing;
+        $data['cfg']      = $cfg;
+        $data['_view']    = 'app/timetable/setup';
+        return view('app/layouts/main', $data);
+    }
+
+    public function saveSetup()
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('auth/login');
+        $this->boot();
+
+        if (!$this->require_access('_edit_timetable')) {
+            return redirect()->to('timetable')->with('error', 'Access denied.');
+        }
+
+        $schId        = (int) $this->session->get('schID');
+        if ($schId === 0) {
+            return redirect()->to('timetable/setup')->with('error', 'Setup must be done within a specific school context.');
+        }
+
+        $numDays      = max(1, min(10, (int) ($this->request->getPost('num_days')         ?: 6)));
+        $morningPds   = max(1, min(8,  (int) ($this->request->getPost('morning_periods')  ?: 3)));
+        $middayPds    = max(0, min(8,  (int) ($this->request->getPost('midday_periods')   ?: 3)));
+        $afternoonPds = max(0, min(8,  (int) ($this->request->getPost('afternoon_periods') ?: 3)));
+        $pdDuration   = max(20, min(120, (int) ($this->request->getPost('period_duration')  ?: 40)));
+        $recessDur    = max(5,  min(60,  (int) ($this->request->getPost('recess_duration')  ?: 20)));
+        $lunchDur     = max(10, min(120, (int) ($this->request->getPost('lunch_duration')   ?: 40)));
+        $startTime    = $this->request->getPost('start_time') ?: '08:00';
+
+        $db = \Config\Database::connect();
+
+        // Update existing or create new school-specific template
+        $existing = $db->table('timetable_template')->where('sch_id_fk', $schId)->get()->getRowArray();
+        if ($existing) {
+            $templateId = (int) $existing['template_id'];
+            $db->table('timetable_template')->where('template_id', $templateId)->update([
+                'template_name' => 'School Structure',
+                'num_days'      => $numDays,
+                'updated_at'    => date('Y-m-d H:i:s'),
+            ]);
+            $db->table('timetable_template_slot')->where('template_id_fk', $templateId)->delete();
+        } else {
+            $db->table('timetable_template')->insert([
+                'template_name' => 'School Structure',
+                'sch_cat_id_fk' => 0,
+                'sch_id_fk'     => $schId,
+                'is_default'    => 1,
+                'num_days'      => $numDays,
+                'created_at'    => date('Y-m-d H:i:s'),
+                'updated_at'    => date('Y-m-d H:i:s'),
+            ]);
+            $templateId = $db->insertID();
+        }
+
+        // Generate slots from config
+        $order   = 1;
+        $timePtr = strtotime(date('Y-m-d') . ' ' . $startTime . ':00');
+
+        $insertSlot = function (string $label, bool $teaching, int $duration) use ($db, $templateId, &$order, &$timePtr) {
+            $end = $timePtr + $duration * 60;
+            $db->table('timetable_template_slot')->insert([
+                'template_id_fk' => $templateId,
+                'slot_order'     => $order++,
+                'slot_type'      => $teaching ? 'period' : 'break',
+                'label'          => $label,
+                'is_teaching'    => $teaching ? 1 : 0,
+                'start_time'     => date('H:i:s', $timePtr),
+                'end_time'       => date('H:i:s', $end),
+            ]);
+            $timePtr = $end;
+        };
+
+        for ($i = 1; $i <= $morningPds; $i++) {
+            $insertSlot('Period ' . $i, true, $pdDuration);
+        }
+        $insertSlot('Recess', false, $recessDur);
+
+        for ($i = $morningPds + 1; $i <= $morningPds + $middayPds; $i++) {
+            $insertSlot('Period ' . $i, true, $pdDuration);
+        }
+
+        if ($afternoonPds > 0) {
+            $insertSlot('Lunch', false, $lunchDur);
+            for ($i = $morningPds + $middayPds + 1; $i <= $morningPds + $middayPds + $afternoonPds; $i++) {
+                $insertSlot('Period ' . $i, true, $pdDuration);
+            }
+        }
+
+        $this->logAction('Timetable Setup Saved', "Configured school timetable: {$numDays} days, " . ($morningPds + $middayPds + $afternoonPds) . ' periods');
+
+        return redirect()->to('timetable')->with('success', 'Timetable structure saved. Use this template when creating new timetables.');
+    }
+
+    // =========================================================================
+    // ADD
     // =========================================================================
 
     public function add()
@@ -71,13 +186,14 @@ class TimetableController extends BaseController
         $isSuperAdmin = (int) $this->session->get('roleID') === 1;
         $schId        = (int) $this->session->get('schID');
 
-        $data['streams']      = $isSuperAdmin
+        $data['streams']           = $isSuperAdmin
             ? $this->schoolStreamModel->getAllStream()
             : $this->schoolStreamModel->getAllStreamsBySchool($schId);
-        $data['templates']    = $this->ttTemplateModel->getAll();
-        $data['isSuperAdmin'] = $isSuperAdmin;
-        $data['currentYear']  = (int) date('Y');
-        $data['_view']        = 'app/timetable/add';
+        $data['templates']         = $this->ttTemplateModel->getAll();
+        $data['isSuperAdmin']      = $isSuperAdmin;
+        $data['currentYear']       = (int) date('Y');
+        $data['hasSchoolTemplate'] = !$isSuperAdmin && $this->schoolHasTemplate($schId);
+        $data['_view']             = 'app/timetable/add';
         return view('app/layouts/main', $data);
     }
 
@@ -110,7 +226,6 @@ class TimetableController extends BaseController
         $startDay     = (int) ($this->request->getPost('rotation_start_day') ?: 1);
         $status       = $this->request->getPost('timetable_status') ?: 'Draft';
 
-        // Derive school from stream when super admin
         if ($isSuperAdmin || $schId === 0) {
             $schId = $this->schIdFromStream($streamId);
         }
@@ -157,19 +272,48 @@ class TimetableController extends BaseController
         $tt = $this->ttModel->getDetail($id);
         if (!$tt) return redirect()->to('timetable')->with('error', 'Timetable not found.');
 
-        $slots      = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
-        $entryMap   = $this->ttEntryModel->getMappedByTimetable($id);
-        $subjects   = $this->streamSubjects((int) $tt['stream_id_fk']);
-        $teacherMap = $this->subjectTeacherMap($subjects);
+        $slots       = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
+        $entryMap    = $this->ttEntryModel->getMappedByTimetable($id);
+        $subjectGrps = $this->streamSubjectGroups((int) $tt['stream_id_fk']);
 
-        $data['tt']         = $tt;
-        $data['slots']      = $slots;
-        $data['entryMap']   = $entryMap;
-        $data['subjects']   = $subjects;
-        $data['teacherMap'] = $teacherMap;
-        $data['days']       = range(1, 6);
-        $data['templates']  = $this->ttTemplateModel->getAll();
-        $data['_view']      = 'app/timetable/edit';
+        // Flat subject list for teacher map
+        $optSubjects = [];
+        foreach ($subjectGrps['optional_groups'] as $grp) {
+            $optSubjects = array_merge($optSubjects, $grp['subjects']);
+        }
+        $teacherMap = $this->subjectTeacherMap(array_merge($subjectGrps['core'], $optSubjects));
+
+        // Build optional entry data for JS init
+        $optEntryMapJs = [];
+        foreach ($entryMap as $day => $slotCells) {
+            foreach ($slotCells as $slotId => $cell) {
+                if (!empty($cell['is_optional'])) {
+                    $subs = [];
+                    foreach ($cell['entries'] as $e) {
+                        $subs[(string) $e['sch_sub_id_fk']] = [
+                            'teacher_id_fk' => $e['teacher_id_fk'],
+                            'room'          => $e['room'] ?? '',
+                        ];
+                    }
+                    $optEntryMapJs[$day][$slotId] = [
+                        'option_num' => $cell['option_num'],
+                        'subjects'   => $subs,
+                    ];
+                }
+            }
+        }
+
+        $numDays = max(1, (int) ($tt['num_days'] ?? 6));
+
+        $data['tt']            = $tt;
+        $data['slots']         = $slots;
+        $data['entryMap']      = $entryMap;
+        $data['subjectGrps']   = $subjectGrps;
+        $data['teacherMap']    = $teacherMap;
+        $data['optEntryMapJs'] = $optEntryMapJs;
+        $data['days']          = range(1, $numDays);
+        $data['templates']     = $this->ttTemplateModel->getAll();
+        $data['_view']         = 'app/timetable/edit';
         return view('app/layouts/main', $data);
     }
 
@@ -192,28 +336,48 @@ class TimetableController extends BaseController
             'updated_at'          => date('Y-m-d H:i:s'),
         ]);
 
-        // Collect posted entries
-        $rawEntries = $this->request->getPost('entries') ?? [];
-        $slots      = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
+        $rawEntries = $this->request->getPost('entries')    ?? [];
+        $optEntries = $this->request->getPost('opt_entries') ?? [];
+        $slotsList  = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
+        $numDays    = max(1, (int) ($tt['num_days'] ?? 6));
         $entries    = [];
 
-        foreach (range(1, 6) as $day) {
-            foreach ($slots as $slot) {
+        foreach (range(1, $numDays) as $day) {
+            foreach ($slotsList as $slot) {
                 if (!(int) $slot['is_teaching']) continue;
-                $slotId    = (int) $slot['slot_id'];
-                $subId     = (int) ($rawEntries[$day][$slotId]['sch_sub_id_fk'] ?? 0);
-                $teacherId = (int) ($rawEntries[$day][$slotId]['teacher_id_fk']  ?? 0);
-                $room      = trim($rawEntries[$day][$slotId]['room'] ?? '');
+                $slotId     = (int) $slot['slot_id'];
+                $isOptional = !empty($rawEntries[$day][$slotId]['is_optional']);
 
-                if ($subId > 0 || $teacherId > 0) {
-                    $entries[] = [
-                        'day_number'    => $day,
-                        'slot_id_fk'    => $slotId,
-                        'sch_sub_id_fk' => $subId,
-                        'teacher_id_fk' => $teacherId,
-                        'room'          => $room,
-                        'notes'         => '',
-                    ];
+                if ($isOptional && !empty($optEntries[$day][$slotId])) {
+                    $optNum = (int) ($rawEntries[$day][$slotId]['option_num'] ?? 1);
+                    foreach ((array) $optEntries[$day][$slotId] as $subId => $sData) {
+                        $subId = (int) $subId;
+                        if ($subId <= 0) continue;
+                        $entries[] = [
+                            'day_number'    => $day,
+                            'slot_id_fk'    => $slotId,
+                            'option_num'    => $optNum ?: 1,
+                            'sch_sub_id_fk' => $subId,
+                            'teacher_id_fk' => (int) ($sData['teacher_id_fk'] ?? 0),
+                            'room'          => trim($sData['room'] ?? ''),
+                            'notes'         => '',
+                        ];
+                    }
+                } else {
+                    $subId     = (int) ($rawEntries[$day][$slotId]['sch_sub_id_fk'] ?? 0);
+                    $teacherId = (int) ($rawEntries[$day][$slotId]['teacher_id_fk']  ?? 0);
+                    $room      = trim($rawEntries[$day][$slotId]['room'] ?? '');
+                    if ($subId > 0 || $teacherId > 0) {
+                        $entries[] = [
+                            'day_number'    => $day,
+                            'slot_id_fk'    => $slotId,
+                            'option_num'    => null,
+                            'sch_sub_id_fk' => $subId,
+                            'teacher_id_fk' => $teacherId,
+                            'room'          => $room,
+                            'notes'         => '',
+                        ];
+                    }
                 }
             }
         }
@@ -226,7 +390,7 @@ class TimetableController extends BaseController
     }
 
     // =========================================================================
-    // DETAIL (view-only grid + this-week rotation indicator)
+    // DETAIL
     // =========================================================================
 
     public function detail(int $id)
@@ -254,11 +418,13 @@ class TimetableController extends BaseController
             );
         }
 
+        $numDays = max(1, (int) ($tt['num_days'] ?? 6));
+
         $data['tt']       = $tt;
         $data['slots']    = $slots;
         $data['entryMap'] = $entryMap;
         $data['weekMap']  = $weekMap;
-        $data['days']     = range(1, 6);
+        $data['days']     = range(1, $numDays);
         $data['canEdit']  = (int) $this->session->get('roleID') === 1
                             || $this->grant_access('_edit_timetable');
         $data['_view']    = 'app/timetable/detail';
@@ -286,7 +452,7 @@ class TimetableController extends BaseController
     }
 
     // =========================================================================
-    // REPORT (printable)
+    // REPORT
     // =========================================================================
 
     public function report(int $id)
@@ -303,10 +469,12 @@ class TimetableController extends BaseController
         $tt = $this->ttModel->getDetail($id);
         if (!$tt) return redirect()->to('timetable')->with('error', 'Timetable not found.');
 
+        $numDays = max(1, (int) ($tt['num_days'] ?? 6));
+
         $data['tt']       = $tt;
         $data['slots']    = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
         $data['entryMap'] = $this->ttEntryModel->getMappedByTimetable($id);
-        $data['days']     = range(1, 6);
+        $data['days']     = range(1, $numDays);
         $data['_view']    = 'app/timetable/report';
         return view('app/layouts/main', $data);
     }
@@ -315,10 +483,6 @@ class TimetableController extends BaseController
     // AJAX helpers
     // =========================================================================
 
-    /**
-     * Returns template + slots + subjects + teacherMap for a stream.
-     * Called when the user picks a stream on the add form.
-     */
     public function streamInfo(int $streamId)
     {
         if (!$this->isLoggedIn()) return $this->response->setJSON(['error' => 'Unauthorized'])->setStatusCode(401);
@@ -345,9 +509,6 @@ class TimetableController extends BaseController
         ]);
     }
 
-    /**
-     * Returns teachers assigned to a given sch_sub_id.
-     */
     public function subjectTeachers(int $schSubId)
     {
         if (!$this->isLoggedIn()) return $this->response->setJSON([])->setStatusCode(401);
@@ -374,19 +535,48 @@ class TimetableController extends BaseController
     {
         $db = \Config\Database::connect();
         return $db->query("
-            SELECT ss.sch_sub_id, sub.subject_name, 'Core' AS subject_type
+            SELECT ss.sch_sub_id, sub.subject_name, 'Core' AS subject_type, NULL AS option_num
             FROM   stream_core_subject scs
             INNER  JOIN sch_subject ss ON ss.sch_sub_id = scs.sch_sub_id_fk
             INNER  JOIN subject sub    ON sub.subject_id = ss.subject_id_fk
             WHERE  scs.stream_id_fk = ?
             UNION
-            SELECT ss.sch_sub_id, sub.subject_name, 'Optional' AS subject_type
+            SELECT ss.sch_sub_id, sub.subject_name, 'Optional' AS subject_type,
+                   COALESCE(sos.option_num, 1) AS option_num
             FROM   stream_optional_subject sos
             INNER  JOIN sch_subject ss ON ss.sch_sub_id = sos.sch_sub_id_fk
             INNER  JOIN subject sub    ON sub.subject_id = ss.subject_id_fk
             WHERE  sos.stream_id_fk = ?
-            ORDER  BY subject_type, subject_name
+            ORDER  BY subject_type, option_num, subject_name
         ", [$streamId, $streamId])->getResultArray();
+    }
+
+    /**
+     * Returns subjects split into core array and optional_groups array.
+     * Each optional group: { option_num, label, subjects[] }
+     */
+    private function streamSubjectGroups(int $streamId): array
+    {
+        $rows     = $this->streamSubjects($streamId);
+        $core     = [];
+        $optGroups = [];
+
+        foreach ($rows as $r) {
+            if ($r['subject_type'] === 'Core') {
+                $core[] = $r;
+            } else {
+                $num = (int) ($r['option_num'] ?? 1);
+                $optGroups[$num]['subjects'][] = $r;
+                $optGroups[$num]['option_num'] = $num;
+            }
+        }
+
+        foreach ($optGroups as $num => &$grp) {
+            $grp['label'] = implode(' | ', array_column($grp['subjects'], 'subject_name'));
+        }
+        unset($grp);
+
+        return ['core' => $core, 'optional_groups' => array_values($optGroups)];
     }
 
     private function subjectTeacherMap(array $subjects): array
@@ -395,6 +585,7 @@ class TimetableController extends BaseController
 
         $db  = \Config\Database::connect();
         $ids = implode(',', array_map('intval', array_column($subjects, 'sch_sub_id')));
+        if (!$ids) return [];
 
         $rows = $db->query("
             SELECT ats.sch_sub_id_fk, u.user_id, u.fname, u.lname
@@ -420,6 +611,86 @@ class TimetableController extends BaseController
         if (!$stream) return 0;
         $level  = $db->table('sch_level')->where('sch_level_id', $stream['sch_level_id_fk'])->get()->getRowArray();
         return $level ? (int) $level['sch_id_fk'] : 0;
+    }
+
+    private function getSchoolTemplate(int $schId): ?array
+    {
+        if ($schId === 0) return null;
+        $db  = \Config\Database::connect();
+        $tpl = $db->table('timetable_template')->where('sch_id_fk', $schId)->get()->getRowArray();
+        if (!$tpl) return null;
+
+        $slots = $db->table('timetable_template_slot')
+            ->where('template_id_fk', $tpl['template_id'])
+            ->orderBy('slot_order', 'ASC')
+            ->get()->getResultArray();
+
+        $tpl['slots'] = $slots;
+        return $tpl;
+    }
+
+    private function schoolHasTemplate(int $schId): bool
+    {
+        if ($schId === 0) return false;
+        $db = \Config\Database::connect();
+        return (bool) $db->table('timetable_template')->where('sch_id_fk', $schId)->countAllResults();
+    }
+
+    /**
+     * Reconstructs config values (period counts, durations) from saved template slots.
+     */
+    private function parseTemplateConfig(?array $tpl): array
+    {
+        $defaults = [
+            'num_days'        => 6,
+            'morning_periods' => 3,
+            'midday_periods'  => 3,
+            'afternoon_periods' => 3,
+            'period_duration' => 40,
+            'recess_duration' => 20,
+            'lunch_duration'  => 40,
+            'start_time'      => '08:00',
+        ];
+
+        if (!$tpl || empty($tpl['slots'])) return $defaults;
+
+        $defaults['num_days'] = (int) ($tpl['num_days'] ?? 6);
+
+        $section = 'morning';
+        $morning = $midday = $afternoon = 0;
+        $pdDur = $recessDur = $lunchDur = 0;
+        $startSet = false;
+
+        foreach ($tpl['slots'] as $s) {
+            if (!$startSet && (int) $s['is_teaching']) {
+                $defaults['start_time'] = substr($s['start_time'], 0, 5);
+                $startSet = true;
+            }
+            $dur = (int) round((strtotime('2000-01-01 ' . $s['end_time']) - strtotime('2000-01-01 ' . $s['start_time'])) / 60);
+
+            if ((int) $s['is_teaching']) {
+                if ($section === 'morning')   { $morning++;   $pdDur = $dur; }
+                elseif ($section === 'midday') { $midday++;    $pdDur = $dur; }
+                else                           { $afternoon++; $pdDur = $dur; }
+            } else {
+                if ($s['label'] === 'Recess' || $section === 'morning') {
+                    $recessDur = $dur;
+                    $section   = 'midday';
+                } else {
+                    $lunchDur = $dur;
+                    $section  = 'afternoon';
+                }
+            }
+        }
+
+        $defaults['morning_periods']   = $morning   ?: 3;
+        $defaults['midday_periods']    = $midday    ?: 3;
+        $defaults['afternoon_periods'] = $afternoon ?: 3;
+        $defaults['period_duration']   = $pdDur     ?: 40;
+        $defaults['recess_duration']   = $recessDur ?: 20;
+        $defaults['lunch_duration']    = $lunchDur  ?: 40;
+
+        return $defaults;
     }
 
     private function logAction(string $title, string $desc = ''): void

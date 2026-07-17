@@ -31,10 +31,10 @@
 <?= $this->include('templates/flash_messages') ?>
 
 <?php
-// Build lookup maps for JavaScript
-$subjectJson    = json_encode(array_values($subjects));
+$numDays        = count($days);
 $teacherMapJson = json_encode((object) $teacherMap);
-$entryMapJson   = json_encode((object) array_map(fn($s) => (object) $s, $entryMap));
+$optGroupsJson  = json_encode(array_values($subjectGrps['optional_groups']));
+$optEntryMapJson = json_encode($optEntryMapJs);
 ?>
 
 <form method="POST" action="<?= base_url('timetable/update/' . $tt['timetable_id']) ?>" id="tt-form">
@@ -65,32 +65,46 @@ $entryMapJson   = json_encode((object) array_map(fn($s) => (object) $s, $entryMa
             <div class="col-md-2">
                 <label class="form-label fs-8 mb-1 text-muted">Anchor Day #</label>
                 <select name="rotation_start_day" class="form-select form-select-sm">
-                    <?php for ($d = 1; $d <= 6; $d++): ?>
+                    <?php foreach ($days as $d): ?>
                     <option value="<?= $d ?>" <?= (int)$tt['rotation_start_day'] === $d ? 'selected' : '' ?>>Day <?= $d ?></option>
-                    <?php endfor; ?>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div class="col-md-3 ms-auto text-end">
-                <div class="d-flex align-items-center gap-3 justify-content-end">
-                    <!--begin::Copy tool-->
-                    <div class="d-flex align-items-center gap-2">
-                        <label class="form-label fs-8 mb-0 text-muted text-nowrap">Copy Day</label>
-                        <select id="copy-from" class="form-select form-select-sm w-100px">
-                            <?php foreach ($days as $d): ?><option value="<?= $d ?>">Day <?= $d ?></option><?php endforeach; ?>
-                        </select>
-                        <span class="text-muted">→</span>
-                        <select id="copy-to" class="form-select form-select-sm w-100px">
-                            <?php foreach ($days as $d): ?><option value="<?= $d ?>">Day <?= $d ?></option><?php endforeach; ?>
-                        </select>
-                        <button type="button" id="btn-copy" class="btn btn-light-primary btn-sm text-nowrap">Copy</button>
-                    </div>
-                    <!--end::Copy tool-->
+                <div class="d-flex align-items-center gap-2 justify-content-end">
+                    <label class="form-label fs-8 mb-0 text-muted text-nowrap">Copy Day</label>
+                    <select id="copy-from" class="form-select form-select-sm w-100px">
+                        <?php foreach ($days as $d): ?><option value="<?= $d ?>">Day <?= $d ?></option><?php endforeach; ?>
+                    </select>
+                    <span class="text-muted">→</span>
+                    <select id="copy-to" class="form-select form-select-sm w-100px">
+                        <?php foreach ($days as $d): ?><option value="<?= $d ?>">Day <?= $d ?></option><?php endforeach; ?>
+                    </select>
+                    <button type="button" id="btn-copy" class="btn btn-light-primary btn-sm text-nowrap">Copy</button>
                 </div>
             </div>
         </div>
     </div>
 </div>
 <!--end::Info bar-->
+
+<?php if (!empty($subjectGrps['optional_groups'])): ?>
+<div class="alert alert-dismissible bg-light-info d-flex align-items-center p-5 mb-5">
+    <i class="ki-duotone ki-information fs-2x text-info me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+    <div class="d-flex flex-column">
+        <span class="fw-bold fs-6">Optional Subject Blocks</span>
+        <span class="fs-7">
+            Optional subjects are grouped below. Selecting an optional group assigns all its subjects to that period simultaneously — each with their own teacher.
+            <?php foreach ($subjectGrps['optional_groups'] as $grp): ?>
+            <span class="badge badge-light-primary ms-2">Opt <?= $grp['option_num'] ?>: <?= esc($grp['label']) ?></span>
+            <?php endforeach; ?>
+        </span>
+    </div>
+    <button type="button" class="position-absolute position-sm-relative m-2 m-sm-0 top-0 end-0 btn btn-icon ms-sm-auto" data-bs-dismiss="alert">
+        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+    </button>
+</div>
+<?php endif; ?>
 
 <!--begin::Grid-->
 <div class="card">
@@ -109,11 +123,9 @@ $entryMapJson   = json_encode((object) array_map(fn($s) => (object) $s, $entryMa
         <table class="table table-bordered mb-0 align-middle" id="tt-grid" style="min-width:900px;">
             <thead class="bg-light">
                 <tr>
-                    <th class="ps-4 py-3 text-center text-muted fw-semibold fs-8 text-uppercase" style="min-width:110px;">
-                        Time
-                    </th>
+                    <th class="ps-4 py-3 text-center text-muted fw-semibold fs-8 text-uppercase" style="min-width:110px;">Time</th>
                     <?php foreach ($days as $day): ?>
-                    <th class="py-3 text-center fw-bold text-gray-800" style="min-width:155px;">
+                    <th class="py-3 text-center fw-bold text-gray-800" style="min-width:170px;">
                         <span class="badge badge-light-primary px-3 py-2 fs-7">Day <?= $day ?></span>
                     </th>
                     <?php endforeach; ?>
@@ -140,58 +152,78 @@ $entryMapJson   = json_encode((object) array_map(fn($s) => (object) $s, $entryMa
                 <?php else: ?>
                     <?php
                     $cell     = $entryMap[$day][$slot['slot_id']] ?? [];
-                    $selSubId = (int)($cell['sch_sub_id_fk'] ?? 0);
-                    $selTchId = (int)($cell['teacher_id_fk']  ?? 0);
+                    $isOpt    = !empty($cell['is_optional']);
+                    $selSubId = $isOpt
+                        ? 'opt:' . ($cell['option_num'] ?? 1)
+                        : (int)($cell['sch_sub_id_fk'] ?? 0);
+                    $selTchId = (int)($cell['teacher_id_fk'] ?? 0);
                     $selRoom  = esc($cell['room'] ?? '');
                     $cellId   = "d{$day}s{$slot['slot_id']}";
                     ?>
                     <div class="d-flex flex-column gap-1">
-                        <!--Subject-->
+                        <!-- Hidden optional flags -->
+                        <input type="hidden" name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][is_optional]"
+                               value="<?= $isOpt ? '1' : '0' ?>" id="iso-<?= $cellId ?>">
+                        <input type="hidden" name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][option_num]"
+                               value="<?= $isOpt ? (int)($cell['option_num'] ?? 1) : '' ?>" id="isoN-<?= $cellId ?>">
+
+                        <!-- Subject select -->
                         <select name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][sch_sub_id_fk]"
                                 class="form-select form-select-sm subject-select"
                                 data-day="<?= $day ?>"
                                 data-slot="<?= $slot['slot_id'] ?>"
                                 id="sub-<?= $cellId ?>">
                             <option value="">— Subject —</option>
-                            <?php
-                            $coreSubjs = array_filter($subjects, fn($s) => $s['subject_type'] === 'Core');
-                            $optSubjs  = array_filter($subjects, fn($s) => $s['subject_type'] === 'Optional');
-                            ?>
-                            <?php if (!empty($coreSubjs)): ?>
+                            <?php if (!empty($subjectGrps['core'])): ?>
                             <optgroup label="Core">
-                            <?php foreach ($coreSubjs as $sub): ?>
-                                <option value="<?= $sub['sch_sub_id'] ?>" <?= $selSubId == $sub['sch_sub_id'] ? 'selected' : '' ?>><?= esc($sub['subject_name']) ?></option>
+                            <?php foreach ($subjectGrps['core'] as $sub): ?>
+                                <option value="<?= $sub['sch_sub_id'] ?>"
+                                    <?= !$isOpt && $selSubId == $sub['sch_sub_id'] ? 'selected' : '' ?>>
+                                    <?= esc($sub['subject_name']) ?>
+                                </option>
                             <?php endforeach; ?>
                             </optgroup>
                             <?php endif; ?>
-                            <?php if (!empty($optSubjs)): ?>
-                            <optgroup label="Optional">
-                            <?php foreach ($optSubjs as $sub): ?>
-                                <option value="<?= $sub['sch_sub_id'] ?>" <?= $selSubId == $sub['sch_sub_id'] ? 'selected' : '' ?>><?= esc($sub['subject_name']) ?></option>
+                            <?php if (!empty($subjectGrps['optional_groups'])): ?>
+                            <optgroup label="Optional Subjects">
+                            <?php foreach ($subjectGrps['optional_groups'] as $grp): ?>
+                                <option value="opt:<?= $grp['option_num'] ?>"
+                                    <?= $isOpt && $selSubId === 'opt:' . $grp['option_num'] ? 'selected' : '' ?>>
+                                    <?= esc($grp['label']) ?>
+                                </option>
                             <?php endforeach; ?>
                             </optgroup>
                             <?php endif; ?>
                         </select>
-                        <!--Teacher-->
+
+                        <!-- Teacher select (hidden when optional group selected) -->
                         <select name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][teacher_id_fk]"
                                 class="form-select form-select-sm teacher-select"
                                 data-day="<?= $day ?>"
                                 data-slot="<?= $slot['slot_id'] ?>"
-                                id="tch-<?= $cellId ?>">
+                                id="tch-<?= $cellId ?>"
+                                <?= $isOpt ? 'disabled style="display:none"' : '' ?>>
                             <option value="">— Teacher —</option>
-                            <?php
-                            $tchrs = $teacherMap[$selSubId] ?? [];
-                            foreach ($tchrs as $t):
-                            ?>
-                            <option value="<?= $t['user_id'] ?>" <?= $selTchId == $t['user_id'] ? 'selected' : '' ?>><?= esc($t['fname'] . ' ' . $t['lname']) ?></option>
+                            <?php if (!$isOpt): ?>
+                            <?php foreach ($teacherMap[$selSubId] ?? [] as $t): ?>
+                            <option value="<?= $t['user_id'] ?>" <?= $selTchId == $t['user_id'] ? 'selected' : '' ?>>
+                                <?= esc($t['fname'] . ' ' . $t['lname']) ?>
+                            </option>
                             <?php endforeach; ?>
+                            <?php endif; ?>
                         </select>
-                        <!--Room-->
+
+                        <!-- Room input (hidden when optional group selected) -->
                         <input type="text"
                                name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][room]"
                                class="form-control form-control-sm room-input"
+                               data-cellid="<?= $cellId ?>"
                                placeholder="Room"
-                               value="<?= $selRoom ?>">
+                               value="<?= !$isOpt ? $selRoom : '' ?>"
+                               <?= $isOpt ? 'disabled style="display:none"' : '' ?>>
+
+                        <!-- Optional subjects panel -->
+                        <div id="opt-panel-<?= $cellId ?>" <?= $isOpt ? '' : 'style="display:none"' ?>></div>
                     </div>
                 <?php endif; ?>
                 </td>
@@ -216,20 +248,112 @@ $entryMapJson   = json_encode((object) array_map(fn($s) => (object) $s, $entryMa
 </div>
 
 <script>
-const TEACHER_MAP = <?= $teacherMapJson ?>;
+const TEACHER_MAP   = <?= $teacherMapJson ?>;
+const OPT_GROUPS    = <?= $optGroupsJson ?>;
+const OPT_ENTRY_MAP = <?= $optEntryMapJson ?>;
 
-// Subject → update teacher dropdown
+// Build lookup: option_num → group
+const OPT_GROUP_MAP = {};
+OPT_GROUPS.forEach(g => { OPT_GROUP_MAP[g.option_num] = g; });
+
+function showOptionalPanel(subSel, optNum, savedSubjects) {
+    const day    = subSel.dataset.day;
+    const slot   = subSel.dataset.slot;
+    const cellId = 'd' + day + 's' + slot;
+
+    document.getElementById('iso-'  + cellId).value = '1';
+    document.getElementById('isoN-' + cellId).value = optNum;
+
+    const tchSel  = document.getElementById('tch-' + cellId);
+    const roomInp = document.querySelector(`input.room-input[data-cellid="${cellId}"]`);
+    if (tchSel)  { tchSel.disabled  = true;  tchSel.style.display  = 'none'; }
+    if (roomInp) { roomInp.disabled = true;  roomInp.style.display = 'none'; }
+
+    const panel = document.getElementById('opt-panel-' + cellId);
+    panel.innerHTML = '';
+    panel.style.display = '';
+
+    const grp = OPT_GROUP_MAP[optNum];
+    if (!grp) return;
+
+    grp.subjects.forEach(sub => {
+        const saved    = (savedSubjects && savedSubjects[sub.sch_sub_id]) ? savedSubjects[sub.sch_sub_id] : {};
+        const teachers = TEACHER_MAP[sub.sch_sub_id] || [];
+        const tchOpts  = teachers.map(t => {
+            const sel = String(saved.teacher_id_fk) === String(t.user_id) ? 'selected' : '';
+            return `<option value="${t.user_id}" ${sel}>${t.fname} ${t.lname}</option>`;
+        }).join('');
+
+        const row = document.createElement('div');
+        row.className = 'border-top pt-1 mt-1';
+        row.innerHTML = `
+            <div class="fs-9 fw-semibold text-primary mb-1">${sub.subject_name}</div>
+            <select name="opt_entries[${day}][${slot}][${sub.sch_sub_id}][teacher_id_fk]"
+                    class="form-select form-select-sm mb-1">
+                <option value="">— Teacher —</option>
+                ${tchOpts}
+            </select>
+            <input type="text"
+                   name="opt_entries[${day}][${slot}][${sub.sch_sub_id}][room]"
+                   class="form-control form-control-sm"
+                   placeholder="Room"
+                   value="${saved.room || ''}">
+        `;
+        panel.appendChild(row);
+    });
+}
+
+function hideOptionalPanel(subSel) {
+    const day    = subSel.dataset.day;
+    const slot   = subSel.dataset.slot;
+    const cellId = 'd' + day + 's' + slot;
+
+    document.getElementById('iso-'  + cellId).value = '0';
+    document.getElementById('isoN-' + cellId).value = '';
+
+    const tchSel  = document.getElementById('tch-' + cellId);
+    const roomInp = document.querySelector(`input.room-input[data-cellid="${cellId}"]`);
+    if (tchSel)  { tchSel.disabled  = false; tchSel.style.display  = ''; }
+    if (roomInp) { roomInp.disabled = false; roomInp.style.display = ''; }
+
+    const panel = document.getElementById('opt-panel-' + cellId);
+    panel.innerHTML = '';
+    panel.style.display = 'none';
+}
+
+// Initialize pre-saved optional cells on page load
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.subject-select').forEach(sel => {
+        if (sel.value && sel.value.startsWith('opt:')) {
+            const optNum = parseInt(sel.value.split(':')[1]);
+            const day    = sel.dataset.day;
+            const slot   = sel.dataset.slot;
+            const saved  = (OPT_ENTRY_MAP[day] && OPT_ENTRY_MAP[day][slot])
+                ? OPT_ENTRY_MAP[day][slot].subjects
+                : null;
+            showOptionalPanel(sel, optNum, saved);
+        }
+    });
+});
+
+// Subject change handler
 document.querySelectorAll('.subject-select').forEach(sel => {
     sel.addEventListener('change', function () {
-        const day    = this.dataset.day;
-        const slot   = this.dataset.slot;
-        const subId  = this.value;
-        const tchSel = document.getElementById('tch-d' + day + 's' + slot);
-        if (!tchSel) return;
-
-        const teachers = (subId && TEACHER_MAP[subId]) ? TEACHER_MAP[subId] : [];
-        tchSel.innerHTML = '<option value="">— Teacher —</option>' +
-            teachers.map(t => `<option value="${t.user_id}">${t.fname} ${t.lname}</option>`).join('');
+        const val = this.value;
+        if (val && val.startsWith('opt:')) {
+            const optNum = parseInt(val.split(':')[1]);
+            showOptionalPanel(this, optNum, null);
+        } else {
+            hideOptionalPanel(this);
+            // Refresh teacher dropdown for core subject
+            const day    = this.dataset.day;
+            const slot   = this.dataset.slot;
+            const tchSel = document.getElementById('tch-d' + day + 's' + slot);
+            if (!tchSel) return;
+            const teachers = (val && TEACHER_MAP[val]) ? TEACHER_MAP[val] : [];
+            tchSel.innerHTML = '<option value="">— Teacher —</option>' +
+                teachers.map(t => `<option value="${t.user_id}">${t.fname} ${t.lname}</option>`).join('');
+        }
     });
 });
 
@@ -240,29 +364,27 @@ document.getElementById('btn-copy').addEventListener('click', function () {
     if (from === to) { alert('Source and destination day are the same.'); return; }
 
     document.querySelectorAll(`select.subject-select[data-day="${to}"]`).forEach(toSel => {
-        const slot   = toSel.dataset.slot;
+        const slot    = toSel.dataset.slot;
         const fromSel = document.querySelector(`select.subject-select[data-day="${from}"][data-slot="${slot}"]`);
         if (!fromSel) return;
 
         toSel.value = fromSel.value;
-        toSel.dispatchEvent(new Event('change')); // trigger teacher reload
+        toSel.dispatchEvent(new Event('change'));
 
-        // Copy room
         const fromRoom = document.querySelector(`input.room-input[name="entries[${from}][${slot}][room]"]`);
         const toRoom   = document.querySelector(`input.room-input[name="entries[${to}][${slot}][room]"]`);
         if (fromRoom && toRoom) toRoom.value = fromRoom.value;
     });
 
-    // After teacher lists are rebuilt, copy teacher selections
+    // Copy core teacher selections after dropdowns rebuild
     setTimeout(() => {
         document.querySelectorAll(`select.teacher-select[data-day="${to}"]`).forEach(toTch => {
             const slot    = toTch.dataset.slot;
             const fromTch = document.querySelector(`select.teacher-select[data-day="${from}"][data-slot="${slot}"]`);
-            if (fromTch) toTch.value = fromTch.value;
+            if (fromTch && !toTch.disabled) toTch.value = fromTch.value;
         });
     }, 50);
 
-    // Highlight the copied day column
     document.querySelectorAll(`[data-day="${to}"]`).forEach(el => {
         el.closest('td')?.classList.add('table-primary');
         setTimeout(() => el.closest('td')?.classList.remove('table-primary'), 1200);

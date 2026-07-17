@@ -662,6 +662,8 @@ $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1
 // TIMETABLE Routes
 // ============================================================================
 $routes->get( 'timetable',                          'TimetableController::index');
+$routes->get( 'timetable/setup',                    'TimetableController::setup');
+$routes->post('timetable/setup/save',               'TimetableController::saveSetup');
 $routes->get( 'timetable/add',                      'TimetableController::add');
 $routes->post('timetable/store',                    'TimetableController::store');
 $routes->get( 'timetable/edit/(:num)',              'TimetableController::edit/$1');

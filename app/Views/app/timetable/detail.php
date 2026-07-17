@@ -134,6 +134,16 @@
                 <td class="py-2 px-3 text-center <?= $isBreak ? 'text-muted' : '' ?> <?= $isToday ? 'bg-light-primary' : '' ?>">
                     <?php if ($isBreak): ?>
                         <span class="fs-8 text-gray-400">— <?= esc($slot['label']) ?> —</span>
+                    <?php elseif ($cell && !empty($cell['is_optional'])): ?>
+                        <div class="text-primary fw-bold fs-9 mb-1">Optional</div>
+                        <?php foreach ($cell['entries'] as $e): ?>
+                        <div class="mb-1 pb-1 border-bottom border-dashed">
+                            <div class="fw-semibold text-gray-800 fs-9"><?= esc($e['subject_name'] ?? '—') ?></div>
+                            <?php $tchName = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
+                            <?php if ($tchName): ?><div class="text-muted fs-9"><?= esc($tchName) ?></div><?php endif; ?>
+                            <?php if (!empty($e['room'])): ?><span class="badge badge-light fs-9"><?= esc($e['room']) ?></span><?php endif; ?>
+                        </div>
+                        <?php endforeach; ?>
                     <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
                         <div class="fw-bold text-gray-800 fs-8 mb-1"><?= esc($cell['subject_name'] ?? '—') ?></div>
                         <div class="text-muted fs-9"><?= esc(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? '')) ?></div>

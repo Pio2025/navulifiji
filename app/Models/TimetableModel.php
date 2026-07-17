@@ -26,7 +26,7 @@ class TimetableModel extends Model
     {
         return $this->db->table('timetable t')
             ->select('t.*, stream.stream_name, level.level_name, school.sch_name,
-                      sch_category.sch_cat_name, tpl.template_name')
+                      sch_category.sch_cat_name, tpl.template_name, tpl.num_days')
             ->join('stream',        'stream.stream_id = t.stream_id_fk', 'left')
             ->join('sch_level',     'sch_level.sch_level_id = stream.sch_level_id_fk', 'left')
             ->join('level',         'level.level_id = sch_level.level_id_fk', 'left')

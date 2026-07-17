@@ -10,6 +10,11 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2">
+            <?php if ($canEdit): ?>
+            <a href="<?= base_url('timetable/setup') ?>" class="btn btn-light-warning btn-sm">
+                <i class="ki-duotone ki-setting-2 fs-2"><span class="path1"></span><span class="path2"></span></i> Setup Structure
+            </a>
+            <?php endif; ?>
             <?php if ($canAdd): ?>
             <a href="<?= base_url('timetable/add') ?>" class="btn btn-primary btn-sm">
                 <i class="ki-duotone ki-plus fs-2"></i> Add Timetable
@@ -24,6 +29,19 @@
 <div id="kt_app_content_container" class="app-container container-xxl">
 
 <?= $this->include('templates/flash_messages') ?>
+
+<?php if (!$isSuperAdmin && !$hasSchoolTemplate && $canEdit): ?>
+<div class="alert alert-dismissible bg-light-warning border border-dashed border-warning d-flex align-items-center p-5 mb-5">
+    <i class="ki-duotone ki-information fs-2x text-warning me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+    <div class="d-flex flex-column flex-grow-1">
+        <span class="fw-bold fs-6">Timetable Structure Not Configured</span>
+        <span class="fs-7">Your school hasn't set up a timetable structure yet. The default Standard template will be used. <a href="<?= base_url('timetable/setup') ?>" class="fw-bold text-warning">Set up your school's structure</a> to customise rotation days and period layout.</span>
+    </div>
+    <button type="button" class="position-absolute position-sm-relative m-2 m-sm-0 top-0 end-0 btn btn-icon ms-sm-auto" data-bs-dismiss="alert">
+        <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+    </button>
+</div>
+<?php endif; ?>
 
 <?php
 // Group timetables by stream for cleaner display
