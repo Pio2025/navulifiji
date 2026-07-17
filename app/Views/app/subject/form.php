@@ -25,8 +25,10 @@
 <div id="kt_app_content_container" class="app-container container-xxl">
 
 <?php
-$validation  = session('validation');
-$formErrors  = $validation ? array_values($validation->getErrors()) : [];
+$validation    = session('validation');
+$formErrors    = $validation ? array_values($validation->getErrors()) : [];
+$errName       = $validation ? $validation->getError('subject_name') : null;
+$errLevel      = $validation ? $validation->getError('level_id_fk')  : null;
 ?>
 
 <div class="card">
@@ -44,23 +46,31 @@ $formErrors  = $validation ? array_values($validation->getErrors()) : [];
             <div class="mb-6">
                 <label class="form-label required fw-semibold" for="subject_name">Subject Name</label>
                 <input type="text" id="subject_name" name="subject_name"
-                    class="form-control form-control-solid"
+                    class="form-control form-control-solid<?= $errName ? ' is-invalid' : '' ?>"
                     placeholder="e.g. Year 9 Physical Education"
                     value="<?= esc(old('subject_name', $subject['subject_name'] ?? '')) ?>"
                     maxlength="60">
+                <?php if ($errName): ?>
+                <div class="invalid-feedback"><?= esc($errName) ?></div>
+                <?php else: ?>
                 <div class="form-text text-muted">Max 60 characters.</div>
+                <?php endif; ?>
             </div>
 
             <!--Level-->
             <div class="mb-6">
                 <label class="form-label required fw-semibold" for="level_id_fk">Year Level</label>
-                <select id="level_id_fk" name="level_id_fk" class="form-select form-select-solid">
+                <select id="level_id_fk" name="level_id_fk"
+                    class="form-select form-select-solid<?= $errLevel ? ' is-invalid' : '' ?>">
                     <option value="">— Select Level —</option>
                     <?php foreach ($levels as $lvl): ?>
                     <?php $sel = old('level_id_fk', $subject['level_id_fk'] ?? '') == $lvl['level_id'] ? 'selected' : ''; ?>
                     <option value="<?= (int)$lvl['level_id'] ?>" <?= $sel ?>><?= esc($lvl['level_name']) ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php if ($errLevel): ?>
+                <div class="invalid-feedback"><?= esc($errLevel) ?></div>
+                <?php endif; ?>
             </div>
 
             <!--Is Examinable-->
@@ -108,8 +118,10 @@ $formErrors  = $validation ? array_values($validation->getErrors()) : [];
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const nameInput  = document.getElementById('subject_name');
+    const levelInput = document.getElementById('level_id_fk');
 
-    // ── Backend validation errors (fired on page load after redirect) ─────────
+    // ── Backend validation errors ─────────────────────────────────────────────
     <?php if (!empty($formErrors)): ?>
     Swal.fire({
         icon: 'error',
@@ -123,22 +135,42 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     <?php endif; ?>
 
+    // ── Clear highlights when user corrects a field ───────────────────────────
+    nameInput.addEventListener('input', function () {
+        this.classList.remove('is-invalid');
+        const fb = this.nextElementSibling;
+        if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
+    });
+    levelInput.addEventListener('change', function () {
+        this.classList.remove('is-invalid');
+        const fb = this.nextElementSibling;
+        if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
+    });
+
     // ── Frontend validation on submit ─────────────────────────────────────────
     document.getElementById('subject-form').addEventListener('submit', function (e) {
         const errors = [];
 
-        const name = document.getElementById('subject_name').value.trim();
+        // Reset previous highlights
+        nameInput.classList.remove('is-invalid');
+        levelInput.classList.remove('is-invalid');
+
+        const name = nameInput.value.trim();
         if (!name) {
             errors.push('Subject name is required.');
+            nameInput.classList.add('is-invalid');
         } else if (name.length < 2) {
             errors.push('Subject name must be at least 2 characters.');
+            nameInput.classList.add('is-invalid');
         } else if (name.length > 60) {
             errors.push('Subject name cannot exceed 60 characters.');
+            nameInput.classList.add('is-invalid');
         }
 
-        const level = document.getElementById('level_id_fk').value;
+        const level = levelInput.value;
         if (!level) {
             errors.push('Please select a year level.');
+            levelInput.classList.add('is-invalid');
         }
 
         if (errors.length > 0) {
