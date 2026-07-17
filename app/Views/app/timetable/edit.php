@@ -31,9 +31,8 @@
 <?= $this->include('templates/flash_messages') ?>
 
 <?php
-$numDays        = count($days);
-$teacherMapJson = json_encode((object) $teacherMap);
-$optGroupsJson  = json_encode(array_values($subjectGrps['optional_groups']));
+$numDays         = count($days);
+$optGroupsJson   = json_encode(array_values($subjectGrps['optional_groups']));
 $optEntryMapJson = json_encode($optEntryMapJs);
 ?>
 
@@ -94,7 +93,7 @@ $optEntryMapJson = json_encode($optEntryMapJs);
     <div class="d-flex flex-column">
         <span class="fw-bold fs-6">Optional Subject Blocks</span>
         <span class="fs-7">
-            Optional subjects are grouped below. Selecting an optional group assigns all its subjects to that period simultaneously — each with their own teacher.
+            Optional subjects are grouped below. Selecting an optional group assigns all its subjects to that period simultaneously.
             <?php foreach ($subjectGrps['optional_groups'] as $grp): ?>
             <span class="badge badge-light-primary ms-2">Opt <?= $grp['option_num'] ?>: <?= esc($grp['label']) ?></span>
             <?php endforeach; ?>
@@ -156,7 +155,6 @@ $optEntryMapJson = json_encode($optEntryMapJs);
                     $selSubId = $isOpt
                         ? 'opt:' . ($cell['option_num'] ?? 1)
                         : (int)($cell['sch_sub_id_fk'] ?? 0);
-                    $selTchId = (int)($cell['teacher_id_fk'] ?? 0);
                     $selRoom  = esc($cell['room'] ?? '');
                     $cellId   = "d{$day}s{$slot['slot_id']}";
                     ?>
@@ -196,23 +194,6 @@ $optEntryMapJson = json_encode($optEntryMapJs);
                             <?php endif; ?>
                         </select>
 
-                        <!-- Teacher select (hidden when optional group selected) -->
-                        <select name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][teacher_id_fk]"
-                                class="form-select form-select-sm teacher-select"
-                                data-day="<?= $day ?>"
-                                data-slot="<?= $slot['slot_id'] ?>"
-                                id="tch-<?= $cellId ?>"
-                                <?= $isOpt ? 'disabled style="display:none"' : '' ?>>
-                            <option value="">— Teacher —</option>
-                            <?php if (!$isOpt): ?>
-                            <?php foreach ($teacherMap[$selSubId] ?? [] as $t): ?>
-                            <option value="<?= $t['user_id'] ?>" <?= $selTchId == $t['user_id'] ? 'selected' : '' ?>>
-                                <?= esc($t['fname'] . ' ' . $t['lname']) ?>
-                            </option>
-                            <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
-
                         <!-- Room input (hidden when optional group selected) -->
                         <input type="text"
                                name="entries[<?= $day ?>][<?= $slot['slot_id'] ?>][room]"
@@ -248,7 +229,6 @@ $optEntryMapJson = json_encode($optEntryMapJs);
 </div>
 
 <script>
-const TEACHER_MAP   = <?= $teacherMapJson ?>;
 const OPT_GROUPS    = <?= $optGroupsJson ?>;
 const OPT_ENTRY_MAP = <?= $optEntryMapJson ?>;
 
@@ -264,9 +244,7 @@ function showOptionalPanel(subSel, optNum, savedSubjects) {
     document.getElementById('iso-'  + cellId).value = '1';
     document.getElementById('isoN-' + cellId).value = optNum;
 
-    const tchSel  = document.getElementById('tch-' + cellId);
     const roomInp = document.querySelector(`input.room-input[data-cellid="${cellId}"]`);
-    if (tchSel)  { tchSel.disabled  = true;  tchSel.style.display  = 'none'; }
     if (roomInp) { roomInp.disabled = true;  roomInp.style.display = 'none'; }
 
     const panel = document.getElementById('opt-panel-' + cellId);
@@ -277,22 +255,12 @@ function showOptionalPanel(subSel, optNum, savedSubjects) {
     if (!grp) return;
 
     grp.subjects.forEach(sub => {
-        const saved    = (savedSubjects && savedSubjects[sub.sch_sub_id]) ? savedSubjects[sub.sch_sub_id] : {};
-        const teachers = TEACHER_MAP[sub.sch_sub_id] || [];
-        const tchOpts  = teachers.map(t => {
-            const sel = String(saved.teacher_id_fk) === String(t.user_id) ? 'selected' : '';
-            return `<option value="${t.user_id}" ${sel}>${t.fname} ${t.lname}</option>`;
-        }).join('');
+        const saved = (savedSubjects && savedSubjects[sub.sch_sub_id]) ? savedSubjects[sub.sch_sub_id] : {};
 
         const row = document.createElement('div');
         row.className = 'border-top pt-1 mt-1';
         row.innerHTML = `
             <div class="fs-9 fw-semibold text-primary mb-1">${sub.subject_name}</div>
-            <select name="opt_entries[${day}][${slot}][${sub.sch_sub_id}][teacher_id_fk]"
-                    class="form-select form-select-sm mb-1">
-                <option value="">— Teacher —</option>
-                ${tchOpts}
-            </select>
             <input type="text"
                    name="opt_entries[${day}][${slot}][${sub.sch_sub_id}][room]"
                    class="form-control form-control-sm"
@@ -311,9 +279,7 @@ function hideOptionalPanel(subSel) {
     document.getElementById('iso-'  + cellId).value = '0';
     document.getElementById('isoN-' + cellId).value = '';
 
-    const tchSel  = document.getElementById('tch-' + cellId);
     const roomInp = document.querySelector(`input.room-input[data-cellid="${cellId}"]`);
-    if (tchSel)  { tchSel.disabled  = false; tchSel.style.display  = ''; }
     if (roomInp) { roomInp.disabled = false; roomInp.style.display = ''; }
 
     const panel = document.getElementById('opt-panel-' + cellId);
@@ -345,14 +311,6 @@ document.querySelectorAll('.subject-select').forEach(sel => {
             showOptionalPanel(this, optNum, null);
         } else {
             hideOptionalPanel(this);
-            // Refresh teacher dropdown for core subject
-            const day    = this.dataset.day;
-            const slot   = this.dataset.slot;
-            const tchSel = document.getElementById('tch-d' + day + 's' + slot);
-            if (!tchSel) return;
-            const teachers = (val && TEACHER_MAP[val]) ? TEACHER_MAP[val] : [];
-            tchSel.innerHTML = '<option value="">— Teacher —</option>' +
-                teachers.map(t => `<option value="${t.user_id}">${t.fname} ${t.lname}</option>`).join('');
         }
     });
 });
@@ -375,15 +333,6 @@ document.getElementById('btn-copy').addEventListener('click', function () {
         const toRoom   = document.querySelector(`input.room-input[name="entries[${to}][${slot}][room]"]`);
         if (fromRoom && toRoom) toRoom.value = fromRoom.value;
     });
-
-    // Copy core teacher selections after dropdowns rebuild
-    setTimeout(() => {
-        document.querySelectorAll(`select.teacher-select[data-day="${to}"]`).forEach(toTch => {
-            const slot    = toTch.dataset.slot;
-            const fromTch = document.querySelector(`select.teacher-select[data-day="${from}"][data-slot="${slot}"]`);
-            if (fromTch && !toTch.disabled) toTch.value = fromTch.value;
-        });
-    }, 50);
 
     document.querySelectorAll(`[data-day="${to}"]`).forEach(el => {
         el.closest('td')?.classList.add('table-primary');
