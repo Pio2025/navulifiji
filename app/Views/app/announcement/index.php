@@ -118,7 +118,7 @@ $priorityCfg = [
     width: 500px; max-width: 100vw;
     background: var(--bs-card-bg, #fff);
     box-shadow: -6px 0 40px rgba(0,0,0,.14);
-    z-index: 1050;
+    z-index: 9500;
     display: flex; flex-direction: column;
     transform: translateX(100%);
     transition: transform .28s cubic-bezier(.4,0,.2,1);
@@ -127,7 +127,7 @@ $priorityCfg = [
 #annOverlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,.38);
-    z-index: 1040; display: none;
+    z-index: 9490; display: none;
     backdrop-filter: blur(2px);
 }
 #annOverlay.open { display: block; }

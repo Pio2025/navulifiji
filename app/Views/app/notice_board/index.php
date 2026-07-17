@@ -112,7 +112,7 @@ $regular = array_filter($notices, fn($n) => (int)$n['is_pinned'] === 0);
     width: 460px; max-width: 100vw;
     background: var(--bs-card-bg, #fff);
     box-shadow: -6px 0 40px rgba(0,0,0,.13);
-    z-index: 1050;
+    z-index: 9500;
     display: flex; flex-direction: column;
     transform: translateX(100%);
     transition: transform .28s cubic-bezier(.4,0,.2,1);
@@ -121,7 +121,7 @@ $regular = array_filter($notices, fn($n) => (int)$n['is_pinned'] === 0);
 #drawerOverlay {
     position: fixed; inset: 0;
     background: rgba(0,0,0,.35);
-    z-index: 1040;
+    z-index: 9490;
     display: none;
     backdrop-filter: blur(2px);
 }
