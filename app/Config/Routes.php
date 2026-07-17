@@ -665,6 +665,7 @@ $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1
 // ============================================================================
 $routes->get( 'subject',                  'SubjectController::index');
 $routes->post('subject/listing',         'SubjectController::getSubjectListing');
+$routes->get( 'subject/export',          'SubjectController::export');
 $routes->get( 'subject/add',             'SubjectController::add');
 $routes->post('subject/store',           'SubjectController::store');
 $routes->get( 'subject/edit/(:num)',     'SubjectController::edit/$1');

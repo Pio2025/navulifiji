@@ -145,6 +145,64 @@ class SubjectController extends BaseController
     }
 
     // =========================================================================
+    // CSV EXPORT
+    // =========================================================================
+
+    public function export()
+    {
+        if (!$this->isLoggedIn()) return redirect()->to('auth/login');
+
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+        if (!$isSuperAdmin && !$this->require_access('_subject_listing')) {
+            return redirect()->to('subject');
+        }
+
+        $search     = trim($this->request->getGet('search') ?? '');
+        $levelId    = (int) ($this->request->getGet('level_id') ?? 0);
+        $examFilter = $this->request->getGet('is_examinable');
+
+        $db      = \Config\Database::connect();
+        $builder = $db->table('subject s')
+            ->select('s.subject_name, l.level_name, s.is_examinable')
+            ->join('level l', 'l.level_id = s.level_id_fk', 'left');
+
+        if ($search !== '') {
+            $builder->groupStart()
+                ->like('s.subject_name', $search)
+                ->orLike('l.level_name', $search)
+                ->groupEnd();
+        }
+        if ($levelId > 0) {
+            $builder->where('s.level_id_fk', $levelId);
+        }
+        if ($examFilter !== null && $examFilter !== '') {
+            $builder->where('s.is_examinable', (int) $examFilter);
+        }
+
+        $builder->orderBy('l.level_id', 'ASC')->orderBy('s.subject_name', 'ASC');
+        $rows = $builder->get()->getResultArray();
+
+        $filename = 'subjects_' . date('Ymd_His') . '.csv';
+
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['Subject Name', 'Year Level', 'Type']);
+        foreach ($rows as $row) {
+            fputcsv($out, [
+                $row['subject_name'],
+                $row['level_name'] ?? '',
+                (int) $row['is_examinable'] ? 'Examinable' : 'Non-Examinable',
+            ]);
+        }
+        fclose($out);
+        exit;
+    }
+
+    // =========================================================================
     // SERVER-SIDE DATATABLE LISTING
     // =========================================================================
 

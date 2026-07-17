@@ -80,27 +80,31 @@ $flashError   = session('error');
 <!--begin::Table card-->
 <div class="card">
     <div class="card-header border-0 pt-6">
-        <div class="card-title">
-            <div class="d-flex align-items-center gap-3">
-                <!--Search-->
-                <div class="d-flex align-items-center position-relative">
-                    <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
-                    <input type="text" id="search-subject" class="form-control form-control-solid w-200px ps-12" placeholder="Search subjects...">
-                </div>
-                <!--Level filter-->
-                <select id="filter-level" class="form-select form-select-solid w-180px">
-                    <option value="">All Levels</option>
-                    <?php foreach ($levels as $lvl): ?>
-                    <option value="<?= (int)$lvl['level_id'] ?>"><?= esc($lvl['level_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <!--Type filter-->
-                <select id="filter-type" class="form-select form-select-solid w-160px">
-                    <option value="">All Types</option>
-                    <option value="1">Examinable</option>
-                    <option value="0">Non-Examinable</option>
-                </select>
+        <div class="card-title flex-wrap gap-3">
+            <!--Search-->
+            <div class="d-flex align-items-center position-relative">
+                <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
+                <input type="text" id="search-subject" class="form-control form-control-solid w-200px ps-12" placeholder="Search subjects...">
             </div>
+            <!--Level filter-->
+            <select id="filter-level" class="form-select form-select-solid w-180px">
+                <option value="">All Levels</option>
+                <?php foreach ($levels as $lvl): ?>
+                <option value="<?= (int)$lvl['level_id'] ?>"><?= esc($lvl['level_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <!--Type filter-->
+            <select id="filter-type" class="form-select form-select-solid w-160px">
+                <option value="">All Types</option>
+                <option value="1">Examinable</option>
+                <option value="0">Non-Examinable</option>
+            </select>
+        </div>
+        <div class="card-toolbar">
+            <button type="button" id="btn-export" class="btn btn-light-primary btn-sm">
+                <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span class="path2"></span></i>
+                Export CSV
+            </button>
         </div>
     </div>
     <div class="card-body pt-4">
@@ -187,6 +191,16 @@ $flashError   = session('error');
     <?php if ($flashError): ?>
     Swal.fire({ icon: 'error', title: 'Error', text: '<?= esc($flashError, 'js') ?>', toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
     <?php endif; ?>
+
+    // ── Export ───────────────────────────────────────────────────────────────
+    document.getElementById('btn-export').addEventListener('click', function () {
+        const params = new URLSearchParams({
+            search:       document.getElementById('search-subject').value,
+            level_id:     document.getElementById('filter-level').value,
+            is_examinable: document.getElementById('filter-type').value,
+        });
+        window.location.href = '<?= base_url('subject/export') ?>?' + params.toString();
+    });
 
     // ── Custom search / filter hooks ─────────────────────────────────────────
     let searchTimer;
