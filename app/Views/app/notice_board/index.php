@@ -268,6 +268,9 @@ $regular = array_filter($notices, fn($n) => (int)$n['is_pinned'] === 0);
                         <?php endif; ?>
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-semibold text-gray-700 fs-8 lh-1"><?= esc(trim(($n['fname'] ?? '') . ' ' . ($n['lname'] ?? ''))) ?></div>
+                            <?php if (!empty($n['author_role_cat_name'])): ?>
+                            <div class="text-muted fs-9 lh-1" style="font-size:.7rem!important;"><?= esc($n['author_role_cat_name']) ?></div>
+                            <?php endif; ?>
                             <div class="text-muted fs-9"><?= noticeAge($n['created_at']) ?></div>
                         </div>
                         <div class="text-end flex-shrink-0">
@@ -353,6 +356,9 @@ $regular = array_filter($notices, fn($n) => (int)$n['is_pinned'] === 0);
                         <?php endif; ?>
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-semibold text-gray-700 fs-8 lh-1"><?= esc(trim(($n['fname'] ?? '') . ' ' . ($n['lname'] ?? ''))) ?></div>
+                            <?php if (!empty($n['author_role_cat_name'])): ?>
+                            <div class="text-muted fs-9 lh-1" style="font-size:.7rem!important;"><?= esc($n['author_role_cat_name']) ?></div>
+                            <?php endif; ?>
                             <div class="text-muted fs-9"><?= noticeAge($n['created_at']) ?></div>
                         </div>
                         <div class="text-end flex-shrink-0">

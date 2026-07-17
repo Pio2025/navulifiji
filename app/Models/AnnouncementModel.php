@@ -19,7 +19,13 @@ class AnnouncementModel extends Model
     {
         $now = date('Y-m-d H:i:s');
         return $this->db->table('school_announcement sa')
-            ->select('sa.*, u.fname, u.lname, u.profile_photo')
+            ->select("sa.*, u.fname, u.lname, u.profile_photo,
+                (SELECT rc.role_cat_name
+                 FROM user_role ur
+                 INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                 INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                 WHERE ur.user_id_fk = sa.posted_by AND ur.user_role_status = 'Active'
+                 LIMIT 1) AS author_role_cat_name")
             ->join('users u', 'u.user_id = sa.posted_by', 'left')
             ->where('sa.sch_id_fk', $schId)
             ->where('sa.announcement_status', 'Active')

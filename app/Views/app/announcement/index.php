@@ -273,6 +273,9 @@ $priorityCfg = [
                             <?php endif; ?>
                             <div>
                                 <span class="fw-semibold text-gray-700 fs-8"><?= $authorName ?></span>
+                                <?php if (!empty($a['author_role_cat_name'])): ?>
+                                <span class="badge badge-light-secondary fs-9 ms-1 py-1 px-2"><?= esc($a['author_role_cat_name']) ?></span>
+                                <?php endif; ?>
                                 <span class="text-muted fs-9 ms-1">&bull; <?= annAge($a['created_at']) ?></span>
                             </div>
                         </div>

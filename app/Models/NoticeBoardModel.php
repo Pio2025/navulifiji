@@ -23,7 +23,13 @@ class NoticeBoardModel extends Model
         $now = date('Y-m-d H:i:s');
 
         $builder = $this->db->table('notice_board nb')
-            ->select('nb.*, u.fname, u.lname, u.profile_photo')
+            ->select("nb.*, u.fname, u.lname, u.profile_photo,
+                (SELECT rc.role_cat_name
+                 FROM user_role ur
+                 INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                 INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                 WHERE ur.user_id_fk = nb.posted_by AND ur.user_role_status = 'Active'
+                 LIMIT 1) AS author_role_cat_name")
             ->join('users u', 'u.user_id = nb.posted_by', 'left')
             ->where('nb.sch_id_fk', $schId)
             ->where('nb.notice_status', 'Active')
