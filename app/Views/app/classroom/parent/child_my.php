@@ -39,7 +39,7 @@
     <?php else: ?>
 
     <!--begin::Year tabs-->
-    <div class="d-flex align-items-center gap-2 flex-wrap mb-7">
+    <div class="d-flex align-items-center gap-2 flex-wrap mb-4">
         <?php foreach ($years as $yr): ?>
         <a href="#"
            class="pcmy-year-tab btn btn-sm <?= (int)$yr === (int)$defaultYear ? 'btn-primary' : 'btn-light text-gray-600' ?>"
@@ -48,6 +48,7 @@
         </a>
         <?php endforeach; ?>
     </div>
+    <hr class="mb-6" style="border-color:#e9edf0;">
     <!--end::Year tabs-->
 
     <!--begin::Year content-->

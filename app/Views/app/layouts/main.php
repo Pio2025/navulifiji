@@ -356,7 +356,7 @@
 						<!--end::Sidebar mobile toggle-->
 						<!--begin::Mobile logo-->
 						<div class="d-flex align-items-center flex-grow-1 flex-lg-grow-0">
-							<a href="<?php echo base_url(); ?>school/dashboard" class="d-lg-none">
+							<a href="<?php echo base_url(); ?>dashboard" class="d-lg-none">
 								<img alt="Logo" src="<?php echo base_url(); ?>navuli_logo_white_icon.png" class="h-30px" />
 							</a>
 						</div>
@@ -767,7 +767,7 @@
 						<!--begin::Logo-->
 						<div class="app-sidebar-logo px-6" id="kt_app_sidebar_logo">
 							<!--begin::Logo image-->
-							<a href="<?php echo base_url(); ?>school/dashboard">
+							<a href="<?php echo base_url(); ?>dashboard">
 								<img alt="Logo" src="<?php echo base_url(); ?>navuli_logo_white.png" class="h-50px app-sidebar-logo-default" />
 								<img alt="Logo" src="<?php echo base_url(); ?>navuli_logo_white_icon.png" class="h-30px app-sidebar-logo-minimize" />
 							</a>

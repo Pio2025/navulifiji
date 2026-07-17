@@ -83,8 +83,7 @@ class NoticeBoardModel extends Model
     public function expireOld(): void
     {
         $this->db->query(
-            "UPDATE notice_board SET notice_status = 'Expired'
-             WHERE notice_status = 'Active' AND expires_at IS NOT NULL AND expires_at <= NOW()"
+            "DELETE FROM notice_board WHERE expires_at IS NOT NULL AND expires_at <= NOW()"
         );
     }
 }

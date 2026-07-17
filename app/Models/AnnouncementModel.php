@@ -40,9 +40,23 @@ class AnnouncementModel extends Model
 
     public function expireOld(): void
     {
-        $this->db->query(
-            "UPDATE school_announcement SET announcement_status = 'Expired'
-             WHERE announcement_status = 'Active' AND expires_at IS NOT NULL AND expires_at <= NOW()"
-        );
+        $expired = $this->db->table('school_announcement')
+            ->select('announcement_id, attachment')
+            ->where('announcement_status', 'Active')
+            ->where('expires_at IS NOT NULL')
+            ->where('expires_at <=', date('Y-m-d H:i:s'))
+            ->get()->getResultArray();
+
+        if (empty($expired)) return;
+
+        foreach ($expired as $row) {
+            if (!empty($row['attachment'])) {
+                $path = FCPATH . 'uploads/announcements/' . $row['attachment'];
+                if (file_exists($path)) unlink($path);
+            }
+        }
+
+        $ids = array_column($expired, 'announcement_id');
+        $this->db->table('school_announcement')->whereIn('announcement_id', $ids)->delete();
     }
 }

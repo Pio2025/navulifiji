@@ -201,11 +201,9 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
     <div class="d-flex align-items-center gap-2 flex-wrap mb-6">
         <?php foreach ($parentSchools as $ps): ?>
         <a href="<?= base_url('wall?sch_id=' . (int)$ps['sch_id']) ?>"
-           class="btn btn-sm <?= (int)$ps['sch_id'] === (int)$activeSchoolId ? 'btn-primary' : 'btn-light text-gray-600' ?>">
-            <?php if (!empty($ps['sch_logo'])): ?>
-            <img src="<?= base_url('uploads/schoolLogo/' . esc($ps['sch_logo'])) ?>"
-                 alt="" style="height:18px;width:18px;object-fit:contain;border-radius:3px;margin-right:5px;">
-            <?php endif; ?>
+           class="btn btn-sm d-inline-flex align-items-center gap-2 <?= (int)$ps['sch_id'] === (int)$activeSchoolId ? 'btn-primary' : 'btn-light text-gray-600' ?>">
+            <img src="<?= !empty($ps['sch_logo']) ? base_url('uploads/schoolLogo/' . esc($ps['sch_logo'])) : base_url('navuli_logo_white_icon.png') ?>"
+                 alt="" style="height:20px;width:20px;object-fit:contain;border-radius:3px;flex-shrink:0;">
             <?= esc($ps['sch_name']) ?>
         </a>
         <?php endforeach; ?>
@@ -268,10 +266,8 @@ $WALL_EDIT_POST_BASE    = base_url('wall/post/');       // + postId + '/data' or
                 <img src="<?= esc($schoolLogo) ?>" alt="School logo" style="height:56px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));">
             </div>
             <?php else: ?>
-            <div style="background:linear-gradient(135deg,#0095e8 0%,#1b5fc1 100%);padding:1.5rem 1rem .75rem;text-align:center;">
-                <div class="rounded-circle bg-white bg-opacity-25 d-inline-flex align-items-center justify-content-center" style="width:56px;height:56px;">
-                    <i class="ki-duotone ki-abstract-26 fs-2 text-white"><span class="path1"></span><span class="path2"></span></i>
-                </div>
+            <div style="background:linear-gradient(135deg,#0095e8 0%,#1b5fc1 100%);padding:1.25rem 1rem .75rem;text-align:center;">
+                <img src="<?= base_url('navuli_logo_white.png') ?>" alt="Navuli" style="height:56px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25));">
             </div>
             <?php endif; ?>
             <div class="p-3 text-center border-bottom" style="border-color:#f1f3f5!important;">
@@ -669,6 +665,22 @@ function renderReactions(reactions, targetType, targetId) {
     return `<div class="post-reactions-bar" id="reactions-${targetType}-${targetId}">${pills}${addBtn}</div>`;
 }
 
+function roleBadge(role) {
+    if (!role) return '';
+    const map = {
+        'System Admin':       'danger',
+        'School Admin':       'primary',
+        'Teacher':            'success',
+        'Student':            'info',
+        'Support Staff':      'secondary',
+        'Parent or Guardian': 'warning',
+        'Admin':              'primary',
+    };
+    const color = map[role] || 'secondary';
+    const label = role === 'Parent or Guardian' ? 'Parent' : role;
+    return `<span class="badge badge-light-${color} ms-1" style="font-size:.7rem;font-weight:500;vertical-align:middle;">${esc(label)}</span>`;
+}
+
 function renderPost(p) {
     const ownBtns = p.is_mine ? `
         <button class="post-edit-btn" data-post-id="${p.wall_post_id}" title="Edit" style="margin-left:auto;">
@@ -681,7 +693,7 @@ function renderPost(p) {
         <div class="post-header">
             ${avatar(p.author_photo, p.author_name, 40)}
             <div class="post-meta">
-                <div class="author">${esc(p.author_name)}</div>
+                <div class="author">${esc(p.author_name)}${roleBadge(p.author_role)}</div>
                 <div class="age">${p.age}</div>
             </div>
             ${ownBtns}
@@ -715,7 +727,7 @@ function renderCommentTree(comments, postId) {
             ${avatar(c.author_photo, c.author_name, 32)}
             <div class="comment-bubble">
                 <div class="bubble-body">
-                    <div class="author">${esc(c.author_name)}</div>
+                    <div class="author">${esc(c.author_name)}${roleBadge(c.author_role)}</div>
                     <div class="text">${esc(c.content)}</div>
                 </div>
                 <div class="comment-meta">

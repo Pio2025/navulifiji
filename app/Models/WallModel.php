@@ -95,7 +95,11 @@ class WallModel extends Model
             SELECT wp.*,
                    u.fname, u.lname, u.profile_photo AS photo,
                    (SELECT COUNT(*) FROM wall_comment wc WHERE wc.wall_post_id_fk = wp.wall_post_id AND wc.comment_status = 'Active') AS comment_count,
-                   (SELECT COUNT(*) FROM wall_reaction wr WHERE wr.target_type = 'post' AND wr.target_id = wp.wall_post_id) AS reaction_count
+                   (SELECT COUNT(*) FROM wall_reaction wr WHERE wr.target_type = 'post' AND wr.target_id = wp.wall_post_id) AS reaction_count,
+                   (SELECT rc.role_cat_name FROM user_role ur
+                    JOIN role r ON r.role_id = ur.role_id_fk
+                    JOIN role_category rc ON rc.role_cat_id = r.role_cat_id_fk
+                    WHERE ur.user_id_fk = wp.user_id_fk AND ur.user_role_status = 'Active' LIMIT 1) AS role_cat_name
             FROM wall_post wp
             INNER JOIN users u ON u.user_id = wp.user_id_fk
             WHERE wp.sch_id_fk = ? AND wp.post_status = 'Active'
@@ -190,7 +194,11 @@ class WallModel extends Model
         $db = \Config\Database::connect();
         return $db->query("
             SELECT wc.*, u.fname, u.lname, u.profile_photo AS photo,
-                   (SELECT COUNT(*) FROM wall_reaction wr WHERE wr.target_type = 'comment' AND wr.target_id = wc.wall_comment_id) AS reaction_count
+                   (SELECT COUNT(*) FROM wall_reaction wr WHERE wr.target_type = 'comment' AND wr.target_id = wc.wall_comment_id) AS reaction_count,
+                   (SELECT rc.role_cat_name FROM user_role ur
+                    JOIN role r ON r.role_id = ur.role_id_fk
+                    JOIN role_category rc ON rc.role_cat_id = r.role_cat_id_fk
+                    WHERE ur.user_id_fk = wc.user_id_fk AND ur.user_role_status = 'Active' LIMIT 1) AS role_cat_name
             FROM wall_comment wc
             INNER JOIN users u ON u.user_id = wc.user_id_fk
             WHERE wc.wall_post_id_fk = ? AND wc.comment_status = 'Active'
