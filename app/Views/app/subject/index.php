@@ -28,11 +28,11 @@ $flashError   = session('error');
 ?>
 
 <!--begin::Stats-->
-<div class="row g-5 mb-6">
-    <div class="col-sm-4">
+<div class="row g-4 mb-6">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="card card-flush h-100">
             <div class="card-body d-flex align-items-center gap-4 py-5">
-                <div class="symbol symbol-50px">
+                <div class="symbol symbol-50px flex-shrink-0">
                     <span class="symbol-label bg-light-primary">
                         <i class="ki-duotone ki-book fs-2x text-primary"><span class="path1"></span><span class="path2"></span></i>
                     </span>
@@ -44,10 +44,10 @@ $flashError   = session('error');
             </div>
         </div>
     </div>
-    <div class="col-sm-4">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="card card-flush h-100">
             <div class="card-body d-flex align-items-center gap-4 py-5">
-                <div class="symbol symbol-50px">
+                <div class="symbol symbol-50px flex-shrink-0">
                     <span class="symbol-label bg-light-success">
                         <i class="ki-duotone ki-check-circle fs-2x text-success"><span class="path1"></span><span class="path2"></span></i>
                     </span>
@@ -59,10 +59,10 @@ $flashError   = session('error');
             </div>
         </div>
     </div>
-    <div class="col-sm-4">
+    <div class="col-12 col-sm-6 col-lg-4">
         <div class="card card-flush h-100">
             <div class="card-body d-flex align-items-center gap-4 py-5">
-                <div class="symbol symbol-50px">
+                <div class="symbol symbol-50px flex-shrink-0">
                     <span class="symbol-label bg-light-warning">
                         <i class="ki-duotone ki-information fs-2x text-warning"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                     </span>
@@ -79,28 +79,30 @@ $flashError   = session('error');
 
 <!--begin::Table card-->
 <div class="card">
-    <div class="card-header border-0 pt-6">
-        <div class="card-title flex-nowrap gap-3">
+    <!--begin::Card header (fully responsive)-->
+    <div class="card-header border-0 flex-wrap py-5 gap-3" style="min-height:unset;">
+        <div class="d-flex flex-wrap align-items-center gap-3" style="flex:1 1 auto;min-width:0;">
             <!--Search-->
-            <div class="d-flex align-items-center position-relative">
+            <div class="d-flex align-items-center position-relative" style="flex:1 1 200px;min-width:160px;">
                 <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
-                <input type="text" id="search-subject" class="form-control form-control-solid w-550px ps-12" placeholder="Search subjects...">
+                <input type="text" id="search-subject" class="form-control form-control-solid w-100 ps-12" placeholder="Search subjects...">
             </div>
             <!--Level filter-->
-            <select id="filter-level" class="form-select form-select-solid w-180px">
+            <select id="filter-level" class="form-select form-select-solid" style="flex:1 1 155px;min-width:140px;max-width:220px;">
                 <option value="">All Levels</option>
                 <?php foreach ($levels as $lvl): ?>
                 <option value="<?= (int)$lvl['level_id'] ?>"><?= esc($lvl['level_name']) ?></option>
                 <?php endforeach; ?>
             </select>
             <!--Type filter-->
-            <select id="filter-type" class="form-select form-select-solid w-160px">
+            <select id="filter-type" class="form-select form-select-solid" style="flex:1 1 140px;min-width:130px;max-width:200px;">
                 <option value="">All Types</option>
                 <option value="1">Examinable</option>
                 <option value="0">Non-Examinable</option>
             </select>
         </div>
-        <div class="card-toolbar">
+        <!--Export-->
+        <div class="d-flex align-items-center">
             <div class="dropdown">
                 <button type="button" class="btn btn-light-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                     <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span class="path2"></span></i>
@@ -136,15 +138,17 @@ $flashError   = session('error');
             </div>
         </div>
     </div>
+    <!--end::Card header-->
+
     <div class="card-body pt-4">
         <div class="table-responsive">
         <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3" id="subject-table">
             <thead>
                 <tr class="fw-bold text-muted fs-7 text-uppercase border-bottom border-gray-200">
-                    <th class="min-w-250px">Subject Name</th>
-                    <th class="min-w-160px">Level</th>
-                    <th class="min-w-120px">Type</th>
-                    <th class="min-w-100px text-end">Actions</th>
+                    <th class="min-w-200px">Subject Name</th>
+                    <th class="min-w-140px">Level</th>
+                    <th class="min-w-110px">Type</th>
+                    <th class="min-w-90px text-end">Actions</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -174,9 +178,9 @@ $flashError   = session('error');
             url:  '<?= base_url('subject/listing') ?>',
             type: 'POST',
             data: function (d) {
-                d[csrfName]      = csrfHash;
-                d.level_id       = $('#filter-level').val();
-                d.is_examinable  = $('#filter-type').val();
+                d[csrfName]     = csrfHash;
+                d.level_id      = $('#filter-level').val();
+                d.is_examinable = $('#filter-type').val();
                 return d;
             },
             dataSrc: function (json) {
@@ -193,7 +197,7 @@ $flashError   = session('error');
         order:      [[0, 'asc']],
         pageLength: 15,
         searching:  true,
-        dom: 't<"d-flex justify-content-between align-items-center mt-4"ip>',
+        dom: 't<"d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4"ip>',
         language: {
             processing:  '<span class="spinner-border spinner-border-sm align-middle me-2"></span>Loading...',
             lengthMenu:  '_MENU_ per page',
@@ -251,7 +255,7 @@ $flashError   = session('error');
         }
     });
 
-    // ── Custom search / filter hooks ─────────────────────────────────────────
+    // ── Search / filter hooks ────────────────────────────────────────────────
     let searchTimer;
     document.getElementById('search-subject').addEventListener('input', function () {
         clearTimeout(searchTimer);
