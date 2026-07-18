@@ -263,9 +263,9 @@ class SubjectController extends BaseController
             $bg   = ($i % 2 === 0) ? '#ffffff' : '#f5f8ff';
             $type = (int) $row['is_examinable'] ? 'Examinable' : 'Non-Examinable';
             $html .= '<tr style="background-color:' . $bg . ';">';
-            $html .= '<td>' . htmlspecialchars($row['subject_name'], ENT_QUOTES, 'UTF-8') . '</td>';
-            $html .= '<td>' . htmlspecialchars($row['level_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>';
-            $html .= '<td>' . $type . '</td>';
+            $html .= '<td width="50%">' . htmlspecialchars($row['subject_name'], ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td width="30%">' . htmlspecialchars($row['level_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td width="20%">' . $type . '</td>';
             $html .= '</tr>';
         }
         $html .= '</tbody></table>';
