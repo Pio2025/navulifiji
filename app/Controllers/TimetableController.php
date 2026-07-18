@@ -610,18 +610,26 @@ class TimetableController extends BaseController
 
         $sx = 10; $pw = 277; $y = 10.0;
 
-        // ── Logos ─────────────────────────────────────────────────────────────
+        // ── Logos + header text, clustered together and centered as a group ───
+        $logo1Size = 20;
+        $logo2Size = 18;
+        $logoGap   = 4;
+        $textW     = 160;
+        $clusterW  = $logo1Size + $logoGap + $textW + $logoGap + $logo2Size;
+        $clusterX  = $sx + ($pw - $clusterW) / 2;
+
         $logoPath = FCPATH . 'uploads/school/logo/' . ($school['sch_logo'] ?? '');
         if (!empty($school['sch_logo']) && file_exists($logoPath)) {
-            $pdf->Image($logoPath, $sx, $y, 22, 22, '', '', 'T', false, 300);
+            $pdf->Image($logoPath, $clusterX, $y, $logo1Size, $logo1Size, '', '', 'T', false, 300);
         }
         $navuliLogo = FCPATH . 'icon.png';
+        $navuliX    = $clusterX + $logo1Size + $logoGap + $textW + $logoGap;
         if (file_exists($navuliLogo)) {
-            $pdf->Image($navuliLogo, $sx + $pw - 22, $y, 20, 20, '', '', 'T', false, 300);
+            $pdf->Image($navuliLogo, $navuliX, $y, $logo2Size, $logo2Size, '', '', 'T', false, 300);
         }
 
         // ── Header text ───────────────────────────────────────────────────────
-        $cx = $sx + 24; $centerW = $pw - 46;
+        $cx = $clusterX + $logo1Size + $logoGap; $centerW = $textW;
 
         $pdf->SetXY($cx, $y + 1);
         $pdf->SetFont('helvetica', 'B', 14);
@@ -688,13 +696,25 @@ class TimetableController extends BaseController
             }
         }
 
+        // ── Scale rows down if the grid would otherwise overflow the page ─────
+        $hdrH       = 8;
+        $maxGridY   = 195; // leaves room for the footer line inside the border
+        $availableH = $maxGridY - $y;
+        $totalNeeded = $hdrH + array_sum($rowHeights);
+        if ($totalNeeded > $availableH && $availableH > 0) {
+            $scale = $availableH / $totalNeeded;
+            $hdrH  = max(6.0, $hdrH * $scale);
+            foreach ($rowHeights as $slotId => $rh) {
+                $rowHeights[$slotId] = max(4.0, $rh * $scale);
+            }
+        }
+
         // ── Grid header row ───────────────────────────────────────────────────
         $pdf->SetDrawColor(200, 220, 240);
         $pdf->SetLineStyle(['width' => 0.3, 'color' => [200, 220, 240]]);
         $pdf->SetFillColor(240, 247, 255);
         $pdf->SetFont('helvetica', 'B', 8);
         $pdf->SetTextColor(26, 86, 219);
-        $hdrH = 8;
 
         $pdf->MultiCell($colTime, $hdrH, 'Period / Time', 1, 'C', true, 0, $sx, $y, true, 0, false, true, $hdrH, 'M');
         $x = $sx + $colTime;
