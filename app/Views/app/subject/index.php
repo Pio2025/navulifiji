@@ -85,17 +85,17 @@ $flashError   = session('error');
             <!--Search-->
             <div class="d-flex align-items-center position-relative" style="flex:1 1 200px;min-width:160px;">
                 <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
-                <input type="text" id="search-subject" class="form-control form-control-solid w-100 ps-12" placeholder="Search subjects...">
+                <input type="text" id="search-subject" class="form-control w-100 ps-12" placeholder="Search subjects...">
             </div>
             <!--Level filter-->
-            <select id="filter-level" class="form-select form-select-solid" style="flex:1 1 155px;min-width:140px;max-width:220px;">
+            <select id="filter-level" class="form-select" style="flex:1 1 155px;min-width:140px;max-width:220px;">
                 <option value="">All Levels</option>
                 <?php foreach ($levels as $lvl): ?>
                 <option value="<?= (int)$lvl['level_id'] ?>"><?= esc($lvl['level_name']) ?></option>
                 <?php endforeach; ?>
             </select>
             <!--Type filter-->
-            <select id="filter-type" class="form-select form-select-solid" style="flex:1 1 140px;min-width:130px;max-width:200px;">
+            <select id="filter-type" class="form-select" style="flex:1 1 140px;min-width:130px;max-width:200px;">
                 <option value="">All Types</option>
                 <option value="1">Examinable</option>
                 <option value="0">Non-Examinable</option>
