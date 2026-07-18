@@ -1,19 +1,3 @@
-<?php
-if (!function_exists('tt_cat_initials')) {
-    function tt_cat_initials(?string $name): string
-    {
-        if (!$name) return '';
-        $stop  = ['and', 'of', 'the', '&', 'is', 'in', 'for', 'a', 'an'];
-        $words = preg_split('/[\s,]+/', $name, -1, PREG_SPLIT_NO_EMPTY);
-        $out   = '';
-        foreach ($words as $w) {
-            if (in_array(strtolower($w), $stop, true)) continue;
-            $out .= (ctype_upper($w) && strlen($w) > 1) ? $w : strtoupper(substr($w, 0, 1));
-        }
-        return $out !== '' ? $out : strtoupper(substr($name, 0, 3));
-    }
-}
-?>
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
     <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack flex-wrap gap-3">
@@ -170,7 +154,7 @@ if (!function_exists('tt_cat_initials')) {
                         <div class="text-start <?= $ei > 0 ? 'mt-1 pt-1' : '' ?>" style="<?= $ei > 0 ? 'border-top:1px solid rgba(0,0,0,0.07);' : '' ?>">
                             <div class="fw-semibold text-gray-800 fs-9 lh-sm">
                                 <span class="subcat-full"><?= esc($e['sub_cat_name'] ?? '—') ?></span>
-                                <span class="subcat-initial"><?= esc(tt_cat_initials($e['sub_cat_name'] ?? '')) ?></span>
+                                <span class="subcat-initial"><?= esc($e['sub_cat_initial'] ?? '—') ?></span>
                             </div>
                             <?php $tchName = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
                             <?php if ($tchName): ?><div class="text-muted lh-sm" style="font-size:0.68rem;"><?= esc($tchName) ?></div><?php endif; ?>
@@ -182,7 +166,7 @@ if (!function_exists('tt_cat_initials')) {
                     <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
                         <div class="fw-bold text-gray-800 fs-8 mb-1">
                             <span class="subcat-full"><?= esc($cell['sub_cat_name'] ?? '—') ?></span>
-                            <span class="subcat-initial"><?= esc(tt_cat_initials($cell['sub_cat_name'] ?? '')) ?></span>
+                            <span class="subcat-initial"><?= esc($cell['sub_cat_initial'] ?? '—') ?></span>
                         </div>
                         <div class="text-muted fs-9"><?= esc(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? '')) ?></div>
                         <?php if (!empty($cell['room'])): ?>

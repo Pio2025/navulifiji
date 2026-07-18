@@ -24,7 +24,7 @@ class TimetableEntryModel extends Model
     public function getByTimetable(int $timetableId): array
     {
         return $this->db->table('timetable_entry te')
-            ->select('te.*, sub.subject_name, sc.sub_cat_name, u.fname, u.lname')
+            ->select('te.*, sub.subject_name, sc.sub_cat_name, sc.sub_cat_initial, u.fname, u.lname')
             ->join('sch_subject ss',       'ss.sch_sub_id = te.sch_sub_id_fk',   'left')
             ->join('subject sub',          'sub.subject_id = ss.subject_id_fk',  'left')
             ->join('subject_category sc',  'sc.sub_cat_id = sub.sub_cat_id_fk',  'left')
@@ -54,9 +54,10 @@ class TimetableEntryModel extends Model
                     'is_optional'   => false,
                     'option_num'    => null,
                     'entries'       => [],
-                    'sch_sub_id_fk' => null,
-                    'subject_name'  => null,
-                    'sub_cat_name'  => null,
+                    'sch_sub_id_fk'    => null,
+                    'subject_name'     => null,
+                    'sub_cat_name'     => null,
+                    'sub_cat_initial'  => null,
                     'fname'         => null,
                     'lname'         => null,
                     'teacher_id_fk' => null,
@@ -70,10 +71,11 @@ class TimetableEntryModel extends Model
                 $map[$day][$slotId]['is_optional'] = true;
                 $map[$day][$slotId]['option_num']  = (int) $row['option_num'];
             } else {
-                $map[$day][$slotId]['sch_sub_id_fk'] = $row['sch_sub_id_fk'];
-                $map[$day][$slotId]['subject_name']   = $row['subject_name'];
-                $map[$day][$slotId]['sub_cat_name']   = $row['sub_cat_name'];
-                $map[$day][$slotId]['fname']          = $row['fname'];
+                $map[$day][$slotId]['sch_sub_id_fk']   = $row['sch_sub_id_fk'];
+                $map[$day][$slotId]['subject_name']    = $row['subject_name'];
+                $map[$day][$slotId]['sub_cat_name']    = $row['sub_cat_name'];
+                $map[$day][$slotId]['sub_cat_initial'] = $row['sub_cat_initial'];
+                $map[$day][$slotId]['fname']           = $row['fname'];
                 $map[$day][$slotId]['lname']          = $row['lname'];
                 $map[$day][$slotId]['teacher_id_fk']  = $row['teacher_id_fk'];
                 $map[$day][$slotId]['room']           = $row['room'];
