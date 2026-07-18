@@ -568,12 +568,12 @@ class TimetableController extends BaseController
         if (!$this->isLoggedIn()) return redirect()->to('auth/login');
         $this->boot();
 
-        if (!$this->require_access('_timetable_report')) {
-            return redirect()->to('timetable')->with('error', 'Access denied.');
-        }
-
         $tt = $this->ttModel->getDetail($id);
         if (!$tt) return redirect()->to('timetable')->with('error', 'Timetable not found.');
+
+        if (!$this->require_access('_timetable_report') && !$this->canSelfViewTimetable($tt)) {
+            return redirect()->to('timetable')->with('error', 'Access denied.');
+        }
 
         $showRoom    = $this->request->getGet('room') === '1';
         $showInitial = $this->request->getGet('initial') === '1';
@@ -920,6 +920,52 @@ class TimetableController extends BaseController
             : [];
 
         return compact('tt', 'numDays', 'slots', 'entries', 'entryMap', 'weekMap');
+    }
+
+    /**
+     * Allows a student or parent to view/download a timetable's report even without
+     * the staff '_timetable_report' permission, as long as it's their own (or their
+     * child's) currently enrolled stream — mirrors the access already granted by my().
+     */
+    private function canSelfViewTimetable(array $tt): bool
+    {
+        $roleCatID = (int) $this->session->get('roleCatID');
+        $userID    = (int) $this->session->get('userID');
+        $streamId  = (int) ($tt['stream_id_fk'] ?? 0);
+        if (!$streamId || !$userID) return false;
+
+        $streamMatches = function (int $forUserID) use ($streamId): bool {
+            $admissions = $this->admissionModel->getAdmissionByUser($forUserID);
+            $admission  = !empty($admissions) ? $admissions[0] : null;
+            if (!$admission) return false;
+
+            $enrolment = $this->enrolmentModel
+                ->where('admission_id_fk', $admission['admission_id'])
+                ->where('enrol_status', 'Active')
+                ->first();
+
+            return $enrolment && (int) $enrolment['stream_id_fk'] === $streamId;
+        };
+
+        if ($roleCatID === 4) {
+            return $streamMatches($userID);
+        }
+
+        if ($roleCatID === 6) {
+            foreach ($this->parentStudentModel->getChildrenOf($userID) as $child) {
+                if ($streamMatches((int) $child['user_id'])) return true;
+            }
+            return false;
+        }
+
+        $user = $this->userModel->find($userID);
+        if (!empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1) {
+            foreach ($this->parentStudentModel->getChildrenOf($userID) as $child) {
+                if ($streamMatches((int) $child['user_id'])) return true;
+            }
+        }
+
+        return false;
     }
 
     /**

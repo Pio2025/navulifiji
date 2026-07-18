@@ -77,6 +77,48 @@
 </div>
 </div>
 
+<style>
+.tt-grid .tt-room-badge { display: none; }
+.tt-grid.tt-show-room .tt-room-badge { display: inline-block; }
+.tt-grid .subcat-initial { display: none; }
+.tt-grid.tt-cat-initial .subcat-full { display: none; }
+.tt-grid.tt-cat-initial .subcat-initial { display: inline; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.tt-block').forEach(function (block) {
+        var grid       = block.querySelector('.tt-grid');
+        var roomToggle = block.querySelector('.tt-toggle-room');
+        var catToggle  = block.querySelector('.tt-toggle-cat-initial');
+        var pdfLink    = block.querySelector('.tt-pdf-link');
+
+        function updatePdfLink() {
+            if (!pdfLink) return;
+            var params = [];
+            if (roomToggle && roomToggle.checked) params.push('room=1');
+            if (catToggle && catToggle.checked) params.push('initial=1');
+            pdfLink.href = pdfLink.dataset.base + (params.length ? '?' + params.join('&') : '');
+        }
+
+        if (roomToggle) {
+            roomToggle.addEventListener('change', function () {
+                grid.classList.toggle('tt-show-room', this.checked);
+                updatePdfLink();
+            });
+        }
+        if (catToggle) {
+            catToggle.addEventListener('change', function () {
+                grid.classList.toggle('tt-cat-initial', this.checked);
+                updatePdfLink();
+            });
+        }
+
+        updatePdfLink();
+    });
+});
+</script>
+
 <?php
 function renderTimetableBlock(array $b, bool $showCard = true): string
 {
@@ -86,6 +128,7 @@ function renderTimetableBlock(array $b, bool $showCard = true): string
     $entryMap = $b['entryMap'];
     $weekMap  = $b['weekMap'];
     $days     = range(1, $numDays);
+    $pdfBase  = base_url('timetable/report/' . $tt['timetable_id'] . '/pdf');
 
     ob_start();
     ?>
@@ -142,8 +185,25 @@ function renderTimetableBlock(array $b, bool $showCard = true): string
         <div class="card-body p-0">
     <?php endif; ?>
 
+            <div class="tt-block">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 px-4 pt-4 pb-2">
+                <div class="d-flex align-items-center gap-4">
+                    <label class="form-check form-check-custom form-check-sm form-check-solid d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input tt-toggle-room" type="checkbox">
+                        <span class="fs-8 text-muted">Show Room</span>
+                    </label>
+                    <label class="form-check form-check-custom form-check-sm form-check-solid d-flex align-items-center gap-2 mb-0">
+                        <input class="form-check-input tt-toggle-cat-initial" type="checkbox">
+                        <span class="fs-8 text-muted">Show Category Initial</span>
+                    </label>
+                </div>
+                <a href="<?= $pdfBase ?>" data-base="<?= $pdfBase ?>" class="btn btn-danger btn-sm tt-pdf-link" target="_blank">
+                    <i class="ki-duotone ki-file-down fs-2"><span class="path1"></span><span class="path2"></span></i> Download PDF
+                </a>
+            </div>
+
             <div class="table-responsive">
-            <table class="table table-bordered mb-0 align-middle" style="min-width:900px;">
+            <table class="table table-bordered mb-0 align-middle tt-grid" style="min-width:900px;">
                 <thead class="bg-light">
                     <tr>
                         <th class="ps-4 py-3 text-center text-muted fw-semibold fs-8 text-uppercase" style="min-width:110px;">Time</th>
@@ -192,16 +252,25 @@ function renderTimetableBlock(array $b, bool $showCard = true): string
                             <span class="badge badge-light-warning mb-2" style="font-size:0.6rem;letter-spacing:0.3px;">OPT</span>
                             <?php foreach ($cell['entries'] as $ei => $e): ?>
                             <div class="text-start <?= $ei > 0 ? 'mt-1 pt-1' : '' ?>" style="<?= $ei > 0 ? 'border-top:1px solid rgba(0,0,0,0.07);' : '' ?>">
-                                <div class="fw-semibold text-gray-800 fs-9 lh-sm"><?= esc($e['subject_name'] ?? '—') ?></div>
+                                <div class="fw-semibold text-gray-800 fs-9 lh-sm">
+                                    <span class="subcat-full"><?= esc($e['sub_cat_name'] ?? '—') ?></span>
+                                    <span class="subcat-initial"><?= esc($e['sub_cat_initial'] ?? '—') ?></span>
+                                </div>
                                 <?php $tchName = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
                                 <?php if ($tchName): ?><div class="text-muted lh-sm" style="font-size:0.68rem;"><?= esc($tchName) ?></div><?php endif; ?>
+                                <?php if (!empty($e['room'])): ?>
+                                <span class="badge badge-light fs-9 mt-1 tt-room-badge"><?= esc($e['room']) ?></span>
+                                <?php endif; ?>
                             </div>
                             <?php endforeach; ?>
                         <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
-                            <div class="fw-bold text-gray-800 fs-8 mb-1"><?= esc($cell['subject_name'] ?? '—') ?></div>
+                            <div class="fw-bold text-gray-800 fs-8 mb-1">
+                                <span class="subcat-full"><?= esc($cell['sub_cat_name'] ?? '—') ?></span>
+                                <span class="subcat-initial"><?= esc($cell['sub_cat_initial'] ?? '—') ?></span>
+                            </div>
                             <div class="text-muted fs-9"><?= esc(trim(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? ''))) ?></div>
                             <?php if (!empty($cell['room'])): ?>
-                            <span class="badge badge-light fs-9 mt-1"><?= esc($cell['room']) ?></span>
+                            <span class="badge badge-light fs-9 mt-1 tt-room-badge"><?= esc($cell['room']) ?></span>
                             <?php endif; ?>
                         <?php else: ?>
                             <span class="text-gray-300 fs-8">—</span>
@@ -213,6 +282,7 @@ function renderTimetableBlock(array $b, bool $showCard = true): string
                 </tbody>
             </table>
             </div>
+            </div><!-- /.tt-block -->
 
     <?php if ($showCard): ?>
         </div><!-- /.card-body -->
