@@ -80,7 +80,7 @@ $flashError   = session('error');
 <!--begin::Table card-->
 <div class="card">
     <div class="card-header border-0 pt-6">
-        <div class="card-title flex-wrap gap-3">
+        <div class="card-title flex-nowrap gap-3">
             <!--Search-->
             <div class="d-flex align-items-center position-relative">
                 <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
@@ -101,10 +101,39 @@ $flashError   = session('error');
             </select>
         </div>
         <div class="card-toolbar">
-            <button type="button" id="btn-export" class="btn btn-light-primary btn-sm">
-                <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span class="path2"></span></i>
-                Export CSV
-            </button>
+            <div class="dropdown">
+                <button type="button" class="btn btn-light-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="ki-duotone ki-exit-up fs-2"><span class="path1"></span><span class="path2"></span></i>
+                    Export
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                        <a class="dropdown-item" href="#" id="export-csv">
+                            <i class="ki-duotone ki-file-down fs-3 me-2 text-success"><span class="path1"></span><span class="path2"></span></i>
+                            Export CSV
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" id="export-excel">
+                            <i class="ki-duotone ki-file-sheet fs-3 me-2 text-success"><span class="path1"></span><span class="path2"></span></i>
+                            Export Excel
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item" href="#" id="export-pdf">
+                            <i class="ki-duotone ki-file-up fs-3 me-2 text-danger"><span class="path1"></span><span class="path2"></span></i>
+                            Export PDF
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="#" id="export-copy">
+                            <i class="ki-duotone ki-copy fs-3 me-2 text-primary"><span class="path1"></span><span class="path2"></span></i>
+                            Copy to Clipboard
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
     </div>
     <div class="card-body pt-4">
@@ -192,14 +221,34 @@ $flashError   = session('error');
     Swal.fire({ icon: 'error', title: 'Error', text: '<?= esc($flashError, 'js') ?>', toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
     <?php endif; ?>
 
-    // ── Export ───────────────────────────────────────────────────────────────
-    document.getElementById('btn-export').addEventListener('click', function () {
-        const params = new URLSearchParams({
-            search:       document.getElementById('search-subject').value,
-            level_id:     document.getElementById('filter-level').value,
+    // ── Export helpers ───────────────────────────────────────────────────────
+    function exportParams(format) {
+        return new URLSearchParams({
+            format,
+            search:        document.getElementById('search-subject').value,
+            level_id:      document.getElementById('filter-level').value,
             is_examinable: document.getElementById('filter-type').value,
         });
-        window.location.href = '<?= base_url('subject/export') ?>?' + params.toString();
+    }
+
+    ['export-csv', 'export-excel', 'export-pdf'].forEach(function (id) {
+        document.getElementById(id).addEventListener('click', function (e) {
+            e.preventDefault();
+            const format = id.replace('export-', '');
+            window.location.href = '<?= base_url('subject/export') ?>?' + exportParams(format).toString();
+        });
+    });
+
+    document.getElementById('export-copy').addEventListener('click', async function (e) {
+        e.preventDefault();
+        try {
+            const res  = await fetch('<?= base_url('subject/export') ?>?' + exportParams('copy').toString());
+            const text = await res.text();
+            await navigator.clipboard.writeText(text);
+            Swal.fire({ icon: 'success', title: 'Copied!', text: 'Subject data copied to clipboard.', toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true });
+        } catch (err) {
+            Swal.fire({ icon: 'error', title: 'Copy Failed', text: 'Your browser may not support clipboard access. Try CSV or Excel instead.' });
+        }
     });
 
     // ── Custom search / filter hooks ─────────────────────────────────────────

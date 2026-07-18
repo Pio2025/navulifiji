@@ -46,7 +46,7 @@ $errLevel      = $validation ? $validation->getError('level_id_fk')  : null;
             <div class="mb-6">
                 <label class="form-label required fw-semibold" for="subject_name">Subject Name</label>
                 <input type="text" id="subject_name" name="subject_name"
-                    class="form-control form-control-solid<?= $errName ? ' is-invalid' : '' ?>"
+                    class="form-control<?= $errName ? ' is-invalid' : '' ?>"
                     placeholder="e.g. Year 9 Physical Education"
                     value="<?= esc(old('subject_name', $subject['subject_name'] ?? '')) ?>"
                     maxlength="60">
@@ -61,7 +61,7 @@ $errLevel      = $validation ? $validation->getError('level_id_fk')  : null;
             <div class="mb-6">
                 <label class="form-label required fw-semibold" for="level_id_fk">Year Level</label>
                 <select id="level_id_fk" name="level_id_fk"
-                    class="form-select form-select-solid<?= $errLevel ? ' is-invalid' : '' ?>">
+                    class="form-select<?= $errLevel ? ' is-invalid' : '' ?>">
                     <option value="">— Select Level —</option>
                     <?php foreach ($levels as $lvl): ?>
                     <?php $sel = old('level_id_fk', $subject['level_id_fk'] ?? '') == $lvl['level_id'] ? 'selected' : ''; ?>

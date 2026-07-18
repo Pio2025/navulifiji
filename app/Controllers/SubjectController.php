@@ -145,7 +145,7 @@ class SubjectController extends BaseController
     }
 
     // =========================================================================
-    // CSV EXPORT
+    // EXPORT (CSV / Excel / PDF / plain-text for clipboard)
     // =========================================================================
 
     public function export()
@@ -157,6 +157,7 @@ class SubjectController extends BaseController
             return redirect()->to('subject');
         }
 
+        $format     = $this->request->getGet('format') ?? 'csv';
         $search     = trim($this->request->getGet('search') ?? '');
         $levelId    = (int) ($this->request->getGet('level_id') ?? 0);
         $examFilter = $this->request->getGet('is_examinable');
@@ -182,13 +183,22 @@ class SubjectController extends BaseController
         $builder->orderBy('l.level_id', 'ASC')->orderBy('s.subject_name', 'ASC');
         $rows = $builder->get()->getResultArray();
 
-        $filename = 'subjects_' . date('Ymd_His') . '.csv';
+        $stamp = date('Ymd_His');
 
+        match ($format) {
+            'excel' => $this->_doExportExcel($rows, "subjects_{$stamp}.xls"),
+            'pdf'   => $this->_doExportPdf($rows,   "subjects_{$stamp}.pdf"),
+            'copy'  => $this->_doExportCopy($rows),
+            default => $this->_doExportCsv($rows,   "subjects_{$stamp}.csv"),
+        };
+    }
+
+    private function _doExportCsv(array $rows, string $filename): void
+    {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Pragma: no-cache');
         header('Expires: 0');
-
         $out = fopen('php://output', 'w');
         fputcsv($out, ['Subject Name', 'Year Level', 'Type']);
         foreach ($rows as $row) {
@@ -199,6 +209,82 @@ class SubjectController extends BaseController
             ]);
         }
         fclose($out);
+        exit;
+    }
+
+    private function _doExportExcel(array $rows, string $filename): void
+    {
+        header('Content-Type: application/vnd.ms-excel; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        echo "\xEF\xBB\xBF"; // UTF-8 BOM for Excel
+        echo '<table border="1" cellpadding="4" cellspacing="0">';
+        echo '<thead><tr><th>Subject Name</th><th>Year Level</th><th>Type</th></tr></thead>';
+        echo '<tbody>';
+        foreach ($rows as $row) {
+            $type = (int) $row['is_examinable'] ? 'Examinable' : 'Non-Examinable';
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars($row['subject_name'], ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . htmlspecialchars($row['level_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>';
+            echo '<td>' . $type . '</td>';
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
+        exit;
+    }
+
+    private function _doExportPdf(array $rows, string $filename): void
+    {
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('NavuliFiji');
+        $pdf->SetTitle('Subject Catalogue');
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->SetAutoPageBreak(true, 15);
+        $pdf->AddPage();
+        $pdf->SetFont('helvetica', 'B', 14);
+        $pdf->Cell(0, 10, 'Subject Catalogue', 0, 1, 'C');
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 6, 'Generated: ' . date('d M Y H:i'), 0, 1, 'C');
+        $pdf->Ln(4);
+
+        $html = '<table border="1" cellpadding="4" cellspacing="0" width="100%">
+            <thead>
+                <tr style="background-color:#1b84ff;color:#ffffff;font-weight:bold;">
+                    <th width="50%">Subject Name</th>
+                    <th width="30%">Year Level</th>
+                    <th width="20%">Type</th>
+                </tr>
+            </thead>
+            <tbody>';
+        foreach ($rows as $i => $row) {
+            $bg   = ($i % 2 === 0) ? '#ffffff' : '#f5f8ff';
+            $type = (int) $row['is_examinable'] ? 'Examinable' : 'Non-Examinable';
+            $html .= '<tr style="background-color:' . $bg . ';">';
+            $html .= '<td>' . htmlspecialchars($row['subject_name'], ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . htmlspecialchars($row['level_name'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>';
+            $html .= '<td>' . $type . '</td>';
+            $html .= '</tr>';
+        }
+        $html .= '</tbody></table>';
+
+        $pdf->writeHTML($html, true, false, true, false, '');
+        $pdf->Output($filename, 'D');
+        exit;
+    }
+
+    private function _doExportCopy(array $rows): void
+    {
+        header('Content-Type: text/plain; charset=utf-8');
+        header('Access-Control-Allow-Origin: *');
+        $lines = ["Subject Name\tYear Level\tType"];
+        foreach ($rows as $row) {
+            $type    = (int) $row['is_examinable'] ? 'Examinable' : 'Non-Examinable';
+            $lines[] = $row['subject_name'] . "\t" . ($row['level_name'] ?? '') . "\t" . $type;
+        }
+        echo implode("\n", $lines);
         exit;
     }
 
