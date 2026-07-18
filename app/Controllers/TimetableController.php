@@ -612,9 +612,9 @@ class TimetableController extends BaseController
 
         // ── Logos + header text, clustered together and centered as a group ───
         $logo1Size = 20;
-        $logo2Size = 18;
-        $logoGap   = 4;
-        $textW     = 160;
+        $logo2Size = 20;
+        $logoGap   = 5;
+        $textW     = 120;
         $clusterW  = $logo1Size + $logoGap + $textW + $logoGap + $logo2Size;
         $clusterX  = $sx + ($pw - $clusterW) / 2;
 
