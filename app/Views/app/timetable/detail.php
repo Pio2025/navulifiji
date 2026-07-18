@@ -1,3 +1,19 @@
+<?php
+if (!function_exists('tt_cat_initials')) {
+    function tt_cat_initials(?string $name): string
+    {
+        if (!$name) return '';
+        $stop  = ['and', 'of', 'the', '&', 'is', 'in', 'for', 'a', 'an'];
+        $words = preg_split('/[\s,]+/', $name, -1, PREG_SPLIT_NO_EMPTY);
+        $out   = '';
+        foreach ($words as $w) {
+            if (in_array(strtolower($w), $stop, true)) continue;
+            $out .= (ctype_upper($w) && strlen($w) > 1) ? $w : strtoupper(substr($w, 0, 1));
+        }
+        return $out !== '' ? $out : strtoupper(substr($name, 0, 3));
+    }
+}
+?>
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
     <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack flex-wrap gap-3">
@@ -88,11 +104,21 @@
         </h3>
         <div class="card-toolbar gap-3">
             <span class="text-muted fs-7"><?= esc($tt['sch_cat_name'] ?? '') ?> · <?= esc($tt['level_name'] ?? '') ?> · <?= esc($tt['template_name'] ?? '') ?></span>
+            <div class="d-flex align-items-center gap-4 ms-3">
+                <label class="form-check form-check-custom form-check-sm form-check-solid d-flex align-items-center gap-2 mb-0" for="tt_toggle_room">
+                    <input class="form-check-input" type="checkbox" id="tt_toggle_room">
+                    <span class="fs-8 text-muted">Show Room</span>
+                </label>
+                <label class="form-check form-check-custom form-check-sm form-check-solid d-flex align-items-center gap-2 mb-0" for="tt_toggle_cat_initial">
+                    <input class="form-check-input" type="checkbox" id="tt_toggle_cat_initial">
+                    <span class="fs-8 text-muted">Show Category Initial</span>
+                </label>
+            </div>
         </div>
     </div>
     <div class="card-body p-0">
         <div class="table-responsive">
-        <table class="table table-bordered mb-0 align-middle" style="min-width:900px;">
+        <table id="tt_grid" class="table table-bordered mb-0 align-middle" style="min-width:900px;">
             <thead class="bg-light">
                 <tr>
                     <th class="ps-4 py-3 text-center text-muted fw-semibold fs-8 text-uppercase" style="min-width:110px;">Time</th>
@@ -142,16 +168,25 @@
                         <span class="badge badge-light-warning mb-2" style="font-size:0.6rem;letter-spacing:0.3px;">OPT</span>
                         <?php foreach ($cell['entries'] as $ei => $e): ?>
                         <div class="text-start <?= $ei > 0 ? 'mt-1 pt-1' : '' ?>" style="<?= $ei > 0 ? 'border-top:1px solid rgba(0,0,0,0.07);' : '' ?>">
-                            <div class="fw-semibold text-gray-800 fs-9 lh-sm"><?= esc($e['sub_cat_name'] ?? '—') ?></div>
+                            <div class="fw-semibold text-gray-800 fs-9 lh-sm">
+                                <span class="subcat-full"><?= esc($e['sub_cat_name'] ?? '—') ?></span>
+                                <span class="subcat-initial"><?= esc(tt_cat_initials($e['sub_cat_name'] ?? '')) ?></span>
+                            </div>
                             <?php $tchName = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
                             <?php if ($tchName): ?><div class="text-muted lh-sm" style="font-size:0.68rem;"><?= esc($tchName) ?></div><?php endif; ?>
+                            <?php if (!empty($e['room'])): ?>
+                            <span class="badge badge-light fs-9 mt-1 tt-room-badge"><?= esc($e['room']) ?></span>
+                            <?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
-                        <div class="fw-bold text-gray-800 fs-8 mb-1"><?= esc($cell['sub_cat_name'] ?? '—') ?></div>
+                        <div class="fw-bold text-gray-800 fs-8 mb-1">
+                            <span class="subcat-full"><?= esc($cell['sub_cat_name'] ?? '—') ?></span>
+                            <span class="subcat-initial"><?= esc(tt_cat_initials($cell['sub_cat_name'] ?? '')) ?></span>
+                        </div>
                         <div class="text-muted fs-9"><?= esc(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? '')) ?></div>
                         <?php if (!empty($cell['room'])): ?>
-                        <span class="badge badge-light fs-9 mt-1"><?= esc($cell['room']) ?></span>
+                        <span class="badge badge-light fs-9 mt-1 tt-room-badge"><?= esc($cell['room']) ?></span>
                         <?php endif; ?>
                     <?php else: ?>
                         <span class="text-gray-300 fs-8">—</span>
@@ -169,3 +204,30 @@
 
 </div>
 </div>
+
+<style>
+#tt_grid .tt-room-badge { display: none; }
+#tt_grid.tt-show-room .tt-room-badge { display: inline-block; }
+#tt_grid .subcat-initial { display: none; }
+#tt_grid.tt-cat-initial .subcat-full { display: none; }
+#tt_grid.tt-cat-initial .subcat-initial { display: inline; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var grid = document.getElementById('tt_grid');
+    var roomToggle = document.getElementById('tt_toggle_room');
+    var catToggle  = document.getElementById('tt_toggle_cat_initial');
+
+    if (roomToggle) {
+        roomToggle.addEventListener('change', function () {
+            grid.classList.toggle('tt-show-room', this.checked);
+        });
+    }
+    if (catToggle) {
+        catToggle.addEventListener('change', function () {
+            grid.classList.toggle('tt-cat-initial', this.checked);
+        });
+    }
+});
+</script>
