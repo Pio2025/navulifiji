@@ -84,7 +84,7 @@ $flashError   = session('error');
             <!--Search-->
             <div class="d-flex align-items-center position-relative">
                 <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
-                <input type="text" id="search-subject" class="form-control form-control-solid w-275px ps-12" placeholder="Search subjects...">
+                <input type="text" id="search-subject" class="form-control form-control-solid w-550px ps-12" placeholder="Search subjects...">
             </div>
             <!--Level filter-->
             <select id="filter-level" class="form-select form-select-solid w-180px">
