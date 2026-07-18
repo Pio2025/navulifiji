@@ -19,7 +19,8 @@
                 <i class="ki-duotone ki-pencil fs-2"><span class="path1"></span><span class="path2"></span></i> Edit
             </a>
             <?php endif; ?>
-            <a href="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
+            <a id="tt_pdf_link" href="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
+               data-base="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
                class="btn btn-danger btn-sm" target="_blank">
                 <i class="ki-duotone ki-file-down fs-2"><span class="path1"></span><span class="path2"></span></i> PDF
             </a>
@@ -202,16 +203,29 @@ document.addEventListener('DOMContentLoaded', function () {
     var grid = document.getElementById('tt_grid');
     var roomToggle = document.getElementById('tt_toggle_room');
     var catToggle  = document.getElementById('tt_toggle_cat_initial');
+    var pdfLink    = document.getElementById('tt_pdf_link');
+
+    function updatePdfLink() {
+        if (!pdfLink) return;
+        var params = [];
+        if (roomToggle && roomToggle.checked) params.push('room=1');
+        if (catToggle && catToggle.checked) params.push('initial=1');
+        pdfLink.href = pdfLink.dataset.base + (params.length ? '?' + params.join('&') : '');
+    }
 
     if (roomToggle) {
         roomToggle.addEventListener('change', function () {
             grid.classList.toggle('tt-show-room', this.checked);
+            updatePdfLink();
         });
     }
     if (catToggle) {
         catToggle.addEventListener('change', function () {
             grid.classList.toggle('tt-cat-initial', this.checked);
+            updatePdfLink();
         });
     }
+
+    updatePdfLink();
 });
 </script>

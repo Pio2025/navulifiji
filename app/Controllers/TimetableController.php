@@ -575,6 +575,9 @@ class TimetableController extends BaseController
         $tt = $this->ttModel->getDetail($id);
         if (!$tt) return redirect()->to('timetable')->with('error', 'Timetable not found.');
 
+        $showRoom    = $this->request->getGet('room') === '1';
+        $showInitial = $this->request->getGet('initial') === '1';
+
         $slots    = $this->ttSlotModel->getByTemplate((int) $tt['template_id_fk']);
         $entryMap = $this->ttEntryModel->getMappedByTimetable($id);
         $numDays  = max(1, (int) ($tt['num_days'] ?? 6));
@@ -743,9 +746,10 @@ class TimetableController extends BaseController
                     $pdf->SetFillColor(...$fill);
                     $lines = [];
                     foreach ($cell['entries'] as $e) {
-                        $sub = $e['subject_name'] ?? '';
-                        $tch = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? ''));
-                        $lines[] = $sub . ($tch ? ' (' . $tch . ')' : '');
+                        $sub  = $showInitial ? ($e['sub_cat_initial'] ?? '') : ($e['sub_cat_name'] ?? '');
+                        $tch  = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? ''));
+                        $room = ($showRoom && !empty($e['room'])) ? ' [' . $e['room'] . ']' : '';
+                        $lines[] = $sub . ($tch ? ' (' . $tch . ')' : '') . $room;
                     }
                     $pdf->SetFont('helvetica', '', 6.5);
                     $pdf->SetTextColor(50, 80, 180);
@@ -753,9 +757,9 @@ class TimetableController extends BaseController
                 } elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])) {
                     $fill = ($rowIdx % 2 === 0) ? [248, 250, 253] : [255, 255, 255];
                     $pdf->SetFillColor(...$fill);
-                    $subj = $cell['subject_name'] ?? '';
+                    $subj = $showInitial ? ($cell['sub_cat_initial'] ?? '') : ($cell['sub_cat_name'] ?? '');
                     $tch  = trim(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? ''));
-                    $room = $cell['room'] ?? '';
+                    $room = $showRoom ? ($cell['room'] ?? '') : '';
                     $txt  = $subj;
                     if ($tch)  $txt .= "\n" . $tch;
                     if ($room) $txt .= ' [' . $room . ']';
