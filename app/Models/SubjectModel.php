@@ -7,7 +7,7 @@ class SubjectModel extends Model
 {
     protected $table         = 'subject';
     protected $primaryKey    = 'subject_id';
-    protected $allowedFields = ['level_id_fk', 'subject_name', 'sub_image', 'is_examinable'];
+    protected $allowedFields = ['sub_cat_id_fk', 'level_id_fk', 'subject_name', 'sub_image', 'is_examinable'];
     protected $useTimestamps = false;
     protected $returnType    = 'array';
 
@@ -24,8 +24,9 @@ class SubjectModel extends Model
     public function getAllWithLevel(): array
     {
         return $this->db->table('subject s')
-            ->select('s.subject_id, s.subject_name, s.sub_image, s.is_examinable, l.level_id, l.level_name')
+            ->select('s.subject_id, s.subject_name, s.sub_image, s.is_examinable, s.sub_cat_id_fk, l.level_id, l.level_name, sc.sub_cat_name')
             ->join('level l', 'l.level_id = s.level_id_fk', 'left')
+            ->join('subject_category sc', 'sc.sub_cat_id = s.sub_cat_id_fk', 'left')
             ->orderBy('l.level_id', 'ASC')
             ->orderBy('s.subject_name', 'ASC')
             ->get()->getResultArray();

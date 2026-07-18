@@ -27,8 +27,9 @@
 <?php
 $validation    = session('validation');
 $formErrors    = $validation ? array_values($validation->getErrors()) : [];
-$errName       = $validation ? $validation->getError('subject_name') : null;
-$errLevel      = $validation ? $validation->getError('level_id_fk')  : null;
+$errName       = $validation ? $validation->getError('subject_name')  : null;
+$errLevel      = $validation ? $validation->getError('level_id_fk')   : null;
+$errCat        = $validation ? $validation->getError('sub_cat_id_fk') : null;
 ?>
 
 <div class="card">
@@ -41,6 +42,22 @@ $errLevel      = $validation ? $validation->getError('level_id_fk')  : null;
             ? base_url('subject/update/' . (int)$subject['subject_id'])
             : base_url('subject/store') ?>">
             <?= csrf_field() ?>
+
+            <!--Subject Category-->
+            <div class="mb-6">
+                <label class="form-label required fw-semibold" for="sub_cat_id_fk">Subject Category</label>
+                <select id="sub_cat_id_fk" name="sub_cat_id_fk"
+                    class="form-select<?= $errCat ? ' is-invalid' : '' ?>">
+                    <option value="">— Select Category —</option>
+                    <?php foreach ($categories as $cat): ?>
+                    <?php $sel = old('sub_cat_id_fk', $subject['sub_cat_id_fk'] ?? '') == $cat['sub_cat_id'] ? 'selected' : ''; ?>
+                    <option value="<?= (int)$cat['sub_cat_id'] ?>" <?= $sel ?>><?= esc($cat['sub_cat_name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <?php if ($errCat): ?>
+                <div class="invalid-feedback"><?= esc($errCat) ?></div>
+                <?php endif; ?>
+            </div>
 
             <!--Subject Name-->
             <div class="mb-6">
@@ -119,6 +136,7 @@ $errLevel      = $validation ? $validation->getError('level_id_fk')  : null;
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const nameInput  = document.getElementById('subject_name');
+    const catInput   = document.getElementById('sub_cat_id_fk');
     const levelInput = document.getElementById('level_id_fk');
 
     // ── Backend validation errors ─────────────────────────────────────────────
@@ -136,15 +154,12 @@ document.addEventListener('DOMContentLoaded', function () {
     <?php endif; ?>
 
     // ── Clear highlights when user corrects a field ───────────────────────────
-    nameInput.addEventListener('input', function () {
-        this.classList.remove('is-invalid');
-        const fb = this.nextElementSibling;
-        if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
-    });
-    levelInput.addEventListener('change', function () {
-        this.classList.remove('is-invalid');
-        const fb = this.nextElementSibling;
-        if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
+    [nameInput, catInput, levelInput].forEach(function (el) {
+        el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () {
+            this.classList.remove('is-invalid');
+            const fb = this.nextElementSibling;
+            if (fb && fb.classList.contains('invalid-feedback')) fb.remove();
+        });
     });
 
     // ── Frontend validation on submit ─────────────────────────────────────────
@@ -153,7 +168,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Reset previous highlights
         nameInput.classList.remove('is-invalid');
+        catInput.classList.remove('is-invalid');
         levelInput.classList.remove('is-invalid');
+
+        const cat = catInput.value;
+        if (!cat) {
+            errors.push('Please select a subject category.');
+            catInput.classList.add('is-invalid');
+        }
 
         const name = nameInput.value.trim();
         if (!name) {

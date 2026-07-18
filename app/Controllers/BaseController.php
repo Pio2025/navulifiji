@@ -14,6 +14,7 @@ use App\Models\DepartmentModel;
 use App\Models\SubscriptionModel;
 use App\Models\SchoolModel;
 use App\Models\SubjectModel;
+use App\Models\SubjectCategoryModel;
 use App\Models\SchoolSubjectModel;
 use App\Models\LevelModel;
 use App\Models\SchoolLevelModel;
@@ -94,6 +95,7 @@ abstract class BaseController extends Controller
     protected $departmentModel;
     protected $schoolModel;
     protected $subjectModel;
+    protected $subjectCategoryModel;
     protected $schoolSubjectModel;
     protected $subscriptionModel;
     protected $levelModel;
@@ -217,8 +219,9 @@ abstract class BaseController extends Controller
         $this->districtModel = new DistrictModel();
         $this->departmentModel = new DepartmentModel();
         $this->schoolModel = new SchoolModel();
-        $this->subjectModel = new SubjectModel();
-        $this->schoolSubjectModel = new SchoolSubjectModel();
+        $this->subjectModel         = new SubjectModel();
+        $this->subjectCategoryModel = new SubjectCategoryModel();
+        $this->schoolSubjectModel   = new SchoolSubjectModel();
         $this->subscriptionModel = new SubscriptionModel();
         $this->levelModel = new LevelModel();
         $this->schoolLevelModel = new SchoolLevelModel();

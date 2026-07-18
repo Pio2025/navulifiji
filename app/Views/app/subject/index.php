@@ -146,8 +146,9 @@ $flashError   = session('error');
             <thead>
                 <tr class="fw-bold text-muted fs-7 text-uppercase border-bottom border-gray-200">
                     <th class="min-w-200px">Subject Name</th>
-                    <th class="min-w-140px">Level</th>
-                    <th class="min-w-110px">Type</th>
+                    <th class="min-w-130px">Level</th>
+                    <th class="min-w-130px">Category</th>
+                    <th class="min-w-100px">Type</th>
                     <th class="min-w-90px text-end">Actions</th>
                 </tr>
             </thead>
@@ -191,6 +192,7 @@ $flashError   = session('error');
         columns: [
             { data: 'subject_name',  name: 'subject_name' },
             { data: 'level_name',    name: 'level_name' },
+            { data: 'sub_cat_name',  name: 'sub_cat_name' },
             { data: 'is_examinable', name: 'is_examinable', orderable: false },
             { data: 'actions',       name: 'actions',       orderable: false, searchable: false },
         ],

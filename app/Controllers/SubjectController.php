@@ -46,10 +46,11 @@ class SubjectController extends BaseController
 
         $this->setPageData('Add Subject', 'Subject', 'Add Subject');
 
-        $data['levels']  = $this->levelModel->findAll();
-        $data['isEdit']  = false;
-        $data['subject'] = null;
-        $data['_view']   = 'app/subject/form';
+        $data['levels']     = $this->levelModel->findAll();
+        $data['categories'] = $this->subjectCategoryModel->getAllActive();
+        $data['isEdit']     = false;
+        $data['subject']    = null;
+        $data['_view']      = 'app/subject/form';
         return view('app/layouts/main', $data);
     }
 
@@ -67,8 +68,9 @@ class SubjectController extends BaseController
         }
 
         if (!$this->validate([
-            'subject_name' => 'required|min_length[2]|max_length[60]',
-            'level_id_fk'  => 'required|integer',
+            'subject_name'  => 'required|min_length[2]|max_length[60]',
+            'level_id_fk'   => 'required|integer',
+            'sub_cat_id_fk' => 'required|integer',
         ])) {
             return redirect()->back()->withInput()->with('validation', $this->validator);
         }
@@ -76,6 +78,7 @@ class SubjectController extends BaseController
         $this->subjectModel->insert([
             'subject_name'  => trim($this->request->getPost('subject_name')),
             'level_id_fk'   => (int) $this->request->getPost('level_id_fk'),
+            'sub_cat_id_fk' => (int) $this->request->getPost('sub_cat_id_fk'),
             'is_examinable' => (int) ($this->request->getPost('is_examinable') ?? 0),
             'sub_image'     => '',
         ]);
@@ -104,10 +107,11 @@ class SubjectController extends BaseController
 
         $this->setPageData('Edit Subject', 'Subject', 'Edit Subject');
 
-        $data['levels']  = $this->levelModel->findAll();
-        $data['isEdit']  = true;
-        $data['subject'] = $subject;
-        $data['_view']   = 'app/subject/form';
+        $data['levels']     = $this->levelModel->findAll();
+        $data['categories'] = $this->subjectCategoryModel->getAllActive();
+        $data['isEdit']     = true;
+        $data['subject']    = $subject;
+        $data['_view']      = 'app/subject/form';
         return view('app/layouts/main', $data);
     }
 
@@ -129,8 +133,9 @@ class SubjectController extends BaseController
         }
 
         if (!$this->validate([
-            'subject_name' => 'required|min_length[2]|max_length[60]',
-            'level_id_fk'  => 'required|integer',
+            'subject_name'  => 'required|min_length[2]|max_length[60]',
+            'level_id_fk'   => 'required|integer',
+            'sub_cat_id_fk' => 'required|integer',
         ])) {
             return redirect()->back()->withInput()->with('validation', $this->validator);
         }
@@ -138,6 +143,7 @@ class SubjectController extends BaseController
         $this->subjectModel->update($id, [
             'subject_name'  => trim($this->request->getPost('subject_name')),
             'level_id_fk'   => (int) $this->request->getPost('level_id_fk'),
+            'sub_cat_id_fk' => (int) $this->request->getPost('sub_cat_id_fk'),
             'is_examinable' => (int) ($this->request->getPost('is_examinable') ?? 0),
         ]);
 
@@ -311,7 +317,7 @@ class SubjectController extends BaseController
         $orderDir         = is_array($orderData) ? ($orderData[0]['dir'] ?? 'asc') : 'asc';
         $orderDir         = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
 
-        $columnMap = ['s.subject_name', 'l.level_name', null, null];
+        $columnMap = ['s.subject_name', 'l.level_name', 'sc.sub_cat_name', null, null];
         $orderCol  = $columnMap[$orderColumnIndex] ?? 's.subject_name';
 
         $levelId    = (int) ($req->getPost('level_id') ?? 0);
@@ -321,8 +327,9 @@ class SubjectController extends BaseController
         $recordsTotal = $db->table('subject')->countAllResults();
 
         $builder = $db->table('subject s')
-            ->select('s.subject_id, s.subject_name, s.is_examinable, l.level_id, l.level_name')
-            ->join('level l', 'l.level_id = s.level_id_fk', 'left');
+            ->select('s.subject_id, s.subject_name, s.is_examinable, l.level_id, l.level_name, sc.sub_cat_name')
+            ->join('level l', 'l.level_id = s.level_id_fk', 'left')
+            ->join('subject_category sc', 'sc.sub_cat_id = s.sub_cat_id_fk', 'left');
 
         if ($searchValue !== '') {
             $builder->groupStart()
@@ -381,6 +388,7 @@ class SubjectController extends BaseController
             $data[] = [
                 'subject_name'  => '<span class="fw-semibold text-gray-800 fs-7">' . esc($row['subject_name']) . '</span>',
                 'level_name'    => '<span class="text-muted fs-7">' . esc($row['level_name'] ?? '—') . '</span>',
+                'sub_cat_name'  => '<span class="text-muted fs-7">' . esc($row['sub_cat_name'] ?? '—') . '</span>',
                 'is_examinable' => $badge,
                 'actions'       => '<div class="d-flex justify-content-end">' . $actions . '</div>',
             ];

@@ -663,9 +663,15 @@ $routes->get( 'wall/media/(:num)',                 'WallController::viewMedia/$1
 // ============================================================================
 // SUBJECT Routes
 // ============================================================================
-$routes->get( 'subject',                  'SubjectController::index');
-$routes->post('subject/listing',         'SubjectController::getSubjectListing');
-$routes->get( 'subject/export',          'SubjectController::export');
+$routes->get( 'subject',                           'SubjectController::index');
+$routes->post('subject/listing',                  'SubjectController::getSubjectListing');
+$routes->get( 'subject/export',                   'SubjectController::export');
+$routes->get( 'subject/category',                 'SubjectCategoryController::index');
+$routes->get( 'subject/category/add',             'SubjectCategoryController::add');
+$routes->post('subject/category/store',           'SubjectCategoryController::store');
+$routes->get( 'subject/category/edit/(:num)',     'SubjectCategoryController::edit/$1');
+$routes->post('subject/category/update/(:num)',   'SubjectCategoryController::update/$1');
+$routes->post('subject/category/remove/(:num)',   'SubjectCategoryController::delete/$1');
 $routes->get( 'subject/add',             'SubjectController::add');
 $routes->post('subject/store',           'SubjectController::store');
 $routes->get( 'subject/edit/(:num)',     'SubjectController::edit/$1');
