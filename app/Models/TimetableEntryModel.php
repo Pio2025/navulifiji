@@ -24,10 +24,11 @@ class TimetableEntryModel extends Model
     public function getByTimetable(int $timetableId): array
     {
         return $this->db->table('timetable_entry te')
-            ->select('te.*, sub.subject_name, u.fname, u.lname')
-            ->join('sch_subject ss',  'ss.sch_sub_id = te.sch_sub_id_fk', 'left')
-            ->join('subject sub',     'sub.subject_id = ss.subject_id_fk', 'left')
-            ->join('users u',         'u.user_id = te.teacher_id_fk',      'left')
+            ->select('te.*, sub.subject_name, sc.sub_cat_name, u.fname, u.lname')
+            ->join('sch_subject ss',       'ss.sch_sub_id = te.sch_sub_id_fk',   'left')
+            ->join('subject sub',          'sub.subject_id = ss.subject_id_fk',  'left')
+            ->join('subject_category sc',  'sc.sub_cat_id = sub.sub_cat_id_fk',  'left')
+            ->join('users u',              'u.user_id = te.teacher_id_fk',       'left')
             ->where('te.timetable_id_fk', $timetableId)
             ->orderBy('te.day_number', 'ASC')
             ->orderBy('te.slot_id_fk', 'ASC')
@@ -55,6 +56,7 @@ class TimetableEntryModel extends Model
                     'entries'       => [],
                     'sch_sub_id_fk' => null,
                     'subject_name'  => null,
+                    'sub_cat_name'  => null,
                     'fname'         => null,
                     'lname'         => null,
                     'teacher_id_fk' => null,
@@ -70,6 +72,7 @@ class TimetableEntryModel extends Model
             } else {
                 $map[$day][$slotId]['sch_sub_id_fk'] = $row['sch_sub_id_fk'];
                 $map[$day][$slotId]['subject_name']   = $row['subject_name'];
+                $map[$day][$slotId]['sub_cat_name']   = $row['sub_cat_name'];
                 $map[$day][$slotId]['fname']          = $row['fname'];
                 $map[$day][$slotId]['lname']          = $row['lname'];
                 $map[$day][$slotId]['teacher_id_fk']  = $row['teacher_id_fk'];

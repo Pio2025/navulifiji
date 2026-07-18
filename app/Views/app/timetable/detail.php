@@ -142,13 +142,13 @@
                         <span class="badge badge-light-warning mb-2" style="font-size:0.6rem;letter-spacing:0.3px;">OPT</span>
                         <?php foreach ($cell['entries'] as $ei => $e): ?>
                         <div class="text-start <?= $ei > 0 ? 'mt-1 pt-1' : '' ?>" style="<?= $ei > 0 ? 'border-top:1px solid rgba(0,0,0,0.07);' : '' ?>">
-                            <div class="fw-semibold text-gray-800 fs-9 lh-sm"><?= esc($e['subject_name'] ?? '—') ?></div>
+                            <div class="fw-semibold text-gray-800 fs-9 lh-sm"><?= esc($e['sub_cat_name'] ?? '—') ?></div>
                             <?php $tchName = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
                             <?php if ($tchName): ?><div class="text-muted lh-sm" style="font-size:0.68rem;"><?= esc($tchName) ?></div><?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
-                        <div class="fw-bold text-gray-800 fs-8 mb-1"><?= esc($cell['subject_name'] ?? '—') ?></div>
+                        <div class="fw-bold text-gray-800 fs-8 mb-1"><?= esc($cell['sub_cat_name'] ?? '—') ?></div>
                         <div class="text-muted fs-9"><?= esc(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? '')) ?></div>
                         <?php if (!empty($cell['room'])): ?>
                         <span class="badge badge-light fs-9 mt-1"><?= esc($cell['room']) ?></span>
