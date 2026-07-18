@@ -667,6 +667,7 @@ $routes->get( 'subject',                           'SubjectController::index');
 $routes->post('subject/listing',                  'SubjectController::getSubjectListing');
 $routes->get( 'subject/export',                   'SubjectController::export');
 $routes->get( 'subject/category',                 'SubjectCategoryController::index');
+$routes->post('subject/category/listing',         'SubjectCategoryController::getCategoryListing');
 $routes->get( 'subject/category/add',             'SubjectCategoryController::add');
 $routes->post('subject/category/store',           'SubjectCategoryController::store');
 $routes->get( 'subject/category/edit/(:num)',     'SubjectCategoryController::edit/$1');

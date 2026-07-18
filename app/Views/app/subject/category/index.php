@@ -82,18 +82,21 @@ $flashError   = session('error');
 <!--begin::Table card-->
 <div class="card">
     <div class="card-header border-0 flex-wrap py-5 gap-3" style="min-height:unset;">
-        <div class="d-flex align-items-center position-relative" style="flex:1 1 200px;min-width:160px;">
-            <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
-            <input type="text" id="search-category" class="form-control w-100 ps-12" placeholder="Search categories...">
-        </div>
-        <div class="d-flex align-items-center">
-            <select id="filter-status" class="form-select" style="min-width:140px;">
+        <div class="d-flex flex-wrap align-items-center gap-3" style="flex:1 1 auto;min-width:0;">
+            <!--Search-->
+            <div class="d-flex align-items-center position-relative" style="flex:1 1 200px;min-width:160px;">
+                <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-4"><span class="path1"></span><span class="path2"></span></i>
+                <input type="text" id="search-category" class="form-control w-100 ps-12" placeholder="Search categories...">
+            </div>
+            <!--Status filter-->
+            <select id="filter-status" class="form-select" style="flex:1 1 150px;min-width:140px;max-width:210px;">
                 <option value="">All Status</option>
                 <option value="1">Active</option>
                 <option value="0">Inactive</option>
             </select>
         </div>
     </div>
+
     <div class="card-body pt-4">
         <div class="table-responsive">
         <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3" id="category-table">
@@ -106,40 +109,8 @@ $flashError   = session('error');
                     <?php endif; ?>
                 </tr>
             </thead>
-            <tbody id="category-tbody">
-            <?php foreach ($categories as $cat): ?>
-            <tr data-name="<?= strtolower(esc($cat['sub_cat_name'])) ?>"
-                data-status="<?= (int)$cat['sub_cat_status'] ?>">
-                <td>
-                    <span class="fw-semibold text-gray-800 fs-7"><?= esc($cat['sub_cat_name']) ?></span>
-                </td>
-                <td>
-                    <?php if ((int)$cat['sub_cat_status'] === 1): ?>
-                    <span class="badge badge-light-success fs-8">Active</span>
-                    <?php else: ?>
-                    <span class="badge badge-light-danger fs-8">Inactive</span>
-                    <?php endif; ?>
-                </td>
-                <?php if ($canManage): ?>
-                <td class="text-end">
-                    <a href="<?= base_url('subject/category/edit/' . (int)$cat['sub_cat_id']) ?>" class="btn btn-icon btn-sm btn-light-primary me-1">
-                        <i class="ki-duotone ki-pencil fs-5"><span class="path1"></span><span class="path2"></span></i>
-                    </a>
-                    <button type="button" class="btn btn-icon btn-sm btn-light-danger btn-delete-category"
-                        data-id="<?= (int)$cat['sub_cat_id'] ?>"
-                        data-name="<?= esc($cat['sub_cat_name']) ?>">
-                        <i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
-                    </button>
-                </td>
-                <?php endif; ?>
-            </tr>
-            <?php endforeach; ?>
-            </tbody>
+            <tbody></tbody>
         </table>
-        </div>
-        <div id="no-results" class="text-center py-10 d-none">
-            <i class="ki-duotone ki-search-list fs-3x text-muted mb-3 d-block"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-            <div class="text-muted fs-6">No categories match your filters.</div>
         </div>
     </div>
 </div>
@@ -153,6 +124,55 @@ $flashError   = session('error');
     const csrfName = '<?= csrf_token() ?>';
     let csrfHash   = '<?= csrf_hash() ?>';
 
+    // ── DataTable ────────────────────────────────────────────────────────────
+    const table = document.getElementById('category-table');
+
+    const datatable = $(table).DataTable({
+        processing:  true,
+        serverSide:  true,
+        searchDelay: 500,
+        ajax: {
+            url:  '<?= base_url('subject/category/listing') ?>',
+            type: 'POST',
+            data: function (d) {
+                d[csrfName]     = csrfHash;
+                d.status_filter = $('#filter-status').val();
+                return d;
+            },
+            dataSrc: function (json) {
+                if (json.csrf_hash) csrfHash = json.csrf_hash;
+                return json.data;
+            }
+        },
+        columns: [
+            { data: 'sub_cat_name',   name: 'sub_cat_name' },
+            { data: 'sub_cat_status', name: 'sub_cat_status', orderable: false },
+            <?php if ($canManage): ?>
+            { data: 'actions', name: 'actions', orderable: false, searchable: false },
+            <?php endif; ?>
+        ],
+        order:      [[0, 'asc']],
+        pageLength: 15,
+        searching:  true,
+        dom: 't<"d-flex flex-wrap justify-content-between align-items-center gap-3 mt-4"ip>',
+        language: {
+            processing:  '<span class="spinner-border spinner-border-sm align-middle me-2"></span>Loading...',
+            lengthMenu:  '_MENU_ per page',
+            paginate: {
+                next:     '<i class="ki-duotone ki-arrow-right fs-6"><span class="path1"></span><span class="path2"></span></i>',
+                previous: '<i class="ki-duotone ki-arrow-left fs-6"><span class="path1"></span><span class="path2"></span></i>',
+            },
+            emptyTable:   'No categories found.',
+            zeroRecords:  'No matching categories found.',
+            info:         'Showing _START_ to _END_ of _TOTAL_ categories',
+            infoFiltered: '(filtered from _MAX_ total)',
+            infoEmpty:    'No categories found.',
+        },
+        drawCallback: function () {
+            initDeleteHandlers();
+        }
+    });
+
     // ── Flash messages ───────────────────────────────────────────────────────
     <?php if ($flashSuccess): ?>
     Swal.fire({ icon: 'success', title: 'Success', text: '<?= esc($flashSuccess, 'js') ?>', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000, timerProgressBar: true });
@@ -161,65 +181,61 @@ $flashError   = session('error');
     Swal.fire({ icon: 'error', title: 'Error', text: '<?= esc($flashError, 'js') ?>', toast: true, position: 'top-end', showConfirmButton: false, timer: 4000, timerProgressBar: true });
     <?php endif; ?>
 
-    // ── Client-side filter ───────────────────────────────────────────────────
-    function filterTable() {
-        const q      = document.getElementById('search-category').value.toLowerCase().trim();
-        const status = document.getElementById('filter-status').value;
-        const rows   = document.querySelectorAll('#category-tbody tr');
-        let visible  = 0;
+    // ── Search / filter hooks ────────────────────────────────────────────────
+    let searchTimer;
+    document.getElementById('search-category').addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        const val = this.value;
+        searchTimer = setTimeout(function () {
+            datatable.search(val).draw();
+        }, 400);
+    });
 
-        rows.forEach(function (row) {
-            const nameMatch   = !q      || row.dataset.name.includes(q);
-            const statusMatch = status === '' || row.dataset.status === status;
-            const show = nameMatch && statusMatch;
-            row.style.display = show ? '' : 'none';
-            if (show) visible++;
-        });
-
-        document.getElementById('no-results').classList.toggle('d-none', visible > 0);
-    }
-
-    document.getElementById('search-category').addEventListener('input', filterTable);
-    document.getElementById('filter-status').addEventListener('change', filterTable);
+    $('#filter-status').on('change', function () {
+        datatable.ajax.reload();
+    });
 
     // ── Delete ───────────────────────────────────────────────────────────────
-    document.addEventListener('click', function (e) {
-        const btn = e.target.closest('.btn-delete-category');
-        if (!btn) return;
+    function initDeleteHandlers() {
+        document.querySelectorAll('.btn-delete-category').forEach(function (btn) {
+            if (btn._deleteBound) return;
+            btn._deleteBound = true;
 
-        const id   = btn.dataset.id;
-        const name = btn.dataset.name;
+            btn.addEventListener('click', function () {
+                const id   = btn.dataset.id;
+                const name = btn.dataset.name;
 
-        Swal.fire({
-            icon: 'warning',
-            title: 'Delete Category?',
-            html: 'Are you sure you want to delete <strong>' + name + '</strong>?<br><small class="text-muted">This will fail if any subjects are assigned to this category.</small>',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, Delete',
-            confirmButtonColor: '#F1416C',
-            cancelButtonText: 'Cancel',
-        }).then(function (result) {
-            if (!result.isConfirmed) return;
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Delete Category?',
+                    html: 'Are you sure you want to delete <strong>' + name + '</strong>?<br><small class="text-muted">This will fail if any subjects are assigned to this category.</small>',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Delete',
+                    confirmButtonColor: '#F1416C',
+                    cancelButtonText: 'Cancel',
+                }).then(function (result) {
+                    if (!result.isConfirmed) return;
 
-            const fd = new FormData();
-            fd.append(csrfName, csrfHash);
+                    const fd = new FormData();
+                    fd.append(csrfName, csrfHash);
 
-            fetch('<?= base_url('subject/category/remove/') ?>' + id, { method: 'POST', body: fd })
-                .then(r => r.json())
-                .then(function (data) {
-                    if (data.csrf_hash) csrfHash = data.csrf_hash;
-                    if (data.success) {
-                        btn.closest('tr').remove();
-                        filterTable();
-                        Swal.fire({ icon: 'success', title: 'Deleted', text: data.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true });
-                    } else {
-                        Swal.fire({ icon: 'warning', title: 'Cannot Delete', text: data.message });
-                    }
-                })
-                .catch(function () {
-                    Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
+                    fetch('<?= base_url('subject/category/remove/') ?>' + id, { method: 'POST', body: fd })
+                        .then(r => r.json())
+                        .then(function (data) {
+                            if (data.csrf_hash) csrfHash = data.csrf_hash;
+                            if (data.success) {
+                                datatable.ajax.reload(null, false);
+                                Swal.fire({ icon: 'success', title: 'Deleted', text: data.message, toast: true, position: 'top-end', showConfirmButton: false, timer: 2500, timerProgressBar: true });
+                            } else {
+                                Swal.fire({ icon: 'warning', title: 'Cannot Delete', text: data.message });
+                            }
+                        })
+                        .catch(function () {
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred. Please try again.' });
+                        });
                 });
+            });
         });
-    });
+    }
 })();
 </script>

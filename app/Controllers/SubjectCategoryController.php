@@ -20,15 +20,103 @@ class SubjectCategoryController extends BaseController
             return view('app/layouts/main', $data);
         }
 
-        $categories = $this->subjectCategoryModel->orderBy('sub_cat_name', 'ASC')->findAll();
-
-        $data['categories'] = $categories;
-        $data['total']      = count($categories);
-        $data['active']     = count(array_filter($categories, fn($c) => (int)$c['sub_cat_status'] === 1));
-        $data['inactive']   = count(array_filter($categories, fn($c) => (int)$c['sub_cat_status'] === 0));
-        $data['canManage']  = $isSuperAdmin || $this->grant_access('_add_subject_category');
-        $data['_view']      = 'app/subject/category/index';
+        $db = \Config\Database::connect();
+        $data['total']     = $db->table('subject_category')->countAllResults();
+        $data['active']    = $db->table('subject_category')->where('sub_cat_status', 1)->countAllResults();
+        $data['inactive']  = $db->table('subject_category')->where('sub_cat_status', 0)->countAllResults();
+        $data['canManage'] = $isSuperAdmin || $this->grant_access('_add_subject_category');
+        $data['_view']     = 'app/subject/category/index';
         return view('app/layouts/main', $data);
+    }
+
+    // =========================================================================
+    // AJAX LISTING (DataTables server-side)
+    // =========================================================================
+
+    public function getCategoryListing()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(401);
+        }
+
+        $req    = service('request');
+        $draw   = (int) ($req->getPost('draw') ?? 1);
+        $start  = (int) ($req->getPost('start') ?? 0);
+        $length = (int) ($req->getPost('length') ?? 15);
+
+        $searchData  = $req->getPost('search');
+        $searchValue = is_array($searchData) ? trim($searchData['value'] ?? '') : '';
+
+        $orderData        = $req->getPost('order');
+        $orderColumnIndex = is_array($orderData) ? (int) ($orderData[0]['column'] ?? 0) : 0;
+        $orderDir         = is_array($orderData) ? ($orderData[0]['dir'] ?? 'asc') : 'asc';
+        $orderDir         = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+
+        $columnMap = ['sub_cat_name', 'sub_cat_status', null];
+        $orderCol  = $columnMap[$orderColumnIndex] ?? 'sub_cat_name';
+
+        $statusFilter = $req->getPost('status_filter');
+
+        $db           = \Config\Database::connect();
+        $recordsTotal = $db->table('subject_category')->countAllResults();
+
+        $builder = $db->table('subject_category');
+
+        if ($searchValue !== '') {
+            $builder->like('sub_cat_name', $searchValue);
+        }
+
+        if ($statusFilter !== null && $statusFilter !== '') {
+            $builder->where('sub_cat_status', (int) $statusFilter);
+        }
+
+        $recordsFiltered = $builder->countAllResults(false);
+
+        if ($orderCol !== null) {
+            $builder->orderBy($orderCol, $orderDir);
+        } else {
+            $builder->orderBy('sub_cat_name', 'ASC');
+        }
+
+        if ($length !== -1) {
+            $builder->limit($length, $start);
+        }
+
+        $rows = $builder->get()->getResultArray();
+
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+        $canManage    = $isSuperAdmin || $this->grant_access('_add_subject_category');
+
+        $data = [];
+        foreach ($rows as $row) {
+            $badge = (int) $row['sub_cat_status'] === 1
+                ? '<span class="badge badge-light-success fs-8">Active</span>'
+                : '<span class="badge badge-light-danger fs-8">Inactive</span>';
+
+            $actions = '';
+            if ($canManage) {
+                $actions .= '<a href="' . base_url('subject/category/edit/' . (int)$row['sub_cat_id']) . '" class="btn btn-icon btn-sm btn-light-primary me-1">'
+                    . '<i class="ki-duotone ki-pencil fs-5"><span class="path1"></span><span class="path2"></span></i></a>';
+                $actions .= '<button type="button" class="btn btn-icon btn-sm btn-light-danger btn-delete-category"'
+                    . ' data-id="' . (int)$row['sub_cat_id'] . '"'
+                    . ' data-name="' . esc($row['sub_cat_name']) . '">'
+                    . '<i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i></button>';
+            }
+
+            $data[] = [
+                'sub_cat_name'   => esc($row['sub_cat_name']),
+                'sub_cat_status' => $badge,
+                'actions'        => $actions,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+            'csrf_hash'       => csrf_hash(),
+        ]);
     }
 
     // =========================================================================
