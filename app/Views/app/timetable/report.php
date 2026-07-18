@@ -4,15 +4,28 @@
         <div class="page-title d-flex flex-column justify-content-center flex-wrap me-3">
             <h1 class="page-heading fw-bold fs-3 my-0">Timetable Report</h1>
         </div>
-        <div class="d-flex gap-2">
-            <a href="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
-               class="btn btn-danger btn-sm" target="_blank">
-                <i class="ki-duotone ki-file-down fs-2"><span class="path1"></span><span class="path2"></span></i> Download PDF
-            </a>
-            <button onclick="window.print()" class="btn btn-primary btn-sm">
-                <i class="ki-duotone ki-printer fs-2"><span class="path1"></span><span class="path2"></span></i> Print
-            </button>
-            <a href="<?= base_url('timetable/detail/' . $tt['timetable_id']) ?>" class="btn btn-light btn-sm">Back</a>
+        <div class="d-flex align-items-center gap-4 toolbar-no-print">
+            <div class="d-flex align-items-center gap-4">
+                <label class="form-check form-check-custom form-check-sm form-check-solid d-flex align-items-center gap-2 mb-0" for="tt_toggle_room">
+                    <input class="form-check-input" type="checkbox" id="tt_toggle_room">
+                    <span class="fs-8 text-muted">Show Room</span>
+                </label>
+                <label class="form-check form-check-custom form-check-sm form-check-solid d-flex align-items-center gap-2 mb-0" for="tt_toggle_cat_initial">
+                    <input class="form-check-input" type="checkbox" id="tt_toggle_cat_initial">
+                    <span class="fs-8 text-muted">Show Category Initial</span>
+                </label>
+            </div>
+            <div class="d-flex gap-2">
+                <a id="tt_pdf_link" href="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
+                   data-base="<?= base_url('timetable/report/' . $tt['timetable_id'] . '/pdf') ?>"
+                   class="btn btn-danger btn-sm" target="_blank">
+                    <i class="ki-duotone ki-file-down fs-2"><span class="path1"></span><span class="path2"></span></i> Download PDF
+                </a>
+                <button onclick="window.print()" class="btn btn-primary btn-sm">
+                    <i class="ki-duotone ki-printer fs-2"><span class="path1"></span><span class="path2"></span></i> Print
+                </button>
+                <a href="<?= base_url('timetable/detail/' . $tt['timetable_id']) ?>" class="btn btn-light btn-sm">Back</a>
+            </div>
         </div>
     </div>
 </div>
@@ -25,7 +38,7 @@
     <div class="card-body">
 
         <!--begin::Header (school logo + info — matches PDF style)-->
-        <div class="d-flex align-items-center justify-content-between mb-6">
+        <div class="d-flex align-items-center justify-content-center mb-6" style="gap:16px;">
             <!--School logo-->
             <?php
             $logoFile = $school['sch_logo'] ?? '';
@@ -42,7 +55,7 @@
             </div>
 
             <!--Centre text-->
-            <div class="text-center flex-grow-1 px-4">
+            <div class="text-center" style="max-width:420px;">
                 <h2 class="fw-bold text-primary mb-1" style="font-size:1.3rem;letter-spacing:0.5px;">
                     <?= strtoupper(esc($school['sch_name'] ?? $tt['sch_name'] ?? '')) ?>
                 </h2>
@@ -83,7 +96,7 @@
 
         <!--begin::Grid-->
         <div class="table-responsive">
-        <table class="table table-bordered align-middle text-center" style="font-size:0.8rem;">
+        <table id="tt_grid" class="table table-bordered align-middle text-center" style="font-size:0.8rem;">
             <thead>
                 <tr style="background:#f0f7ff;">
                     <th class="fw-bold py-3 text-primary" style="min-width:100px;border:1px solid #c8daf0;">Period / Time</th>
@@ -110,15 +123,22 @@
                     <?php elseif ($cell && !empty($cell['is_optional'])): ?>
                         <?php foreach ($cell['entries'] as $e): ?>
                         <div style="border-bottom:1px dashed #cbd5e1;padding:2px 0;margin-bottom:2px;">
-                            <div class="fw-bold" style="color:#1a37c0;font-size:0.78rem;"><?= esc($e['subject_name'] ?? '') ?></div>
+                            <div class="fw-bold" style="color:#1a37c0;font-size:0.78rem;">
+                                <span class="subcat-full"><?= esc($e['sub_cat_name'] ?? '') ?></span>
+                                <span class="subcat-initial"><?= esc($e['sub_cat_initial'] ?? '') ?></span>
+                            </div>
                             <?php $tch = trim(($e['fname'] ?? '') . ' ' . ($e['lname'] ?? '')); ?>
                             <?php if ($tch): ?><div class="text-muted" style="font-size:0.72rem;"><?= esc($tch) ?></div><?php endif; ?>
+                            <?php if (!empty($e['room'])): ?><div class="text-muted tt-room-badge" style="font-size:0.68rem;">[<?= esc($e['room']) ?>]</div><?php endif; ?>
                         </div>
                         <?php endforeach; ?>
                     <?php elseif ($cell && ($cell['sch_sub_id_fk'] || $cell['teacher_id_fk'])): ?>
-                        <div class="fw-semibold text-gray-900" style="font-size:0.8rem;"><?= esc($cell['subject_name'] ?? '') ?></div>
+                        <div class="fw-semibold text-gray-900" style="font-size:0.8rem;">
+                            <span class="subcat-full"><?= esc($cell['sub_cat_name'] ?? '') ?></span>
+                            <span class="subcat-initial"><?= esc($cell['sub_cat_initial'] ?? '') ?></span>
+                        </div>
                         <div class="text-muted" style="font-size:0.72rem;"><?= esc(trim(($cell['fname'] ?? '') . ' ' . ($cell['lname'] ?? ''))) ?></div>
-                        <?php if (!empty($cell['room'])): ?><div class="text-muted" style="font-size:0.68rem;">[<?= esc($cell['room']) ?>]</div><?php endif; ?>
+                        <?php if (!empty($cell['room'])): ?><div class="text-muted tt-room-badge" style="font-size:0.68rem;">[<?= esc($cell['room']) ?>]</div><?php endif; ?>
                     <?php else: ?>
                         <span style="color:#c8ccd8;">—</span>
                     <?php endif; ?>
@@ -142,9 +162,15 @@
 </div>
 
 <style>
+#tt_grid .tt-room-badge { display: none; }
+#tt_grid.tt-show-room .tt-room-badge { display: block; }
+#tt_grid .subcat-initial { display: none; }
+#tt_grid.tt-cat-initial .subcat-full { display: none; }
+#tt_grid.tt-cat-initial .subcat-initial { display: inline; }
+
 @media print {
     #kt_app_toolbar, .app-header, #kt_app_sidebar, .app-footer,
-    .btn, [data-kt-scroll], #toolbar-no-print { display: none !important; }
+    .btn, [data-kt-scroll], #toolbar-no-print, .toolbar-no-print { display: none !important; }
     body, .app-content { padding: 0 !important; margin: 0 !important; }
     #print-area { box-shadow: none !important; border: none !important; }
     .card-body { padding: 0.5rem !important; }
@@ -153,3 +179,35 @@
     .table-responsive { overflow: visible !important; }
 }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var grid = document.getElementById('tt_grid');
+    var roomToggle = document.getElementById('tt_toggle_room');
+    var catToggle  = document.getElementById('tt_toggle_cat_initial');
+    var pdfLink    = document.getElementById('tt_pdf_link');
+
+    function updatePdfLink() {
+        if (!pdfLink) return;
+        var params = [];
+        if (roomToggle && roomToggle.checked) params.push('room=1');
+        if (catToggle && catToggle.checked) params.push('initial=1');
+        pdfLink.href = pdfLink.dataset.base + (params.length ? '?' + params.join('&') : '');
+    }
+
+    if (roomToggle) {
+        roomToggle.addEventListener('change', function () {
+            grid.classList.toggle('tt-show-room', this.checked);
+            updatePdfLink();
+        });
+    }
+    if (catToggle) {
+        catToggle.addEventListener('change', function () {
+            grid.classList.toggle('tt-cat-initial', this.checked);
+            updatePdfLink();
+        });
+    }
+
+    updatePdfLink();
+});
+</script>
