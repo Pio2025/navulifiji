@@ -33,6 +33,59 @@
         <?php echo renderTimetableBlock($ttData); ?>
     <?php endif; ?>
 
+<?php elseif ($isTeacher): ?>
+    <?php if (empty($children)): ?>
+        <?php echo renderSchoolTimetablesTable($schoolTimetables); ?>
+    <?php else: ?>
+        <div class="tt-tabs mb-5" id="tt-tabs">
+            <button type="button" class="tt-tab active" data-tab="tt-school">
+                <i class="ki-duotone ki-abstract-26 fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
+                School Timetable
+            </button>
+            <?php foreach ($children as $i => $item): ?>
+            <?php $fullName = trim((($item['child']['fname'] ?? '')) . ' ' . (($item['child']['lname'] ?? ''))); ?>
+            <button type="button" class="tt-tab" data-tab="tt-child-<?= $i ?>">
+                <i class="ki-duotone ki-profile-circle fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                <?= esc($fullName) ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="tt-panel active" id="tt-panel-tt-school">
+            <?php echo renderSchoolTimetablesTable($schoolTimetables); ?>
+        </div>
+
+        <?php foreach ($children as $i => $item): ?>
+        <?php
+            $enrol    = $item['enrolment'];
+            $bundle   = $item['ttData'];
+            $fullName = trim((($item['child']['fname'] ?? '')) . ' ' . (($item['child']['lname'] ?? '')));
+        ?>
+        <div class="tt-panel" id="tt-panel-tt-child-<?= $i ?>">
+            <div class="card mb-8">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ki-duotone ki-profile-circle fs-2 text-primary me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        <?= esc($fullName) ?>
+                        <?php if (!empty($enrol)): ?>
+                        <span class="badge badge-light-primary fs-8 ms-2"><?= esc($enrol['stream_name'] ?? '') ?></span>
+                        <?php endif; ?>
+                    </h3>
+                </div>
+                <?php if (!$bundle): ?>
+                <div class="card-body py-10 text-center">
+                    <div class="text-muted fs-7">No active timetable found for this student.</div>
+                </div>
+                <?php else: ?>
+                <div class="card-body p-0">
+                    <?php echo renderTimetableBlock($bundle, false); ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+
 <?php else: ?>
     <?php if (empty($children)): ?>
         <div class="card">
@@ -42,13 +95,12 @@
                 <div class="text-muted fs-7">No student accounts are currently linked to your parent profile.</div>
             </div>
         </div>
-    <?php else: ?>
-        <?php foreach ($children as $item): ?>
+    <?php elseif (count($children) === 1): ?>
         <?php
-            $child    = $item['child'];
+            $item     = $children[0];
             $enrol    = $item['enrolment'];
             $bundle   = $item['ttData'];
-            $fullName = trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? ''));
+            $fullName = trim((($item['child']['fname'] ?? '')) . ' ' . (($item['child']['lname'] ?? '')));
         ?>
         <div class="card mb-8">
             <div class="card-header">
@@ -70,6 +122,45 @@
             </div>
             <?php endif; ?>
         </div>
+    <?php else: ?>
+        <div class="tt-tabs mb-5" id="tt-tabs">
+            <?php foreach ($children as $i => $item): ?>
+            <?php $fullName = trim((($item['child']['fname'] ?? '')) . ' ' . (($item['child']['lname'] ?? ''))); ?>
+            <button type="button" class="tt-tab <?= $i === 0 ? 'active' : '' ?>" data-tab="tt-child-<?= $i ?>">
+                <i class="ki-duotone ki-profile-circle fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                <?= esc($fullName) ?>
+            </button>
+            <?php endforeach; ?>
+        </div>
+
+        <?php foreach ($children as $i => $item): ?>
+        <?php
+            $enrol    = $item['enrolment'];
+            $bundle   = $item['ttData'];
+            $fullName = trim((($item['child']['fname'] ?? '')) . ' ' . (($item['child']['lname'] ?? '')));
+        ?>
+        <div class="tt-panel <?= $i === 0 ? 'active' : '' ?>" id="tt-panel-tt-child-<?= $i ?>">
+            <div class="card mb-8">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="ki-duotone ki-profile-circle fs-2 text-primary me-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        <?= esc($fullName) ?>
+                        <?php if (!empty($enrol)): ?>
+                        <span class="badge badge-light-primary fs-8 ms-2"><?= esc($enrol['stream_name'] ?? '') ?></span>
+                        <?php endif; ?>
+                    </h3>
+                </div>
+                <?php if (!$bundle): ?>
+                <div class="card-body py-10 text-center">
+                    <div class="text-muted fs-7">No active timetable found for this student.</div>
+                </div>
+                <?php else: ?>
+                <div class="card-body p-0">
+                    <?php echo renderTimetableBlock($bundle, false); ?>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
         <?php endforeach; ?>
     <?php endif; ?>
 <?php endif; ?>
@@ -83,10 +174,30 @@
 .tt-grid .subcat-initial { display: none; }
 .tt-grid.tt-cat-initial .subcat-full { display: none; }
 .tt-grid.tt-cat-initial .subcat-initial { display: inline; }
+
+.tt-tabs { display:flex; gap:.5rem; flex-wrap:wrap; }
+.tt-tab { display:flex; align-items:center; padding:.5rem 1rem; border-radius:10px; border:2px solid #e9edf0; background:#fff; cursor:pointer; transition:.15s; font-weight:600; font-size:.88rem; color:#5e6278; }
+.tt-tab:hover { border-color:#c5c7d4; color:#181c32; }
+.tt-tab.active { border-color:#009ef7; background:#f1faff; color:#009ef7; }
+.tt-panel { display:none; }
+.tt-panel.active { display:block; }
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    var tabs   = document.querySelectorAll('.tt-tab');
+    var panels = document.querySelectorAll('.tt-panel');
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            var key = this.dataset.tab;
+            tabs.forEach(function (t) { t.classList.remove('active'); });
+            panels.forEach(function (p) { p.classList.remove('active'); });
+            this.classList.add('active');
+            var panel = document.getElementById('tt-panel-' + key);
+            if (panel) panel.classList.add('active');
+        });
+    });
+
     document.querySelectorAll('.tt-block').forEach(function (block) {
         var grid       = block.querySelector('.tt-grid');
         var roomToggle = block.querySelector('.tt-toggle-room');
@@ -120,6 +231,66 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <?php
+function renderSchoolTimetablesTable(array $timetables): string
+{
+    ob_start();
+    ?>
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">School Timetables</h3>
+        </div>
+        <div class="card-body p-0">
+            <?php if (empty($timetables)): ?>
+            <div class="py-12 text-center">
+                <i class="ki-duotone ki-calendar-remove fs-3x text-muted mb-4 d-block"><span class="path1"></span><span class="path2"></span></i>
+                <div class="text-gray-600 fw-semibold fs-5 mb-2">No timetables available</div>
+                <div class="text-muted fs-7">There are no timetables set up for your school yet.</div>
+            </div>
+            <?php else: ?>
+            <div class="table-responsive">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3 mb-0">
+                    <thead>
+                        <tr class="fw-bold text-muted">
+                            <th class="ps-4">Stream</th>
+                            <th>Academic Year</th>
+                            <th>Term</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($timetables as $tt): ?>
+                        <?php
+                        $badge = match($tt['timetable_status'] ?? '') {
+                            'Active'   => 'success',
+                            'Draft'    => 'warning',
+                            'Archived' => 'secondary',
+                            default    => 'light',
+                        };
+                        ?>
+                        <tr>
+                            <td class="ps-4 fw-semibold text-gray-800"><?= esc($tt['stream_name'] ?? '') ?></td>
+                            <td><?= esc($tt['academic_year'] ?? '') ?></td>
+                            <td>Term <?= esc($tt['term'] ?? '') ?></td>
+                            <td><span class="badge badge-light-<?= $badge ?>"><?= esc($tt['timetable_status'] ?? '') ?></span></td>
+                            <td class="text-end pe-4">
+                                <a href="<?= base_url('timetable/detail/' . $tt['timetable_id']) ?>" class="btn btn-light-primary btn-sm">
+                                    <i class="ki-duotone ki-eye fs-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <?php
+    return ob_get_clean();
+}
+
 function renderTimetableBlock(array $b, bool $showCard = true): string
 {
     $tt       = $b['tt'];

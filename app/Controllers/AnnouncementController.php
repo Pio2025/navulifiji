@@ -142,9 +142,11 @@ class AnnouncementController extends BaseController
         $userId  = (int) $this->session->get('userID');
         $roleCat = (int) $this->session->get('roleCatID');
 
-        // Teachers (3) always use their school flow even if is_a_parent is set
-        $isParent = $roleCat === 6
-            || ($roleCat !== 3 && (int) (($this->userModel->find($userId))['is_a_parent'] ?? 0) === 1);
+        $isPureParent    = $roleCat === 6;
+        $isTeacherParent = $roleCat === 3 && $this->hasParentFlag($userId);
+        // Other staff categories with is_a_parent set behave like a pure parent (unchanged legacy behavior)
+        $isParent = $isPureParent
+            || ($roleCat !== 3 && $this->hasParentFlag($userId));
 
         $parentSchools  = [];
         $activeSchoolId = 0;
@@ -158,6 +160,26 @@ class AnnouncementController extends BaseController
                 : (empty($parentSchools) ? 0 : (int) $parentSchools[0]['sch_id']);
 
             $schId = $activeSchoolId;
+        } elseif ($isTeacherParent) {
+            $ownSchId = $this->resolveSchoolId();
+            $childSchools = array_values(array_filter(
+                $this->resolveParentSchools($userId),
+                fn ($s) => (int) $s['sch_id'] !== $ownSchId
+            ));
+
+            if (!empty($childSchools)) {
+                $ownSchoolRow = \Config\Database::connect()->table('school')
+                    ->select('sch_id, sch_name, sch_logo')->where('sch_id', $ownSchId)
+                    ->get()->getRowArray();
+                $parentSchools = array_merge([$ownSchoolRow], $childSchools);
+
+                $reqSchId = (int) $this->request->getGet('sch_id');
+                $schIds   = array_column($parentSchools, 'sch_id');
+                $activeSchoolId = in_array($reqSchId, $schIds, false) ? $reqSchId : $ownSchId;
+                $schId = $activeSchoolId;
+            } else {
+                $schId = $ownSchId;
+            }
         } else {
             $schId = $this->resolveSchoolId();
         }

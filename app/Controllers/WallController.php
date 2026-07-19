@@ -65,7 +65,40 @@ class WallController extends BaseController
             return (int) $schools[0]['sch_id'];
         }
 
-        $schId = (int) $this->session->get('schID');
+        // Teacher who is also a parent: default to their own school, but allow
+        // switching to a linked child's school (when different), same as pure Parents.
+        if ($roleCatId === 3 && $this->hasParentFlag($userId)) {
+            $ownSchId = $this->resolveOwnSchoolId();
+            $childSchools = array_values(array_filter(
+                $this->resolveParentSchoolIds($userId),
+                fn ($s) => (int) $s['sch_id'] !== $ownSchId
+            ));
+
+            if (empty($childSchools)) return $ownSchId;
+
+            $validIds = array_merge([$ownSchId], array_column($childSchools, 'sch_id'));
+
+            $requestedId = (int) ($this->request->getGet('sch_id') ?? 0);
+            if ($requestedId > 0 && in_array($requestedId, $validIds, true)) {
+                $this->session->set('wall_active_sch_id', $requestedId);
+                return $requestedId;
+            }
+
+            $cached = (int) $this->session->get('wall_active_sch_id');
+            if ($cached > 0 && in_array($cached, $validIds, true)) {
+                return $cached;
+            }
+
+            return $ownSchId;
+        }
+
+        return $this->resolveOwnSchoolId();
+    }
+
+    private function resolveOwnSchoolId(): int
+    {
+        $userId = (int) $this->session->get('userID');
+        $schId  = (int) $this->session->get('schID');
         if ($schId !== 0) return $schId;
 
         $db = \Config\Database::connect();
@@ -129,6 +162,19 @@ class WallController extends BaseController
             if (empty($parentSchools)) {
                 return redirect()->to('dashboard')->with('error', 'No school linked to your children\'s accounts.');
             }
+        } elseif ($roleCatId === 3 && $this->hasParentFlag($userId)) {
+            $ownSchId = $this->resolveOwnSchoolId();
+            $childSchools = array_values(array_filter(
+                $this->resolveParentSchoolIds($userId),
+                fn ($s) => (int) $s['sch_id'] !== $ownSchId
+            ));
+
+            if (!empty($childSchools) && $ownSchId) {
+                $ownSchoolRow = \Config\Database::connect()->table('school')
+                    ->select('sch_id, sch_name, sch_logo')->where('sch_id', $ownSchId)
+                    ->get()->getRowArray();
+                $parentSchools = array_merge([$ownSchoolRow], $childSchools);
+            }
         }
 
         $schId = $this->resolveSchoolId();
@@ -153,7 +199,7 @@ class WallController extends BaseController
             'schoolLogo'     => $schoolRow['sch_logo']   ? base_url('uploads/schoolLogo/' . $schoolRow['sch_logo']) : '',
             'wallPostCount'  => $postCount,
             'wallMemberCount'=> $memberCount,
-            'parentSchools'  => $parentSchools,   // non-empty only for roleCatId === 6
+            'parentSchools'  => $parentSchools,   // non-empty for Parents, or Teacher-parents with a distinct child school
             'activeSchoolId' => $schId,
         ]);
 

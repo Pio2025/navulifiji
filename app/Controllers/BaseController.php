@@ -750,6 +750,15 @@ abstract class BaseController extends Controller
         return date('Y-m-d', strtotime("+{$months} months"));
     }
     
+    /**
+     * Check whether a user carries the is_a_parent flag, regardless of role.
+     */
+    protected function hasParentFlag(int $userId): bool
+    {
+        $user = $this->userModel->find($userId);
+        return !empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1;
+    }
+
     protected function generateAcronym(?string $name): string
     {
         if (empty($name)) return '';

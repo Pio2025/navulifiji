@@ -445,24 +445,29 @@ class TimetableController extends BaseController
 
         $isStudent = ($roleCatID === 4);
         $isParent  = ($roleCatID === 6);
+        $isTeacher = ($roleCatID === 3);
+        $hasParentFlag = false;
 
-        // Staff who are also parents can see their children's timetables
-        if (!$isStudent && !$isParent) {
-            $user = $this->userModel->find($userID);
-            if (!empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1) {
+        if (!$isStudent && !$isParent && !$isTeacher) {
+            // Other staff who are also parents can see their children's timetables
+            if ($this->hasParentFlag($userID)) {
                 $isParent = true;
             } else {
                 $data['_view'] = 'app/auth/access_control';
                 return view('app/layouts/main', $data);
             }
+        } elseif ($isTeacher) {
+            $hasParentFlag = $this->hasParentFlag($userID);
         }
 
         $this->setPageData('My Timetable', 'Timetable', 'My Timetable');
 
-        $data['isStudent'] = $isStudent;
-        $data['isParent']  = $isParent;
-        $data['ttData']    = null;   // for student: single timetable bundle
-        $data['children']  = [];    // for parent: per-child bundles
+        $data['isStudent']        = $isStudent;
+        $data['isParent']         = $isParent;
+        $data['isTeacher']        = $isTeacher;
+        $data['ttData']           = null;   // for student: single timetable bundle
+        $data['children']         = [];     // for parent (or teacher-parent): per-child bundles
+        $data['schoolTimetables'] = [];      // for teacher: this school's timetables
 
         if ($isStudent) {
             $admissions = $this->admissionModel->getAdmissionByUser($userID);
@@ -479,33 +484,47 @@ class TimetableController extends BaseController
             $data['ttData']    = $enrolment
                 ? $this->buildTimetableBundle((int) $enrolment['stream_id_fk'])
                 : null;
-        } else {
-            $children     = $this->parentStudentModel->getChildrenOf($userID);
-            $childrenData = [];
-            foreach ($children as $child) {
-                $childId    = (int) $child['user_id'];
-                $admissions = $this->admissionModel->getAdmissionByUser($childId);
-                $admission  = !empty($admissions) ? $admissions[0] : null;
-                $enrolment  = $admission
-                    ? $this->enrolmentModel
-                        ->where('admission_id_fk', $admission['admission_id'])
-                        ->where('enrol_status', 'Active')
-                        ->first()
-                    : null;
-                $childrenData[] = [
-                    'child'     => $child,
-                    'admission' => $admission,
-                    'enrolment' => $enrolment,
-                    'ttData'    => $enrolment
-                        ? $this->buildTimetableBundle((int) $enrolment['stream_id_fk'])
-                        : null,
-                ];
+        } elseif ($isTeacher) {
+            $schId = (int) $this->session->get('schID');
+            $data['schoolTimetables'] = $schId ? $this->ttModel->getBySchool($schId) : [];
+            if ($hasParentFlag) {
+                $data['children'] = $this->buildChildrenTimetableData($userID);
             }
-            $data['children'] = $childrenData;
+        } else {
+            $data['children'] = $this->buildChildrenTimetableData($userID);
         }
 
         $data['_view'] = 'app/timetable/my';
         return view('app/layouts/main', $data);
+    }
+
+    /**
+     * Builds per-child timetable bundles for a parent (or teacher-who-is-a-parent) account.
+     */
+    private function buildChildrenTimetableData(int $userID): array
+    {
+        $children     = $this->parentStudentModel->getChildrenOf($userID);
+        $childrenData = [];
+        foreach ($children as $child) {
+            $childId    = (int) $child['user_id'];
+            $admissions = $this->admissionModel->getAdmissionByUser($childId);
+            $admission  = !empty($admissions) ? $admissions[0] : null;
+            $enrolment  = $admission
+                ? $this->enrolmentModel
+                    ->where('admission_id_fk', $admission['admission_id'])
+                    ->where('enrol_status', 'Active')
+                    ->first()
+                : null;
+            $childrenData[] = [
+                'child'     => $child,
+                'admission' => $admission,
+                'enrolment' => $enrolment,
+                'ttData'    => $enrolment
+                    ? $this->buildTimetableBundle((int) $enrolment['stream_id_fk'])
+                    : null,
+            ];
+        }
+        return $childrenData;
     }
 
     // =========================================================================

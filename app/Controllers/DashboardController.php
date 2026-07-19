@@ -48,8 +48,16 @@ class DashboardController extends BaseController
             $view = 'app/dashboard/school_admin';
             $additionalData = $this->getSchoolAdminStats();
         } elseif ($roleCatID === 3) {
-            $view = 'app/dashboard/teacher';
-            $additionalData = $this->getTeacherDashboardStats();
+            $userId   = (int) $this->session->get('userID');
+            $children = $this->hasParentFlag($userId) ? $this->parentStudentModel->getChildrenOf($userId) : [];
+
+            if (!empty($children)) {
+                $view = 'app/dashboard/teacher_parent';
+                $additionalData = array_merge($this->getTeacherDashboardStats(), $this->getParentDashboardStats());
+            } else {
+                $view = 'app/dashboard/teacher';
+                $additionalData = $this->getTeacherDashboardStats();
+            }
         } elseif ($roleCatID === 4) {
             $view = 'app/dashboard/student';
             $additionalData = $this->getStudentDashboardStats();
