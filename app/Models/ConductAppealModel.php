@@ -97,4 +97,65 @@ class ConductAppealModel extends Model
                     ->orderBy('submitted_date', 'DESC')
                     ->findAll();
     }
+
+    /**
+     * Count of pending appeals (school-scoped unless super admin) this user hasn't read yet.
+     */
+    public function getUnreadPendingCount(int $userId, int $schId, bool $isSuperAdmin): int
+    {
+        $db  = \Config\Database::connect();
+        $sql = "
+            SELECT COUNT(*) AS cnt
+            FROM conduct_appeals ca
+            INNER JOIN conduct_incidents ci ON ci.incident_id = ca.incident_id
+            INNER JOIN admission adm ON adm.admission_id = ci.student_id
+            LEFT JOIN conduct_appeal_reads car ON car.appeal_id = ca.appeal_id AND car.user_id = ?
+            WHERE ca.appeal_status = 'Pending' AND car.car_id IS NULL
+        ";
+        $params = [$userId];
+
+        if (!$isSuperAdmin) {
+            $sql      .= " AND adm.sch_id_fk = ?";
+            $params[] = $schId;
+        }
+
+        return (int) $db->query($sql, $params)->getRow()->cnt;
+    }
+
+    /**
+     * Marks every currently-pending appeal (in scope) as read for this user.
+     */
+    public function markPendingRead(int $userId, int $schId, bool $isSuperAdmin): void
+    {
+        $db = \Config\Database::connect();
+
+        $sql = "
+            SELECT ca.appeal_id
+            FROM conduct_appeals ca
+            INNER JOIN conduct_incidents ci ON ci.incident_id = ca.incident_id
+            INNER JOIN admission adm ON adm.admission_id = ci.student_id
+            LEFT JOIN conduct_appeal_reads car ON car.appeal_id = ca.appeal_id AND car.user_id = ?
+            WHERE ca.appeal_status = 'Pending' AND car.car_id IS NULL
+        ";
+        $params = [$userId];
+
+        if (!$isSuperAdmin) {
+            $sql      .= " AND adm.sch_id_fk = ?";
+            $params[] = $schId;
+        }
+
+        $ids = array_column($db->query($sql, $params)->getResultArray(), 'appeal_id');
+        if (empty($ids)) {
+            return;
+        }
+
+        $now  = date('Y-m-d H:i:s');
+        $rows = array_map(static fn ($id) => [
+            'user_id'   => $userId,
+            'appeal_id' => (int) $id,
+            'read_at'   => $now,
+        ], $ids);
+
+        $db->table('conduct_appeal_reads')->ignore(true)->insertBatch($rows);
+    }
 }

@@ -767,7 +767,7 @@ class DashboardController extends BaseController
     public function unreadCounts(): \CodeIgniter\HTTP\ResponseInterface
     {
         if (!$this->isLoggedIn()) {
-            return $this->response->setJSON(['notices' => 0, 'announcements' => 0]);
+            return $this->response->setJSON(['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0]);
         }
 
         $userId  = (int) $this->session->get('userID');
@@ -796,7 +796,7 @@ class DashboardController extends BaseController
             $schIds = array_map('intval', array_column($schools, 'sch_id_fk'));
 
             if (empty($schIds)) {
-                return $this->response->setJSON(['notices' => 0, 'announcements' => 0]);
+                return $this->response->setJSON(['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0]);
             }
 
             $inList = implode(',', $schIds);
@@ -831,10 +831,12 @@ class DashboardController extends BaseController
                 $annCount = 0;
             }
 
+            $conductAppealCount = 0;
+
         } else {
             $schId = (int) $this->session->get('schID');
             if ($schId <= 0) {
-                return $this->response->setJSON(['notices' => 0, 'announcements' => 0]);
+                return $this->response->setJSON(['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0]);
             }
 
             $annModel    = new \App\Models\AnnouncementModel();
@@ -842,11 +844,19 @@ class DashboardController extends BaseController
 
             $noticeCount = $noticeModel->getUnreadCountForUser($userId, $schId, $audience);
             $annCount    = $annModel->getUnreadCountForUser($userId, $schId);
+
+            $isSuperAdmin       = (int) $this->session->get('roleID') === 1;
+            $conductAppealCount = 0;
+            if ($isSuperAdmin || $this->grant_access('_process_conduct_appeal')) {
+                $conductAppealCount = (new \App\Models\ConductAppealModel())
+                    ->getUnreadPendingCount($userId, $schId, $isSuperAdmin);
+            }
         }
 
         return $this->response->setJSON([
-            'notices'       => $noticeCount,
-            'announcements' => $annCount,
+            'notices'         => $noticeCount,
+            'announcements'   => $annCount,
+            'conduct_appeals' => $conductAppealCount,
         ]);
     }
 }

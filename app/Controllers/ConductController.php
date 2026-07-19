@@ -843,6 +843,8 @@ class ConductController extends BaseController
         $data['isSuperAdmin'] = $isSuperAdmin;
         $data['_view']        = 'app/conduct/appeals';
 
+        $this->conductAppealModel->markPendingRead((int) $this->session->get('userID'), $schId, $isSuperAdmin);
+
         return view('app/layouts/main', $data);
     }
 
