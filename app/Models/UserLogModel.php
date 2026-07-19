@@ -38,6 +38,26 @@ class UserLogModel extends Model
         return $this->insert($data);
     }
 
+    // ── create + broadcast ───────────────────────────────────────────────────
+
+    public function insert($data = null, bool $returnID = true)
+    {
+        $result = parent::insert($data, $returnID);
+
+        $row    = is_array($data) ? $data : (array) $data;
+        $userId = (int) ($row['user_id_fk'] ?? 0);
+
+        if ($userId > 0) {
+            \App\Libraries\RealtimeNotifier::notify(
+                [$userId],
+                'activity_alert',
+                ['action' => 'new', 'logType' => $row['log_type'] ?? null]
+            );
+        }
+
+        return $result;
+    }
+
     /** Count unread entries for a user (used for the badge counter). */
     public function getUnreadCount(int $userId): int
     {

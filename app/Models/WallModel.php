@@ -131,7 +131,15 @@ class WallModel extends Model
             'created_at'  => date('Y-m-d H:i:s'),
             'updated_at'  => date('Y-m-d H:i:s'),
         ]);
-        return (int) $db->insertID();
+        $postId = (int) $db->insertID();
+
+        $recipients = array_values(array_diff(
+            \App\Libraries\RealtimeNotifier::recipientsForSchool($schId, 'All'),
+            [$userId]
+        ));
+        \App\Libraries\RealtimeNotifier::notify($recipients, 'wall', ['action' => 'new', 'itemId' => $postId]);
+
+        return $postId;
     }
 
     public function updatePost(int $postId, string $content): void

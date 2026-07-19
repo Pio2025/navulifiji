@@ -897,4 +897,85 @@ class DashboardController extends BaseController
             'messages'        => $messageCount,
         ]);
     }
+
+    // ─── Generic optimistic mark-read endpoint (badge store) ──────────────────
+
+    public function markRead(): \CodeIgniter\HTTP\ResponseInterface
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        $domain  = (string) $this->request->getPost('domain');
+        $userId  = (int) $this->session->get('userID');
+        $roleCat = (int) $this->session->get('roleCatID');
+        $db      = \Config\Database::connect();
+
+        $userRow  = (new \App\Models\UserModel())->find($userId);
+        $isParent = $roleCat === 6
+            || ($roleCat !== 3 && (int) (($userRow)['is_a_parent'] ?? 0) === 1);
+
+        $audience = match ($roleCat) {
+            3 => 'Teachers',
+            4 => 'Students',
+            6 => 'Parents',
+            default => 'All',
+        };
+
+        $schIds = [];
+        if ($isParent) {
+            $schools = $db->query("
+                SELECT DISTINCT a.sch_id_fk
+                FROM parent_student ps
+                INNER JOIN admission a ON a.user_id_fk = ps.student_user_id_fk
+                WHERE ps.parent_user_id_fk = ? AND a.admission_status = 'Active'
+            ", [$userId])->getResultArray();
+            $schIds = array_map('intval', array_column($schools, 'sch_id_fk'));
+        } else {
+            $schId = (int) $this->session->get('schID');
+            if ($schId > 0) $schIds = [$schId];
+        }
+
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+
+        switch ($domain) {
+            case 'notice':
+                $model = new \App\Models\NoticeBoardModel();
+                foreach ($schIds as $schId) $model->markAllReadForUser($userId, $schId, $audience);
+                break;
+
+            case 'announcement':
+                $model = new \App\Models\AnnouncementModel();
+                foreach ($schIds as $schId) $model->markAllReadForUser($userId, $schId);
+                break;
+
+            case 'event':
+                $model = new \App\Models\EventModel();
+                if ($isSuperAdmin) {
+                    $model->markAllReadForUser($userId, 0);
+                } else {
+                    foreach ($schIds as $schId) $model->markAllReadForUser($userId, $schId);
+                }
+                break;
+
+            case 'wall':
+                $model = new \App\Models\WallModel();
+                foreach ($schIds as $schId) $model->markAllReadForUser($userId, $schId);
+                break;
+
+            case 'conduct_appeal':
+                (new \App\Models\ConductAppealModel())
+                    ->markPendingRead($userId, $schIds[0] ?? 0, $isSuperAdmin);
+                break;
+
+            case 'activity_alert':
+                (new \App\Models\UserLogModel())->markAllRead($userId);
+                break;
+
+            default:
+                return $this->response->setJSON(['success' => false, 'message' => 'Unknown domain.']);
+        }
+
+        return $this->response->setJSON(['success' => true]);
+    }
 }

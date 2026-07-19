@@ -55,6 +55,8 @@ var NavuliChat = (function () {
     // ------------------------------------------------------------------ Connection status
 
     function setConnectionStatus(status) {
+        document.dispatchEvent(new CustomEvent("navuli:connectionStatus", { detail: { status } }));
+
         const dotEl  = document.getElementById("kt_chat_conn_dot");
         const textEl = document.getElementById("kt_chat_conn_text");
         if (!dotEl || !textEl) return;
@@ -877,6 +879,13 @@ var NavuliChat = (function () {
 
             socket.on("connect_error", (err) => { socketConnected = false; setConnectionStatus("offline"); startPolling(); console.error("[NavuliChat] Socket connect_error:", err.message); });
             socket.on("disconnect",    () => { socketConnected = false; setConnectionStatus("offline"); startPolling(); });
+
+            // Generic badge/notification push (notices, announcements, events, wall, conduct appeals,
+            // activity log) — re-dispatched as a DOM event so badge-store.js can stay decoupled from
+            // the socket connection itself.
+            socket.on("notification", (payload) => {
+                document.dispatchEvent(new CustomEvent("navuli:notification", { detail: payload }));
+            });
 
             socket.on("message_received", ({ conversationId, message }) => {
                 const key = String(message.id);
@@ -1791,9 +1800,11 @@ var NavuliChat = (function () {
 
     function updateNavBadge() {
         const badge = document.getElementById("navuli_chat_badge");
-        if (!badge) return;
-        if (totalUnreadCount > 0) { badge.textContent = totalUnreadCount >= 10 ? "9+" : totalUnreadCount; badge.classList.remove("d-none"); }
-        else { badge.textContent = ""; badge.classList.add("d-none"); }
+        if (badge) {
+            if (totalUnreadCount > 0) { badge.textContent = totalUnreadCount >= 10 ? "9+" : totalUnreadCount; badge.classList.remove("d-none"); }
+            else { badge.textContent = ""; badge.classList.add("d-none"); }
+        }
+        document.dispatchEvent(new CustomEvent("navuli:messagesCount", { detail: { count: totalUnreadCount } }));
     }
 
     // ------------------------------------------------------------------ Scroll
@@ -2474,6 +2485,7 @@ var NavuliChat = (function () {
         },
         openConversation,
         openForUser,
+        isSocketConnected: () => socketConnected,
     };
 
 })();

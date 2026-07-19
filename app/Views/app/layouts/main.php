@@ -315,9 +315,11 @@
 			window.NAVULI_SOCKET_URL = "<?= getenv('CHAT_SOCKET_URL') ?: 'http://localhost:3000' ?>";
 			window.NAVULI_MY_NAME    = "<?= esc(trim(session('fname') . ' ' . session('name')), 'js') ?>";
 			window.NAVULI_MY_PHOTO   = "<?php $__p = session('photo'); echo $__p ? esc(base_url('uploads/profilePhoto/' . $__p), 'js') : ''; ?>";
+			window.NAVULI_CSRF_TOKEN = "<?= csrf_hash() ?>";
 		</script>
 		<!--end::Socket.IO + chat config-->
 		<script src="<?php echo base_url(); ?>app/assets/js/custom/apps/chat/chat.js?v=<?= filemtime(FCPATH . 'app/assets/js/custom/apps/chat/chat.js') ?>"></script>
+		<script src="<?php echo base_url(); ?>app/assets/js/custom/notifications/badge-store.js?v=<?= filemtime(FCPATH . 'app/assets/js/custom/notifications/badge-store.js') ?>"></script>
 		<script src="<?php echo base_url(); ?>app/assets/js/custom/utilities/modals/upgrade-plan.js"></script>
 		<script src="<?php echo base_url(); ?>app/assets/js/custom/utilities/modals/create-app.js"></script>
 		<script src="<?php echo base_url(); ?>app/assets/js/custom/utilities/modals/new-target.js"></script>
@@ -438,9 +440,11 @@
 									<div class="menu menu-sub menu-sub-dropdown menu-column w-350px w-lg-375px" data-kt-menu="true" id="kt_menu_notifications">
 										<!--begin::Heading-->
 										<div class="d-flex flex-column bgi-no-repeat rounded-top" style="background-image:url('<?php echo base_url(); ?>app/assets/media/misc/menu-header-bg.jpg')">
-											<h3 class="text-white fw-semibold px-9 mt-10 mb-6">
-												Notifications
-												<span id="notif-unread-label" class="fs-8 opacity-75 ps-3" style="display:none;"></span>
+											<h3 class="text-white fw-semibold px-9 mt-10 mb-6 d-flex align-items-center">
+												<span class="flex-grow-1">Notifications
+													<span id="notif-unread-label" class="fs-8 opacity-75 ps-3" style="display:none;"></span>
+												</span>
+												<a href="#" class="fs-8 fw-semibold text-white opacity-75 opacity-state-100" data-navuli-mark-read="activity_alert">Mark all as read</a>
 											</h3>
 											<ul class="nav nav-line-tabs nav-line-tabs-2x nav-stretch fw-semibold px-9">
 												<li class="nav-item">
@@ -490,160 +494,9 @@
 								</div>
 								<!--end::Notifications-->
 
-								<script>
-								(function () {
-									const NOTIF_URL      = '<?php echo base_url("user/getNotifications"); ?>';
-									const MARK_READ_URL  = '<?php echo base_url("user/markNotificationsRead"); ?>';
-									const CI_TOKEN       = '<?php echo csrf_hash(); ?>';
-
-									let loaded = false;
-
-									function renderItem(n) {
-										const unread = n.status === 'Unread'
-											? '<span class="bullet bullet-dot bg-danger h-6px w-6px ms-1"></span>'
-											: '';
-										return `<div class="d-flex flex-stack py-3">
-											<div class="d-flex align-items-center">
-												<div class="symbol symbol-35px me-4">
-													<span class="symbol-label bg-light-${n.theme}">${n.icon}</span>
-												</div>
-												<div class="mb-0 me-2">
-													<span class="fw-bold text-gray-800 fs-7">${n.title}${unread}</span>
-													<div class="text-gray-500 fs-8">${n.desc}</div>
-												</div>
-											</div>
-											<span class="badge badge-light fs-9 text-nowrap">${n.age}</span>
-										</div>`;
-									}
-
-									function renderList(items, containerId) {
-										const el = document.getElementById(containerId);
-										if (!el) return;
-										if (!items || !items.length) {
-											el.innerHTML = '<div class="text-center text-muted fs-8 py-8">No entries found.</div>';
-											return;
-										}
-										el.innerHTML = items.map(renderItem).join('');
-									}
-
-									function loadNotifications() {
-										if (loaded) return;
-										loaded = true;
-										fetch(NOTIF_URL)
-											.then(r => r.json())
-											.then(data => {
-												if (!data.success) return;
-												renderList(data.activities, 'notif-activity-list');
-												renderList(data.alerts,     'notif-alert-list');
-
-												const badge = document.getElementById('notif-badge');
-												const label = document.getElementById('notif-unread-label');
-												if (data.unread_count > 0) {
-													badge.textContent  = data.unread_count >= 10 ? '9+' : data.unread_count;
-													badge.style.display = '';
-													label.textContent   = data.unread_count + ' unread';
-													label.style.display = '';
-												} else {
-													badge.style.display = 'none';
-													label.style.display = 'none';
-												}
-											})
-											.catch(() => {});
-									}
-
-									function markRead() {
-										fetch(MARK_READ_URL, {
-											method: 'POST',
-											headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CI_TOKEN },
-										})
-										.then(() => {
-											document.getElementById('notif-badge').style.display = 'none';
-											document.getElementById('notif-unread-label').style.display = 'none';
-										})
-										.catch(() => {});
-									}
-
-									// Load on first open; mark read immediately on open
-									const trigger = document.getElementById('kt_menu_item_wow');
-									const menu    = document.getElementById('kt_menu_notifications');
-									if (trigger) {
-										trigger.addEventListener('click', function() { loadNotifications(); markRead(); });
-									}
-									// Also load badge on page load (fast count-only not worth a separate endpoint)
-									loadNotifications();
-								})();
-								</script>
-
-								<script>
-								/* ── Notice & Announcement unread badges ─────────────────────── */
-								(function () {
-									const COUNTS_URL = '<?php echo base_url("dashboard/unread-counts"); ?>';
-									const BADGE_STYLE = 'display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f1416c;color:#fff;font-size:9px;font-weight:700;line-height:1;flex-shrink:0;margin-left:6px;';
-									const path = window.location.pathname;
-
-									function applyBadge(urlPart, count) {
-										// Remove stale badges for this url part
-										document.querySelectorAll('[data-navuli-badge="' + urlPart + '"]').forEach(el => el.remove());
-										if (!count || count < 1) return;
-										const text = count >= 10 ? '9+' : String(count);
-										document.querySelectorAll('a[href*="' + urlPart + '"]').forEach(function (link) {
-											const badge = document.createElement('span');
-											badge.setAttribute('data-navuli-badge', urlPart);
-											badge.setAttribute('data-navuli-count', String(count));
-											badge.style.cssText = BADGE_STYLE;
-											badge.textContent = text;
-											const title = link.querySelector('.menu-title');
-											if (title) title.after(badge);
-											else link.appendChild(badge);
-										});
-									}
-
-									// Roll every submenu badge up into a single badge on its parent module menu item.
-									function updateModuleBadges() {
-										document.querySelectorAll('.menu-item.menu-accordion').forEach(function (moduleEl) {
-											const moduleLink = moduleEl.querySelector(':scope > .menu-link');
-											if (!moduleLink) return;
-
-											const existing = moduleLink.querySelector(':scope > [data-navuli-module-badge]');
-											if (existing) existing.remove();
-
-											let total = 0;
-											moduleEl.querySelectorAll('.menu-sub [data-navuli-badge]').forEach(function (b) {
-												total += parseInt(b.getAttribute('data-navuli-count') || '0', 10);
-											});
-											if (total < 1) return;
-
-											const badge = document.createElement('span');
-											badge.setAttribute('data-navuli-module-badge', '1');
-											badge.style.cssText = BADGE_STYLE;
-											badge.textContent = total >= 10 ? '9+' : String(total);
-											const title = moduleLink.querySelector(':scope > .menu-title');
-											if (title) title.after(badge);
-											else moduleLink.appendChild(badge);
-										});
-									}
-
-									fetch(COUNTS_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-										.then(function (r) { return r.json(); })
-										.then(function (data) {
-											// Zero out the badge for the page currently being viewed
-											if (path.includes('dashboard/notice'))        data.notices       = 0;
-											if (path.includes('dashboard/announcement'))   data.announcements = 0;
-											if (path.includes('conduct/appeals'))         data.conduct_appeals = 0;
-											if (path.includes('event'))                   data.events        = 0;
-											if (path.includes('wall'))                    data.wall          = 0;
-											if (path.includes('message'))                 data.messages      = 0;
-											applyBadge('dashboard/notice',       data.notices);
-											applyBadge('dashboard/announcement',  data.announcements);
-											applyBadge('conduct/appeals',         data.conduct_appeals);
-											applyBadge('event',                   data.events);
-											applyBadge('wall',                    data.wall);
-											applyBadge('message',                 data.messages);
-											updateModuleBadges();
-										})
-										.catch(function () {});
-								}());
-								</script>
+								<!-- Bell dropdown content + all sidebar/module unread badges are owned by
+								     public/app/assets/js/custom/notifications/badge-store.js (single source
+								     of truth, event-driven, cross-tab synced). -->
 								<!--begin::Theme mode-->
 								<div class="app-navbar-item ms-1 ms-md-4">
 									<!--begin::Menu toggle-->

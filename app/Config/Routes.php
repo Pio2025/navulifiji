@@ -141,6 +141,7 @@ $routes->post('auth/reset-password/(:segment)', 'AuthController::processResetPas
 
 $routes->get('dashboard', 'DashboardController::index');
 $routes->get('dashboard/unread-counts', 'DashboardController::unreadCounts');
+$routes->post('dashboard/mark-read', 'DashboardController::markRead');
 
 // ============================================================================
 // NOTICES (combined parent-facing notices + announcements read-only view)

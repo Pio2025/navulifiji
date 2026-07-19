@@ -16,6 +16,25 @@ class EventModel extends Model
         'created_by', 'created_at', 'updated_at',
     ];
 
+    // ── create + broadcast ───────────────────────────────────────────────────
+
+    public function insert($data = null, bool $returnID = true)
+    {
+        $result = parent::insert($data, $returnID);
+
+        $row    = is_array($data) ? $data : (array) $data;
+        $schId  = (int) ($row['sch_id_fk'] ?? 0);
+        $itemId = $returnID ? (int) $result : (int) $this->getInsertID();
+
+        \App\Libraries\RealtimeNotifier::notify(
+            \App\Libraries\RealtimeNotifier::recipientsForSchool($schId, 'All'),
+            'event',
+            ['action' => 'new', 'itemId' => $itemId]
+        );
+
+        return $result;
+    }
+
     // ── table bootstrap ──────────────────────────────────────────────────────
 
     public function ensureTables(): void

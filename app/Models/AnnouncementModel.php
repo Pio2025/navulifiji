@@ -15,6 +15,25 @@ class AnnouncementModel extends Model
         'expires_at', 'announcement_status', 'created_at', 'updated_at',
     ];
 
+    // ── create + broadcast ───────────────────────────────────────────────────
+
+    public function insert($data = null, bool $returnID = true)
+    {
+        $result = parent::insert($data, $returnID);
+
+        $row    = is_array($data) ? $data : (array) $data;
+        $schId  = (int) ($row['sch_id_fk'] ?? 0);
+        $itemId = $returnID ? (int) $result : (int) $this->getInsertID();
+
+        \App\Libraries\RealtimeNotifier::notify(
+            \App\Libraries\RealtimeNotifier::recipientsForSchool($schId, 'All'),
+            'announcement',
+            ['action' => 'new', 'itemId' => $itemId]
+        );
+
+        return $result;
+    }
+
     public function getActiveForSchool(int $schId): array
     {
         $now = date('Y-m-d H:i:s');

@@ -41,6 +41,80 @@ class ConductAppealModel extends Model
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4");
     }
 
+    // ── create/update + broadcast ───────────────────────────────────────────
+
+    public function insert($data = null, bool $returnID = true)
+    {
+        $result = parent::insert($data, $returnID);
+
+        $row        = is_array($data) ? $data : (array) $data;
+        $incidentId = (int) ($row['incident_id'] ?? 0);
+        $itemId     = $returnID ? (int) $result : (int) $this->getInsertID();
+
+        $schId = $this->schoolForIncident($incidentId);
+        if ($schId > 0) {
+            \App\Libraries\RealtimeNotifier::notify(
+                \App\Libraries\RealtimeNotifier::recipientsWithPermission($schId, '_process_conduct_appeal'),
+                'conduct_appeal',
+                ['action' => 'new', 'itemId' => $itemId]
+            );
+        }
+
+        return $result;
+    }
+
+    public function update($id = null, $data = null): bool
+    {
+        $before = $id ? $this->find($id) : null;
+        $result = parent::update($id, $data);
+
+        $row = is_array($data) ? $data : (array) $data;
+        if ($before && isset($row['appeal_status']) && in_array($row['appeal_status'], ['Approved', 'Rejected'], true)) {
+            $userId = $this->userForAppealStudent((int) $before['student_id']);
+            if ($userId > 0) {
+                \App\Libraries\RealtimeNotifier::notify(
+                    [$userId],
+                    'conduct_appeal',
+                    ['action' => 'decided', 'itemId' => (int) $before['appeal_id'], 'status' => $row['appeal_status']]
+                );
+            }
+        }
+
+        return $result;
+    }
+
+    private function schoolForIncident(int $incidentId): int
+    {
+        if ($incidentId <= 0) return 0;
+        try {
+            $db  = \Config\Database::connect();
+            $row = $db->query("
+                SELECT adm.sch_id_fk
+                FROM conduct_incidents ci
+                INNER JOIN admission adm ON adm.admission_id = ci.student_id
+                WHERE ci.incident_id = ?
+            ", [$incidentId])->getRowArray();
+            return (int) ($row['sch_id_fk'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    private function userForAppealStudent(int $admissionId): int
+    {
+        if ($admissionId <= 0) return 0;
+        try {
+            $db  = \Config\Database::connect();
+            $row = $db->query(
+                "SELECT user_id_fk FROM admission WHERE admission_id = ?",
+                [$admissionId]
+            )->getRowArray();
+            return (int) ($row['user_id_fk'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
     public function getByIncident(int $incidentId): ?array
     {
         $row = $this->where('incident_id', $incidentId)

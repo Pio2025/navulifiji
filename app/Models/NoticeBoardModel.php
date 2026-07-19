@@ -15,6 +15,26 @@ class NoticeBoardModel extends Model
         'notice_status', 'created_at', 'updated_at',
     ];
 
+    // ── create + broadcast ───────────────────────────────────────────────────
+
+    public function insert($data = null, bool $returnID = true)
+    {
+        $result = parent::insert($data, $returnID);
+
+        $row      = is_array($data) ? $data : (array) $data;
+        $schId    = (int) ($row['sch_id_fk'] ?? 0);
+        $audience = (string) ($row['audience'] ?? 'All');
+        $itemId   = $returnID ? (int) $result : (int) $this->getInsertID();
+
+        \App\Libraries\RealtimeNotifier::notify(
+            \App\Libraries\RealtimeNotifier::recipientsForSchool($schId, $audience),
+            'notice',
+            ['action' => 'new', 'itemId' => $itemId]
+        );
+
+        return $result;
+    }
+
     /**
      * Active notices for a school, scoped by audience, newest pinned first.
      */
