@@ -589,11 +589,37 @@
 										document.querySelectorAll('a[href*="' + urlPart + '"]').forEach(function (link) {
 											const badge = document.createElement('span');
 											badge.setAttribute('data-navuli-badge', urlPart);
+											badge.setAttribute('data-navuli-count', String(count));
 											badge.style.cssText = BADGE_STYLE;
 											badge.textContent = text;
 											const title = link.querySelector('.menu-title');
 											if (title) title.after(badge);
 											else link.appendChild(badge);
+										});
+									}
+
+									// Roll every submenu badge up into a single badge on its parent module menu item.
+									function updateModuleBadges() {
+										document.querySelectorAll('.menu-item.menu-accordion').forEach(function (moduleEl) {
+											const moduleLink = moduleEl.querySelector(':scope > .menu-link');
+											if (!moduleLink) return;
+
+											const existing = moduleLink.querySelector(':scope > [data-navuli-module-badge]');
+											if (existing) existing.remove();
+
+											let total = 0;
+											moduleEl.querySelectorAll('.menu-sub [data-navuli-badge]').forEach(function (b) {
+												total += parseInt(b.getAttribute('data-navuli-count') || '0', 10);
+											});
+											if (total < 1) return;
+
+											const badge = document.createElement('span');
+											badge.setAttribute('data-navuli-module-badge', '1');
+											badge.style.cssText = BADGE_STYLE;
+											badge.textContent = total >= 10 ? '9+' : String(total);
+											const title = moduleLink.querySelector(':scope > .menu-title');
+											if (title) title.after(badge);
+											else moduleLink.appendChild(badge);
 										});
 									}
 
@@ -613,6 +639,7 @@
 											applyBadge('event',                   data.events);
 											applyBadge('wall',                    data.wall);
 											applyBadge('message',                 data.messages);
+											updateModuleBadges();
 										})
 										.catch(function () {});
 								}());
