@@ -604,9 +604,15 @@
 											if (path.includes('dashboard/notice'))        data.notices       = 0;
 											if (path.includes('dashboard/announcement'))   data.announcements = 0;
 											if (path.includes('conduct/appeals'))         data.conduct_appeals = 0;
+											if (path.includes('event'))                   data.events        = 0;
+											if (path.includes('wall'))                    data.wall          = 0;
+											if (path.includes('message'))                 data.messages      = 0;
 											applyBadge('dashboard/notice',       data.notices);
 											applyBadge('dashboard/announcement',  data.announcements);
 											applyBadge('conduct/appeals',         data.conduct_appeals);
+											applyBadge('event',                   data.events);
+											applyBadge('wall',                    data.wall);
+											applyBadge('message',                 data.messages);
 										})
 										.catch(function () {});
 								}());

@@ -766,13 +766,18 @@ class DashboardController extends BaseController
 
     public function unreadCounts(): \CodeIgniter\HTTP\ResponseInterface
     {
+        $zeroPayload = ['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0, 'events' => 0, 'wall' => 0, 'messages' => 0];
+
         if (!$this->isLoggedIn()) {
-            return $this->response->setJSON(['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0]);
+            return $this->response->setJSON($zeroPayload);
         }
 
         $userId  = (int) $this->session->get('userID');
         $roleCat = (int) $this->session->get('roleCatID');
         $db      = \Config\Database::connect();
+
+        // Instant-message unread count is global to the user, independent of school scope.
+        $messageCount = (new \App\Models\ChatModel())->getTotalUnreadCount($userId);
 
         $userRow  = (new \App\Models\UserModel())->find($userId);
         $isParent = $roleCat === 6
@@ -796,7 +801,7 @@ class DashboardController extends BaseController
             $schIds = array_map('intval', array_column($schools, 'sch_id_fk'));
 
             if (empty($schIds)) {
-                return $this->response->setJSON(['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0]);
+                return $this->response->setJSON(array_merge($zeroPayload, ['messages' => $messageCount]));
             }
 
             $inList = implode(',', $schIds);
@@ -831,21 +836,51 @@ class DashboardController extends BaseController
                 $annCount = 0;
             }
 
+            try {
+                $eventCount = (int) $db->query("
+                    SELECT COUNT(*) AS cnt
+                    FROM school_event se
+                    LEFT JOIN event_reads er ON er.event_id = se.event_id AND er.user_id = ?
+                    WHERE se.sch_id_fk IN ({$inList})
+                      AND er.er_id IS NULL
+                ", [$userId])->getRow()->cnt;
+            } catch (\Throwable $e) {
+                $eventCount = 0;
+            }
+
+            try {
+                $wallCount = (int) $db->query("
+                    SELECT COUNT(*) AS cnt
+                    FROM wall_post wp
+                    LEFT JOIN wall_reads wr ON wr.wall_post_id = wp.wall_post_id AND wr.user_id = ?
+                    WHERE wp.sch_id_fk IN ({$inList})
+                      AND wp.post_status = 'Active'
+                      AND wr.wr_id IS NULL
+                ", [$userId])->getRow()->cnt;
+            } catch (\Throwable $e) {
+                $wallCount = 0;
+            }
+
             $conductAppealCount = 0;
 
         } else {
             $schId = (int) $this->session->get('schID');
             if ($schId <= 0) {
-                return $this->response->setJSON(['notices' => 0, 'announcements' => 0, 'conduct_appeals' => 0]);
+                return $this->response->setJSON(array_merge($zeroPayload, ['messages' => $messageCount]));
             }
 
             $annModel    = new \App\Models\AnnouncementModel();
             $noticeModel = new \App\Models\NoticeBoardModel();
+            $eventModel  = new \App\Models\EventModel();
+            $wallModel   = new \App\Models\WallModel();
+
+            $isSuperAdmin = (int) $this->session->get('roleID') === 1;
 
             $noticeCount = $noticeModel->getUnreadCountForUser($userId, $schId, $audience);
             $annCount    = $annModel->getUnreadCountForUser($userId, $schId);
+            $eventCount  = $eventModel->getUnreadCountForUser($userId, $isSuperAdmin ? 0 : $schId);
+            $wallCount   = $wallModel->getUnreadCountForUser($userId, $schId);
 
-            $isSuperAdmin       = (int) $this->session->get('roleID') === 1;
             $conductAppealCount = 0;
             if ($isSuperAdmin || $this->grant_access('_process_conduct_appeal')) {
                 $conductAppealCount = (new \App\Models\ConductAppealModel())
@@ -857,6 +892,9 @@ class DashboardController extends BaseController
             'notices'         => $noticeCount,
             'announcements'   => $annCount,
             'conduct_appeals' => $conductAppealCount,
+            'events'          => $eventCount,
+            'wall'            => $wallCount,
+            'messages'        => $messageCount,
         ]);
     }
 }

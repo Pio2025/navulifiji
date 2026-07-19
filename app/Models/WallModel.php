@@ -148,6 +148,55 @@ class WallModel extends Model
         $db->table('wall_post')->where('wall_post_id', $postId)->update(['post_status' => 'Deleted', 'updated_at' => date('Y-m-d H:i:s')]);
     }
 
+    // ─── read tracking ──────────────────────────────────────────────────────
+
+    /**
+     * Mark all active posts in scope (schId = 0 means all schools) as read for this user.
+     */
+    public function markAllReadForUser(int $userId, int $schId): void
+    {
+        if ($userId <= 0) return;
+        $db = \Config\Database::connect();
+
+        $schClause = $schId > 0 ? 'AND wp.sch_id_fk = ?' : '';
+        $params    = $schId > 0 ? [$userId, $schId] : [$userId];
+
+        try {
+            $db->query("
+                INSERT IGNORE INTO wall_reads (user_id, wall_post_id, read_at)
+                SELECT ?, wp.wall_post_id, NOW()
+                FROM wall_post wp
+                WHERE wp.post_status = 'Active' {$schClause}
+            ", $params);
+        } catch (\Throwable $e) {
+            // wall_reads table may not exist yet — migrate to enable read tracking
+        }
+    }
+
+    /**
+     * Count active posts in scope (schId = 0 means all schools) not yet read by this user.
+     */
+    public function getUnreadCountForUser(int $userId, int $schId): int
+    {
+        if ($userId <= 0) return 0;
+        $db = \Config\Database::connect();
+
+        $schClause = $schId > 0 ? 'AND wp.sch_id_fk = ?' : '';
+        $params    = $schId > 0 ? [$userId, $schId] : [$userId];
+
+        try {
+            $row = $db->query("
+                SELECT COUNT(*) AS cnt
+                FROM wall_post wp
+                LEFT JOIN wall_reads wr ON wr.wall_post_id = wp.wall_post_id AND wr.user_id = ?
+                WHERE wp.post_status = 'Active' AND wr.wr_id IS NULL {$schClause}
+            ", $params)->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
     // ─── media ───────────────────────────────────────────────────────────────
 
     public function addMedia(int $postId, string $type, string $src, ?string $name = null): int

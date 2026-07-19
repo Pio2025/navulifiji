@@ -115,6 +115,55 @@ class EventModel extends Model
         )->getResultArray();
     }
 
+    // ── read tracking ────────────────────────────────────────────────────────
+
+    /**
+     * Mark all events in scope (schId = 0 means all schools) as read for this user.
+     */
+    public function markAllReadForUser(int $userId, int $schId): void
+    {
+        if ($userId <= 0) return;
+        $db = \Config\Database::connect();
+
+        $schClause = $schId > 0 ? 'AND se.sch_id_fk = ?' : '';
+        $params    = $schId > 0 ? [$userId, $schId] : [$userId];
+
+        try {
+            $db->query("
+                INSERT IGNORE INTO event_reads (user_id, event_id, read_at)
+                SELECT ?, se.event_id, NOW()
+                FROM school_event se
+                WHERE 1 = 1 {$schClause}
+            ", $params);
+        } catch (\Throwable $e) {
+            // event_reads table may not exist yet — migrate to enable read tracking
+        }
+    }
+
+    /**
+     * Count events in scope (schId = 0 means all schools) not yet read by this user.
+     */
+    public function getUnreadCountForUser(int $userId, int $schId): int
+    {
+        if ($userId <= 0) return 0;
+        $db = \Config\Database::connect();
+
+        $schClause = $schId > 0 ? 'AND se.sch_id_fk = ?' : '';
+        $params    = $schId > 0 ? [$userId, $schId] : [$userId];
+
+        try {
+            $row = $db->query("
+                SELECT COUNT(*) AS cnt
+                FROM school_event se
+                LEFT JOIN event_reads er ON er.event_id = se.event_id AND er.user_id = ?
+                WHERE er.er_id IS NULL {$schClause}
+            ", $params)->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
     // ── helpers ──────────────────────────────────────────────────────────────
 
     public static function typeColor(string $type): string

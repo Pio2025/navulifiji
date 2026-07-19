@@ -25,6 +25,8 @@ class EventController extends BaseController
             'to'     => $this->request->getGet('to')     ?? '',
         ];
 
+        $this->eventModel->markAllReadForUser((int) $this->session->get('userID'), $schId);
+
         $this->setPageData('Events', 'Event', 'Event Listing');
         $data = $this->loadCommonData('app/event/index', [
             'events'      => $this->eventModel->getAll($schId, $filters),

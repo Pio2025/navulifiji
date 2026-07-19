@@ -134,6 +134,8 @@ class WallController extends BaseController
         $schId = $this->resolveSchoolId();
         if (!$schId) return redirect()->to('school/dashboard')->with('error', 'No school linked to your account.');
 
+        $this->wallModel->markAllReadForUser($userId, $schId);
+
         $db = \Config\Database::connect();
 
         $schoolRow   = $db->table('school')->select('sch_name, sch_motto, sch_logo')->where('sch_id', $schId)->get()->getRowArray();

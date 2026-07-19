@@ -135,12 +135,27 @@
 					<?php endif; ?>
 					<!--end::Info Notice-->
 					
+					<!--begin::Permission Search-->
+					<div class="mb-6">
+						<div class="position-relative">
+							<i class="ki-duotone ki-magnifier fs-3 text-gray-500 position-absolute top-50 translate-middle-y ms-4">
+								<span class="path1"></span>
+								<span class="path2"></span>
+							</i>
+							<input type="text" id="permSearch" class="form-control form-control-solid ps-12" placeholder="Search permissions..." autocomplete="off" />
+						</div>
+					</div>
+					<!--end::Permission Search-->
+
 					<!--begin::Permissions Grid-->
+					<div id="permissionGridWrap">
 					<?php
 					// Use the library to render permissions
 					$permissionViewLib = new \App\Libraries\PermissionViewLibrary();
 					echo $permissionViewLib->renderPermissionGrid($role_id, $permissions, $canEditPermissions);
 					?>
+					</div>
+					<div id="permSearchEmpty" class="text-center text-muted py-10 d-none">No permissions match your search.</div>
 					<!--end::Permissions Grid-->
 					
 				</form>
@@ -175,6 +190,29 @@
 "use strict";
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Quick client-side permission search
+    const permSearch = document.getElementById('permSearch');
+    const gridWrap    = document.getElementById('permissionGridWrap');
+    const emptyMsg    = document.getElementById('permSearchEmpty');
+    if (permSearch && gridWrap) {
+        const cards = Array.from(gridWrap.querySelectorAll('.col-md-4'));
+        const rows  = Array.from(gridWrap.querySelectorAll('.row'));
+        permSearch.addEventListener('keyup', function (e) {
+            const term = e.target.value.trim().toLowerCase();
+            let visibleCount = 0;
+            cards.forEach(function (card) {
+                const matches = term === '' || card.textContent.toLowerCase().includes(term);
+                card.style.display = matches ? '' : 'none';
+                if (matches) visibleCount++;
+            });
+            rows.forEach(function (row) {
+                const hasVisible = row.querySelector('.col-md-4:not([style*="display: none"])');
+                row.style.display = hasVisible ? '' : 'none';
+            });
+            if (emptyMsg) emptyMsg.classList.toggle('d-none', visibleCount !== 0);
+        });
+    }
+
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {
