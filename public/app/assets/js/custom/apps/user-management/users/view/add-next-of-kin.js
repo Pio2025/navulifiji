@@ -157,105 +157,121 @@ var KTNextOfKinManagement = (function () {
                 });
             }
             
+            // Shared AJAX submit (used for both manually-validated "Create New"
+            // entries and pre-validated "Link Existing User" entries)
+            function submitNextOfKinForm() {
+                submitButton.setAttribute("data-kt-indicator", "on");
+                submitButton.disabled = true;
+
+                const formData = new FormData(form);
+                const baseUrl = window.location.origin;
+                const nextOfKinId = document.getElementById("next_of_kin_id").value;
+                const url = nextOfKinId ?
+                    baseUrl + "/nextofkin/update" :
+                    baseUrl + "/nextofkin/add";
+
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        submitButton.removeAttribute("data-kt-indicator");
+                        submitButton.disabled = false;
+
+                        if (response.success) {
+                            Swal.fire({
+                                text: response.message,
+                                icon: "success",
+                                buttonsStyling: false,
+                                confirmButtonText: "Ok, got it!",
+                                customClass: {
+                                    confirmButton: "btn btn-primary"
+                                }
+                            }).then(function () {
+                                form.reset();
+                                if (validator) validator.resetForm();
+                                resetSourceTabs();
+
+                                const modalElement = document.getElementById('kt_modal_add_next_of_kin');
+                                const modalInstance = bootstrap.Modal.getInstance(modalElement);
+                                if (modalInstance) {
+                                    modalInstance.hide();
+                                }
+
+                                if (nextOfKinId) {
+                                    updateTableRow(response.data);
+                                } else {
+                                    addTableRow(response.data);
+                                }
+                            });
+                        } else {
+                            Swal.fire({
+                                text: response.message || "An error occurred",
+                                icon: "error",
+                                buttonsStyling: false,
+                                confirmButtonText: "Ok, got it!",
+                                customClass: {
+                                    confirmButton: "btn btn-primary"
+                                }
+                            });
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        submitButton.removeAttribute("data-kt-indicator");
+                        submitButton.disabled = false;
+
+                        console.error("AJAX Error:", xhr.responseText);
+
+                        Swal.fire({
+                            text: "An error occurred while saving. Please try again.",
+                            icon: "error",
+                            buttonsStyling: false,
+                            confirmButtonText: "Ok, got it!",
+                            customClass: {
+                                confirmButton: "btn btn-primary"
+                            }
+                        });
+                    }
+                });
+            }
+
             // Submit button handler
             const submitButton = modal.querySelector('[data-kt-users-modal-action="submit"]');
             if (submitButton) {
                 submitButton.addEventListener("click", (e) => {
                     e.preventDefault();
-                    
+
+                    const existingPane = document.getElementById("nok_pane_existing");
+                    const isLinkingExisting = existingPane && existingPane.classList.contains("active");
+
+                    if (isLinkingExisting) {
+                        const linkedUserId = document.getElementById("linked_user_id_fk").value;
+                        if (!linkedUserId) {
+                            Swal.fire({
+                                text: "Please search and select a user to link.",
+                                icon: "warning",
+                                buttonsStyling: false,
+                                confirmButtonText: "Ok, got it!",
+                                customClass: {
+                                    confirmButton: "btn btn-primary"
+                                }
+                            });
+                            return;
+                        }
+                        // Data was populated from a verified user account on selection —
+                        // skip the free-text FormValidation rules built for manual entry.
+                        submitNextOfKinForm();
+                        return;
+                    }
+
                     if (validator) {
                         validator.validate().then(function (status) {
                             console.log("Validation status:", status);
-                            
+
                             if (status == "Valid") {
-                                // Show loading indicator
-                                submitButton.setAttribute("data-kt-indicator", "on");
-                                submitButton.disabled = true;
-                                
-                                // Get form data
-                                const formData = new FormData(form);
-                                
-                                // Get base URL from a known element or use window.location
-                                const baseUrl = window.location.origin;
-                                
-                                // Determine if add or edit
-                                const nextOfKinId = document.getElementById("next_of_kin_id").value;
-                                const url = nextOfKinId ? 
-                                    baseUrl + "/nextofkin/update" : 
-                                    baseUrl + "/nextofkin/add";
-                                
-                                // AJAX request
-                                $.ajax({
-                                    url: url,
-                                    type: "POST",
-                                    data: formData,
-                                    processData: false,
-                                    contentType: false,
-                                    success: function(response) {
-                                        // Remove loading indicator
-                                        submitButton.removeAttribute("data-kt-indicator");
-                                        submitButton.disabled = false;
-                                        
-                                        if (response.success) {
-                                            Swal.fire({
-                                                text: response.message,
-                                                icon: "success",
-                                                buttonsStyling: false,
-                                                confirmButtonText: "Ok, got it!",
-                                                customClass: {
-                                                    confirmButton: "btn btn-primary"
-                                                }
-                                            }).then(function () {
-                                                // Reset form
-                                                form.reset();
-                                                validator.resetForm();
-                                                
-                                                // Close modal properly
-                                                const modalElement = document.getElementById('kt_modal_add_next_of_kin');
-                                                const modalInstance = bootstrap.Modal.getInstance(modalElement);
-                                                if (modalInstance) {
-                                                    modalInstance.hide();
-                                                }
-                                                
-                                                // Reload table
-                                                if (nextOfKinId) {
-                                                    // Update existing row
-                                                    updateTableRow(response.data);
-                                                } else {
-                                                    // Add new row
-                                                    addTableRow(response.data);
-                                                }
-                                            });
-                                        } else {
-                                            Swal.fire({
-                                                text: response.message || "An error occurred",
-                                                icon: "error",
-                                                buttonsStyling: false,
-                                                confirmButtonText: "Ok, got it!",
-                                                customClass: {
-                                                    confirmButton: "btn btn-primary"
-                                                }
-                                            });
-                                        }
-                                    },
-                                    error: function(xhr, status, error) {
-                                        // Remove loading indicator
-                                        submitButton.removeAttribute("data-kt-indicator");
-                                        submitButton.disabled = false;
-                                        
-                                        console.error("AJAX Error:", xhr.responseText);
-                                        
-                                        Swal.fire({
-                                            text: "An error occurred while saving. Please try again.",
-                                            icon: "error",
-                                            buttonsStyling: false,
-                                            confirmButtonText: "Ok, got it!",
-                                            customClass: {
-                                                confirmButton: "btn btn-primary"
-                                            }
-                                        });
-                                    }
-                                });
+                                submitNextOfKinForm();
                             } else {
                                 Swal.fire({
                                     text: "Sorry, looks like there are some errors detected, please try again.",
@@ -271,9 +287,131 @@ var KTNextOfKinManagement = (function () {
                     }
                 });
             }
+
+            initExistingUserSearch();
         }
     };
 })();
+
+// Toggle the shared fields between editable (manual entry) and read-only
+// (populated from a linked user account)
+function setNextOfKinFieldsLocked(locked) {
+    ["next_of_kin_name", "next_of_kin_phone", "next_of_kin_email", "next_of_kin_address"].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.readOnly = locked;
+    });
+}
+
+// Reset the Create New / Link Existing User tabs back to their default state
+function resetSourceTabs() {
+    const newTabLink = document.querySelector('[href="#nok_pane_new"]');
+    if (newTabLink && window.bootstrap) {
+        bootstrap.Tab.getOrCreateInstance(newTabLink).show();
+    }
+
+    document.getElementById("linked_user_id_fk").value = "";
+    setNextOfKinFieldsLocked(false);
+
+    const card = document.getElementById("nok_selected_user_card");
+    if (card) card.classList.add("d-none");
+
+    const searchSelect = $('#nok_existing_user_search');
+    if (searchSelect.data('select2')) {
+        searchSelect.val(null).trigger('change');
+    }
+
+    const newTabLi = document.getElementById("nok_tab_new_li");
+    const existingTabLi = document.getElementById("nok_tab_existing_li");
+    if (newTabLi) newTabLi.classList.remove("d-none");
+    if (existingTabLi) existingTabLi.classList.remove("d-none");
+}
+
+// Initialize the "Link Existing User" autosuggest search (Facebook-style: photo + name)
+function initExistingUserSearch() {
+    const $search = $('#nok_existing_user_search');
+    if (!$search.length || $search.data('select2')) return;
+
+    $search.select2({
+        dropdownParent: $('#kt_modal_add_next_of_kin'),
+        placeholder: 'Search by name...',
+        minimumInputLength: 2,
+        ajax: {
+            url: window.location.origin + '/user/searchNonStudents',
+            dataType: 'json',
+            delay: 300,
+            data: function (params) { return { q: params.term }; },
+            processResults: function (data) {
+                return {
+                    results: (data.results || []).map(function (u) {
+                        return {
+                            id: u.id,
+                            text: u.text,
+                            photo: u.photo,
+                            role: u.role,
+                            phone: u.phone,
+                            email: u.email,
+                            address: u.address
+                        };
+                    })
+                };
+            },
+            cache: true
+        },
+        templateResult: function (u) {
+            if (!u.id) return u.text;
+            return $(
+                '<div class="d-flex align-items-center">' +
+                    '<img src="' + u.photo + '" class="rounded-circle me-2" width="32" height="32" style="object-fit:cover">' +
+                    '<div>' +
+                        '<div>' + escapeHtml(u.text) + '</div>' +
+                        '<div class="text-muted fs-8">' + escapeHtml(u.role || '') + '</div>' +
+                    '</div>' +
+                '</div>'
+            );
+        },
+        templateSelection: function (u) {
+            return u.text || u.id;
+        }
+    });
+
+    $search.on('select2:select', function (e) {
+        const u = e.params.data;
+
+        document.getElementById('linked_user_id_fk').value = u.id;
+        document.getElementById('next_of_kin_name').value = u.text || '';
+        document.getElementById('next_of_kin_phone').value = u.phone || '';
+        document.getElementById('next_of_kin_email').value = u.email || '';
+        document.getElementById('next_of_kin_address').value = u.address || '';
+        setNextOfKinFieldsLocked(true);
+
+        document.getElementById('nok_selected_photo').src = u.photo;
+        document.getElementById('nok_selected_name').textContent = u.text;
+        document.getElementById('nok_selected_role').textContent = u.role || '';
+        document.getElementById('nok_selected_user_card').classList.remove('d-none');
+    });
+
+    $('#nok_clear_selected_user').on('click', function () {
+        $search.val(null).trigger('change');
+        document.getElementById('nok_selected_user_card').classList.add('d-none');
+        document.getElementById('linked_user_id_fk').value = '';
+        setNextOfKinFieldsLocked(false);
+        document.getElementById('next_of_kin_name').value = '';
+        document.getElementById('next_of_kin_phone').value = '';
+        document.getElementById('next_of_kin_email').value = '';
+        document.getElementById('next_of_kin_address').value = '';
+    });
+
+    // Switching back to "Create New" clears any linked-user state
+    const newTabLink = document.querySelector('[href="#nok_pane_new"]');
+    if (newTabLink) {
+        newTabLink.addEventListener('shown.bs.tab', function () {
+            document.getElementById('linked_user_id_fk').value = '';
+            setNextOfKinFieldsLocked(false);
+            document.getElementById('nok_selected_user_card').classList.add('d-none');
+            $search.val(null).trigger('change');
+        });
+    }
+}
 
 // Open Add Modal
 function openAddModal() {
@@ -303,11 +441,14 @@ function openAddModal() {
         form.reset();
         document.getElementById("next_of_kin_id").value = "";
         document.getElementById("next_of_kin_modal_title").textContent = "Add Next of Kin";
-        
+
         // Uncheck checkboxes
         document.getElementById("is_primary_contact").checked = false;
         document.getElementById("is_emergency_contact").checked = false;
         document.getElementById("authorized_pickup").checked = false;
+
+        // Both source tabs are available when adding a brand new contact
+        resetSourceTabs();
     }
 }
 
@@ -351,7 +492,11 @@ function editNextOfKin(kinId) {
                 
                 // Change modal title
                 document.getElementById("next_of_kin_modal_title").textContent = "Edit Next of Kin";
-                
+
+                // Editing is always manual-entry; linking is only offered when adding new
+                resetSourceTabs();
+                document.getElementById("nok_tab_existing_li").classList.add("d-none");
+
                 // Show modal
                 const modal = new bootstrap.Modal(document.getElementById("kt_modal_add_next_of_kin"));
                 modal.show();

@@ -3135,6 +3135,58 @@ class UserController extends BaseController
         return $this->response->setJSON(['success' => true, 'results' => $output]);
     }
 
+    /**
+     * GET user/searchNonStudents — Facebook-style autosuggest for the "link
+     * existing user" next-of-kin flow. Excludes Student-category accounts since
+     * a student cannot be someone's guardian/emergency contact.
+     */
+    public function searchNonStudents()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'results' => []]);
+        }
+
+        $q = trim($this->request->getGet('q') ?? '');
+        if (strlen($q) < 2) {
+            return $this->response->setJSON(['success' => true, 'results' => []]);
+        }
+
+        $db = \Config\Database::connect();
+        $results = $db->query("
+            SELECT u.user_id, u.fname, u.lname, u.profile_photo,
+                   u.phone, u.email, u.address,
+                   r.role_name, rc.role_cat_name
+            FROM users u
+            INNER JOIN user_role ur  ON ur.user_id_fk  = u.user_id AND ur.user_role_status = 'Active'
+            INNER JOIN role r        ON r.role_id       = ur.role_id_fk
+            INNER JOIN role_category rc ON rc.role_cat_id = r.role_cat_id_fk
+            WHERE rc.role_cat_id != 4
+              AND u.user_status = 'Active'
+              AND (u.fname LIKE ? OR u.lname LIKE ? OR CONCAT(u.fname,' ',u.lname) LIKE ?)
+            ORDER BY u.fname, u.lname
+            LIMIT 15
+        ", ["%$q%", "%$q%", "%$q%"])->getResultArray();
+
+        $output = [];
+        foreach ($results as $u) {
+            $photo = $u['profile_photo'] && file_exists(FCPATH . 'uploads/profilePhoto/' . $u['profile_photo'])
+                ? base_url('uploads/profilePhoto/' . $u['profile_photo'])
+                : base_url('app/assets/media/avatars/blank.png');
+
+            $output[] = [
+                'id'      => $u['user_id'],
+                'text'    => trim($u['fname'] . ' ' . $u['lname']),
+                'photo'   => $photo,
+                'role'    => $u['role_name'],
+                'phone'   => $u['phone'],
+                'email'   => $u['email'],
+                'address' => $u['address'],
+            ];
+        }
+
+        return $this->response->setJSON(['success' => true, 'results' => $output]);
+    }
+
     // ─── Notifications page ────────────────────────────────────────────────────
 
     /**

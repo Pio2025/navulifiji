@@ -2006,8 +2006,40 @@
                     <!--begin::Hidden fields-->
                     <input type="hidden" name="next_of_kin_id" id="next_of_kin_id" value="" />
                     <input type="hidden" name="user_id_fk" id="user_id_fk" value="<?= $userID ?? '' ?>" />
+                    <input type="hidden" name="linked_user_id_fk" id="linked_user_id_fk" value="" />
                     <!--end::Hidden fields-->
-                    
+
+                    <!--begin::Source tabs-->
+                    <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0 fw-bold mb-5" id="nok_source_tabs">
+                        <li class="nav-item" id="nok_tab_new_li">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#nok_pane_new">Create New</a>
+                        </li>
+                        <li class="nav-item" id="nok_tab_existing_li">
+                            <a class="nav-link" data-bs-toggle="tab" href="#nok_pane_existing">Link Existing User</a>
+                        </li>
+                    </ul>
+                    <div class="tab-content mb-2">
+                        <div class="tab-pane fade show active" id="nok_pane_new">
+                            <div class="text-muted fs-7">Enter the contact's details below.</div>
+                        </div>
+                        <div class="tab-pane fade" id="nok_pane_existing">
+                            <div class="fv-row mb-3">
+                                <label class="fs-6 fw-semibold form-label mb-2">Search User</label>
+                                <select class="form-select" id="nok_existing_user_search" style="width:100%"></select>
+                                <div class="form-text">Search staff, teachers, or parents/guardians already in the system (students excluded)</div>
+                            </div>
+                            <div id="nok_selected_user_card" class="d-none align-items-center p-3 mb-3 border rounded bg-light-primary">
+                                <img id="nok_selected_photo" class="rounded-circle me-3" width="50" height="50" style="object-fit:cover" src="" alt="" />
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-gray-800" id="nok_selected_name"></div>
+                                    <div class="text-muted fs-7" id="nok_selected_role"></div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-light" id="nok_clear_selected_user">Change</button>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Source tabs-->
+
                     <!--begin::Row-->
                     <div class="row g-5 mb-7">
                         <!--begin::Full Name-->

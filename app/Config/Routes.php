@@ -644,6 +644,7 @@ $routes->post('attendance/subject/delete-file/(:num)',    'SubjectAttendanceCont
 $routes->post('user/link-child',                  'UserController::linkChild');
 $routes->post('user/unlink-child/(:num)',          'UserController::unlinkChild/$1');
 $routes->get( 'user/searchStudents',              'UserController::searchStudents');
+$routes->get( 'user/searchNonStudents',           'UserController::searchNonStudents');
 
 // ============================================================================
 // WALL Routes

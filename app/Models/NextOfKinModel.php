@@ -13,6 +13,7 @@ class NextOfKinModel extends Model
     // Allowed fields (for security)
     protected $allowedFields = [
         'user_id_fk',
+        'linked_user_id_fk',
         'next_of_kin_name',
         'next_of_kin_relationship',
         'next_of_kin_address',
