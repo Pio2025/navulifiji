@@ -315,10 +315,12 @@ function resetSourceTabs() {
     const card = document.getElementById("nok_selected_user_card");
     if (card) card.classList.add("d-none");
 
-    const searchSelect = $('#nok_existing_user_search');
-    if (searchSelect.data('select2')) {
-        searchSelect.val(null).trigger('change');
+    const searchInput = document.getElementById('nok_existing_user_search');
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.classList.remove('d-none');
     }
+    hideSuggestions();
 
     const newTabLi = document.getElementById("nok_tab_new_li");
     const existingTabLi = document.getElementById("nok_tab_existing_li");
@@ -326,57 +328,47 @@ function resetSourceTabs() {
     if (existingTabLi) existingTabLi.classList.remove("d-none");
 }
 
-// Initialize the "Link Existing User" autosuggest search (Facebook-style: photo + name)
-function initExistingUserSearch() {
-    const $search = $('#nok_existing_user_search');
-    if (!$search.length || $search.data('select2')) return;
+function hideSuggestions() {
+    const box = document.getElementById('nok_search_suggestions');
+    if (box) {
+        box.classList.add('d-none');
+        box.innerHTML = '';
+    }
+}
 
-    $search.select2({
-        dropdownParent: $('#kt_modal_add_next_of_kin'),
-        placeholder: 'Search by name...',
-        minimumInputLength: 2,
-        ajax: {
-            url: window.location.origin + '/user/searchNonStudents',
-            dataType: 'json',
-            delay: 300,
-            data: function (params) { return { q: params.term }; },
-            processResults: function (data) {
-                return {
-                    results: (data.results || []).map(function (u) {
-                        return {
-                            id: u.id,
-                            text: u.text,
-                            photo: u.photo,
-                            role: u.role,
-                            phone: u.phone,
-                            email: u.email,
-                            address: u.address
-                        };
-                    })
-                };
-            },
-            cache: true
-        },
-        templateResult: function (u) {
-            if (!u.id) return u.text;
-            return $(
-                '<div class="d-flex align-items-center">' +
-                    '<img src="' + u.photo + '" class="rounded-circle me-2" width="32" height="32" style="object-fit:cover">' +
+// Initialize the "Link Existing User" autosuggest search (Facebook-style: type a
+// name, matching users appear in a dropdown list below the field, click to select)
+function initExistingUserSearch() {
+    const searchInput = document.getElementById('nok_existing_user_search');
+    const suggestionBox = document.getElementById('nok_search_suggestions');
+    if (!searchInput || !suggestionBox || searchInput.dataset.bound === '1') return;
+    searchInput.dataset.bound = '1';
+
+    let debounceTimer = null;
+    let requestToken = 0;
+
+    function renderSuggestions(users) {
+        if (!users.length) {
+            suggestionBox.innerHTML = '<div class="nok-suggestion-empty">No matching users found</div>';
+            suggestionBox.classList.remove('d-none');
+            return;
+        }
+
+        suggestionBox.innerHTML = users.map(function (u) {
+            return (
+                '<div class="nok-suggestion-item" data-user=\'' + JSON.stringify(u).replace(/'/g, '&#39;') + '\'>' +
+                    '<img src="' + u.photo + '" class="rounded-circle me-2" width="36" height="36" style="object-fit:cover" alt="">' +
                     '<div>' +
-                        '<div>' + escapeHtml(u.text) + '</div>' +
-                        '<div class="text-muted fs-8">' + escapeHtml(u.role || '') + '</div>' +
+                        '<div class="nok-suggestion-name">' + escapeHtml(u.text) + '</div>' +
+                        '<div class="nok-suggestion-role">' + escapeHtml(u.role || '') + '</div>' +
                     '</div>' +
                 '</div>'
             );
-        },
-        templateSelection: function (u) {
-            return u.text || u.id;
-        }
-    });
+        }).join('');
+        suggestionBox.classList.remove('d-none');
+    }
 
-    $search.on('select2:select', function (e) {
-        const u = e.params.data;
-
+    function selectUser(u) {
         document.getElementById('linked_user_id_fk').value = u.id;
         document.getElementById('next_of_kin_name').value = u.text || '';
         document.getElementById('next_of_kin_phone').value = u.phone || '';
@@ -388,10 +380,52 @@ function initExistingUserSearch() {
         document.getElementById('nok_selected_name').textContent = u.text;
         document.getElementById('nok_selected_role').textContent = u.role || '';
         document.getElementById('nok_selected_user_card').classList.remove('d-none');
+
+        searchInput.value = '';
+        searchInput.classList.add('d-none');
+        hideSuggestions();
+    }
+
+    searchInput.addEventListener('input', function () {
+        const term = searchInput.value.trim();
+        clearTimeout(debounceTimer);
+
+        if (term.length < 2) {
+            hideSuggestions();
+            return;
+        }
+
+        debounceTimer = setTimeout(function () {
+            const myToken = ++requestToken;
+            $.ajax({
+                url: window.location.origin + '/user/searchNonStudents',
+                method: 'GET',
+                dataType: 'json',
+                data: { q: term }
+            }).done(function (data) {
+                if (myToken !== requestToken) return; // stale response, a newer search superseded it
+                renderSuggestions(data.results || []);
+            });
+        }, 300);
+    });
+
+    suggestionBox.addEventListener('click', function (e) {
+        const item = e.target.closest('.nok-suggestion-item');
+        if (!item || !item.dataset.user) return;
+        selectUser(JSON.parse(item.dataset.user));
+    });
+
+    document.addEventListener('click', function (e) {
+        if (e.target !== searchInput && !suggestionBox.contains(e.target)) {
+            hideSuggestions();
+        }
+    });
+
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') hideSuggestions();
     });
 
     $('#nok_clear_selected_user').on('click', function () {
-        $search.val(null).trigger('change');
         document.getElementById('nok_selected_user_card').classList.add('d-none');
         document.getElementById('linked_user_id_fk').value = '';
         setNextOfKinFieldsLocked(false);
@@ -399,6 +433,10 @@ function initExistingUserSearch() {
         document.getElementById('next_of_kin_phone').value = '';
         document.getElementById('next_of_kin_email').value = '';
         document.getElementById('next_of_kin_address').value = '';
+
+        searchInput.classList.remove('d-none');
+        searchInput.value = '';
+        searchInput.focus();
     });
 
     // Switching back to "Create New" clears any linked-user state
@@ -408,7 +446,9 @@ function initExistingUserSearch() {
             document.getElementById('linked_user_id_fk').value = '';
             setNextOfKinFieldsLocked(false);
             document.getElementById('nok_selected_user_card').classList.add('d-none');
-            $search.val(null).trigger('change');
+            searchInput.classList.remove('d-none');
+            searchInput.value = '';
+            hideSuggestions();
         });
     }
 }

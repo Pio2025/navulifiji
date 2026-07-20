@@ -1929,6 +1929,49 @@
 .collapsible:hover {
     color: #009ef7;
 }
+
+.nok-suggestion-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1075;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e4e6ef;
+    border-radius: 0.475rem;
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
+    margin-top: 2px;
+}
+
+.nok-suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+
+.nok-suggestion-item:hover,
+.nok-suggestion-item.active {
+    background-color: #f5f8fa;
+}
+
+.nok-suggestion-item .nok-suggestion-name {
+    font-weight: 500;
+    color: #181c32;
+}
+
+.nok-suggestion-item .nok-suggestion-role {
+    font-size: 0.85rem;
+    color: #7e8299;
+}
+
+.nok-suggestion-empty {
+    padding: 0.75rem;
+    color: #7e8299;
+    font-size: 0.9rem;
+}
 </style>
 
 <!--begin::Modal - Link Child-->
@@ -2023,9 +2066,10 @@
                             <div class="text-muted fs-7">Enter the contact's details below.</div>
                         </div>
                         <div class="tab-pane fade" id="nok_pane_existing">
-                            <div class="fv-row mb-3">
+                            <div class="fv-row mb-3 position-relative">
                                 <label class="fs-6 fw-semibold form-label mb-2">Search User</label>
-                                <select class="form-select" id="nok_existing_user_search" style="width:100%"></select>
+                                <input type="text" class="form-control" id="nok_existing_user_search" placeholder="Start typing a name..." autocomplete="off" />
+                                <div id="nok_search_suggestions" class="nok-suggestion-list d-none"></div>
                                 <div class="form-text">Search staff, teachers, or parents/guardians already in the system (students excluded)</div>
                             </div>
                             <div id="nok_selected_user_card" class="d-none align-items-center p-3 mb-3 border rounded bg-light-primary">
