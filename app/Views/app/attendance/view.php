@@ -76,7 +76,8 @@
                     <?= esc(trim(($c['fname'] ?? '') . ' ' . ($c['lname'] ?? ''))) ?> has no active classroom this year.
                 </div>
                 <?php else: ?>
-                <?= $this->include('app/attendance/_mini_grid', ['panel' => $c]) ?>
+                <?php $this->setVar('panel', $c); ?>
+                <?= $this->include('app/attendance/_mini_grid') ?>
                 <?php endif; ?>
             </div>
             <?php endforeach; ?>
