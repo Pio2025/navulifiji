@@ -207,6 +207,9 @@ var KTNextOfKinManagement = (function () {
                                     if (response.auto_linked_parent && typeof addLinkedParentCard === 'function') {
                                         addLinkedParentCard(response.auto_linked_parent);
                                     }
+                                    if (typeof updateNokToolbar === 'function' && typeof currentNokRowCount === 'function') {
+                                        updateNokToolbar(currentNokRowCount());
+                                    }
                                 }
                             });
                         } else {
@@ -617,6 +620,9 @@ function deleteNextOfKin(kinId) {
                             removeTableRow(kinId);
                             if (response.removed_parent_link_id && typeof removeLinkedParentCard === 'function') {
                                 removeLinkedParentCard(response.removed_parent_link_id);
+                            }
+                            if (typeof updateNokToolbar === 'function' && typeof currentNokRowCount === 'function') {
+                                updateNokToolbar(currentNokRowCount());
                             }
                         });
                     } else {

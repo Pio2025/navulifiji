@@ -739,29 +739,24 @@
                                 </div>
                                 <!--end::Card title-->
                                 <!--begin::Card toolbar-->
-                                <?php
-                                $currentKinCount = count($next_of_kin);
-                                if ($currentKinCount < 3 && !($isOwnProfile ?? false)):
-                                ?>
-                                    <div class="card-toolbar">
-                                        <button type="button" class="btn btn-light-primary btn-sm" data-bs-toggle="modal" data-bs-target="#kt_modal_add_next_of_kin" onclick="openAddModal()">
-                                            <i class="ki-duotone ki-plus fs-2"></i>
-                                            Add Contact
-                                            <span class="badge badge-light-success ms-2"><?= $currentKinCount ?>/3</span>
-                                        </button>
-                                    </div>
-                                <?php elseif ($currentKinCount >= 3): ?>
-                                    <div class="card-toolbar">
-                                        <span class="badge badge-light-warning">
-                                            <i class="ki-duotone ki-information-5 fs-3">
-                                                <span class="path1"></span>
-                                                <span class="path2"></span>
-                                                <span class="path3"></span>
-                                            </i>
-                                            Maximum 3/3 contacts reached
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
+                                <?php $currentKinCount = count($next_of_kin); ?>
+                                <div class="card-toolbar" id="nok_toolbar">
+                                    <?php if (!($isOwnProfile ?? false)): ?>
+                                    <button type="button" class="btn btn-light-primary btn-sm" id="nok_add_btn" data-bs-toggle="modal" data-bs-target="#kt_modal_add_next_of_kin" onclick="openAddModal()" <?= $currentKinCount >= 3 ? 'style="display:none;"' : '' ?>>
+                                        <i class="ki-duotone ki-plus fs-2"></i>
+                                        Add Contact
+                                        <span class="badge badge-light-success ms-2" id="nok_count_badge"><?= $currentKinCount ?>/3</span>
+                                    </button>
+                                    <?php endif; ?>
+                                    <span class="badge badge-light-warning" id="nok_max_badge" <?= $currentKinCount < 3 ? 'style="display:none;"' : '' ?>>
+                                        <i class="ki-duotone ki-information-5 fs-3">
+                                            <span class="path1"></span>
+                                            <span class="path2"></span>
+                                            <span class="path3"></span>
+                                        </i>
+                                        Maximum 3/3 contacts reached
+                                    </span>
+                                </div>
                                 <!--end::Card toolbar-->
                             </div>
                             <!--end::Card header-->
@@ -2833,7 +2828,7 @@
 
 
 
-<script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/add-next-of-kin.js"></script>
+<script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/add-next-of-kin.js?v=<?= filemtime(FCPATH . 'app/assets/js/custom/apps/user-management/users/view/add-next-of-kin.js') ?>"></script>
 
 <script src="<?php echo base_url(); ?>app/assets/js/custom/apps/user-management/users/view/update-user-security.js"></script>
 <script>
@@ -4222,6 +4217,32 @@ function checkLinkedParentsEmpty() {
     if ($list.length && $list.children().length === 0) {
         $list.hide();
         $('#linked_parents_empty').show();
+    }
+}
+
+// ================================================================
+// Next of Kin toolbar — live "Add Contact n/3" / "Maximum 3/3
+// contacts reached" toggle (shared by the add/delete flows above)
+// ================================================================
+var NOK_IS_OWN_PROFILE = <?= ($isOwnProfile ?? false) ? 'true' : 'false' ?>;
+
+function currentNokRowCount() {
+    return document.querySelectorAll('#next_of_kin_tbody tr[id^="kin_row_"]').length;
+}
+
+function updateNokToolbar(count) {
+    var $addBtn     = $('#nok_add_btn');
+    var $maxBadge   = $('#nok_max_badge');
+    var $countBadge = $('#nok_count_badge');
+
+    if ($countBadge.length) $countBadge.text(count + '/3');
+
+    if (count >= 3) {
+        $addBtn.hide();
+        $maxBadge.show();
+    } else {
+        $maxBadge.hide();
+        if (!NOK_IS_OWN_PROFILE) $addBtn.show();
     }
 }
 
