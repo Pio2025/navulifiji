@@ -797,10 +797,39 @@ class AdmissionController extends BaseController
                 }
             }
 
-            // ── Sync status to enrolment and admission_student_role ────────
+            // ── Sync status to enrolment (and cascade further to classroom_student) ──
+            // A Completed admission leaves enrolment Inactive (not "Completed" — that value
+            // is reserved for enrolments that finished their own course/stream independently),
+            // but the student's classroom membership itself is marked Completed since their
+            // time in that classroom is genuinely over, not merely paused.
+            $enrolStatus     = ($status === 'Completed') ? 'Inactive' : $status;
+            $classStudStatus = $status === 'Completed'
+                ? 'Completed'
+                : (in_array($enrolStatus, ['Active', 'Inactive'], true) ? $enrolStatus : null);
+
+            $enrolRows = $db->table('enrolment')
+                ->where('admission_id_fk', $admissionId)
+                ->get()->getResultArray();
+
             $db->table('enrolment')
                ->where('admission_id_fk', $admissionId)
-               ->update(['enrol_status' => $status]);
+               ->update(['enrol_status' => $enrolStatus]);
+
+            if ($classStudStatus !== null) {
+                foreach ($enrolRows as $enrolRow) {
+                    $classRow = $db->table('classroom')
+                        ->where('stream_id_fk', $enrolRow['stream_id_fk'])
+                        ->where('class_year',   $enrolRow['enrol_year'])
+                        ->get()->getRowArray();
+
+                    if ($classRow) {
+                        $db->table('classroom_student')
+                            ->where('class_id_fk', (int) $classRow['class_id'])
+                            ->where('user_id_fk',  $admission['user_id_fk'])
+                            ->update(['class_stud_status' => $classStudStatus]);
+                    }
+                }
+            }
 
             $db->table('admission_student_role')
                ->where('admission_id_fk', $admissionId)

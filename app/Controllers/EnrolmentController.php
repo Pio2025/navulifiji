@@ -595,18 +595,46 @@ class EnrolmentController extends BaseController
 
             if ($isLocked) {
                 // Non-super-admin: only status change allowed on Completed enrolments
+                $streamId  = (int) $enrolment['stream_id_fk'];
+                $enrolYear = (int) $enrolment['enrol_year'];
+
                 $this->enrolmentModel->update($enrolId, [
                     'enrol_status' => $newStatus,
                 ]);
             } else {
+                $streamId  = (int) $this->request->getPost('stream_id_fk');
+                $enrolYear = (int) $this->request->getPost('enrol_year');
+
                 $this->enrolmentModel->update($enrolId, [
-                    'stream_id_fk' => (int) $this->request->getPost('stream_id_fk'),
+                    'stream_id_fk' => $streamId,
                     'enrol_date'   => $this->request->getPost('enrol_date'),
                     'enrol_term'   => (int) $this->request->getPost('enrol_term'),
-                    'enrol_year'   => (int) $this->request->getPost('enrol_year'),
+                    'enrol_year'   => $enrolYear,
                     'enrol_note'   => $this->request->getPost('enrol_note') ?: null,
                     'enrol_status' => $newStatus,
                 ]);
+            }
+
+            // Keep classroom_student in step with enrolment: Active <-> Active, Inactive <-> Inactive.
+            // "Completed" is left alone here — that transition only happens via the admission
+            // being marked Completed (AdmissionController::update), which sets it explicitly.
+            if ($newStatus === 'Active' || $newStatus === 'Inactive') {
+                $db        = \Config\Database::connect();
+                $admission = $this->admissionModel->find($enrolment['admission_id_fk']);
+
+                if ($admission) {
+                    $classRow = $db->table('classroom')
+                        ->where('stream_id_fk', $streamId)
+                        ->where('class_year',   $enrolYear)
+                        ->get()->getRowArray();
+
+                    if ($classRow) {
+                        $db->table('classroom_student')
+                            ->where('class_id_fk', (int) $classRow['class_id'])
+                            ->where('user_id_fk',  $admission['user_id_fk'])
+                            ->update(['class_stud_status' => $newStatus]);
+                    }
+                }
             }
 
             $this->userLogModel->insert([
