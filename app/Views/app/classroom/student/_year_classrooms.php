@@ -21,7 +21,7 @@ $attendanceSuffix = $parentChildId > 0 ? '&student_id=' . $parentChildId : '';
 
 <?php else: ?>
 <?php foreach ($classrooms as $cls):
-    $statusColor = match($cls['class_status']) {
+    $statusColor = match($cls['class_stud_status']) {
         'Active'    => 'success',
         'Completed' => 'info',
         'Inactive'  => 'warning',
@@ -83,7 +83,7 @@ $attendanceSuffix = $parentChildId > 0 ? '&student_id=' . $parentChildId : '';
             <!--begin::Classroom info-->
             <div class="col-md-4 p-6 d-flex flex-column justify-content-center" style="border-right:1px solid #f1f1f4;">
                 <div class="d-flex align-items-center gap-2 mb-2">
-                    <span class="badge badge-light-<?= $statusColor ?> fs-8"><?= esc($cls['class_status']) ?></span>
+                    <span class="badge badge-light-<?= $statusColor ?> fs-8"><?= esc($cls['class_stud_status']) ?></span>
                     <span class="badge badge-light-primary fs-8"><?= esc($cls['class_year']) ?></span>
                 </div>
                 <div class="fw-bold text-gray-900 fs-3 mb-1"><?= esc($cls['class_name']) ?></div>
