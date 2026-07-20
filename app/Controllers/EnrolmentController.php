@@ -237,14 +237,18 @@ class EnrolmentController extends BaseController
                 ]);
             }
 
-            // Insert student subjects
-            if ($hasSubjects) {
-                $classRow = $db->table('classroom')
-                    ->where('stream_id_fk', $streamId)
-                    ->where('class_year',   $enrolYear)
-                    ->get()->getRowArray();
-                $classId = $classRow ? (int)$classRow['class_id'] : 0;
+            // Get admission details (also used for classroom auto-enrolment below)
+            $admission = $this->admissionModel->find($admissionId);
+            $user      = $admission ? $this->userModel->find($admission['user_id_fk']) : null;
 
+            $classRow = $db->table('classroom')
+                ->where('stream_id_fk', $streamId)
+                ->where('class_year',   $enrolYear)
+                ->get()->getRowArray();
+            $classId = $classRow ? (int) $classRow['class_id'] : 0;
+
+            // Insert student subjects
+            if ($hasSubjects && $classId) {
                 $allSubjects = array_merge(
                     array_map('intval', $coreSubjects),
                     $optionalSubjects
@@ -261,9 +265,25 @@ class EnrolmentController extends BaseController
                 }
             }
 
-            // Get admission details for log
-            $admission = $this->admissionModel->find($admissionId);
-            $user      = $admission ? $this->userModel->find($admission['user_id_fk']) : null;
+            // Auto-enrol into classroom_student for the matching classroom, same as new-admission
+            // enrolment in UserController — this is what lets a transferred/changed-school student
+            // see every classroom they've been enrolled into (old and new) on My Classroom.
+            if ($classId && $admission) {
+                $alreadyEnrolled = $db->table('classroom_student')
+                    ->where('class_id_fk', $classId)
+                    ->where('user_id_fk',  $admission['user_id_fk'])
+                    ->countAllResults() > 0;
+
+                if (!$alreadyEnrolled) {
+                    $db->table('classroom_student')->insert([
+                        'class_id_fk'       => $classId,
+                        'user_id_fk'        => $admission['user_id_fk'],
+                        'class_stud_status' => 'Active',
+                        'admitted_at'       => date('Y-m-d'),
+                        'admitted_by'       => (int) $this->session->get('userID'),
+                    ]);
+                }
+            }
 
             $this->userLogModel->insert([
                 'user_id_fk'  => $this->session->get('userID'),
