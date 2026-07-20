@@ -3033,6 +3033,24 @@ class UserController extends BaseController
                 return $this->response->setJSON(['success' => false, 'message' => 'A user cannot be linked to themselves.']);
             }
 
+            // Re-verify server-side that the chosen parent/guardian account is not a
+            // Student — the search box already excludes students, but parent_user_id
+            // is client-supplied and must not be trusted blindly.
+            $db = \Config\Database::connect();
+            $parentRole = $db->query(
+                "SELECT rc.role_cat_id
+                 FROM user_role ur
+                 INNER JOIN role r ON r.role_id = ur.role_id_fk
+                 INNER JOIN role_category rc ON rc.role_cat_id = r.role_cat_id_fk
+                 WHERE ur.user_id_fk = ? AND ur.user_role_status = 'Active'
+                 LIMIT 1",
+                [$parentId]
+            )->getRowArray();
+
+            if (!$parentRole || (int) $parentRole['role_cat_id'] === 4) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Selected user cannot be linked as a parent/guardian.']);
+            }
+
             $exists = $this->parentStudentModel
                 ->where('parent_user_id_fk', $parentId)
                 ->where('student_user_id_fk', $studentId)

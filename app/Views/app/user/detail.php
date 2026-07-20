@@ -908,7 +908,7 @@
                         <!--end::Card - Linked Children-->
                         <?php endif; ?>
 
-                        <?php if (!empty($linkedParents)): ?>
+                        <?php if (!empty($linkedParents) || ($roleCatId ?? 0) === 4): ?>
                         <!--begin::Card - Linked Parents-->
                         <div class="card card-bordered mb-6 mb-xl-9">
                             <div class="card-header mt-6">
@@ -916,12 +916,30 @@
                                     <h2 class="mb-1">Parent / Guardian Accounts</h2>
                                     <div class="fs-6 fw-semibold text-muted">System accounts linked as parent/guardian for this student</div>
                                 </div>
+                                <?php if (!($isOwnProfile ?? false)): ?>
+                                <div class="card-toolbar">
+                                    <button type="button" class="btn btn-light-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal_link_parent">
+                                        <i class="ki-duotone ki-plus fs-2"><span class="path1"></span><span class="path2"></span></i>
+                                        Link Parent
+                                    </button>
+                                </div>
+                                <?php endif; ?>
                             </div>
                             <div class="separator"></div>
                             <div class="card-body p-9 pt-4">
-                                <div class="row g-4">
+                                <?php if (empty($linkedParents)): ?>
+                                <div class="text-center py-8">
+                                    <i class="ki-duotone ki-people fs-3x text-gray-300 mb-3">
+                                        <span class="path1"></span><span class="path2"></span>
+                                        <span class="path3"></span><span class="path4"></span>
+                                        <span class="path5"></span>
+                                    </i>
+                                    <div class="text-muted fs-7">No parent/guardian accounts linked yet. Click "Link Parent" to add.</div>
+                                </div>
+                                <?php else: ?>
+                                <div class="row g-4" id="linked_parents_list">
                                     <?php foreach ($linkedParents as $parent): ?>
-                                    <div class="col-md-6 col-xl-4">
+                                    <div class="col-md-6 col-xl-4" id="parent_card_<?= $parent['parent_student_id'] ?>">
                                         <div class="d-flex align-items-center border border-dashed border-gray-300 rounded p-3">
                                             <div class="symbol symbol-45px symbol-circle me-3">
                                                 <?php if (!empty($parent['profile_photo'])): ?>
@@ -938,10 +956,20 @@
                                                 </a>
                                                 <div class="text-muted fs-8"><?= esc($parent['relationship']) ?></div>
                                             </div>
+                                            <?php if (!($isOwnProfile ?? false)): ?>
+                                            <button type="button" class="btn btn-icon btn-sm btn-light-danger btn-unlink-parent"
+                                                    data-link-id="<?= $parent['parent_student_id'] ?>"
+                                                    title="Unlink">
+                                                <i class="ki-duotone ki-cross fs-3">
+                                                    <span class="path1"></span><span class="path2"></span>
+                                                </i>
+                                            </button>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <?php endforeach; ?>
                                 </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <!--end::Card - Linked Parents-->
@@ -2019,6 +2047,60 @@
     </div>
 </div>
 <!--end::Modal - Link Child-->
+
+<!--begin::Modal - Link Parent-->
+<div class="modal fade" id="modal_link_parent" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-500px">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="fw-bold">Link a Parent/Guardian</h2>
+                <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                    <i class="ki-duotone ki-cross fs-1"><span class="path1"></span><span class="path2"></span></i>
+                </div>
+            </div>
+            <div class="modal-body px-8 py-6">
+                <input type="hidden" id="link_parent_student_id" value="<?= $user['user_id'] ?>" />
+                <input type="hidden" id="link_parent_selected_id" value="" />
+                <div class="mb-5 position-relative">
+                    <label class="form-label required fw-semibold">Search User</label>
+                    <input type="text" class="form-control" id="lp_search_input" placeholder="Start typing a name..." autocomplete="off" />
+                    <div id="lp_search_suggestions" class="nok-suggestion-list d-none"></div>
+                    <div class="form-text text-muted">Search staff, teachers, or parents/guardians already in the system (students excluded)</div>
+                </div>
+                <div id="lp_selected_user_card" class="d-none align-items-center p-3 mb-5 border rounded bg-light-primary">
+                    <img id="lp_selected_photo" class="rounded-circle me-3" width="50" height="50" style="object-fit:cover" src="" alt="" />
+                    <div class="flex-grow-1">
+                        <div class="fw-bold text-gray-800" id="lp_selected_name"></div>
+                        <div class="text-muted fs-7" id="lp_selected_role"></div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-light" id="lp_clear_selected_user">Change</button>
+                </div>
+                <div class="mb-5">
+                    <label class="form-label fw-semibold">Relationship</label>
+                    <select id="link_parent_relationship" class="form-select">
+                        <option value="Parent">Parent</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Father">Father</option>
+                        <option value="Guardian">Guardian</option>
+                        <option value="Step-Parent">Step-Parent</option>
+                        <option value="Grandparent">Grandparent</option>
+                        <option value="Sibling">Sibling</option>
+                        <option value="Uncle/Aunt">Uncle/Aunt</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" id="btn_save_link_parent" class="btn btn-primary">
+                    <span class="indicator-label">Link Parent</span>
+                    <span class="indicator-progress">Saving...<span class="spinner-border spinner-border-sm ms-2"></span></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!--end::Modal - Link Parent-->
 
 <!--begin::Modal - Add/Edit Next of Kin-->
 <div class="modal fade" id="kt_modal_add_next_of_kin" tabindex="-1" aria-hidden="true">
@@ -3886,6 +3968,163 @@ if (notifForm) {
             icon: 'warning',
             title: 'Unlink child?',
             text: 'This will remove the parent-child link. The student account will not be deleted.',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, unlink',
+            cancelButtonText: 'Cancel',
+            customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-light' }
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '<?= base_url('user/unlink-child/') ?>' + linkId,
+                    method: 'POST',
+                    data: { <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
+                    success: function(res) {
+                        if (res.success) {
+                            $card.fadeOut(300, function() { $(this).remove(); });
+                            Swal.fire({ icon: 'success', title: 'Unlinked', text: res.message, timer: 1500, showConfirmButton: false });
+                        } else {
+                            Swal.fire({ icon: 'error', title: 'Error', text: res.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-danger' } });
+                        }
+                    }
+                });
+            }
+        });
+    });
+})();
+
+// ================================================================
+// STUDENT → LINK PARENT (Facebook-style text autosuggest)
+// ================================================================
+(function() {
+    var $input     = $('#lp_search_input');
+    var $box       = $('#lp_search_suggestions');
+    if (!$input.length || !$box.length) return;
+
+    var debounceTimer = null;
+    var requestToken   = 0;
+
+    function hideSuggestions() {
+        $box.addClass('d-none').empty();
+    }
+
+    function renderSuggestions(users) {
+        if (!users.length) {
+            $box.html('<div class="nok-suggestion-empty">No matching users found</div>').removeClass('d-none');
+            return;
+        }
+        $box.html(users.map(function(u) {
+            return (
+                '<div class="nok-suggestion-item" data-user=\'' + JSON.stringify(u).replace(/'/g, '&#39;') + '\'>' +
+                    '<img src="' + u.photo + '" class="rounded-circle me-2" width="36" height="36" style="object-fit:cover" alt="">' +
+                    '<div>' +
+                        '<div class="nok-suggestion-name">' + escapeHtml(u.text) + '</div>' +
+                        '<div class="nok-suggestion-role">' + escapeHtml(u.role || '') + '</div>' +
+                    '</div>' +
+                '</div>'
+            );
+        }).join('')).removeClass('d-none');
+    }
+
+    function selectUser(u) {
+        $('#link_parent_selected_id').val(u.id);
+        $('#lp_selected_photo').attr('src', u.photo);
+        $('#lp_selected_name').text(u.text);
+        $('#lp_selected_role').text(u.role || '');
+        $('#lp_selected_user_card').removeClass('d-none').addClass('d-flex');
+        $input.val('').addClass('d-none');
+        hideSuggestions();
+    }
+
+    $input.on('input', function() {
+        var term = $input.val().trim();
+        clearTimeout(debounceTimer);
+
+        if (term.length < 2) {
+            hideSuggestions();
+            return;
+        }
+
+        debounceTimer = setTimeout(function() {
+            var myToken = ++requestToken;
+            $.ajax({
+                url: '<?= base_url('user/searchNonStudents') ?>',
+                method: 'GET',
+                dataType: 'json',
+                data: { q: term }
+            }).done(function(data) {
+                if (myToken !== requestToken) return;
+                renderSuggestions(data.results || []);
+            });
+        }, 300);
+    });
+
+    $box.on('click', '.nok-suggestion-item', function() {
+        selectUser($(this).data('user'));
+    });
+
+    $(document).on('click', function(e) {
+        if (!$input.is(e.target) && !$box.is(e.target) && $box.has(e.target).length === 0) {
+            hideSuggestions();
+        }
+    });
+
+    $('#lp_clear_selected_user').on('click', function() {
+        $('#link_parent_selected_id').val('');
+        $('#lp_selected_user_card').addClass('d-none').removeClass('d-flex');
+        $input.removeClass('d-none').val('').focus();
+    });
+
+    function resetLinkParentModal() {
+        $('#link_parent_selected_id').val('');
+        $('#lp_selected_user_card').addClass('d-none').removeClass('d-flex');
+        $input.removeClass('d-none').val('');
+        $('#link_parent_relationship').val('Parent');
+        hideSuggestions();
+    }
+
+    $('#modal_link_parent').on('hidden.bs.modal', resetLinkParentModal);
+
+    $('#btn_save_link_parent').on('click', function() {
+        var parentId = $('#link_parent_selected_id').val();
+        if (!parentId) {
+            Swal.fire({ icon: 'warning', title: 'Select a user', text: 'Please search and select a user to link as parent/guardian.', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } });
+            return;
+        }
+        var $btn = $(this);
+        $btn.attr('data-kt-indicator', 'on');
+        $.ajax({
+            url: '<?= base_url('user/link-child') ?>',
+            method: 'POST',
+            data: {
+                parent_user_id:  parentId,
+                student_user_id: $('#link_parent_student_id').val(),
+                relationship:    $('#link_parent_relationship').val(),
+                <?= csrf_token() ?>: '<?= csrf_hash() ?>'
+            },
+            success: function(res) {
+                $btn.removeAttr('data-kt-indicator');
+                if (res.success) {
+                    Swal.fire({ icon: 'success', title: 'Linked!', text: res.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } })
+                        .then(function() { location.reload(); });
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: res.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-danger' } });
+                }
+            },
+            error: function() {
+                $btn.removeAttr('data-kt-indicator');
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An unexpected error occurred.', confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-danger' } });
+            }
+        });
+    });
+
+    // Unlink
+    $(document).on('click', '.btn-unlink-parent', function() {
+        var linkId = $(this).data('link-id');
+        var $card  = $(this).closest('[id^="parent_card_"]');
+        Swal.fire({
+            icon: 'warning',
+            title: 'Unlink parent/guardian?',
+            text: 'This will remove the parent-child link. The account will not be deleted.',
             showCancelButton: true,
             confirmButtonText: 'Yes, unlink',
             cancelButtonText: 'Cancel',
