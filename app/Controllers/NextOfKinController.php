@@ -215,6 +215,7 @@ class NextOfKinController extends BaseController
                 // Keep the parent–student link in sync: a Father/Mother/Guardian
                 // contact tied to an existing user account is also a parent link,
                 // so users don't have to set this up twice in two different places.
+                $autoLinkedParent = null;
                 if ($isLinked && in_array($data['next_of_kin_relationship'], ['Father', 'Mother', 'Guardian'], true)) {
                     $ownerRoleCat = (int) ($this->db->query("
                         SELECT rc.role_cat_id
@@ -232,13 +233,23 @@ class NextOfKinController extends BaseController
                             ->countAllResults();
 
                         if (!$alreadyLinked) {
-                            $this->parentStudentModel->insert([
+                            $newLinkId = $this->parentStudentModel->insert([
                                 'parent_user_id_fk'  => $linkedUserId,
                                 'student_user_id_fk' => (int) $userId,
                                 'relationship'       => $data['next_of_kin_relationship'],
                                 'created_by'         => (int) $this->session->get('userID'),
                                 'created_at'         => date('Y-m-d H:i:s'),
                             ]);
+
+                            $parentUser = $this->userModel->find($linkedUserId);
+                            $autoLinkedParent = [
+                                'parent_student_id' => $newLinkId,
+                                'user_id'           => $linkedUserId,
+                                'fname'             => $parentUser['fname'] ?? '',
+                                'lname'             => $parentUser['lname'] ?? '',
+                                'profile_photo'     => $parentUser['profile_photo'] ?? null,
+                                'relationship'      => $data['next_of_kin_relationship'],
+                            ];
                         }
                     }
                 }
@@ -246,7 +257,8 @@ class NextOfKinController extends BaseController
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Next of kin added successfully!',
-                    'data' => $insertedData
+                    'data' => $insertedData,
+                    'auto_linked_parent' => $autoLinkedParent
                 ]);
             } else {
                 log_message('error', '[NextOfKin::add] Insert failed for user ' . $userId);
@@ -465,19 +477,36 @@ class NextOfKinController extends BaseController
             log_message('info', '[NextOfKin::delete] Deleting: ' . $existing['next_of_kin_name'] . ' (ID: ' . $kinId . ')');
             
             $deleted = $this->nextOfKinModel->deleteNextOfKin($kinId);
-            
+
             if ($deleted) {
                 log_message('info', '[NextOfKin::delete] Success: ID ' . $kinId);
-                
+
                 $this->logActivity('delete_next_of_kin', [
                     'next_of_kin_id' => $kinId,
                     'user_id_fk' => $existing['user_id_fk'],
                     'next_of_kin_name' => $existing['next_of_kin_name']
                 ]);
-                
+
+                // Cascade: if this contact was auto-linked (or manually linked) as a
+                // Father/Mother/Guardian parent_student row, remove that too so the
+                // Linked Parents card doesn't keep a dangling entry.
+                $removedParentLinkId = null;
+                if (!empty($existing['linked_user_id_fk']) && in_array($existing['next_of_kin_relationship'], ['Father', 'Mother', 'Guardian'], true)) {
+                    $link = $this->parentStudentModel
+                        ->where('parent_user_id_fk', $existing['linked_user_id_fk'])
+                        ->where('student_user_id_fk', $existing['user_id_fk'])
+                        ->first();
+
+                    if ($link) {
+                        $this->parentStudentModel->delete($link['parent_student_id']);
+                        $removedParentLinkId = (int) $link['parent_student_id'];
+                    }
+                }
+
                 return $this->response->setJSON([
                     'success' => true,
-                    'message' => 'Next of kin deleted successfully!'
+                    'message' => 'Next of kin deleted successfully!',
+                    'removed_parent_link_id' => $removedParentLinkId
                 ]);
             } else {
                 log_message('error', '[NextOfKin::delete] Delete failed: ID ' . $kinId);

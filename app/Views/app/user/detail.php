@@ -927,8 +927,7 @@
                             </div>
                             <div class="separator"></div>
                             <div class="card-body p-9 pt-4">
-                                <?php if (empty($linkedParents)): ?>
-                                <div class="text-center py-8">
+                                <div class="text-center py-8" id="linked_parents_empty" <?= !empty($linkedParents) ? 'style="display:none;"' : '' ?>>
                                     <i class="ki-duotone ki-people fs-3x text-gray-300 mb-3">
                                         <span class="path1"></span><span class="path2"></span>
                                         <span class="path3"></span><span class="path4"></span>
@@ -936,8 +935,7 @@
                                     </i>
                                     <div class="text-muted fs-7">No parent/guardian accounts linked yet. Click "Link Parent" to add.</div>
                                 </div>
-                                <?php else: ?>
-                                <div class="row g-4" id="linked_parents_list">
+                                <div class="row g-4" id="linked_parents_list" <?= empty($linkedParents) ? 'style="display:none;"' : '' ?>>
                                     <?php foreach ($linkedParents as $parent): ?>
                                     <div class="col-md-6 col-xl-4" id="parent_card_<?= $parent['parent_student_id'] ?>">
                                         <div class="d-flex align-items-center border border-dashed border-gray-300 rounded p-3">
@@ -969,7 +967,6 @@
                                     </div>
                                     <?php endforeach; ?>
                                 </div>
-                                <?php endif; ?>
                             </div>
                         </div>
                         <!--end::Card - Linked Parents-->
@@ -4105,7 +4102,16 @@ if (notifForm) {
                 $btn.removeAttr('data-kt-indicator');
                 if (res.success) {
                     Swal.fire({ icon: 'success', title: 'Linked!', text: res.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-primary' } })
-                        .then(function() { location.reload(); });
+                        .then(function() {
+                            var modalEl = document.getElementById('modal_link_parent');
+                            var modalInstance = bootstrap.Modal.getInstance(modalEl);
+                            if (modalInstance) modalInstance.hide();
+
+                            if (res.linked_parent) addLinkedParentCard(res.linked_parent);
+                            if (res.auto_created_kin && typeof addTableRow === 'function') {
+                                addTableRow(res.auto_created_kin);
+                            }
+                        });
                 } else {
                     Swal.fire({ icon: 'error', title: 'Error', text: res.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-danger' } });
                 }
@@ -4137,7 +4143,13 @@ if (notifForm) {
                     data: { <?= csrf_token() ?>: '<?= csrf_hash() ?>' },
                     success: function(res) {
                         if (res.success) {
-                            $card.fadeOut(300, function() { $(this).remove(); });
+                            $card.fadeOut(300, function() {
+                                $(this).remove();
+                                checkLinkedParentsEmpty();
+                            });
+                            if (res.removed_kin_id && typeof removeTableRow === 'function') {
+                                removeTableRow(res.removed_kin_id);
+                            }
                             Swal.fire({ icon: 'success', title: 'Unlinked', text: res.message, timer: 1500, showConfirmButton: false });
                         } else {
                             Swal.fire({ icon: 'error', title: 'Error', text: res.message, confirmButtonText: 'OK', customClass: { confirmButton: 'btn btn-danger' } });
@@ -4148,6 +4160,70 @@ if (notifForm) {
         });
     });
 })();
+
+// ================================================================
+// Linked Parents card — live add/remove (shared by the Next of Kin
+// add/delete flows and the Link Parent/Guardian flow above)
+// ================================================================
+function buildLinkedParentCardHtml(p) {
+    var photoHtml;
+    if (p.profile_photo) {
+        photoHtml = '<img src="<?= base_url('uploads/profilePhoto/') ?>' + p.profile_photo + '" alt="" />';
+    } else {
+        var initials = (((p.fname || '').charAt(0)) + ((p.lname || '').charAt(0))).toUpperCase();
+        photoHtml = '<div class="symbol-label fs-4 fw-bold bg-light-success text-success">' + initials + '</div>';
+    }
+
+    var unlinkBtn = <?= ($isOwnProfile ?? false) ? 'false' : 'true' ?>
+        ? ('<button type="button" class="btn btn-icon btn-sm btn-light-danger btn-unlink-parent" data-link-id="' + p.parent_student_id + '" title="Unlink">' +
+              '<i class="ki-duotone ki-cross fs-3"><span class="path1"></span><span class="path2"></span></i>' +
+           '</button>')
+        : '';
+
+    return (
+        '<div class="col-md-6 col-xl-4" id="parent_card_' + p.parent_student_id + '">' +
+            '<div class="d-flex align-items-center border border-dashed border-gray-300 rounded p-3">' +
+                '<div class="symbol symbol-45px symbol-circle me-3">' + photoHtml + '</div>' +
+                '<div class="flex-grow-1">' +
+                    '<a href="<?= base_url('user/detail/') ?>' + p.user_id + '" class="fw-bold text-gray-800 text-hover-primary fs-6">' +
+                        escapeHtml(p.fname + ' ' + p.lname) +
+                    '</a>' +
+                    '<div class="text-muted fs-8">' + escapeHtml(p.relationship) + '</div>' +
+                '</div>' +
+                unlinkBtn +
+            '</div>' +
+        '</div>'
+    );
+}
+
+function addLinkedParentCard(p) {
+    if (!p || document.getElementById('parent_card_' + p.parent_student_id)) return;
+
+    var $list = $('#linked_parents_list');
+    if (!$list.length) return;
+
+    $list.append(buildLinkedParentCardHtml(p));
+    $list.show();
+    $('#linked_parents_empty').hide();
+}
+
+function removeLinkedParentCard(linkId) {
+    var $card = $('#parent_card_' + linkId);
+    if (!$card.length) return;
+
+    $card.fadeOut(300, function() {
+        $(this).remove();
+        checkLinkedParentsEmpty();
+    });
+}
+
+function checkLinkedParentsEmpty() {
+    var $list = $('#linked_parents_list');
+    if ($list.length && $list.children().length === 0) {
+        $list.hide();
+        $('#linked_parents_empty').show();
+    }
+}
 
 // ── Tab persistence ───────────────────────────────────────────────────────────
 (function() {

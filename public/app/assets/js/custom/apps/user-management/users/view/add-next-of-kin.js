@@ -204,6 +204,9 @@ var KTNextOfKinManagement = (function () {
                                     updateTableRow(response.data);
                                 } else {
                                     addTableRow(response.data);
+                                    if (response.auto_linked_parent && typeof addLinkedParentCard === 'function') {
+                                        addLinkedParentCard(response.auto_linked_parent);
+                                    }
                                 }
                             });
                         } else {
@@ -612,6 +615,9 @@ function deleteNextOfKin(kinId) {
                         }).then(function () {
                             // Remove row from table
                             removeTableRow(kinId);
+                            if (response.removed_parent_link_id && typeof removeLinkedParentCard === 'function') {
+                                removeLinkedParentCard(response.removed_parent_link_id);
+                            }
                         });
                     } else {
                         Swal.fire({

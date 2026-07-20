@@ -3060,7 +3060,7 @@ class UserController extends BaseController
                 return $this->response->setJSON(['success' => false, 'message' => 'This child is already linked.']);
             }
 
-            $this->parentStudentModel->insert([
+            $newLinkId = $this->parentStudentModel->insert([
                 'parent_user_id_fk'  => $parentId,
                 'student_user_id_fk' => $studentId,
                 'relationship'       => $relationship,
@@ -3068,8 +3068,9 @@ class UserController extends BaseController
                 'created_at'         => date('Y-m-d H:i:s'),
             ]);
 
-            $student = $this->userModel->find($studentId);
-            $name    = trim(($student['fname'] ?? '') . ' ' . ($student['lname'] ?? ''));
+            $student    = $this->userModel->find($studentId);
+            $name       = trim(($student['fname'] ?? '') . ' ' . ($student['lname'] ?? ''));
+            $parentUser = $this->userModel->find($parentId);
 
             // Keep Next of Kin in sync: linking a parent/guardian should also
             // register them as the student's next of kin, so this doesn't need
@@ -3080,9 +3081,9 @@ class UserController extends BaseController
                 ->where('linked_user_id_fk', $parentId)
                 ->countAllResults();
 
+            $autoCreatedKin = null;
             if ($existingKinCount < 3 && !$alreadyKin) {
-                $parentUser = $this->userModel->find($parentId);
-                $this->nextOfKinModel->addNextOfKin([
+                $newKinId = $this->nextOfKinModel->addNextOfKin([
                     'user_id_fk'               => $studentId,
                     'linked_user_id_fk'        => $parentId,
                     'next_of_kin_name'         => trim(($parentUser['fname'] ?? '') . ' ' . ($parentUser['lname'] ?? '')),
@@ -3095,6 +3096,8 @@ class UserController extends BaseController
                     'authorized_pickup'        => 0,
                     'created_date'             => date('Y-m-d'),
                 ]);
+
+                $autoCreatedKin = $this->nextOfKinModel->find($newKinId);
             }
 
             $this->userLogModel->insert([
@@ -3110,7 +3113,19 @@ class UserController extends BaseController
                 'log_theme'   => 'primary',
             ]);
 
-            return $this->response->setJSON(['success' => true, 'message' => $name . ' linked successfully.']);
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => $name . ' linked successfully.',
+                'linked_parent' => [
+                    'parent_student_id' => $newLinkId,
+                    'user_id'           => $parentId,
+                    'fname'             => $parentUser['fname'] ?? '',
+                    'lname'             => $parentUser['lname'] ?? '',
+                    'profile_photo'     => $parentUser['profile_photo'] ?? null,
+                    'relationship'      => $relationship,
+                ],
+                'auto_created_kin' => $autoCreatedKin,
+            ]);
 
         } catch (\Exception $e) {
             log_message('error', '[UserController::linkChild] ' . $e->getMessage());
@@ -3132,7 +3147,25 @@ class UserController extends BaseController
 
             $this->parentStudentModel->delete($linkId);
 
-            return $this->response->setJSON(['success' => true, 'message' => 'Child unlinked successfully.']);
+            // Cascade: remove the matching Next of Kin record (if any) tied to this
+            // same parent/student pairing so the Next of Kin table doesn't keep a
+            // dangling contact after the link is removed.
+            $removedKinId = null;
+            $kin = $this->nextOfKinModel
+                ->where('user_id_fk', $link['student_user_id_fk'])
+                ->where('linked_user_id_fk', $link['parent_user_id_fk'])
+                ->first();
+
+            if ($kin) {
+                $this->nextOfKinModel->deleteNextOfKin($kin['next_of_kin_id']);
+                $removedKinId = (int) $kin['next_of_kin_id'];
+            }
+
+            return $this->response->setJSON([
+                'success' => true,
+                'message' => 'Child unlinked successfully.',
+                'removed_kin_id' => $removedKinId,
+            ]);
 
         } catch (\Exception $e) {
             log_message('error', '[UserController::unlinkChild] ' . $e->getMessage());
