@@ -646,6 +646,10 @@ $routes->post('user/unlink-child/(:num)',          'UserController::unlinkChild/
 $routes->get( 'user/searchStudents',              'UserController::searchStudents');
 $routes->get( 'user/searchNonStudents',           'UserController::searchNonStudents');
 
+// My Child (parent's own children listing)
+$routes->get( 'user/child/my',            'UserController::myChild');
+$routes->post('user/child/my/listing',    'UserController::getMyChildListing');
+
 // ============================================================================
 // WALL Routes
 // ============================================================================

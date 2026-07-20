@@ -3173,6 +3173,118 @@ class UserController extends BaseController
         }
     }
 
+    /**
+     * GET user/child/my — "My Child" listing page for any account with linked
+     * children (native Parent role via _my_child, or any other role acting as
+     * a parent via the is_a_parent flag, same convention as classroom/child/my
+     * and conduct/child/my).
+     */
+    public function myChild()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+
+        $userId = (int) $this->session->get('userID');
+
+        if (!$this->grant_access('_my_child') && !$this->hasParentFlag($userId)) {
+            $data['_view'] = 'app/auth/access_control';
+            return view('app/layouts/main', $data);
+        }
+
+        $this->setPageData('My Child', 'User', 'My Child');
+
+        $data['totalChildren'] = count($this->parentStudentModel->getChildrenOf($userId));
+        $data['_view']         = 'app/user/child/my';
+        return view('app/layouts/main', $data);
+    }
+
+    /**
+     * POST user/child/my/listing — DataTables server-side listing of the
+     * current user's linked children.
+     */
+    public function getMyChildListing()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(401);
+        }
+
+        $userId = (int) $this->session->get('userID');
+
+        if (!$this->grant_access('_my_child') && !$this->hasParentFlag($userId)) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(403);
+        }
+
+        $req    = service('request');
+        $draw   = (int) ($req->getPost('draw') ?? 1);
+        $start  = (int) ($req->getPost('start') ?? 0);
+        $length = (int) ($req->getPost('length') ?? 15);
+
+        $searchData  = $req->getPost('search');
+        $searchValue = is_array($searchData) ? trim($searchData['value'] ?? '') : '';
+
+        $orderData        = $req->getPost('order');
+        $orderColumnIndex = is_array($orderData) ? (int) ($orderData[0]['column'] ?? 0) : 0;
+        $orderDir         = is_array($orderData) ? ($orderData[0]['dir'] ?? 'asc') : 'asc';
+        $orderDir         = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+
+        $columnMap = ['u.fname', 'ps.relationship', 'u.user_status'];
+        $orderCol  = $columnMap[$orderColumnIndex] ?? 'u.fname';
+
+        $db = \Config\Database::connect();
+
+        $recordsTotal = $db->table('parent_student')->where('parent_user_id_fk', $userId)->countAllResults();
+
+        $builder = $db->table('parent_student ps');
+        $builder->select('ps.parent_student_id, ps.relationship, u.user_id, u.fname, u.lname, u.profile_photo, u.user_status');
+        $builder->join('users u', 'u.user_id = ps.student_user_id_fk');
+        $builder->where('ps.parent_user_id_fk', $userId);
+
+        if ($searchValue !== '') {
+            $builder->groupStart()
+                ->like('u.fname', $searchValue)
+                ->orLike('u.lname', $searchValue)
+                ->orLike('ps.relationship', $searchValue)
+                ->groupEnd();
+        }
+
+        $recordsFiltered = $builder->countAllResults(false);
+
+        $builder->orderBy($orderCol, $orderDir);
+
+        if ($length !== -1) {
+            $builder->limit($length, $start);
+        }
+
+        $rows = $builder->get()->getResultArray();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $photo = (!empty($row['profile_photo']) && file_exists(FCPATH . 'uploads/profilePhoto/' . $row['profile_photo']))
+                ? base_url('uploads/profilePhoto/' . $row['profile_photo'])
+                : base_url('app/assets/media/avatars/blank.png');
+
+            $childName = '<div class="d-flex align-items-center">'
+                . '<div class="symbol symbol-35px symbol-circle me-3"><img src="' . esc($photo) . '" alt=""></div>'
+                . '<span class="fw-bold">' . esc(trim($row['fname'] . ' ' . $row['lname'])) . '</span>'
+                . '</div>';
+
+            $data[] = [
+                'child_name'   => $childName,
+                'relationship' => esc($row['relationship'] ?: 'Guardian'),
+                'user_status'  => $this->formatStatus($row['user_status'] ?? 'Inactive'),
+            ];
+        }
+
+        return $this->response->setJSON([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+            'csrf_hash'       => csrf_hash(),
+        ]);
+    }
+
     public function searchStudents()
     {
         if (!$this->isLoggedIn()) {
