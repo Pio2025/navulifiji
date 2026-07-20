@@ -24,7 +24,7 @@ $attendanceSuffix = $parentChildId > 0 ? '&student_id=' . $parentChildId : '';
     $statusColor = match($cls['class_stud_status']) {
         'Active'    => 'success',
         'Completed' => 'info',
-        'Inactive'  => 'warning',
+        'Inactive'  => 'danger',
         default     => 'secondary',
     };
     $ctInitials = !empty($cls['class_teacher'])

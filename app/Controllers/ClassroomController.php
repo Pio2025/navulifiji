@@ -5239,7 +5239,7 @@ class ClassroomController extends BaseController
             INNER JOIN level l      ON l.level_id      = sl.level_id_fk
             INNER JOIN school sch   ON sch.sch_id      = sl.sch_id_fk
             WHERE cs.user_id_fk = ? AND c.class_year = ?
-            ORDER BY c.class_name ASC
+            ORDER BY (cs.class_stud_status = 'Active') DESC, c.class_name ASC
         ", [$userId, $year])->getResultArray();
 
         foreach ($rows as &$cls) {
