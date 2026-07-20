@@ -102,7 +102,9 @@
             </i>
             <h3 class="text-gray-700 fw-bold mb-3">Not Available</h3>
             <p class="text-muted fs-6 mb-6">
-                My Classroom is available for students and parents/guardians only.
+                My Classroom is only available to Teachers and Students. Parents/guardians (and
+                any account linked to a child) automatically see their children's classrooms here
+                instead.
             </p>
             <a href="<?= base_url('dashboard') ?>" class="btn btn-primary">Back to Dashboard</a>
         </div>
