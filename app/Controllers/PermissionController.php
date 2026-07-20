@@ -324,11 +324,12 @@ class PermissionController extends BaseController
         // Validation rules
         $rules = [
             'perm_name' => [
-                'rules' => 'required|min_length[3]|max_length[255]',
+                'rules' => 'required|min_length[3]|max_length[255]|is_unique[permission.perm_name]',
                 'errors' => [
                     'required' => 'Permission name is required',
                     'min_length' => 'Permission name must be at least 3 characters',
-                    'max_length' => 'Permission name cannot exceed 255 characters'
+                    'max_length' => 'Permission name cannot exceed 255 characters',
+                    'is_unique' => 'This permission name already exists'
                 ]
             ],
             'perm_code' => [
@@ -483,7 +484,7 @@ class PermissionController extends BaseController
             
             // Validation rules
             $rules = [
-                'perm_name' => 'required|min_length[3]|max_length[255]',
+                'perm_name' => "required|min_length[3]|max_length[255]|is_unique[permission.perm_name,perm_id,{$permId}]",
                 'perm_code' => "required|min_length[3]|max_length[50]|is_unique[permission.perm_code,perm_id,{$permId}]",
                 'module_id_fk' => 'required|integer',
                 'perm_desc' => 'permit_empty|max_length[1000]',
