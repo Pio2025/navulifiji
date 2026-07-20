@@ -135,9 +135,10 @@ class NoticeBoardController extends BaseController
 
         $isPureParent    = $roleCat === 6;
         $isTeacherParent = $roleCat === 3 && $this->hasParentFlag($userId);
-        // Other staff categories with is_a_parent set behave like a pure parent (unchanged legacy behavior)
+        // Any account outside Teacher/Student/Parent (School Admin, Support Staff,
+        // System Admin, etc.) with is_a_parent set behaves like a pure parent.
         $isParent = $isPureParent
-            || ($roleCat !== 3 && $this->hasParentFlag($userId));
+            || (!in_array($roleCat, [3, 4, 6], true) && $this->hasParentFlag($userId));
 
         $parentSchools   = [];
         $activeSchoolId  = 0;

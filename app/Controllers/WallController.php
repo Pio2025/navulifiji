@@ -43,8 +43,9 @@ class WallController extends BaseController
         $userId    = (int) $this->session->get('userID');
         $roleCatId = (int) $this->session->get('roleCatID');
 
-        // Parent role: resolve via children's active enrollment, support school switching
-        if ($roleCatId === 6) {
+        // Parent role (or any other-staff account acting as a parent): resolve via
+        // children's active enrollment, support school switching.
+        if ($roleCatId === 6 || (!in_array($roleCatId, [3, 4, 6], true) && $this->hasParentFlag($userId))) {
             $schools     = $this->resolveParentSchoolIds($userId);
             if (empty($schools)) return 0;
             $requestedId = (int) ($this->request->getGet('sch_id') ?? 0);
@@ -157,7 +158,7 @@ class WallController extends BaseController
 
         // Build parent school list for tab UI
         $parentSchools  = [];
-        if ($roleCatId === 6) {
+        if ($roleCatId === 6 || (!in_array($roleCatId, [3, 4, 6], true) && $this->hasParentFlag($userId))) {
             $parentSchools = $this->resolveParentSchoolIds($userId);
             if (empty($parentSchools)) {
                 return redirect()->to('dashboard')->with('error', 'No school linked to your children\'s accounts.');

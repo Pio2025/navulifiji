@@ -39,16 +39,26 @@ class DashboardController extends BaseController
 
         $roleCatID = (int) $this->session->get('roleCatID');
         $roleID    = (int) $this->session->get('roleID');
+        $userId    = (int) $this->session->get('userID');
         $additionalData = [];
 
+        // Any account outside Teacher/Student/Parent (System Admin, School Admin,
+        // Support Staff, or any other role category) that is also flagged as a
+        // parent with linked children gets a combined "own dashboard + child tabs"
+        // view instead of full substitution, mirroring the Teacher-parent pattern.
+        $ownView = null;
+        $ownData = [];
+        $parentView = null;
+
         if ($roleID === 1 || $roleCatID === 1) {
-            $view = 'app/dashboard/super_admin';
-            $additionalData = $this->getSuperAdminStats();
+            $ownView    = 'app/dashboard/super_admin';
+            $ownData    = $this->getSuperAdminStats();
+            $parentView = 'app/dashboard/super_admin_parent';
         } elseif ($roleCatID === 2 || $roleCatID === 7) {
-            $view = 'app/dashboard/school_admin';
-            $additionalData = $this->getSchoolAdminStats();
+            $ownView    = 'app/dashboard/school_admin';
+            $ownData    = $this->getSchoolAdminStats();
+            $parentView = 'app/dashboard/school_admin_parent';
         } elseif ($roleCatID === 3) {
-            $userId   = (int) $this->session->get('userID');
             $children = $this->hasParentFlag($userId) ? $this->parentStudentModel->getChildrenOf($userId) : [];
 
             if (!empty($children)) {
@@ -65,7 +75,20 @@ class DashboardController extends BaseController
             $view = 'app/dashboard/parent';
             $additionalData = $this->getParentDashboardStats();
         } else {
-            $view = 'app/dashboard/index';
+            $ownView    = 'app/dashboard/index';
+            $parentView = 'app/dashboard/generic_parent';
+        }
+
+        if ($ownView !== null) {
+            $children = $this->hasParentFlag($userId) ? $this->parentStudentModel->getChildrenOf($userId) : [];
+
+            if (!empty($children)) {
+                $view = $parentView;
+                $additionalData = array_merge($ownData, $this->getParentDashboardStats());
+            } else {
+                $view = $ownView;
+                $additionalData = $ownData;
+            }
         }
 
         $data = $this->loadCommonData($view, $additionalData);
