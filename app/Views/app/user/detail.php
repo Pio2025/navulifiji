@@ -920,7 +920,7 @@
                                 <div class="card-toolbar">
                                     <button type="button" class="btn btn-light-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modal_link_parent">
                                         <i class="ki-duotone ki-plus fs-2"><span class="path1"></span><span class="path2"></span></i>
-                                        Link Parent
+                                        Link Parent or Guardian
                                     </button>
                                 </div>
                                 <?php endif; ?>
@@ -2093,7 +2093,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" id="btn_save_link_parent" class="btn btn-primary">
-                    <span class="indicator-label">Link Parent</span>
+                    <span class="indicator-label">Link Parent or Guardian</span>
                     <span class="indicator-progress">Saving...<span class="spinner-border spinner-border-sm ms-2"></span></span>
                 </button>
             </div>

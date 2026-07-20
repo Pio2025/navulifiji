@@ -202,16 +202,47 @@ class NextOfKinController extends BaseController
             if ($kinId) {
                 // Get the inserted record
                 $insertedData = $this->nextOfKinModel->find($kinId);
-                
+
                 log_message('info', '[NextOfKin::add] Success: ' . $data['next_of_kin_name'] . ' (ID: ' . $kinId . ') for user ' . $userId);
-                
+
                 // Log activity using BaseController method
                 $this->logActivity('add_next_of_kin', [
                     'next_of_kin_id' => $kinId,
                     'user_id_fk' => $userId,
                     'next_of_kin_name' => $data['next_of_kin_name']
                 ]);
-                
+
+                // Keep the parent–student link in sync: a Father/Mother/Guardian
+                // contact tied to an existing user account is also a parent link,
+                // so users don't have to set this up twice in two different places.
+                if ($isLinked && in_array($data['next_of_kin_relationship'], ['Father', 'Mother', 'Guardian'], true)) {
+                    $ownerRoleCat = (int) ($this->db->query("
+                        SELECT rc.role_cat_id
+                        FROM user_role ur
+                        INNER JOIN role r ON r.role_id = ur.role_id_fk
+                        INNER JOIN role_category rc ON rc.role_cat_id = r.role_cat_id_fk
+                        WHERE ur.user_id_fk = ? AND ur.user_role_status = 'Active'
+                        LIMIT 1
+                    ", [$userId])->getRow()->role_cat_id ?? 0);
+
+                    if ($ownerRoleCat === 4) {
+                        $alreadyLinked = $this->parentStudentModel
+                            ->where('parent_user_id_fk', $linkedUserId)
+                            ->where('student_user_id_fk', $userId)
+                            ->countAllResults();
+
+                        if (!$alreadyLinked) {
+                            $this->parentStudentModel->insert([
+                                'parent_user_id_fk'  => $linkedUserId,
+                                'student_user_id_fk' => (int) $userId,
+                                'relationship'       => $data['next_of_kin_relationship'],
+                                'created_by'         => (int) $this->session->get('userID'),
+                                'created_at'         => date('Y-m-d H:i:s'),
+                            ]);
+                        }
+                    }
+                }
+
                 return $this->response->setJSON([
                     'success' => true,
                     'message' => 'Next of kin added successfully!',

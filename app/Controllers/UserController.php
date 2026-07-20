@@ -3071,6 +3071,32 @@ class UserController extends BaseController
             $student = $this->userModel->find($studentId);
             $name    = trim(($student['fname'] ?? '') . ' ' . ($student['lname'] ?? ''));
 
+            // Keep Next of Kin in sync: linking a parent/guardian should also
+            // register them as the student's next of kin, so this doesn't need
+            // to be entered twice in two different places.
+            $existingKinCount = $this->nextOfKinModel->where('user_id_fk', $studentId)->countAllResults();
+            $alreadyKin = $this->nextOfKinModel
+                ->where('user_id_fk', $studentId)
+                ->where('linked_user_id_fk', $parentId)
+                ->countAllResults();
+
+            if ($existingKinCount < 3 && !$alreadyKin) {
+                $parentUser = $this->userModel->find($parentId);
+                $this->nextOfKinModel->addNextOfKin([
+                    'user_id_fk'               => $studentId,
+                    'linked_user_id_fk'        => $parentId,
+                    'next_of_kin_name'         => trim(($parentUser['fname'] ?? '') . ' ' . ($parentUser['lname'] ?? '')),
+                    'next_of_kin_relationship' => $relationship,
+                    'next_of_kin_phone'        => $parentUser['phone'] ?? null,
+                    'next_of_kin_email'        => $parentUser['email'] ?? null,
+                    'next_of_kin_address'      => $parentUser['address'] ?? null,
+                    'is_primary_contact'       => 0,
+                    'is_emergency_contact'     => 1,
+                    'authorized_pickup'        => 0,
+                    'created_date'             => date('Y-m-d'),
+                ]);
+            }
+
             $this->userLogModel->insert([
                 'user_id_fk'  => (int) $this->session->get('userID'),
                 'ip_aadress'  => $this->ipAddress,
