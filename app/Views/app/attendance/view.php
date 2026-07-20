@@ -14,7 +14,7 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <?php if (empty($isParentView)): ?>
+            <?php if (empty($isParentView) && !empty($isTeacher)): ?>
             <a href="<?= base_url('attendance/add' . (!empty($schID) ? '?sch_id=' . (int) $schID : '')) ?>" class="btn btn-sm btn-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
                 Add Attendance
@@ -195,7 +195,7 @@
                         <i class="ki-duotone ki-information-5 fs-5 me-1">
                             <span class="path1"></span><span class="path2"></span><span class="path3"></span>
                         </i>
-                        Click any date to add attendance
+                        <?= !empty($isTeacher) ? 'Click any date to add attendance' : 'Click a recorded date to view details' ?>
                     </div>
                 </div>
             </div>
@@ -418,6 +418,7 @@
 
     const BASE_URL         = '<?= base_url() ?>';
     const ATT_FILE_URL     = '<?= base_url('uploads/attendance/') ?>';
+    const IS_TEACHER       = <?= !empty($isTeacher) ? 'true' : 'false' ?>;
     const streamSel        = document.getElementById('stream_select');
     const streamLoadSpinner= document.getElementById('stream-loading');
     const streamEvtBadge   = document.getElementById('stream-event-count');
@@ -510,6 +511,11 @@
         dateClick: function(info) {
             const clickedDate = info.dateStr;   // 'YYYY-MM-DD'
             const today       = new Date().toISOString().split('T')[0];
+
+            if (!IS_TEACHER) {
+                showToast('Only teachers are authorised to add attendance.', 'warning');
+                return;
+            }
 
             // Must have a stream selected
             if (!streamSel.value) {

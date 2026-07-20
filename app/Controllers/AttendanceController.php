@@ -3,12 +3,11 @@ namespace App\Controllers;
 
 class AttendanceController extends BaseController
 {
-    // Super Admin (1) is intentionally NOT in this list: they may lack a
-    // school admission but are still allowed to view (and, via the shared
-    // checks below, manage) attendance across schools. Parent (6) stays
-    // listed here to keep add()/save()/saveAjax()/gridPdf()/_showTermGrid()/
-    // saveGrid() locked down for parents — index() grants parents a
-    // separate, read-only child-tabs view instead of bypassing this list.
+    // Used by the read-only index()/_showTermGrid()/gridPdf() views. Super
+    // Admin (1) is intentionally NOT in this list: they may lack a school
+    // admission but are still allowed to view attendance across schools.
+    // Adding/editing attendance (add()/save()/saveAjax()/saveGrid()) is
+    // gated separately, to Teacher (3) only — see TEACHER_ROLE_CAT checks.
     private const UNAUTHORIZED_ROLES = [4, 5, 6];
     private const TEACHER_ROLE_CAT   = 3;
     private const STUDENT_ROLE_CAT   = 4;
@@ -34,21 +33,21 @@ class AttendanceController extends BaseController
         $data['streams']      = [];
         $data['teacherAdmId'] = null;
 
-        if (in_array($roleCatID, self::UNAUTHORIZED_ROLES)) {
-            $data['error'] = 'unauthorised_role';
+        // Adding attendance is a Teacher-only action — Super Admin and every
+        // other role only get the read/manage views on attendance/index.
+        if ($roleCatID !== self::TEACHER_ROLE_CAT) {
+            $data['error'] = 'teacher_only';
             return view('app/layouts/main', $data);
         }
 
-        if ($roleCatID === self::TEACHER_ROLE_CAT) {
-            $admission = $this->studentAttendanceModel->getTeacherActiveAdmission($userID, $schID);
-            if (!$admission) {
-                $data['error'] = 'no_admission';
-                return view('app/layouts/main', $data);
-            }
-            $data['teacherAdmId'] = (int) $admission['admission_id'];
-            if (!$schID) {
-                $schID = (int) $admission['sch_id_fk'];
-            }
+        $admission = $this->studentAttendanceModel->getTeacherActiveAdmission($userID, $schID);
+        if (!$admission) {
+            $data['error'] = 'no_admission';
+            return view('app/layouts/main', $data);
+        }
+        $data['teacherAdmId'] = (int) $admission['admission_id'];
+        if (!$schID) {
+            $schID = (int) $admission['sch_id_fk'];
         }
 
         if (!$schID) {
@@ -139,6 +138,7 @@ class AttendanceController extends BaseController
         $data['_view']        = 'app/attendance/view';
         $data['error']        = null;
         $data['isParentView'] = false;
+        $data['isTeacher']    = ($roleCatID === self::TEACHER_ROLE_CAT);
         $data['streams']      = $schID ? $this->studentAttendanceModel->getStreamsBySchool($schID) : [];
         $data['schID']        = $schID;
         $data['preStreamId']  = $streamId;
@@ -2086,8 +2086,8 @@ class AttendanceController extends BaseController
         $userID    = (int) $this->session->get('userID');
         $schID     = (int) $this->session->get('schID');
 
-        if (in_array($roleCatID, self::UNAUTHORIZED_ROLES)) {
-            return redirect()->to('attendance/add')->with('error', 'You are not authorised to add student attendance.');
+        if ($roleCatID !== self::TEACHER_ROLE_CAT) {
+            return redirect()->to('attendance/add')->with('error', 'Only teachers are authorised to add student attendance.');
         }
 
         $streamId   = (int)   $this->request->getPost('stream_id');
@@ -2098,7 +2098,7 @@ class AttendanceController extends BaseController
             return redirect()->to('attendance/add')->with('error', 'Please select a stream and date, then load students before saving.');
         }
 
-        $admissionId = $this->resolveAdmissionId($roleCatID, $userID, $schID);
+        $admissionId = $this->resolveAdmissionId($userID, $schID);
 
         if ($admissionId === false) {
             return redirect()->to('attendance/add')->with('error', 'No active admission found. Cannot save attendance.');
@@ -2127,8 +2127,8 @@ class AttendanceController extends BaseController
         $userID    = (int) $this->session->get('userID');
         $schID     = (int) $this->session->get('schID');
 
-        if (in_array($roleCatID, self::UNAUTHORIZED_ROLES)) {
-            return $this->response->setJSON(['success' => false, 'message' => 'You are not authorised to add attendance.']);
+        if ($roleCatID !== self::TEACHER_ROLE_CAT) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Only teachers are authorised to add attendance.']);
         }
 
         $streamId   = (int)   $this->request->getPost('stream_id');
@@ -2139,7 +2139,7 @@ class AttendanceController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Missing required data. Ensure stream, date and students are provided.']);
         }
 
-        $admissionId = $this->resolveAdmissionId($roleCatID, $userID, $schID);
+        $admissionId = $this->resolveAdmissionId($userID, $schID);
 
         if ($admissionId === false) {
             return $this->response->setJSON(['success' => false, 'message' => 'No active admission found. Cannot save attendance.']);
@@ -2160,21 +2160,14 @@ class AttendanceController extends BaseController
     }
 
     // ================================================================
-    // PRIVATE — resolve teacher/admin admission ID
-    // Returns false only when Teacher has no active admission
+    // PRIVATE — resolve the calling Teacher's active admission ID.
+    // Only ever called after the Teacher-only gate in save()/saveAjax().
     // ================================================================
-    private function resolveAdmissionId(int $roleCatID, int $userID, int $schID): int|false
+    private function resolveAdmissionId(int $userID, int $schID): int|false
     {
-        if ($roleCatID === self::TEACHER_ROLE_CAT) {
-            $admission = $this->studentAttendanceModel->getTeacherActiveAdmission($userID, $schID);
-            if (!$admission) {
-                return false;
-            }
-            return (int) $admission['admission_id'];
-        }
-
         $admission = $this->studentAttendanceModel->getTeacherActiveAdmission($userID, $schID);
-        return $admission ? (int) $admission['admission_id'] : 0;
+
+        return $admission ? (int) $admission['admission_id'] : false;
     }
 
     // ================================================================

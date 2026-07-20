@@ -25,20 +25,22 @@
 
     <?= $this->include('templates/flash_messages') ?>
 
-    <?php if ($error === 'unauthorised_role'): ?>
-    <!--begin::Unauthorised Role Notice-->
+    <?php if ($error === 'teacher_only'): ?>
+    <!--begin::Teacher Only Notice-->
     <div class="card shadow-sm">
         <div class="card-body p-10 text-center">
-            <i class="ki-duotone ki-lock-3 fs-5x text-danger mb-5">
-                <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+            <i class="ki-duotone ki-teacher fs-5x text-warning mb-5">
+                <span class="path1"></span><span class="path2"></span>
             </i>
-            <h3 class="fs-2 fw-bold text-gray-900 mb-3">Access Denied</h3>
+            <h3 class="fs-2 fw-bold text-gray-900 mb-3">Teachers Only</h3>
             <p class="text-gray-600 fs-5 mb-0">
-                Your user role is not authorised to add student daily attendance records.
+                Adding student daily attendance is restricted to Teacher accounts. If you need
+                attendance recorded for a class, please ask the class teacher to add it, or
+                <a href="<?= base_url('attendance') ?>">view existing attendance records</a> instead.
             </p>
         </div>
     </div>
-    <!--end::Unauthorised Role Notice-->
+    <!--end::Teacher Only Notice-->
 
     <?php elseif ($error === 'no_admission'): ?>
     <!--begin::No Admission Notice-->
