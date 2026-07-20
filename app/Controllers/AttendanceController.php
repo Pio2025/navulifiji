@@ -3,8 +3,16 @@ namespace App\Controllers;
 
 class AttendanceController extends BaseController
 {
-    private const UNAUTHORIZED_ROLES = [1, 4, 5, 6];
+    // Super Admin (1) is intentionally NOT in this list: they may lack a
+    // school admission but are still allowed to view (and, via the shared
+    // checks below, manage) attendance across schools. Parent (6) stays
+    // listed here to keep add()/save()/saveAjax()/gridPdf()/_showTermGrid()/
+    // saveGrid() locked down for parents — index() grants parents a
+    // separate, read-only child-tabs view instead of bypassing this list.
+    private const UNAUTHORIZED_ROLES = [4, 5, 6];
     private const TEACHER_ROLE_CAT   = 3;
+    private const STUDENT_ROLE_CAT   = 4;
+    private const PARENT_ROLE_CAT    = 6;
 
     // ================================================================
     // ADD — landing page
@@ -43,6 +51,10 @@ class AttendanceController extends BaseController
             }
         }
 
+        if (!$schID) {
+            $schID = (int) $this->request->getGet('sch_id');
+        }
+
         $data['streams'] = $this->studentAttendanceModel->getStreamsBySchool($schID);
         $data['schID']   = $schID;
         $data['today']   = date('Y-m-d');
@@ -72,7 +84,26 @@ class AttendanceController extends BaseController
         $userID    = (int) $this->session->get('userID');
         $schID     = (int) $this->session->get('schID');
 
-        if (in_array($roleCatID, self::UNAUTHORIZED_ROLES)) {
+        // Parent role category, or any other role flagged is_a_parent (e.g. an
+        // otherwise-unauthorised staff category) with linked children: show a
+        // read-only tab per child instead of the staff attendance calendar.
+        $isParentCat   = ($roleCatID === self::PARENT_ROLE_CAT);
+        $hasParentFlag = !in_array($roleCatID, [self::TEACHER_ROLE_CAT, self::STUDENT_ROLE_CAT, self::PARENT_ROLE_CAT], true)
+                         && $this->hasParentFlag($userID);
+
+        if ($isParentCat || $hasParentFlag) {
+            $children = $this->parentStudentModel->getChildrenOf($userID);
+            if (!empty($children)) {
+                $data['_view']        = 'app/attendance/view';
+                $data['error']        = null;
+                $data['isParentView'] = true;
+                $data['streams']      = [];
+                $data['children']     = $this->_buildChildAttendancePanels($children);
+                return view('app/layouts/main', $data);
+            }
+        }
+
+        if (in_array($roleCatID, self::UNAUTHORIZED_ROLES, true)) {
             $data['_view']   = 'app/attendance/view';
             $data['error']   = 'unauthorised_role';
             $data['streams'] = [];
@@ -86,13 +117,74 @@ class AttendanceController extends BaseController
             }
         }
 
+        // Super Admin (or any other non-teacher role without a school
+        // admission) isn't tied to one school — let them pick one to view.
+        $data['schools']      = [];
+        $data['isSuperAdmin'] = false;
+        if (!$schID && $roleCatID !== self::TEACHER_ROLE_CAT) {
+            $reqSchId = (int) $this->request->getGet('sch_id');
+            if ($reqSchId > 0) {
+                $schID = $reqSchId;
+                $this->session->set('att_active_sch_id', $schID);
+            } else {
+                $cachedSchId = (int) $this->session->get('att_active_sch_id');
+                if ($cachedSchId > 0) {
+                    $schID = $cachedSchId;
+                }
+            }
+            $data['schools']      = $this->schoolModel->getAllSchool();
+            $data['isSuperAdmin'] = true;
+        }
+
         $data['_view']        = 'app/attendance/view';
         $data['error']        = null;
-        $data['streams']      = $this->studentAttendanceModel->getStreamsBySchool($schID);
+        $data['isParentView'] = false;
+        $data['streams']      = $schID ? $this->studentAttendanceModel->getStreamsBySchool($schID) : [];
         $data['schID']        = $schID;
         $data['preStreamId']  = $streamId;
 
         return view('app/layouts/main', $data);
+    }
+
+    // ================================================================
+    // PARENT / FLAGGED-PARENT — build one read-only attendance panel per
+    // linked child, resolving each child's current active stream + term.
+    // ================================================================
+    private function _buildChildAttendancePanels(array $children): array
+    {
+        $db     = \Config\Database::connect();
+        $panels = [];
+
+        foreach ($children as $child) {
+            $childUserId = (int) $child['user_id'];
+
+            $row = $db->query("
+                SELECT e.stream_id_fk, e.enrol_term, st.stream_name, l.level_name
+                FROM admission a
+                LEFT JOIN enrolment e  ON e.admission_id_fk = a.admission_id AND e.enrol_status = 'Active'
+                LEFT JOIN stream    st ON st.stream_id       = e.stream_id_fk
+                LEFT JOIN sch_level sl ON sl.sch_level_id    = st.sch_level_id_fk
+                LEFT JOIN level     l  ON l.level_id         = sl.level_id_fk
+                WHERE a.user_id_fk = ? AND a.admission_status = 'Active'
+                ORDER BY a.admission_id DESC, e.enrol_id DESC
+                LIMIT 1
+            ", [$childUserId])->getRowArray();
+
+            $streamId = (int) ($row['stream_id_fk'] ?? 0);
+            $termNo   = max(1, min(3, (int) ($row['enrol_term'] ?? 1)));
+
+            $panels[] = [
+                'user_id'       => $childUserId,
+                'fname'         => $child['fname'] ?? '',
+                'lname'         => $child['lname'] ?? '',
+                'relationship'  => $child['relationship'] ?? '',
+                'photo'         => $child['profile_photo'] ?? null,
+                'has_classroom' => $streamId > 0,
+                'view'          => $streamId > 0 ? $this->_computeDailyAttendanceView($childUserId, $streamId, $termNo) : null,
+            ];
+        }
+
+        return $panels;
     }
 
     // ================================================================
@@ -1048,6 +1140,21 @@ class AttendanceController extends BaseController
             }
         }
 
+        $data          = $this->_computeDailyAttendanceView($userId, $streamId, $termNo);
+        $data['_view'] = 'app/attendance/my_daily';
+
+        return view('app/layouts/main', $data);
+    }
+
+    // ================================================================
+    // Shared per-student daily-attendance data builder — used by both the
+    // self/parent-viewer (myDailyAttendance) and the parent child-tabs on
+    // index() (_buildChildAttendancePanels).
+    // ================================================================
+    private function _computeDailyAttendanceView(int $userId, int $streamId, int $termNo): array
+    {
+        $db = \Config\Database::connect();
+
         $streamInfo = $streamId ? $this->studentAttendanceModel->getStreamById($streamId) : null;
 
         // Load term config
@@ -1083,7 +1190,6 @@ class AttendanceController extends BaseController
         }
 
         // Get student's enrol_id for this stream
-        $db  = \Config\Database::connect();
         $adm = $db->table('admission')->select('admission_id')
             ->where('user_id_fk', $userId)
             ->where('admission_status', 'Active')
@@ -1134,26 +1240,25 @@ class AttendanceController extends BaseController
         $numMarked = count($markedDates);
         $pct       = $numMarked > 0 ? round($present / $numMarked * 100, 1) : 0.0;
 
-        $data['_view']        = 'app/attendance/my_daily';
-        $data['streamId']     = $streamId;
-        $data['streamInfo']   = $streamInfo;
-        $data['termNo']       = $termNo;
-        $data['termLabel']    = $termLabel;
-        $data['termInfo']     = $termInfo;
-        $data['weeks']        = $weeks;
-        $data['dayNames']     = $dayNames;
-        $data['attendance']   = $attendance;
-        $data['holidays']     = $holidays;
-        $data['today']        = $today;
-        $data['summaryStats'] = [
-            'present'   => $present,
-            'absent'    => $absent,
-            'unmarked'  => $unmarked,
-            'numMarked' => $numMarked,
-            'pct'       => $pct,
+        return [
+            'streamId'     => $streamId,
+            'streamInfo'   => $streamInfo,
+            'termNo'       => $termNo,
+            'termLabel'    => $termLabel,
+            'termInfo'     => $termInfo,
+            'weeks'        => $weeks,
+            'dayNames'     => $dayNames,
+            'attendance'   => $attendance,
+            'holidays'     => $holidays,
+            'today'        => $today,
+            'summaryStats' => [
+                'present'   => $present,
+                'absent'    => $absent,
+                'unmarked'  => $unmarked,
+                'numMarked' => $numMarked,
+                'pct'       => $pct,
+            ],
         ];
-
-        return view('app/layouts/main', $data);
     }
 
     // ================================================================

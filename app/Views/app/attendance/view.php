@@ -14,10 +14,12 @@
             </ul>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="<?= base_url('attendance/add') ?>" class="btn btn-sm btn-primary">
+            <?php if (empty($isParentView)): ?>
+            <a href="<?= base_url('attendance/add' . (!empty($schID) ? '?sch_id=' . (int) $schID : '')) ?>" class="btn btn-sm btn-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
                 Add Attendance
             </a>
+            <?php endif; ?>
         </div>
     </div>
 </div>
@@ -39,6 +41,88 @@
             <p class="text-gray-600 fs-5 mb-0">Your user role is not authorised to view student daily attendance records.</p>
         </div>
     </div>
+    <?php elseif (!empty($isParentView)): ?>
+
+    <!--begin::Child attendance tabs-->
+    <div class="card shadow-sm">
+        <div class="card-header border-0 pt-5">
+            <h3 class="card-title fw-bold text-gray-800 fs-5">
+                <i class="ki-duotone ki-people fs-3 text-primary me-2">
+                    <span class="path1"></span><span class="path2"></span><span class="path3"></span>
+                    <span class="path4"></span><span class="path5"></span>
+                </i>
+                Your Children
+            </h3>
+        </div>
+        <div class="card-body pt-0">
+            <?php if (empty($children)): ?>
+            <div class="text-center text-muted py-10">No children linked to your account yet.</div>
+            <?php else: ?>
+            <div class="d-flex flex-wrap gap-2 mb-6" id="att-child-tabs">
+                <?php foreach ($children as $i => $c): ?>
+                <?php $childName = trim(($c['fname'] ?? '') . ' ' . ($c['lname'] ?? '')); ?>
+                <button type="button" class="att-child-tab btn btn-sm <?= $i === 0 ? 'btn-primary' : 'btn-light' ?>"
+                        data-child="<?= (int) $c['user_id'] ?>">
+                    <i class="ki-duotone ki-profile-circle fs-5 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                    <?= esc($childName) ?>
+                </button>
+                <?php endforeach; ?>
+            </div>
+
+            <?php foreach ($children as $i => $c): ?>
+            <div class="att-child-panel <?= $i === 0 ? '' : 'd-none' ?>" id="att-child-panel-<?= (int) $c['user_id'] ?>">
+                <?php if (empty($c['has_classroom'])): ?>
+                <div class="text-center text-muted py-10">
+                    <?= esc(trim(($c['fname'] ?? '') . ' ' . ($c['lname'] ?? ''))) ?> has no active classroom this year.
+                </div>
+                <?php else: ?>
+                <?= $this->include('app/attendance/_mini_grid', ['panel' => $c]) ?>
+                <?php endif; ?>
+            </div>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+    <!--end::Child attendance tabs-->
+
+    <style>
+        .my-att-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .my-att-table { border-collapse: separate; border-spacing: 5px; width: max-content; min-width: 320px; }
+        .my-att-day-head { width: 52px; }
+        .my-att-week-head { text-align: center; font-weight: 700; font-size: 13px; color: #e6a817; background: #fff8e6; border-radius: 8px; padding: 8px 12px; min-width: 58px; letter-spacing: .5px; }
+        .my-att-day-label { font-weight: 700; font-size: 13px; color: #1a56db; text-align: right; padding-right: 10px; background: #eef2ff; border-radius: 8px; padding: 8px 12px; white-space: nowrap; }
+        .my-att-cell { text-align: center; padding: 4px; border-radius: 8px; }
+        .my-att-cell.col-even { background: #fafafa; }
+        .my-att-cell.col-odd  { background: #f4f6ff; }
+        .my-att-val { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 8px; font-size: 16px; font-weight: 800; cursor: default; }
+        .my-att-val.present  { background: #d1fae5; color: #065f46; }
+        .my-att-val.absent   { background: #fee2e2; color: #991b1b; }
+        .my-att-val.unmarked { background: #f3f4f6; color: #9ca3af; font-size: 13px; }
+        .my-att-val.future   { background: transparent; color: #d1d5db; font-size: 13px; }
+        .my-att-val.holiday  { background: #ede9fe; color: #6d28d9; font-size: 13px; font-weight: 800; }
+    </style>
+
+    <script>
+    (function () {
+        document.querySelectorAll('.att-child-tab').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('.att-child-tab').forEach(function (b) {
+                    b.classList.remove('btn-primary');
+                    b.classList.add('btn-light');
+                });
+                this.classList.remove('btn-light');
+                this.classList.add('btn-primary');
+
+                document.querySelectorAll('.att-child-panel').forEach(function (p) {
+                    p.classList.add('d-none');
+                });
+                var panel = document.getElementById('att-child-panel-' + this.dataset.child);
+                if (panel) panel.classList.remove('d-none');
+            });
+        });
+    })();
+    </script>
+
     <?php else: ?>
 
     <!--begin::Toast notification (stream not selected etc.) -->
@@ -54,6 +138,28 @@
         </div>
     </div>
     <!--end::Toast-->
+
+    <?php if (!empty($isSuperAdmin)): ?>
+    <!--begin::School selector card (no fixed school admission)-->
+    <div class="card shadow-sm mb-6">
+        <div class="card-body py-5">
+            <label class="form-label fw-semibold required">Select School</label>
+            <select id="att_school_select" class="form-select form-select-solid"
+                    onchange="if (this.value) window.location.href = '<?= base_url('attendance') ?>?sch_id=' + this.value;">
+                <option value="">-- Choose a school --</option>
+                <?php foreach ($schools as $s): ?>
+                <option value="<?= $s['sch_id'] ?>" <?= (int) ($schID ?? 0) === (int) $s['sch_id'] ? 'selected' : '' ?>>
+                    <?= esc($s['sch_name']) ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
+            <?php if (empty($schools)): ?>
+            <div class="text-danger fs-7 mt-1">No schools found.</div>
+            <?php endif; ?>
+        </div>
+    </div>
+    <!--end::School selector card-->
+    <?php endif; ?>
 
     <!--begin::Stream selector card-->
     <div class="card shadow-sm mb-6">
@@ -71,7 +177,9 @@
                         <?php endforeach; ?>
                     </select>
                     <?php if (empty($streams)): ?>
-                    <div class="text-danger fs-7 mt-1">No streams found for your school.</div>
+                    <div class="text-danger fs-7 mt-1">
+                        <?= (!empty($isSuperAdmin) && empty($schID)) ? 'Please select a school above to load streams.' : 'No streams found for your school.' ?>
+                    </div>
                     <?php endif; ?>
                 </div>
                 <div class="col-md-5 d-flex align-items-end gap-3">
@@ -302,7 +410,7 @@
 </div>
 <!--end::Content-->
 
-<?php if (($error ?? null) === null): ?>
+<?php if (($error ?? null) === null && empty($isParentView)): ?>
 <script>
 (function () {
     'use strict';
