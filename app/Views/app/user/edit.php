@@ -231,6 +231,25 @@
 					</div>
 					<!--end::Account Information-->
 
+					<!--begin::Parent Checkbox-->
+					<?php $showParentCheckbox = !in_array((int)$currentRoleCatId, [4, 6]); ?>
+					<div class="row mb-6" id="parent-checkbox-row" style="<?= $showParentCheckbox ? '' : 'display:none;' ?>">
+						<div class="col-lg-12">
+							<div class="d-flex align-items-start gap-3 rounded border border-dashed border-warning px-6 py-4">
+								<div class="form-check form-check-custom flex-shrink-0 mt-1">
+									<input class="form-check-input" type="checkbox" name="is_a_parent" value="1" id="is_a_parent" <?= old('is_a_parent', $user['is_a_parent'] ?? 0) ? 'checked' : '' ?> />
+								</div>
+								<div>
+									<label class="form-check-label fw-semibold text-gray-700 cursor-pointer fs-6 d-block mb-1" for="is_a_parent">
+										Check if user is a parent
+									</label>
+									<div class="form-text mt-0">Select this option if the user is also a parent and requires access to the Navuli SMIS parent portal</div>
+								</div>
+							</div>
+						</div>
+					</div>
+					<!--end::Parent Checkbox-->
+
 					<!--begin::User Admission Detail (read-only display)-->
 					<?php $showAdm = in_array((int)$currentRoleCatId, [3, 4]); ?>
 					<div id="admission-detail-section" class="row mb-4" style="<?= $showAdm ? '' : 'display:none;' ?>">
@@ -346,6 +365,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const admSchId            = document.getElementById('admission-sch-id');
     const admStatus           = document.getElementById('admission-status');
     const admNote             = document.getElementById('admission-note');
+    const parentCheckboxRow   = document.getElementById('parent-checkbox-row');
+    const isAParentInput      = document.getElementById('is_a_parent');
 
     function toggleAdmissionSection() {
         const opt   = roleSelect ? roleSelect.options[roleSelect.selectedIndex] : null;
@@ -362,9 +383,20 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function toggleParentCheckbox() {
+        const opt   = roleSelect ? roleSelect.options[roleSelect.selectedIndex] : null;
+        const catId = opt ? parseInt(opt.getAttribute('data-role-cat-id') || '0', 10) : 0;
+        const show  = catId !== 4 && catId !== 6;
+
+        if (parentCheckboxRow) parentCheckboxRow.style.display = show ? '' : 'none';
+        if (!show && isAParentInput) isAParentInput.checked = false;
+    }
+
     if (roleSelect) {
         roleSelect.addEventListener('change', toggleAdmissionSection);
+        roleSelect.addEventListener('change', toggleParentCheckbox);
         toggleAdmissionSection();
+        toggleParentCheckbox();
     }
 
     const form = document.getElementById('kt_user_edit_form');

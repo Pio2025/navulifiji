@@ -3072,6 +3072,14 @@ class UserController extends BaseController
             $name       = trim(($student['fname'] ?? '') . ' ' . ($student['lname'] ?? ''));
             $parentUser = $this->userModel->find($parentId);
 
+            // Linking a child makes this account a parent for dashboard/wall/
+            // notice/timetable purposes — set the flag automatically so the
+            // combined parent views work without a separate manual step.
+            if ((int) ($parentUser['is_a_parent'] ?? 0) !== 1) {
+                $this->userModel->update($parentId, ['is_a_parent' => 1]);
+                $parentUser['is_a_parent'] = 1;
+            }
+
             // Keep Next of Kin in sync: linking a parent/guardian should also
             // register them as the student's next of kin, so this doesn't need
             // to be entered twice in two different places.
