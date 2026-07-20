@@ -22,7 +22,7 @@ $enrolClass  = match($c['enrol_status'] ?? '') {
         <!--begin::School-->
         <div class="d-flex align-items-center mb-4">
             <?php if (!empty($c['sch_logo'])): ?>
-                <img src="<?= base_url('uploads/schoolLogo/' . esc($c['sch_logo'])) ?>"
+                <img src="<?= base_url('uploads/school/logo/' . esc($c['sch_logo'])) ?>"
                      alt="logo" class="h-25px me-2 rounded" />
             <?php else: ?>
                 <i class="ki-duotone ki-home fs-4 text-primary me-2">
