@@ -500,22 +500,31 @@ class AdmissionController extends BaseController
                     ]);
 
                     if ($enrolId && (int) $this->request->getPost('has_subjects')) {
-                        $coreSubjects = $this->request->getPost('core_subjects') ?? [];
-                        $optSubjects  = [];
-                        foreach ($this->request->getPost() as $key => $val) {
-                            if (preg_match('/^optional_group_\d+$/', $key) && !empty($val)) {
-                                $optSubjects[] = (int) $val;
-                            }
-                        }
+                        $classRow = $db->table('classroom')
+                            ->where('stream_id_fk', $enrolStreamId)
+                            ->where('class_year',   $enrolYear)
+                            ->get()->getRowArray();
+                        $classId = $classRow ? (int) $classRow['class_id'] : 0;
 
-                        $allSubjects = array_merge(array_map('intval', $coreSubjects), $optSubjects);
-                        foreach ($allSubjects as $schSubId) {
-                            if ($schSubId > 0) {
-                                $db->table('student_subject')->insert([
-                                    'enrol_id_fk'     => $enrolId,
-                                    'sch_sub_id_fk'   => $schSubId,
-                                    'stud_sub_status' => 'Active',
-                                ]);
+                        if ($classId) {
+                            $coreSubjects = $this->request->getPost('core_subjects') ?? [];
+                            $optSubjects  = [];
+                            foreach ($this->request->getPost() as $key => $val) {
+                                if (preg_match('/^optional_group_\d+$/', $key) && !empty($val)) {
+                                    $optSubjects[] = (int) $val;
+                                }
+                            }
+
+                            $allSubjects = array_merge(array_map('intval', $coreSubjects), $optSubjects);
+                            foreach ($allSubjects as $schSubId) {
+                                if ($schSubId > 0) {
+                                    $db->table('student_subject')->insert([
+                                        'admission_id_fk' => $admissionId,
+                                        'class_id_fk'     => $classId,
+                                        'sch_sub_id_fk'   => $schSubId,
+                                        'stud_sub_status' => 'Active',
+                                    ]);
+                                }
                             }
                         }
                     }
