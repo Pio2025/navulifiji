@@ -319,6 +319,7 @@
                                         default      => $qCount . ' question' . ($qCount !== 1 ? 's' : ''),
                                     };
                                     ?>
+                                    <?php if ($isAttempted || ($fullAccess ?? false)): ?>
                                     <li>
                                         <a class="dropdown-item d-flex align-items-center gap-2 py-2 btn-take-assessment"
                                            href="javascript:void(0)"
@@ -333,6 +334,14 @@
                                             Take Assessment
                                         </a>
                                     </li>
+                                    <?php else: ?>
+                                    <li>
+                                        <span class="dropdown-item text-muted d-flex align-items-center gap-2 py-2">
+                                            <i class="ki-duotone ki-lock fs-5 text-warning"><span class="path1"></span><span class="path2"></span></i>
+                                            View only — access restricted
+                                        </span>
+                                    </li>
+                                    <?php endif; ?>
                                     <?php if ($isAttempted): ?>
                                     <li><div class="dropdown-divider my-1"></div></li>
                                     <li>
@@ -414,6 +423,7 @@
         <div class="card-body pt-4 pb-6">
 
             <!--begin::Post form-->
+            <?php if ($fullAccess ?? false): ?>
             <div class="card card-flush mb-8 border border-dashed border-gray-200">
                 <div class="card-header justify-content-start align-items-center pt-4 pb-0 border-0">
                     <div class="symbol symbol-40px me-4 flex-shrink-0">
@@ -435,6 +445,12 @@
                     </button>
                 </div>
             </div>
+            <?php else: ?>
+            <div class="alert alert-light-warning d-flex align-items-center gap-2 mb-8 py-3">
+                <i class="ki-duotone ki-lock fs-3 text-warning"><span class="path1"></span><span class="path2"></span></i>
+                <span class="fs-7 fw-semibold text-gray-700">Your access to this classroom is view-only. You can no longer post in discussions.</span>
+            </div>
+            <?php endif; ?>
             <!--end::Post form-->
 
             <!--begin::Discussions list-->
@@ -556,6 +572,7 @@
                         </div>
                         <?php endforeach; ?>
                         </div>
+                        <?php if ($fullAccess ?? false): ?>
                         <div class="d-flex align-items-center gap-3 mt-3">
                             <div class="symbol symbol-32px flex-shrink-0">
                                 <?php if ($sessionPhotoUrl): ?>
@@ -570,6 +587,7 @@
                                 <i class="ki-duotone ki-send fs-5"><span class="path1"></span><span class="path2"></span></i>
                             </button>
                         </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

@@ -844,7 +844,7 @@
                                     <i class="ki-duotone ki-down fs-5"><span class="path1"></span><span class="path2"></span></i>
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end py-2 fs-7 fw-semibold" style="min-width:175px;">
-                                    <?php if (!($isParentView ?? false)): ?>
+                                    <?php if (!($isParentView ?? false) && ($fullAccess ?? false)): ?>
                                     <li>
                                         <a class="dropdown-item py-2"
                                            href="<?= base_url('classroom/student/' . $classSubId . '/assignment/' . $asgn['assignment_id'] . '/submit') ?>">
@@ -1327,7 +1327,7 @@
                         'sessionPhotoUrl' => $sessionPhotoUrl ?? null,
                         'sessionUserId'   => $sessionUserId   ?? 0,
                         'sdPostUrl'       => base_url('classroom/' . $classId . '/discussion/post'),
-                        'canPost'         => !($isParentView ?? false),
+                        'canPost'         => !($isParentView ?? false) && ($fullAccess ?? false),
                     ]) ?>
 
                     <?php else: ?>

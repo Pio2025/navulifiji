@@ -1756,6 +1756,49 @@ class ClassroomController extends BaseController
         return $enrolled ? $cs : null;
     }
 
+    /**
+     * Full classroom access requires ALL of: admission Active (for the
+     * school behind this classroom's stream), enrolment Active (for that
+     * stream, in the classroom's year), and the classroom year being the
+     * current calendar year. Any failure -> view-only ("ex scholar").
+     */
+    private function studentHasFullClassroomAccess(int $userId, int $classId): bool
+    {
+        $db = \Config\Database::connect();
+
+        $classroom = $db->table('classroom')->where('class_id', $classId)->get()->getRowArray();
+        if (!$classroom) return false;
+
+        if ((int) $classroom['class_year'] !== (int) date('Y')) {
+            return false;
+        }
+
+        $enrolment = $db->query("
+            SELECT e.enrol_status, a.admission_status
+            FROM enrolment e
+            INNER JOIN admission a ON a.admission_id = e.admission_id_fk
+            WHERE a.user_id_fk = ? AND e.stream_id_fk = ? AND e.enrol_year = ?
+            LIMIT 1
+        ", [$userId, $classroom['stream_id_fk'], $classroom['class_year']])->getRowArray();
+
+        if (!$enrolment) return false;
+
+        return strtolower($enrolment['admission_status'] ?? '') === 'active'
+            && strtolower($enrolment['enrol_status'] ?? '') === 'active';
+    }
+
+    private function resolveClassIdFromLesson(int $lessonId): ?int
+    {
+        $db  = \Config\Database::connect();
+        $row = $db->query("
+            SELECT cs.class_id_fk AS class_id
+            FROM classroom_lesson cl
+            INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+            WHERE cl.lesson_id = ?
+        ", [$lessonId])->getRowArray();
+        return $row ? (int) $row['class_id'] : null;
+    }
+
     public function studentAssignmentSubmit(int $classSubId, int $assignmentId)
     {
         if (!$this->isLoggedIn()) return redirect()->to('auth/login');
@@ -1764,6 +1807,11 @@ class ClassroomController extends BaseController
 
         $cs = $this->resolveStudentClassSub($classSubId, $userId);
         if (!$cs) return redirect()->to('classroom/my')->with('error', 'Access denied.');
+
+        if (!$this->studentHasFullClassroomAccess($userId, (int) $cs['class_id'])) {
+            return redirect()->to('classroom/student/' . $classSubId . '/assignments')
+                ->with('error', 'Your access to this classroom is view-only. You can no longer submit assignments.');
+        }
 
         $db = \Config\Database::connect();
         $assignment = $db->query("
@@ -1827,6 +1875,10 @@ class ClassroomController extends BaseController
 
         $cs = $this->resolveStudentClassSub($classSubId, $userId);
         if (!$cs) return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
+
+        if (!$this->studentHasFullClassroomAccess($userId, (int) $cs['class_id'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Your access to this classroom is view-only. You can no longer submit assignments.']);
+        }
 
         $db = \Config\Database::connect();
 
@@ -2115,6 +2167,7 @@ class ClassroomController extends BaseController
         $data['classId']       = $classId;
         $data['isParentView']  = $isParentView;
         $data['backUrl']       = $backUrl;
+        $data['fullAccess']    = $this->studentHasFullClassroomAccess($effectiveUserId, $classId);
 
         if ($section === 'lessons' || $section === 'dashboard') {
             $data['lessons']   = $this->classroomLessonModel->getLessonsForSubject($classSubId);
@@ -2304,6 +2357,7 @@ class ClassroomController extends BaseController
         $data['sessionFname']       = $this->session->get('fname') ?? 'you';
         $data['sessionPhotoUrl']    = $sessionPhoto ? base_url('uploads/profilePhoto/' . $sessionPhoto) : null;
         $data['sessionUserId']      = $userId;
+        $data['fullAccess']         = $this->studentHasFullClassroomAccess($userId, $classId);
         $data['discussions']        = $this->lessonDiscussionModel->getDiscussions($lessonId, $userId);
         $data['quizzes']            = array_values(array_filter(
             $this->lessonQuizzeModel->getQuizzesWithQuestionsForLesson($lessonId),
@@ -2705,6 +2759,11 @@ class ClassroomController extends BaseController
             ->where('class_stud_status','Active')->get()->getRowArray();
         if (!$enrolled) return redirect()->to('classroom/my')->with('error','Not enrolled.');
 
+        if (!$this->studentHasFullClassroomAccess($userId, (int) $cs['class_id'])) {
+            return redirect()->to("classroom/student/{$classSubId}/lesson/{$lessonId}")
+                ->with('error', 'Your access to this classroom is view-only. Assessments cannot be attempted.');
+        }
+
         $quiz = $db->table('lesson_quizze')
             ->where('lesson_quizze_id', $quizzeId)->where('lesson_id_fk', $lessonId)
             ->where('assessment_type','labelling')->where('quizze_status','Published')
@@ -2880,6 +2939,11 @@ class ClassroomController extends BaseController
             ->where('user_id_fk', $userId)
             ->where('class_stud_status', 'Active')->get()->getRowArray();
         if (!$enrolled) return redirect()->to('classroom/my')->with('error', 'Not enrolled in this classroom.');
+
+        if (!$this->studentHasFullClassroomAccess($userId, (int) $classroomSubject['class_id'])) {
+            return redirect()->to("classroom/student/{$classSubId}/lesson/{$lessonId}")
+                ->with('error', 'Your access to this classroom is view-only. Assessments cannot be attempted.');
+        }
 
         $quiz = $db->table('lesson_quizze')
             ->where('lesson_quizze_id', $quizzeId)
@@ -3082,6 +3146,11 @@ class ClassroomController extends BaseController
 
         if (!$enrolled) {
             return redirect()->to('classroom/my')->with('error', 'Not enrolled in this classroom.');
+        }
+
+        if (!$this->studentHasFullClassroomAccess($userId, (int) $classroomSubject['class_id'])) {
+            return redirect()->to("classroom/student/{$classSubId}/lesson/{$lessonId}")
+                ->with('error', 'Your access to this classroom is view-only. Assessments cannot be attempted.');
         }
 
         $quiz = $this->lessonQuizzeModel->getQuizWithQuestions($quizzeId);
@@ -3939,6 +4008,14 @@ class ClassroomController extends BaseController
         }
 
         $userId = (int) $this->session->get('userID');
+
+        if ((int) $this->session->get('roleCatID') === 4) {
+            $classId = $this->resolveClassIdFromLesson($lessonId);
+            if ($classId && !$this->studentHasFullClassroomAccess($userId, $classId)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Your access to this classroom is view-only. You can no longer post in discussions.']);
+            }
+        }
+
         $now    = date('Y-m-d H:i:s');
 
         $this->lessonDiscussionModel->insert([
@@ -3998,6 +4075,14 @@ class ClassroomController extends BaseController
         }
 
         $userId = (int) $this->session->get('userID');
+
+        if ((int) $this->session->get('roleCatID') === 4) {
+            $classId = $this->resolveClassIdFromLesson($lessonId);
+            if ($classId && !$this->studentHasFullClassroomAccess($userId, $classId)) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Your access to this classroom is view-only. You can no longer post in discussions.']);
+            }
+        }
+
         $now    = date('Y-m-d H:i:s');
         $db     = \Config\Database::connect();
 
@@ -5867,6 +5952,10 @@ class ClassroomController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Access denied.']);
         }
 
+        if ((int) $this->session->get('roleCatID') === 4 && !$this->studentHasFullClassroomAccess($userId, $classId)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Your access to this classroom is view-only. You can no longer post in discussions.']);
+        }
+
         $db        = \Config\Database::connect();
         $classroom = $db->table('classroom')->select('class_status')->where('class_id', $classId)->get()->getRowArray();
         if (!$classroom || $classroom['class_status'] !== 'Active') {
@@ -5994,6 +6083,10 @@ class ClassroomController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'This classroom is no longer active.']);
         }
 
+        if ((int) $this->session->get('roleCatID') === 4 && !$this->studentHasFullClassroomAccess($userId, (int) $post['class_id_fk'])) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Your access to this classroom is view-only. You can no longer post in discussions.']);
+        }
+
         $db->table('class_discussion_comment')->insert([
             'cd_id_fk'       => $postId,
             'author'         => $userId,
@@ -6071,13 +6164,17 @@ class ClassroomController extends BaseController
             return $this->response->setJSON(['success' => false, 'message' => 'Comment not found.']);
         }
         $classStatus = $db->query("
-            SELECT c.class_status FROM class_discussion_comment cdc
+            SELECT c.class_id, c.class_status FROM class_discussion_comment cdc
             INNER JOIN class_discussion cd ON cd.cd_id = cdc.cd_id_fk
             INNER JOIN classroom c ON c.class_id = cd.class_id_fk
             WHERE cdc.cdc_id = ?
         ", [$commentId])->getRow();
         if (!$classStatus || $classStatus->class_status !== 'Active') {
             return $this->response->setJSON(['success' => false, 'message' => 'This classroom is no longer active.']);
+        }
+
+        if ((int) $this->session->get('roleCatID') === 4 && !$this->studentHasFullClassroomAccess($userId, (int) $classStatus->class_id)) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Your access to this classroom is view-only. You can no longer post in discussions.']);
         }
 
         $db->table('class_discussion_comment_reply')->insert([
