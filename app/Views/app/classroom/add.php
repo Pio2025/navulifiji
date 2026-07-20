@@ -184,6 +184,16 @@ $('#stream_select').select2({
     width: '100%',
 });
 
+// Pre-fill stream when arriving from "no classroom yet" prompt (e.g. Admission form)
+(function preselectStreamFromQuery() {
+    const params   = new URLSearchParams(window.location.search);
+    const streamId = params.get('stream_id_fk');
+    if (streamId && document.querySelector('#stream_select option[value="' + streamId + '"]')) {
+        $('#stream_select').val(streamId).trigger('change');
+        autoFillClassName();
+    }
+})();
+
 function autoFillClassName() {
     const sel        = document.getElementById('stream_select');
     const opt        = sel.options[sel.selectedIndex];

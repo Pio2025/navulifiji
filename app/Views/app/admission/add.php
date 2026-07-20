@@ -1039,6 +1039,24 @@ document.getElementById('btn_save_admission').addEventListener('click', function
                             location.reload();
                         }
                     });
+                } else if (response.no_classroom) {
+                    Swal.fire({
+                        title:             'No Classroom Yet',
+                        text:              response.message,
+                        icon:              'warning',
+                        buttonsStyling:    false,
+                        showCancelButton:  true,
+                        confirmButtonText: 'Add Classroom',
+                        cancelButtonText:  'Cancel',
+                        customClass: {
+                            confirmButton: 'btn btn-primary me-3',
+                            cancelButton:  'btn btn-light',
+                        }
+                    }).then(function(r) {
+                        if (r.isConfirmed) {
+                            window.location.href = '<?= base_url('classroom/add') ?>?stream_id_fk=' + response.stream_id;
+                        }
+                    });
                 } else {
                     Swal.fire({
                         title:             'Failed',

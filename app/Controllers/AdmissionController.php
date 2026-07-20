@@ -433,6 +433,37 @@ class AdmissionController extends BaseController
                 ]);
             }
 
+            $db = \Config\Database::connect();
+
+            // If enrolling into a stream, an active classroom must already exist for it
+            // this year — check upfront so we don't create an admission/enrolment that
+            // has nowhere to attach (no classroom to register subjects/attendance against).
+            $enrolStreamId = (int) $this->request->getPost('enrol_stream_id');
+            $classId       = 0;
+            $enrolYear     = 0;
+            if ($enrolStreamId > 0) {
+                $enrolYear = (int) ($this->request->getPost('enrol_year') ?: date('Y'));
+
+                $classRow = $db->table('classroom')
+                    ->where('stream_id_fk', $enrolStreamId)
+                    ->where('class_year',   $enrolYear)
+                    ->where('class_status', 'Active')
+                    ->get()->getRowArray();
+
+                if (!$classRow) {
+                    $stream = $db->table('stream')->where('stream_id', $enrolStreamId)->get()->getRowArray();
+                    return $this->response->setJSON([
+                        'success'      => false,
+                        'no_classroom' => true,
+                        'stream_id'    => $enrolStreamId,
+                        'message'      => 'No active classroom exists for "' . ($stream['stream_name'] ?? 'this stream')
+                                          . '" in ' . $enrolYear . '. Please create one first, then try enrolling again.'
+                    ]);
+                }
+
+                $classId = (int) $classRow['class_id'];
+            }
+
             // Non Super Admin — enforce their school
             $isSuperAdmin = (int) $this->session->get('roleID') === 1;
             if (!$isSuperAdmin) {
@@ -456,7 +487,6 @@ class AdmissionController extends BaseController
             }
 
             $user = $this->userModel->find($userId);
-            $db   = \Config\Database::connect();
 
             // Save teaching subjects if provided (Teacher role)
             $teachingSubjectsJson = $this->request->getPost('teaching_subjects');
@@ -475,8 +505,8 @@ class AdmissionController extends BaseController
                 }
             }
 
-            // Create enrolment + student subjects if a stream was selected (Student role)
-            $enrolStreamId = (int) $this->request->getPost('enrol_stream_id');
+            // Create enrolment + student subjects if a stream was selected (Student role).
+            // Classroom existence for ($enrolStreamId, $enrolYear) was already verified above.
             if ($enrolStreamId > 0) {
                 // Prevent duplicate active enrolment
                 $existingEnrol = $db->table('enrolment')
@@ -485,7 +515,6 @@ class AdmissionController extends BaseController
                     ->get()->getRowArray();
 
                 if (!$existingEnrol) {
-                    $enrolYear = (int) ($this->request->getPost('enrol_year') ?: date('Y'));
                     $enrolTerm = (int) ($this->request->getPost('enrol_term') ?: 1);
                     $enrolDate = $this->request->getPost('enrol_date') ?: date('Y-m-d');
 
@@ -499,14 +528,8 @@ class AdmissionController extends BaseController
                         'enrol_status'    => 'Active',
                     ]);
 
-                    if ($enrolId && (int) $this->request->getPost('has_subjects')) {
-                        $classRow = $db->table('classroom')
-                            ->where('stream_id_fk', $enrolStreamId)
-                            ->where('class_year',   $enrolYear)
-                            ->get()->getRowArray();
-                        $classId = $classRow ? (int) $classRow['class_id'] : 0;
-
-                        if ($classId) {
+                    if ($enrolId) {
+                        if ((int) $this->request->getPost('has_subjects')) {
                             $coreSubjects = $this->request->getPost('core_subjects') ?? [];
                             $optSubjects  = [];
                             foreach ($this->request->getPost() as $key => $val) {
@@ -526,6 +549,23 @@ class AdmissionController extends BaseController
                                     ]);
                                 }
                             }
+                        }
+
+                        // Auto-enrol into classroom_student, same as EnrolmentController/UserController,
+                        // so the student immediately sees this classroom on "My Classroom".
+                        $alreadyEnrolled = $db->table('classroom_student')
+                            ->where('class_id_fk', $classId)
+                            ->where('user_id_fk',  $userId)
+                            ->countAllResults() > 0;
+
+                        if (!$alreadyEnrolled) {
+                            $db->table('classroom_student')->insert([
+                                'class_id_fk'       => $classId,
+                                'user_id_fk'        => $userId,
+                                'class_stud_status' => 'Active',
+                                'admitted_at'       => date('Y-m-d'),
+                                'admitted_by'       => (int) $this->session->get('userID'),
+                            ]);
                         }
                     }
                 }
