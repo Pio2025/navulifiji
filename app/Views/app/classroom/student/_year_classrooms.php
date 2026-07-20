@@ -21,10 +21,10 @@ $attendanceSuffix = $parentChildId > 0 ? '&student_id=' . $parentChildId : '';
 
 <?php else: ?>
 <?php foreach ($classrooms as $cls):
-    $statusColor = match($cls['class_stud_status']) {
-        'Active'    => 'success',
-        'Completed' => 'info',
-        'Inactive'  => 'danger',
+    $statusColor = match(strtolower(trim((string) $cls['class_stud_status']))) {
+        'active'    => 'success',
+        'completed' => 'info',
+        'inactive'  => 'danger',
         default     => 'secondary',
     };
     $ctInitials = !empty($cls['class_teacher'])
