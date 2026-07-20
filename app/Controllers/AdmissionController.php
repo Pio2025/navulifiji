@@ -257,7 +257,7 @@ class AdmissionController extends BaseController
         $isChild = false;
 
         if (!$isOwn && ($roleCat === 6 || $this->hasParentFlag($userId))) {
-            $childIds = array_column($this->parentStudentModel->getChildrenOf($userId), 'user_id');
+            $childIds = array_map('intval', array_column($this->parentStudentModel->getChildrenOf($userId), 'user_id'));
             $isChild  = in_array((int) $admission['user_id_fk'], $childIds, true);
         }
 
