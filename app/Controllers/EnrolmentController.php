@@ -40,6 +40,229 @@ class EnrolmentController extends BaseController
     }
 
     // ================================================================
+    // MY ENROLMENT — logged-in user's own enrolment history
+    // ================================================================
+
+    public function my()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $this->setPageData('My Enrolment', 'Enrolment', 'My Enrolment');
+
+        $data['_view'] = 'app/enrolment/my';
+        return view('app/layouts/main', $data);
+    }
+
+    public function getMyEnrolmentListing()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(401);
+        }
+
+        $userId = (int) $this->session->get('userID');
+        $db     = \Config\Database::connect();
+
+        $base = function () use ($db, $userId) {
+            return $db->table('enrolment')
+                ->join('admission', 'admission.admission_id = enrolment.admission_id_fk', 'left')
+                ->join('school',    'school.sch_id          = admission.sch_id_fk',        'left')
+                ->join('stream',    'stream.stream_id       = enrolment.stream_id_fk',      'left')
+                ->join('sch_level', 'sch_level.sch_level_id = stream.sch_level_id_fk',      'left')
+                ->join('level',     'level.level_id         = sch_level.level_id_fk',       'left')
+                ->where('admission.user_id_fk', $userId);
+        };
+
+        return $this->buildEnrolmentListingResponse($base, [
+            'school.sch_name', 'stream.stream_name', 'enrolment.enrol_term', 'enrolment.enrol_year', 'enrolment.enrol_status', null,
+        ], ['school.sch_name', 'stream.stream_name', 'enrolment.enrol_status'], 'enrolment.enrol_date');
+    }
+
+    // ================================================================
+    // CHILD ENROLMENT — parent / is_a_parent viewing children's enrolments
+    // ================================================================
+
+    public function childMy()
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login');
+        }
+
+        $userId  = (int) $this->session->get('userID');
+        $roleCat = (int) $this->session->get('roleCatID');
+
+        if ($roleCat !== 6 && !$this->hasParentFlag($userId)) {
+            $data['_view'] = 'app/auth/access_control';
+            return view('app/layouts/main', $data);
+        }
+
+        $this->setPageData('Child Enrolment', 'Enrolment', 'Child Enrolment');
+
+        $data['children'] = $this->parentStudentModel->getChildrenOf($userId);
+        $data['_view']    = 'app/enrolment/child_my';
+        return view('app/layouts/main', $data);
+    }
+
+    public function getChildEnrolmentListing()
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(401);
+        }
+
+        $userId  = (int) $this->session->get('userID');
+        $roleCat = (int) $this->session->get('roleCatID');
+
+        if ($roleCat !== 6 && !$this->hasParentFlag($userId)) {
+            return $this->response->setJSON(['draw' => 1, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => []])->setStatusCode(403);
+        }
+
+        $childIds = array_column($this->parentStudentModel->getChildrenOf($userId), 'user_id');
+
+        if (empty($childIds)) {
+            $draw = (int) (service('request')->getPost('draw') ?? 1);
+            return $this->response->setJSON([
+                'draw' => $draw, 'recordsTotal' => 0, 'recordsFiltered' => 0, 'data' => [], 'csrf_hash' => csrf_hash(),
+            ]);
+        }
+
+        $db   = \Config\Database::connect();
+        $base = function () use ($db, $childIds) {
+            return $db->table('enrolment')
+                ->join('admission', 'admission.admission_id = enrolment.admission_id_fk', 'left')
+                ->join('school',    'school.sch_id          = admission.sch_id_fk',        'left')
+                ->join('stream',    'stream.stream_id       = enrolment.stream_id_fk',      'left')
+                ->join('sch_level', 'sch_level.sch_level_id = stream.sch_level_id_fk',      'left')
+                ->join('level',     'level.level_id         = sch_level.level_id_fk',       'left')
+                ->join('users',     'users.user_id          = admission.user_id_fk',        'left')
+                ->whereIn('admission.user_id_fk', $childIds);
+        };
+
+        return $this->buildEnrolmentListingResponse($base, [
+            'users.fname', 'school.sch_name', 'stream.stream_name', 'enrolment.enrol_term', 'enrolment.enrol_year', 'enrolment.enrol_status', null,
+        ], ['users.fname', 'users.lname', 'school.sch_name', 'stream.stream_name', 'enrolment.enrol_status'], 'enrolment.enrol_date', true);
+    }
+
+    // ================================================================
+    // Shared AJAX listing builder for my()/childMy() datatables
+    // ================================================================
+
+    private function buildEnrolmentListingResponse(\Closure $base, array $columnMap, array $searchFields, string $defaultOrderCol, bool $withChild = false)
+    {
+        $req    = service('request');
+        $draw   = (int) ($req->getPost('draw') ?? 1);
+        $start  = (int) ($req->getPost('start') ?? 0);
+        $length = (int) ($req->getPost('length') ?? 10);
+
+        $searchData  = $req->getPost('search');
+        $searchValue = is_array($searchData) ? trim($searchData['value'] ?? '') : '';
+
+        $orderData        = $req->getPost('order');
+        $orderColumnIndex = is_array($orderData) ? (int) ($orderData[0]['column'] ?? 0) : 0;
+        $orderDir         = is_array($orderData) ? ($orderData[0]['dir'] ?? 'desc') : 'desc';
+        $orderDir         = strtoupper($orderDir) === 'ASC' ? 'ASC' : 'DESC';
+        $orderCol         = $columnMap[$orderColumnIndex] ?? $defaultOrderCol;
+
+        $recordsTotal = $base()->countAllResults();
+
+        $select = 'enrolment.enrol_id, enrolment.enrol_term, enrolment.enrol_year, enrolment.enrol_status,
+                    school.sch_name, stream.stream_name, level.level_name';
+        if ($withChild) {
+            $select .= ', users.user_id, users.fname, users.lname, users.profile_photo';
+        }
+
+        $builder = $base()->select($select);
+
+        if ($searchValue !== '') {
+            $builder->groupStart();
+            foreach ($searchFields as $i => $field) {
+                $i === 0 ? $builder->like($field, $searchValue) : $builder->orLike($field, $searchValue);
+            }
+            $builder->groupEnd();
+        }
+
+        $recordsFiltered = $builder->countAllResults(false);
+        $builder->orderBy($orderCol, $orderDir);
+
+        if ($length !== -1) {
+            $builder->limit($length, $start);
+        }
+
+        $rows = $builder->get()->getResultArray();
+
+        $data = [];
+        foreach ($rows as $row) {
+            $entry = [];
+            if ($withChild) {
+                $entry['child_name'] = esc(trim(($row['fname'] ?? '') . ' ' . ($row['lname'] ?? '')));
+            }
+            $entry['sch_name']     = esc($row['sch_name'] ?? '—');
+            $entry['stream_name']  = esc(trim(($row['stream_name'] ?? '—') . (!empty($row['level_name']) ? ' (' . $row['level_name'] . ')' : '')));
+            $entry['enrol_term']   = esc($row['enrol_term'] ?? '—');
+            $entry['enrol_year']   = esc($row['enrol_year'] ?? '—');
+            $entry['enrol_status'] = $this->statusBadge($row['enrol_status'] ?? '');
+            $entry['actions']      = '<button type="button" class="btn btn-icon btn-sm btn-light-primary btn-view-enrolment" data-id="' . (int) $row['enrol_id'] . '">'
+                . '<i class="ki-duotone ki-eye fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i></button>';
+            $data[] = $entry;
+        }
+
+        return $this->response->setJSON([
+            'draw'            => $draw,
+            'recordsTotal'    => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data'            => $data,
+            'csrf_hash'       => csrf_hash(),
+        ]);
+    }
+
+    private function statusBadge(string $status): string
+    {
+        $cls = match (strtolower($status)) {
+            'active'                          => 'success',
+            'pending'                         => 'warning',
+            'inactive', 'rejected', 'declined' => 'danger',
+            default                           => 'secondary',
+        };
+        return '<span class="badge badge-light-' . $cls . ' fs-8">' . esc($status !== '' ? $status : '—') . '</span>';
+    }
+
+    // ================================================================
+    // MY / CHILD DETAIL MODAL (AJAX, read-only)
+    // ================================================================
+
+    public function myDetail(int $enrolId)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized'])->setStatusCode(401);
+        }
+
+        $enrolment = $this->enrolmentModel->getDetail($enrolId);
+        if (!$enrolment) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Enrolment not found.']);
+        }
+
+        $userId  = (int) $this->session->get('userID');
+        $roleCat = (int) $this->session->get('roleCatID');
+
+        $isOwn   = (int) $enrolment['user_id'] === $userId;
+        $isChild = false;
+
+        if (!$isOwn && ($roleCat === 6 || $this->hasParentFlag($userId))) {
+            $childIds = array_column($this->parentStudentModel->getChildrenOf($userId), 'user_id');
+            $isChild  = in_array((int) $enrolment['user_id'], $childIds, true);
+        }
+
+        if (!$isOwn && !$isChild) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Access denied.'])->setStatusCode(403);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'html'    => view('app/enrolment/_my_detail_modal', ['enrolment' => $enrolment]),
+        ]);
+    }
+
+    // ================================================================
     // DETAIL
     // ================================================================
 

@@ -423,6 +423,11 @@ $routes->get( 'conduct/appeal/file/(:num)',      'ConductController::viewAppealF
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');
 $routes->get( 'admission/report',             'AdmissionController::report');
+$routes->get( 'admission/my',                  'AdmissionController::my');
+$routes->post('admission/my/listing',          'AdmissionController::getMyAdmissionListing');
+$routes->get( 'admission/my/detail/(:num)',    'AdmissionController::myDetail/$1');
+$routes->get( 'admission/child/my',            'AdmissionController::childMy');
+$routes->post('admission/child/my/listing',    'AdmissionController::getChildAdmissionListing');
 $routes->get( 'admission/detail/(:num)',      'AdmissionController::detail/$1');
 $routes->get( 'admission/add',                'AdmissionController::add');
 $routes->post('admission/store',              'AdmissionController::store');
@@ -439,6 +444,11 @@ $routes->post('admission/save-student-role/(:num)',     'AdmissionController::sa
 
 $routes->get( 'enrolment',                  'EnrolmentController::index');
 $routes->get( 'enrolment/report',           'EnrolmentController::report');
+$routes->get( 'enrolment/my',                'EnrolmentController::my');
+$routes->post('enrolment/my/listing',        'EnrolmentController::getMyEnrolmentListing');
+$routes->get( 'enrolment/my/detail/(:num)',  'EnrolmentController::myDetail/$1');
+$routes->get( 'enrolment/child/my',          'EnrolmentController::childMy');
+$routes->post('enrolment/child/my/listing',  'EnrolmentController::getChildEnrolmentListing');
 $routes->get( 'enrolment/detail/(:num)',    'EnrolmentController::detail/$1');
 $routes->get( 'enrolment/add',              'EnrolmentController::add');
 $routes->post('enrolment/store',            'EnrolmentController::store');
