@@ -3,13 +3,16 @@
 namespace App\Controllers\Api;
 
 use App\Libraries\ApiAuth;
+use App\Libraries\SchoolAccess;
 use App\Models\UserModel;
 use App\Models\WallModel;
 use CodeIgniter\Controller;
 
 /**
  * Mobile Wall — reuses WallModel directly (same query logic as the web
- * WallController), scoped by the schID resolved at login/me time.
+ * WallController). Supports the same multi-school tab switching as the web
+ * app (own current-admission school for Students/Teachers, plus each
+ * linked child's active-admission school for Parents/parent-flagged staff).
  */
 class WallController extends Controller
 {
@@ -28,12 +31,30 @@ class WallController extends Controller
 
     protected $wallModel;
     protected $userModel;
+    protected $schoolAccess;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-        $this->wallModel = new WallModel();
-        $this->userModel = new UserModel();
+        $this->wallModel    = new WallModel();
+        $this->userModel    = new UserModel();
+        $this->schoolAccess = new SchoolAccess();
+    }
+
+    /**
+     * @return array{0: array, 1: int} [$schools, $resolvedSchId]
+     */
+    private function resolveSchools(?int $requestedSchId): array
+    {
+        $claims    = ApiAuth::claims();
+        $myId      = ApiAuth::userId();
+        $roleCatId = (int) ($claims['roleCatID'] ?? 0);
+        $ownSchId  = (int) ($claims['schID'] ?? 0);
+
+        $schools = $this->schoolAccess->accessibleSchools($myId, $roleCatId, $ownSchId);
+        $schId   = $this->schoolAccess->resolveActiveSchoolId($schools, $requestedSchId);
+
+        return [$schools, $schId];
     }
 
     private function myName(int $userId): string
@@ -76,18 +97,18 @@ class WallController extends Controller
     }
 
     /**
-     * GET /api/wall/feed?offset=0 — requires Bearer token (apijwt filter).
+     * GET /api/wall/feed?offset=0&sch_id= — requires Bearer token (apijwt filter).
      */
     public function feed()
     {
-        $claims = ApiAuth::claims();
-        $schID  = (int) ($claims['schID'] ?? 0);
-        $myId   = ApiAuth::userId();
-        $offset = max(0, (int) $this->request->getGet('offset'));
-        $limit  = 10;
+        $myId       = ApiAuth::userId();
+        $offset     = max(0, (int) $this->request->getGet('offset'));
+        $limit      = 10;
+        $reqSchId   = $this->request->getGet('sch_id');
+        [$schools, $schID] = $this->resolveSchools($reqSchId !== null ? (int) $reqSchId : null);
 
         if ($schID === 0) {
-            return $this->response->setJSON(['success' => true, 'posts' => [], 'hasMore' => false]);
+            return $this->response->setJSON(['success' => true, 'posts' => [], 'hasMore' => false, 'schools' => [], 'activeSchoolId' => 0]);
         }
 
         $posts   = $this->wallModel->getPosts($schID, $offset, $limit + 1);
@@ -95,7 +116,7 @@ class WallController extends Controller
         if ($hasMore) array_pop($posts);
 
         if (empty($posts)) {
-            return $this->response->setJSON(['success' => true, 'posts' => [], 'hasMore' => false]);
+            return $this->response->setJSON(['success' => true, 'posts' => [], 'hasMore' => false, 'schools' => $schools, 'activeSchoolId' => $schID]);
         }
 
         $postIds = array_column($posts, 'wall_post_id');
@@ -126,17 +147,24 @@ class WallController extends Controller
             ];
         }
 
-        return $this->response->setJSON(['success' => true, 'posts' => $out, 'hasMore' => $hasMore]);
+        return $this->response->setJSON([
+            'success'        => true,
+            'posts'          => $out,
+            'hasMore'        => $hasMore,
+            'schools'        => $schools,
+            'activeSchoolId' => $schID,
+        ]);
     }
 
     /**
-     * POST /api/wall/post — multipart: content, media[] files, video_urls[].
+     * POST /api/wall/post — multipart: content, media[] files, video_urls[], sch_id?
      */
     public function createPost()
     {
-        $claims = ApiAuth::claims();
-        $schID  = (int) ($claims['schID'] ?? 0);
-        $myId   = ApiAuth::userId();
+        $claims   = ApiAuth::claims();
+        $myId     = ApiAuth::userId();
+        $reqSchId = $this->request->getPost('sch_id');
+        [, $schID] = $this->resolveSchools($reqSchId !== null && $reqSchId !== '' ? (int) $reqSchId : null);
 
         if ($schID === 0) {
             return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'No school linked to your account.']);
