@@ -727,4 +727,17 @@ $routes->get( 'event/calendar',                    'EventController::calendar');
 $routes->get( 'event/calendar/feed',               'EventController::calendarFeed');
 $routes->get( 'event/report',                      'EventController::report');
 
+// ============================================================================
+// MOBILE API Routes (stateless JWT — Navuli mobile app)
+// ============================================================================
+$routes->post('api/auth/login', 'Api\AuthController::login', ['filter' => 'cors']);
+
+$routes->group('api', ['filter' => 'cors'], static function ($routes) {
+    $routes->group('', ['filter' => 'apijwt'], static function ($routes) {
+        $routes->get('auth/me',       'Api\AuthController::me');
+        $routes->get('notices',       'Api\NoticesController::index');
+        $routes->get('announcements', 'Api\AnnouncementsController::index');
+    });
+});
+
 
