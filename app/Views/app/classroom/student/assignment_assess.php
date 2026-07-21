@@ -31,6 +31,7 @@ $pct        = ($graded && $totalScore > 0) ? round(($mark / $totalScore) * 100, 
 $avgPct     = (!empty($classStats['avg_mark']) && $totalScore > 0) ? round(($classStats['avg_mark'] / $totalScore) * 100, 1) : null;
 $grade      = $pct === null ? '—' : ($pct >= 80 ? 'A' : ($pct >= 65 ? 'B' : ($pct >= 50 ? 'C' : ($pct >= 40 ? 'D' : 'F'))));
 $scoreColor = $pct === null ? 'primary' : ($pct >= 70 ? 'success' : ($pct >= 50 ? 'warning' : 'danger'));
+$asgnFiles  = $assignment['files'] ?? [];
 ?>
 
 <!--begin::Assignment info bar-->
@@ -53,6 +54,44 @@ $scoreColor = $pct === null ? 'primary' : ($pct >= 70 ? 'success' : ($pct >= 50 
     </div>
 </div>
 <!--end::Assignment info bar-->
+
+<?php if (!empty($asgnFiles)): ?>
+<!--begin::Assignment files-->
+<div class="card border-0 shadow-sm mb-6">
+    <div class="card-header border-0 pt-5 pb-3 px-6">
+        <div class="d-flex align-items-center gap-2">
+            <i class="ki-duotone ki-folder-up fs-4 text-primary"><span class="path1"></span><span class="path2"></span></i>
+            <h5 class="fw-bold text-gray-800 fs-5 mb-0">Assignment Files</h5>
+        </div>
+        <span class="badge badge-light-primary fs-9"><?= count($asgnFiles) ?> file<?= count($asgnFiles) !== 1 ? 's' : '' ?></span>
+    </div>
+    <div class="card-body px-6 pb-6 pt-3">
+        <div class="d-flex flex-wrap gap-3">
+        <?php foreach ($asgnFiles as $aFile):
+            $aExt = strtolower(pathinfo($aFile['file_src'], PATHINFO_EXTENSION));
+            $aUrl = base_url('uploads/assignments/' . $aFile['file_src']);
+            [$aIcon, $aColor, $aBg] = match($aExt) {
+                'pdf'                          => ['ki-file-down',   'text-danger',  '#fff5f5'],
+                'jpg','jpeg','png','gif','webp' => ['ki-picture',     'text-primary', '#eff6ff'],
+                'doc','docx'                   => ['ki-file',         'text-info',    '#f0f9ff'],
+                'xls','xlsx'                   => ['ki-chart-simple', 'text-success', '#f0fdf4'],
+                'ppt','pptx'                   => ['ki-file',         'text-warning', '#fffbeb'],
+                'zip','tar','gz','rar'         => ['ki-folder',       'text-warning', '#fffbeb'],
+                default                        => ['ki-file',         'text-muted',   '#f9fafb'],
+            };
+        ?>
+        <a href="<?= $aUrl ?>" target="_blank" class="text-decoration-none" title="<?= esc($aFile['file_src']) ?>">
+            <div class="rounded-2 border text-center py-3 px-3" style="background:<?= $aBg ?>;min-width:90px;">
+                <i class="ki-duotone <?= $aIcon ?> fs-2x <?= $aColor ?> d-block mb-1"><span class="path1"></span><span class="path2"></span></i>
+                <span class="badge badge-light-secondary fs-10"><?= strtoupper($aExt) ?></span>
+            </div>
+        </a>
+        <?php endforeach; ?>
+        </div>
+    </div>
+</div>
+<!--end::Assignment files-->
+<?php endif; ?>
 
 <?php if (!$submitted): ?>
 <!--begin::Not submitted-->

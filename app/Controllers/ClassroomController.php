@@ -1199,6 +1199,10 @@ class ClassroomController extends BaseController
 
         if (!$assignment) return redirect()->to('classroom/student/' . $classSubId . '/assignments')->with('error', 'Assignment not found.');
 
+        $assignment['files'] = $this->getAssignmentFilesGrouped(
+            $db, [$assignmentId], [$assignmentId => $assignment['assignment_file']]
+        )[$assignmentId] ?? [];
+
         $submission = $db->table('assignment_submission')
             ->where('assignment_id_fk', $assignmentId)->where('user_id_fk', $userId)
             ->get()->getRowArray();
@@ -1773,11 +1777,14 @@ class ClassroomController extends BaseController
             return false;
         }
 
+        // A student can accumulate multiple enrolment rows for the same stream/year
+        // (re-enrolments, corrections, etc.) — prefer an Active one over stale rows.
         $enrolment = $db->query("
             SELECT e.enrol_status, a.admission_status
             FROM enrolment e
             INNER JOIN admission a ON a.admission_id = e.admission_id_fk
             WHERE a.user_id_fk = ? AND e.stream_id_fk = ? AND e.enrol_year = ?
+            ORDER BY (LOWER(e.enrol_status) = 'active' AND LOWER(a.admission_status) = 'active') DESC, e.enrol_id DESC
             LIMIT 1
         ", [$userId, $classroom['stream_id_fk'], $classroom['class_year']])->getRowArray();
 

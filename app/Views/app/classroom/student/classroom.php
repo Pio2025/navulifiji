@@ -167,14 +167,14 @@
                             $isActive = $section === $nav['slug'];
                         ?>
                         <li class="nav-item mt-2">
-                            <a class="nav-link text-muted text-active-primary ms-0 py-0 me-10 ps-9 border-0 <?= $isActive ? 'active' : '' ?>"
+                            <a class="nav-link text-muted text-active-primary ms-0 py-0 me-10 ps-9 border-0 d-flex align-items-center <?= $isActive ? 'active' : '' ?>"
                                href="<?= base_url('classroom/student/' . $classSubId . '/' . $nav['slug']) ?>">
                                 <i class="ki-duotone <?= $nav['icon'] ?> fs-3 text-muted me-3">
                                     <span class="path1"></span><span class="path2"></span>
                                     <span class="path3"></span><span class="path4"></span>
                                 </i><?= $nav['label'] ?>
                                 <?php if ($nav['badge'] > 0): ?>
-                                <span class="badge badge-circle badge-danger fs-9 ms-2"><?= $navBadgeText($nav['badge']) ?></span>
+                                <span class="badge badge-circle badge-danger fs-9 ms-auto"><?= $navBadgeText($nav['badge']) ?></span>
                                 <?php endif; ?>
                                 <span class="bullet-custom position-absolute start-0 top-0 w-3px h-100 bg-primary rounded-end"></span>
                             </a>
