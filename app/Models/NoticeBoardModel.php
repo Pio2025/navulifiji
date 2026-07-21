@@ -38,7 +38,7 @@ class NoticeBoardModel extends Model
     /**
      * Active notices for a school, scoped by audience, newest pinned first.
      */
-    public function getActiveForSchool(int $schId, string $audience = 'All'): array
+    public function getActiveForSchool(int $schId, string $audience = 'All', ?int $limit = null, int $offset = 0): array
     {
         $now = date('Y-m-d H:i:s');
 
@@ -62,6 +62,10 @@ class NoticeBoardModel extends Model
                 ->where('nb.audience', 'All')
                 ->orWhere('nb.audience', $audience)
             ->groupEnd();
+        }
+
+        if ($limit !== null) {
+            $builder->limit($limit, $offset);
         }
 
         return $builder->get()->getResultArray();

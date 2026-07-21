@@ -34,10 +34,10 @@ class AnnouncementModel extends Model
         return $result;
     }
 
-    public function getActiveForSchool(int $schId): array
+    public function getActiveForSchool(int $schId, ?int $limit = null, int $offset = 0): array
     {
         $now = date('Y-m-d H:i:s');
-        return $this->db->table('school_announcement sa')
+        $builder = $this->db->table('school_announcement sa')
             ->select("sa.*, u.fname, u.lname, u.profile_photo,
                 (SELECT rc.role_cat_name
                  FROM user_role ur
@@ -49,8 +49,13 @@ class AnnouncementModel extends Model
             ->where('sa.sch_id_fk', $schId)
             ->where('sa.announcement_status', 'Active')
             ->where('(sa.expires_at IS NULL OR sa.expires_at > "' . $now . '")')
-            ->orderBy('sa.created_at', 'DESC')
-            ->get()->getResultArray();
+            ->orderBy('sa.created_at', 'DESC');
+
+        if ($limit !== null) {
+            $builder->limit($limit, $offset);
+        }
+
+        return $builder->get()->getResultArray();
     }
 
     public function getAllForSchool(int $schId): array

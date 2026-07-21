@@ -736,7 +736,15 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
     $routes->group('', ['filter' => 'apijwt'], static function ($routes) {
         $routes->get('auth/me',       'Api\AuthController::me');
         $routes->get('notices',       'Api\NoticesController::index');
+        $routes->post('notices', 'Api\NoticesController::store');
+        $routes->put('notices/(:num)', 'Api\NoticesController::update/$1');
+        $routes->delete('notices/(:num)', 'Api\NoticesController::delete/$1');
+        $routes->post('notices/(:num)/pin', 'Api\NoticesController::togglePin/$1');
+
         $routes->get('announcements', 'Api\AnnouncementsController::index');
+        $routes->post('announcements', 'Api\AnnouncementsController::store');
+        $routes->put('announcements/(:num)', 'Api\AnnouncementsController::update/$1');
+        $routes->delete('announcements/(:num)', 'Api\AnnouncementsController::delete/$1');
 
         $routes->get('dashboard', 'Api\DashboardController::index');
 
