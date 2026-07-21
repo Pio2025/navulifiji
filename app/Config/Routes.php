@@ -737,6 +737,17 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->get('auth/me',       'Api\AuthController::me');
         $routes->get('notices',       'Api\NoticesController::index');
         $routes->get('announcements', 'Api\AnnouncementsController::index');
+
+        $routes->get('dashboard', 'Api\DashboardController::index');
+
+        $routes->get('wall/feed',                    'Api\WallController::feed');
+        $routes->post('wall/post',                    'Api\WallController::createPost');
+        $routes->get('wall/post/(:num)/comments',     'Api\WallController::comments/$1');
+        $routes->post('wall/post/(:num)/comment',     'Api\WallController::addComment/$1');
+        $routes->post('wall/react',                   'Api\WallController::react');
+
+        $routes->get('notifications',            'Api\NotificationController::index');
+        $routes->post('notifications/mark-read', 'Api\NotificationController::markRead');
     });
 });
 

@@ -5,6 +5,8 @@ namespace App\Controllers\Api;
 use App\Libraries\ApiAuth;
 use App\Libraries\ApiJwt;
 use App\Models\AdmissionModel;
+use App\Models\ParentStudentModel;
+use App\Models\RolePermissionModel;
 use App\Models\TwoFactorModel;
 use App\Models\UserModel;
 use App\Models\UserRoleModel;
@@ -21,6 +23,8 @@ class AuthController extends Controller
     protected $userRoleModel;
     protected $twoFactorModel;
     protected $admissionModel;
+    protected $rolePermissionModel;
+    protected $parentStudentModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
@@ -30,6 +34,65 @@ class AuthController extends Controller
         $this->userRoleModel = new UserRoleModel();
         $this->twoFactorModel = new TwoFactorModel();
         $this->admissionModel = new AdmissionModel();
+        $this->rolePermissionModel = new RolePermissionModel();
+        $this->parentStudentModel  = new ParentStudentModel();
+    }
+
+    /**
+     * Flat perm_code list granted to a role.
+     */
+    private function buildPermissions(int $roleID): array
+    {
+        if ($roleID <= 0) {
+            return [];
+        }
+
+        return array_values(array_map(
+            static fn ($row) => $row['perm_code'],
+            $this->rolePermissionModel->get_permission_for_role($roleID)
+        ));
+    }
+
+    /**
+     * Linked children for a parent (or a parent-flagged staff/teacher account).
+     * Mirrors the schID resolution chain used for the parent's own login.
+     */
+    private function buildChildren(int $parentId): array
+    {
+        $children = $this->parentStudentModel->getChildrenOf($parentId);
+        if (empty($children)) {
+            return [];
+        }
+
+        $result = [];
+        foreach ($children as $child) {
+            $childId = (int) $child['user_id'];
+            $name = trim($child['fname'] . ' ' . $child['lname']);
+            $photo = !empty($child['profile_photo'])
+                ? base_url('uploads/profilePhoto/' . $child['profile_photo'])
+                : base_url('uploads/profilePhoto/default_male.jpg');
+
+            $schID = 0;
+            $schoolName = '';
+            $adm = $this->admissionModel->getAdmissionWithSchool($childId);
+            foreach ($adm as $row) {
+                if (($row['admission_status'] ?? '') === 'Active') {
+                    $schID = (int) ($row['sch_id_fk'] ?? 0);
+                    $schoolName = $row['sch_name'] ?? '';
+                    break;
+                }
+            }
+
+            $result[] = [
+                'userId'     => $childId,
+                'name'       => $name,
+                'photo'      => $photo,
+                'schID'      => $schID,
+                'schoolName' => $schoolName,
+            ];
+        }
+
+        return $result;
     }
 
     /**
@@ -151,6 +214,8 @@ class AuthController extends Controller
             'roleCatName' => $roleCatName,
         ]);
 
+        $isAParent = (int) ($user['is_a_parent'] ?? 0) === 1 || $roleCatID === 6;
+
         return $this->response->setJSON([
             'success' => true,
             'token'   => $token,
@@ -165,6 +230,9 @@ class AuthController extends Controller
                 'roleCatID'   => $roleCatID,
                 'roleCatName' => $roleCatName,
                 'schID'       => $schID,
+                'permissions' => $this->buildPermissions($roleID),
+                'isAParent'   => $isAParent,
+                'children'    => $isAParent ? $this->buildChildren($userID) : [],
             ],
         ]);
     }
@@ -190,6 +258,10 @@ class AuthController extends Controller
             ? $user['profile_photo']
             : (($user['gender'] ?? '') === 'Female' ? 'default_female.png' : 'default_male.jpg');
 
+        $roleID    = (int) ($claims['roleID'] ?? 0);
+        $roleCatID = (int) ($claims['roleCatID'] ?? 0);
+        $isAParent = (int) ($user['is_a_parent'] ?? 0) === 1 || $roleCatID === 6;
+
         return $this->response->setJSON([
             'success' => true,
             'user' => [
@@ -198,10 +270,13 @@ class AuthController extends Controller
                 'email'       => $user['email'] ?? '',
                 'gender'      => $user['gender'] ?? '',
                 'photo'       => base_url('uploads/profilePhoto/' . $photo),
-                'roleID'      => $claims['roleID'] ?? 0,
-                'roleCatID'   => $claims['roleCatID'] ?? 0,
+                'roleID'      => $roleID,
+                'roleCatID'   => $roleCatID,
                 'roleCatName' => $claims['roleCatName'] ?? 'Unknown',
                 'schID'       => $claims['schID'] ?? 0,
+                'permissions' => $this->buildPermissions($roleID),
+                'isAParent'   => $isAParent,
+                'children'    => $isAParent ? $this->buildChildren($userID) : [],
             ],
         ]);
     }
