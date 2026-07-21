@@ -42,11 +42,13 @@
         : '';
 
     $navLinks = [
-        ['label' => 'Dashboard',   'icon' => 'ki-element-11',     'slug' => 'dashboard'],
-        ['label' => 'Lessons',     'icon' => 'ki-book-open',      'slug' => 'lessons'],
-        ['label' => 'Assignments', 'icon' => 'ki-document',       'slug' => 'assignments'],
-        ['label' => 'Feedback',    'icon' => 'ki-message-text-2', 'slug' => 'feedback'],
+        ['label' => 'Dashboard',   'icon' => 'ki-element-11',     'slug' => 'dashboard', 'badge' => 0],
+        ['label' => 'Lessons',     'icon' => 'ki-book-open',      'slug' => 'lessons',     'badge' => (int) ($unreadLessons ?? 0)],
+        ['label' => 'Assignments', 'icon' => 'ki-document',       'slug' => 'assignments', 'badge' => (int) ($unreadAssignments ?? 0)],
+        ['label' => 'Feedback',    'icon' => 'ki-message-text-2', 'slug' => 'feedback', 'badge' => 0],
     ];
+
+    $navBadgeText = fn(int $n) => $n > 9 ? '9+' : (string) $n;
     ?>
 
     <div class="row g-6">
@@ -171,6 +173,9 @@
                                     <span class="path1"></span><span class="path2"></span>
                                     <span class="path3"></span><span class="path4"></span>
                                 </i><?= $nav['label'] ?>
+                                <?php if ($nav['badge'] > 0): ?>
+                                <span class="badge badge-circle badge-danger fs-9 ms-2"><?= $navBadgeText($nav['badge']) ?></span>
+                                <?php endif; ?>
                                 <span class="bullet-custom position-absolute start-0 top-0 w-3px h-100 bg-primary rounded-end"></span>
                             </a>
                         </li>
@@ -832,7 +837,21 @@
                     <?php else: ?>
                     <div class="row g-5">
                     <?php foreach ($assignments as $asgn):
-                        $isPastDue = !empty($asgn['assignment_due_date']) && strtotime($asgn['assignment_due_date']) < time();
+                        $isPastDue    = !empty($asgn['assignment_due_date']) && strtotime($asgn['assignment_due_date']) < time();
+                        $isSubmitted  = !empty($asgn['submission_id']);
+                        if ($isSubmitted) {
+                            $submitColor = 'success';
+                            $submitLabel = 'Submitted';
+                        } elseif ($isPastDue) {
+                            $submitColor = 'danger';
+                            $submitLabel = 'Overdue — Not Submitted';
+                        } else {
+                            $daysLeft    = !empty($asgn['assignment_due_date'])
+                                ? (int) ceil((strtotime($asgn['assignment_due_date']) - time()) / 86400)
+                                : null;
+                            $submitColor = 'warning';
+                            $submitLabel = 'Not Submitted' . ($daysLeft !== null ? ' — Due in ' . $daysLeft . 'd' : '');
+                        }
                     ?>
                     <div class="col-md-4">
                         <div class="card border border-dashed h-100" style="border-radius:.75rem;border-color:#c4c4d4!important;overflow:visible;position:relative;">
@@ -867,6 +886,9 @@
                             <!--end::Dropdown-->
                             <div class="card-body p-5 pt-4">
                                 <span class="badge badge-light-success fs-9 mb-3">Published</span>
+                                <?php if (!($isParentView ?? false)): ?>
+                                <span class="badge badge-light-<?= $submitColor ?> fs-9 mb-3 ms-1"><?= esc($submitLabel) ?></span>
+                                <?php endif; ?>
                                 <div class="fw-bold text-gray-800 fs-6 mb-3 pe-8 lh-sm"><?= esc($asgn['assignment_name']) ?></div>
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <i class="ki-duotone ki-calendar fs-5 <?= $isPastDue ? 'text-danger' : 'text-warning' ?>">

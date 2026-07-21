@@ -313,6 +313,41 @@ class ClassroomLessonModel extends Model
         ];
     }
 
+    /**
+     * Number of Published lessons in this subject the student has not yet opened.
+     */
+    public function getUnreadLessonCount(int $classSubId, int $userId): int
+    {
+        if ($userId <= 0) return 0;
+        $db = \Config\Database::connect();
+        try {
+            $row = $db->query("
+                SELECT COUNT(*) AS cnt
+                FROM classroom_lesson cl
+                LEFT JOIN lesson_reads lr ON lr.lesson_id = cl.lesson_id AND lr.user_id = ?
+                WHERE cl.class_sub_id_fk = ? AND cl.lesson_status = 'Published' AND lr.lr_id IS NULL
+            ", [$userId, $classSubId])->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Mark a single lesson as read/opened by this student.
+     */
+    public function markLessonRead(int $lessonId, int $userId): void
+    {
+        if ($userId <= 0 || $lessonId <= 0) return;
+        $db = \Config\Database::connect();
+        try {
+            $db->query("
+                INSERT IGNORE INTO lesson_reads (user_id, lesson_id, read_at)
+                VALUES (?, ?, NOW())
+            ", [$userId, $lessonId]);
+        } catch (\Throwable $e) { /* table may not exist yet */ }
+    }
+
     public function getStudentAssessmentStats(int $classSubId, int $userId): array
     {
         $db = \Config\Database::connect();

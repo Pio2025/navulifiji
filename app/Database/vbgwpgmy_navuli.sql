@@ -217,6 +217,33 @@ LOCK TABLES `assignment_plagiarism` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `assignment_reads`
+--
+
+DROP TABLE IF EXISTS `assignment_reads`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `assignment_reads` (
+  `asr_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `assignment_id` int unsigned NOT NULL,
+  `read_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`asr_id`),
+  UNIQUE KEY `uq_user_assignment` (`user_id`,`assignment_id`),
+  KEY `idx_assignment_id` (`assignment_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `assignment_reads`
+--
+
+LOCK TABLES `assignment_reads` WRITE;
+/*!40000 ALTER TABLE `assignment_reads` DISABLE KEYS */;
+/*!40000 ALTER TABLE `assignment_reads` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `assignment_submission`
 --
 
@@ -2048,6 +2075,33 @@ LOCK TABLES `lesson_quizze_response` WRITE;
 /*!40000 ALTER TABLE `lesson_quizze_response` DISABLE KEYS */;
 INSERT INTO `lesson_quizze_response` VALUES (18,7,16,63,1),(17,6,14,56,1),(16,6,13,49,1),(15,6,12,47,1),(19,8,17,65,1),(20,8,18,70,1),(21,8,19,74,0);
 /*!40000 ALTER TABLE `lesson_quizze_response` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `lesson_reads`
+--
+
+DROP TABLE IF EXISTS `lesson_reads`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `lesson_reads` (
+  `lr_id` int unsigned NOT NULL AUTO_INCREMENT,
+  `user_id` int unsigned NOT NULL,
+  `lesson_id` int unsigned NOT NULL,
+  `read_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`lr_id`),
+  UNIQUE KEY `uq_user_lesson` (`user_id`,`lesson_id`),
+  KEY `idx_lesson_id` (`lesson_id`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `lesson_reads`
+--
+
+LOCK TABLES `lesson_reads` WRITE;
+/*!40000 ALTER TABLE `lesson_reads` DISABLE KEYS */;
+/*!40000 ALTER TABLE `lesson_reads` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

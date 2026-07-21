@@ -1787,6 +1787,43 @@ class ClassroomController extends BaseController
             && strtolower($enrolment['enrol_status'] ?? '') === 'active';
     }
 
+    /**
+     * Number of Published assignments in this subject not yet opened by the student.
+     */
+    private function getUnreadAssignmentCount(int $classSubId, int $userId): int
+    {
+        if ($userId <= 0) return 0;
+        $db = \Config\Database::connect();
+        try {
+            $row = $db->query("
+                SELECT COUNT(*) AS cnt
+                FROM lesson_assignment a
+                LEFT JOIN assignment_reads ar ON ar.assignment_id = a.assignment_id AND ar.user_id = ?
+                WHERE a.class_sub_id_fk = ? AND a.assignment_status = 'Published' AND ar.asr_id IS NULL
+            ", [$userId, $classSubId])->getRowArray();
+            return (int) ($row['cnt'] ?? 0);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * Mark every currently-listed Published assignment in this subject as read for the student.
+     */
+    private function markAssignmentsRead(int $classSubId, int $userId): void
+    {
+        if ($userId <= 0) return;
+        $db = \Config\Database::connect();
+        try {
+            $db->query("
+                INSERT IGNORE INTO assignment_reads (user_id, assignment_id, read_at)
+                SELECT ?, a.assignment_id, NOW()
+                FROM lesson_assignment a
+                WHERE a.class_sub_id_fk = ? AND a.assignment_status = 'Published'
+            ", [$userId, $classSubId]);
+        } catch (\Throwable $e) { /* table may not exist yet */ }
+    }
+
     private function resolveClassIdFromLesson(int $lessonId): ?int
     {
         $db  = \Config\Database::connect();
@@ -2168,6 +2205,8 @@ class ClassroomController extends BaseController
         $data['isParentView']  = $isParentView;
         $data['backUrl']       = $backUrl;
         $data['fullAccess']    = $this->studentHasFullClassroomAccess($effectiveUserId, $classId);
+        $data['unreadLessons']     = $this->classroomLessonModel->getUnreadLessonCount($classSubId, $effectiveUserId);
+        $data['unreadAssignments'] = $this->getUnreadAssignmentCount($classSubId, $effectiveUserId);
 
         if ($section === 'lessons' || $section === 'dashboard') {
             $data['lessons']   = $this->classroomLessonModel->getLessonsForSubject($classSubId);
@@ -2268,12 +2307,18 @@ class ClassroomController extends BaseController
             }
         } elseif ($section === 'assignments') {
             $data['assignments'] = $db->query("
-                SELECT a.*, CONCAT(u.fname, ' ', u.lname) AS creator_name
+                SELECT a.*, CONCAT(u.fname, ' ', u.lname) AS creator_name,
+                       asub.submission_id, asub.submission_status, asub.submitted_at
                 FROM lesson_assignment a
                 LEFT JOIN users u ON u.user_id = a.created_by
+                LEFT JOIN assignment_submission asub
+                       ON asub.assignment_id_fk = a.assignment_id AND asub.user_id_fk = ?
                 WHERE a.class_sub_id_fk = ? AND a.assignment_status = 'Published'
                 ORDER BY a.assignment_due_date ASC
-            ", [$classSubId])->getResultArray();
+            ", [$effectiveUserId, $classSubId])->getResultArray();
+
+            $this->markAssignmentsRead($classSubId, $effectiveUserId);
+            $data['unreadAssignments'] = 0;
         } elseif ($section === 'exam') {
             $data['studentExamReports'] = [];
             $data['reportStatuses']     = [];
@@ -2348,6 +2393,8 @@ class ClassroomController extends BaseController
         if (!$lesson || $lesson['lesson_status'] !== 'Published') {
             return redirect()->to("classroom/student/{$classSubId}/lessons")->with('error', 'Lesson not found or not available.');
         }
+
+        $this->classroomLessonModel->markLessonRead($lessonId, $userId);
 
         $this->setPageData($lesson['lesson_title'], 'Classroom', 'Lesson');
 
