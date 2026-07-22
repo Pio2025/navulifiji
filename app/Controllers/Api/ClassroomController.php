@@ -1458,6 +1458,8 @@ class ClassroomController extends Controller
             WHERE ld.lesson_discussion_id = ?
         ", [$discussionId])->getRowArray();
 
+        $post['lesson_discussion_id'] = (int) $post['lesson_discussion_id'];
+        $post['author_id']     = (int) $post['author_id'];
         $post['photos']        = $this->lessonDiscussionModel->getPhotos($discussionId);
         $post['comments']      = [];
         $post['comment_count'] = 0;
@@ -1481,6 +1483,24 @@ class ClassroomController extends Controller
         $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
         $result = $this->lessonDiscussionModel->toggleLike($discussionId, $r['ctx']['myId'], $type);
         return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * GET /api/classroom/lesson/discussion/{discussionId}/reactions — who liked/disliked this post
+     */
+    public function lessonDiscussionReactions(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $reactions = array_map(fn ($row) => [
+            'type'  => $row['like_type'],
+            'name'  => $row['name'],
+            'photo' => $row['photo'],
+        ], $this->lessonDiscussionModel->getDiscussionReactions($discussionId));
+
+        return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
     }
 
     /**
@@ -1517,6 +1537,8 @@ class ClassroomController extends Controller
             WHERE ldc.comment_id = ?
         ", [$commentId])->getRowArray();
 
+        $row['comment_id']    = (int) $row['comment_id'];
+        $row['author_id']     = (int) $row['author_id'];
         $row['like_count']    = 0;
         $row['dislike_count'] = 0;
         $row['user_reaction'] = null;
@@ -1538,6 +1560,24 @@ class ClassroomController extends Controller
         $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
         $result = $this->lessonDiscussionModel->toggleCommentLike($commentId, $r['ctx']['myId'], $type);
         return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * GET /api/classroom/lesson/discussion/comment/{commentId}/reactions — who liked/disliked this comment
+     */
+    public function lessonDiscussionCommentReactions(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $reactions = array_map(fn ($row) => [
+            'type'  => $row['like_type'],
+            'name'  => $row['name'],
+            'photo' => $row['photo'],
+        ], $this->lessonDiscussionModel->getCommentReactions($commentId));
+
+        return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
     }
 
     /**
@@ -1574,6 +1614,8 @@ class ClassroomController extends Controller
             WHERE r.reply_id = ?
         ", [$replyId])->getRowArray();
 
+        $row['reply_id']      = (int) $row['reply_id'];
+        $row['author_id']     = (int) $row['author_id'];
         $row['like_count']    = 0;
         $row['dislike_count'] = 0;
         $row['user_reaction'] = null;
@@ -1594,5 +1636,23 @@ class ClassroomController extends Controller
         $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
         $result = $this->lessonDiscussionModel->toggleReplyLike($replyId, $r['ctx']['myId'], $type);
         return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * GET /api/classroom/lesson/discussion/reply/{replyId}/reactions — who liked/disliked this reply
+     */
+    public function lessonDiscussionReplyReactions(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $reactions = array_map(fn ($row) => [
+            'type'  => $row['like_type'],
+            'name'  => $row['name'],
+            'photo' => $row['photo'],
+        ], $this->lessonDiscussionModel->getReplyReactions($replyId));
+
+        return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
     }
 }

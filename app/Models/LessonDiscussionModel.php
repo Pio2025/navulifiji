@@ -122,8 +122,13 @@ class LessonDiscussionModel extends Model
         ", [$userId, $lessonId])->getResultArray();
 
         foreach ($rows as &$row) {
-            $row['photos']   = $this->getPhotos((int) $row['lesson_discussion_id']);
-            $row['comments'] = $this->getComments((int) $row['lesson_discussion_id'], $userId);
+            $row['lesson_discussion_id'] = (int) $row['lesson_discussion_id'];
+            $row['author_id']            = (int) $row['author_id'];
+            $row['comment_count']        = (int) $row['comment_count'];
+            $row['like_count']           = (int) $row['like_count'];
+            $row['dislike_count']        = (int) $row['dislike_count'];
+            $row['photos']   = $this->getPhotos($row['lesson_discussion_id']);
+            $row['comments'] = $this->getComments($row['lesson_discussion_id'], $userId);
         }
         return $rows;
     }
@@ -161,14 +166,18 @@ class LessonDiscussionModel extends Model
         ", [$userId, $discussionId])->getResultArray();
 
         foreach ($rows as &$row) {
-            $row['replies'] = $this->getReplies((int) $row['comment_id'], $userId);
+            $row['comment_id']     = (int) $row['comment_id'];
+            $row['author_id']      = (int) $row['author_id'];
+            $row['like_count']     = (int) $row['like_count'];
+            $row['dislike_count']  = (int) $row['dislike_count'];
+            $row['replies'] = $this->getReplies($row['comment_id'], $userId);
         }
         return $rows;
     }
 
     public function getReplies(int $commentId, int $userId = 0): array
     {
-        return \Config\Database::connect()->query("
+        $rows = \Config\Database::connect()->query("
             SELECT
                 r.reply_id,
                 r.reply,
@@ -187,6 +196,14 @@ class LessonDiscussionModel extends Model
             WHERE r.comment_id_fk = ? AND r.reply_status = 'Active'
             ORDER BY r.created_at ASC
         ", [$userId, $commentId])->getResultArray();
+
+        foreach ($rows as &$row) {
+            $row['reply_id']      = (int) $row['reply_id'];
+            $row['author_id']     = (int) $row['author_id'];
+            $row['like_count']    = (int) $row['like_count'];
+            $row['dislike_count'] = (int) $row['dislike_count'];
+        }
+        return $rows;
     }
 
     public function toggleReplyLike(int $replyId, int $userId, string $type = 'like'): array
