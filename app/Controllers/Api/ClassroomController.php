@@ -197,9 +197,16 @@ class ClassroomController extends Controller
         $requestedSchId = $requestedSchId !== null && $requestedSchId !== '' ? (int) $requestedSchId : null;
         $schId = $this->effectiveSchId($ctx, $requestedSchId);
 
+        $streams = array_map(fn ($s) => [
+            'stream_id'   => (int) $s['stream_id'],
+            'stream_name' => $s['stream_name'] ?? null,
+            'level_name'  => $s['level_name'] ?? null,
+            'sch_name'    => $s['sch_name'] ?? null,
+        ], $this->classroomModel->getStreamsForSchool($schId));
+
         return $this->response->setJSON([
             'success' => true,
-            'streams' => $this->classroomModel->getStreamsForSchool($schId),
+            'streams' => $streams,
         ]);
     }
 
@@ -270,6 +277,12 @@ class ClassroomController extends Controller
         $subjectCount = count($subjects['core']) + array_sum(array_map('count', $subjects['optional']));
         $studentCount = count($this->classroomModel->getClassroomStudents($id));
         $classTeacher = $this->classroomStaffModel->getActiveByRole($id, 'Class Teacher');
+        $lessonCount  = (int) (\Config\Database::connect()->query("
+            SELECT COUNT(*) AS cnt
+            FROM classroom_lesson cl
+            INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+            WHERE cs.class_id_fk = ?
+        ", [$id])->getRowArray()['cnt'] ?? 0);
 
         return $this->response->setJSON([
             'success'    => true,
@@ -292,6 +305,7 @@ class ClassroomController extends Controller
                 'updatedBy'   => trim(($classroom['updater_fname'] ?? '') . ' ' . ($classroom['updater_lname'] ?? '')),
                 'subjectCount' => $subjectCount,
                 'studentCount' => $studentCount,
+                'lessonCount'  => $lessonCount,
                 'classTeacher' => $classTeacher
                     ? trim(($classTeacher['fname'] ?? '') . ' ' . ($classTeacher['lname'] ?? ''))
                     : null,
@@ -441,10 +455,42 @@ class ClassroomController extends Controller
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
         }
 
+        $isTeacher     = $ctx['roleCatId'] === 3;
+        $isStudent     = $ctx['roleCatId'] === 4;
+        $canFullAccess = $isTeacher || $isStudent || $this->childLinkedToClassroom($ctx, $id);
+
+        $subjects = $this->classroomModel->getClassroomSubjectData($id);
+        if ($canFullAccess && $isTeacher) {
+            $mine = fn ($s) => (int) ($s['teacher_id'] ?? 0) === $ctx['myId'];
+            $subjects['core']     = array_values(array_filter($subjects['core'], $mine));
+            $subjects['optional'] = array_map(
+                fn ($group) => array_values(array_filter($group, $mine)),
+                $subjects['optional']
+            );
+        }
+
         return $this->response->setJSON([
-            'success'  => true,
-            'subjects' => $this->classroomModel->getClassroomSubjectData($id),
+            'success'       => true,
+            'canFullAccess' => $canFullAccess,
+            'subjects'      => $subjects,
         ]);
+    }
+
+    /**
+     * Whether one of the caller's linked children has an active enrolment in this classroom.
+     */
+    private function childLinkedToClassroom(array $ctx, int $classId): bool
+    {
+        $childIds = array_column($ctx['children'], 'user_id');
+        if (empty($childIds)) {
+            return false;
+        }
+        $ph  = implode(',', array_fill(0, count($childIds), '?'));
+        $row = \Config\Database::connect()->query("
+            SELECT COUNT(*) AS cnt FROM classroom_student
+            WHERE class_id_fk = ? AND user_id_fk IN ($ph) AND class_stud_status = 'Active'
+        ", [$classId, ...$childIds])->getRowArray();
+        return (int) ($row['cnt'] ?? 0) > 0;
     }
 
     /**
