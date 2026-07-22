@@ -361,4 +361,166 @@ class ClassroomModel extends Model
 
         return $builder->get()->getResultArray();
     }
+
+    // ================================================================
+    // Mobile API — listing helpers
+    // ================================================================
+
+    /**
+     * Common WHERE fragment + bindings for the mobile listing filters.
+     * @return array{0: string, 1: array}
+     */
+    private function apiFilters(?int $schId, ?string $search, ?string $status): array
+    {
+        $where  = ['1=1'];
+        $params = [];
+
+        if ($schId) {
+            $where[]  = 'sch_level.sch_id_fk = ?';
+            $params[] = $schId;
+        }
+        if ($search !== null && $search !== '') {
+            $where[]  = 'classroom.class_name LIKE ?';
+            $params[] = '%' . $search . '%';
+        }
+        if ($status !== null && $status !== '') {
+            $where[]  = 'classroom.class_status = ?';
+            $params[] = $status;
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
+    public function countForApi(?int $schId, ?string $search, ?string $status): int
+    {
+        [$where, $params] = $this->apiFilters($schId, $search, $status);
+        $db  = \Config\Database::connect();
+        $row = $db->query("
+            SELECT COUNT(*) AS cnt
+            FROM classroom
+            LEFT JOIN stream    ON stream.stream_id       = classroom.stream_id_fk
+            LEFT JOIN sch_level ON sch_level.sch_level_id = stream.sch_level_id_fk
+            WHERE $where
+        ", $params)->getRowArray();
+
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * Shared row shape used by getPageForApi() / getMyClassroomsForUser() / getChildClassrooms().
+     */
+    private const API_ROW_SELECT = "
+        classroom.class_id,
+        classroom.class_name,
+        classroom.class_year,
+        classroom.class_status,
+        stream.stream_name,
+        level.level_name,
+        school.sch_id,
+        school.sch_name,
+        (SELECT COUNT(*) FROM classroom_student cst WHERE cst.class_id_fk = classroom.class_id) AS student_count,
+        (SELECT CONCAT(u.fname,' ',u.lname) FROM classroom_role cr
+            INNER JOIN users u ON u.user_id = cr.user_id_fk
+            WHERE cr.class_id_fk = classroom.class_id AND cr.cs_role = 'Class Teacher' AND cr.cs_status = 'Active'
+            LIMIT 1) AS class_teacher
+    ";
+
+    public function getPageForApi(?int $schId, ?string $search, ?string $status, int $limit, int $offset): array
+    {
+        [$where, $params] = $this->apiFilters($schId, $search, $status);
+        $db = \Config\Database::connect();
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $db->query('
+            SELECT ' . self::API_ROW_SELECT . '
+            FROM classroom
+            LEFT JOIN stream    ON stream.stream_id       = classroom.stream_id_fk
+            LEFT JOIN sch_level ON sch_level.sch_level_id = stream.sch_level_id_fk
+            LEFT JOIN level     ON level.level_id         = sch_level.level_id_fk
+            LEFT JOIN school    ON school.sch_id          = sch_level.sch_id_fk
+            WHERE ' . $where . '
+            ORDER BY classroom.class_year DESC, classroom.class_name ASC
+            LIMIT ? OFFSET ?
+        ', $params)->getResultArray();
+    }
+
+    /**
+     * Classrooms the given user teaches in / is enrolled in (unpaginated — small result set).
+     */
+    public function getMyClassroomsForUser(int $userId, int $roleCatId): array
+    {
+        $db = \Config\Database::connect();
+
+        if ($roleCatId === 4) {
+            return $db->query('
+                SELECT DISTINCT ' . self::API_ROW_SELECT . '
+                FROM classroom
+                INNER JOIN enrolment ON enrolment.stream_id_fk = classroom.stream_id_fk
+                                     AND enrolment.enrol_year   = classroom.class_year
+                INNER JOIN admission ON admission.admission_id = enrolment.admission_id_fk
+                LEFT JOIN stream     ON stream.stream_id       = classroom.stream_id_fk
+                LEFT JOIN sch_level  ON sch_level.sch_level_id = stream.sch_level_id_fk
+                LEFT JOIN level      ON level.level_id         = sch_level.level_id_fk
+                LEFT JOIN school     ON school.sch_id          = sch_level.sch_id_fk
+                WHERE admission.user_id_fk = ? AND admission.admission_status = "Active"
+                ORDER BY classroom.class_year DESC, classroom.class_name ASC
+            ', [$userId])->getResultArray();
+        }
+
+        return $db->query('
+            SELECT DISTINCT ' . self::API_ROW_SELECT . '
+            FROM classroom
+            LEFT JOIN stream    ON stream.stream_id       = classroom.stream_id_fk
+            LEFT JOIN sch_level ON sch_level.sch_level_id = stream.sch_level_id_fk
+            LEFT JOIN level     ON level.level_id         = sch_level.level_id_fk
+            LEFT JOIN school    ON school.sch_id          = sch_level.sch_id_fk
+            WHERE classroom.class_id IN (
+                SELECT class_id_fk FROM classroom_role WHERE user_id_fk = ? AND cs_status = "Active"
+                UNION
+                SELECT cs.class_id_fk FROM classroom_subject cs
+                INNER JOIN classroom_subject_teacher cst ON cst.class_sub_id_fk = cs.class_sub_id
+                WHERE cst.user_id_fk = ? AND cst.class_sub_teacher_status = "Active"
+            )
+            ORDER BY classroom.class_year DESC, classroom.class_name ASC
+        ', [$userId, $userId])->getResultArray();
+    }
+
+    /**
+     * Classrooms each of the given (linked) child user ids is enrolled in.
+     * Each row is tagged with child_user_id / child_name.
+     */
+    public function getChildClassrooms(array $childUserIds): array
+    {
+        if (empty($childUserIds)) {
+            return [];
+        }
+
+        $db   = \Config\Database::connect();
+        $rows = [];
+
+        foreach ($childUserIds as $childId) {
+            $childId = (int) $childId;
+            $childRows = $db->query('
+                SELECT ' . self::API_ROW_SELECT . ",
+                    u.user_id AS child_user_id,
+                    CONCAT(u.fname,' ',u.lname) AS child_name
+                FROM classroom
+                INNER JOIN enrolment ON enrolment.stream_id_fk = classroom.stream_id_fk
+                                     AND enrolment.enrol_year   = classroom.class_year
+                INNER JOIN admission ON admission.admission_id = enrolment.admission_id_fk
+                INNER JOIN users u   ON u.user_id              = admission.user_id_fk
+                LEFT JOIN stream     ON stream.stream_id       = classroom.stream_id_fk
+                LEFT JOIN sch_level  ON sch_level.sch_level_id = stream.sch_level_id_fk
+                LEFT JOIN level      ON level.level_id         = sch_level.level_id_fk
+                LEFT JOIN school     ON school.sch_id          = sch_level.sch_id_fk
+                WHERE admission.user_id_fk = ? AND admission.admission_status = 'Active'
+                ORDER BY classroom.class_year DESC, classroom.class_name ASC
+            ", [$childId])->getResultArray();
+
+            array_push($rows, ...$childRows);
+        }
+
+        return $rows;
+    }
 }
