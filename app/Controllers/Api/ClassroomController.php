@@ -5,12 +5,14 @@ namespace App\Controllers\Api;
 use App\Libraries\ApiAuth;
 use App\Models\AdmissionModel;
 use App\Models\ClassDiscussionModel;
+use App\Models\ClassroomLessonModel;
 use App\Models\ClassroomModel;
 use App\Models\ClassroomStaffModel;
 use App\Models\ParentStudentModel;
 use App\Models\RolePermissionModel;
 use App\Models\SchoolModel;
 use App\Models\StudentAttendanceModel;
+use App\Models\SubjectFeedbackModel;
 use App\Models\TermExamModel;
 use CodeIgniter\Controller;
 
@@ -25,6 +27,8 @@ class ClassroomController extends Controller
     protected $studentAttendanceModel;
     protected $termExamModel;
     protected $classDiscussionModel;
+    protected $classroomLessonModel;
+    protected $subjectFeedbackModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
@@ -38,6 +42,8 @@ class ClassroomController extends Controller
         $this->studentAttendanceModel = new StudentAttendanceModel();
         $this->termExamModel          = new TermExamModel();
         $this->classDiscussionModel   = new ClassDiscussionModel();
+        $this->classroomLessonModel   = new ClassroomLessonModel();
+        $this->subjectFeedbackModel   = new SubjectFeedbackModel();
     }
 
     private function grantAccess(int $roleId, string $permCode): bool
@@ -774,6 +780,258 @@ class ClassroomController extends Controller
         return $this->response->setJSON([
             'success' => true,
             'posts'   => $this->classDiscussionModel->getPosts($id, $ctx['myId']),
+        ]);
+    }
+
+    /**
+     * Resolves and access-checks a classroom_subject id (class_sub_id). Returns either
+     * an 'error' key (status+message, to be returned as-is) or the resolved context.
+     */
+    private function resolveSubjectAccess(int $classSubId): array
+    {
+        $ctx = $this->context();
+
+        $cs = \Config\Database::connect()->table('classroom_subject')
+            ->select('class_id_fk')->where('class_sub_id', $classSubId)->get()->getRowArray();
+        if (!$cs) {
+            return ['error' => ['status' => 404, 'message' => 'Subject not found.']];
+        }
+
+        $classId   = (int) $cs['class_id_fk'];
+        $classroom = $this->classroomModel->getDetail($classId);
+        if (!$classroom) {
+            return ['error' => ['status' => 404, 'message' => 'Classroom not found.']];
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return ['error' => ['status' => 403, 'message' => 'You do not have access to this classroom.']];
+        }
+
+        $isTeacher = $ctx['roleCatId'] === 3;
+        $isStudent = $ctx['roleCatId'] === 4;
+        $childIds  = $this->linkedChildIdsInClassroom($ctx, $classId);
+
+        if (!$isTeacher && !$isStudent && empty($childIds)) {
+            return ['error' => ['status' => 403, 'message' => 'You do not have access to this subject.']];
+        }
+
+        return [
+            'ctx'       => $ctx,
+            'classId'   => $classId,
+            'isTeacher' => $isTeacher,
+            'isStudent' => $isStudent,
+            'childIds'  => $childIds,
+        ];
+    }
+
+    private function errorResponse(array $r)
+    {
+        return $this->response->setStatusCode($r['error']['status'])->setJSON(['success' => false, 'message' => $r['error']['message']]);
+    }
+
+    /**
+     * GET /api/classroom/subject/{classSubId}/dashboard — read-only class-wide analytics
+     * (same aggregate data the web app computes for both the teacher and student dashboard views).
+     */
+    public function subjectDashboard(int $classSubId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'stats'   => $this->classroomLessonModel->getDashboardStats($classSubId),
+        ]);
+    }
+
+    /**
+     * GET /api/classroom/subject/{classSubId}/lessons — read-only published lesson list.
+     */
+    public function subjectLessons(int $classSubId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'lessons' => $this->classroomLessonModel->getLessonsForSubject($classSubId),
+        ]);
+    }
+
+    /**
+     * GET /api/classroom/subject/{classSubId}/assignments — read-only, scoped to the viewer.
+     */
+    public function subjectAssignments(int $classSubId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        if (!empty($r['childIds'])) {
+            $children = [];
+            foreach ($ctx['children'] as $child) {
+                $childId = (int) $child['user_id'];
+                if (!in_array($childId, $r['childIds'], true)) {
+                    continue;
+                }
+                $children[] = [
+                    'childUserId' => $childId,
+                    'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'assignments' => $this->subjectAssignmentsFor($classSubId, $childId),
+                ];
+            }
+            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'children' => $children]);
+        }
+
+        if ($r['isStudent']) {
+            return $this->response->setJSON([
+                'success'     => true,
+                'mode'        => 'self',
+                'assignments' => $this->subjectAssignmentsFor($classSubId, $ctx['myId']),
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success'     => true,
+            'mode'        => 'summary',
+            'assignments' => $this->subjectAssignmentsSummary($classSubId),
+        ]);
+    }
+
+    private function subjectAssignmentsFor(int $classSubId, int $studentId): array
+    {
+        return \Config\Database::connect()->query("
+            SELECT a.assignment_id, a.assignment_name, a.assignment_due_date, a.assignment_total_score,
+                   asub.submission_id, asub.submission_status, asub.submitted_at, asub.grade
+            FROM lesson_assignment a
+            LEFT JOIN assignment_submission asub
+                   ON asub.assignment_id_fk = a.assignment_id AND asub.user_id_fk = ?
+            WHERE a.class_sub_id_fk = ? AND a.assignment_status = 'Published'
+            ORDER BY a.assignment_due_date ASC
+        ", [$studentId, $classSubId])->getResultArray();
+    }
+
+    private function subjectAssignmentsSummary(int $classSubId): array
+    {
+        return \Config\Database::connect()->query("
+            SELECT a.assignment_id, a.assignment_name, a.assignment_due_date, a.assignment_total_score,
+                   (SELECT COUNT(*) FROM assignment_submission s WHERE s.assignment_id_fk = a.assignment_id) AS submitted_count
+            FROM lesson_assignment a
+            WHERE a.class_sub_id_fk = ? AND a.assignment_status = 'Published'
+            ORDER BY a.assignment_due_date ASC
+        ", [$classSubId])->getResultArray();
+    }
+
+    /**
+     * GET /api/classroom/subject/{classSubId}/feedback — read-only, scoped to the viewer.
+     * Teachers see class averages + the feedback list; students/parents see one rating.
+     */
+    public function subjectFeedback(int $classSubId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        if ($r['isTeacher']) {
+            return $this->response->setJSON([
+                'success'   => true,
+                'mode'      => 'summary',
+                'averages'  => $this->subjectFeedbackModel->getSubjectAverages($classSubId),
+                'feedbacks' => $this->subjectFeedbackModel->getClassFeedbacks($classSubId, true),
+            ]);
+        }
+
+        if (!empty($r['childIds'])) {
+            $children = [];
+            foreach ($ctx['children'] as $child) {
+                $childId = (int) $child['user_id'];
+                if (!in_array($childId, $r['childIds'], true)) {
+                    continue;
+                }
+                $children[] = [
+                    'childUserId' => $childId,
+                    'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'feedback'    => $this->subjectFeedbackModel->getStudentFeedback($classSubId, $childId),
+                ];
+            }
+            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'children' => $children]);
+        }
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'mode'     => 'self',
+            'feedback' => $this->subjectFeedbackModel->getStudentFeedback($classSubId, $ctx['myId']),
+        ]);
+    }
+
+    /**
+     * POST /api/classroom/subject/{classSubId}/feedback — the enrolled student rates their own subject.
+     * Not available to teachers or parents viewing on a child's behalf.
+     */
+    public function subjectFeedbackStore(int $classSubId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        if (!$r['isStudent']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Only the enrolled student can submit feedback.']);
+        }
+        $ctx = $r['ctx'];
+
+        $body       = $this->request->getJSON(true) ?? [];
+        $overall    = (int) ($body['overall_rating'] ?? 0);
+        $teaching   = (int) ($body['teaching_rating'] ?? 0);
+        $content    = (int) ($body['content_rating'] ?? 0);
+        $engagement = (int) ($body['engagement_rating'] ?? 0);
+        $comment    = trim((string) ($body['comment'] ?? ''));
+        $anonymous  = !empty($body['is_anonymous']);
+
+        if ($overall < 1 || $overall > 5) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Overall rating is required (1-5 stars).']);
+        }
+        $teaching   = max(0, min(5, $teaching));
+        $content    = max(0, min(5, $content));
+        $engagement = max(0, min(5, $engagement));
+
+        $db      = \Config\Database::connect();
+        $teacher = $db->query("
+            SELECT cst.user_id_fk AS teacher_id, cs.sub_id_fk AS sch_sub_id
+            FROM classroom_subject_teacher cst
+            INNER JOIN classroom_subject cs ON cs.class_sub_id = cst.class_sub_id_fk
+            WHERE cst.class_sub_id_fk = ? AND cst.class_sub_teacher_status = 'Active'
+            LIMIT 1
+        ", [$classSubId])->getRowArray();
+
+        $existing = $this->subjectFeedbackModel->getStudentFeedback($classSubId, $ctx['myId']);
+
+        $row = [
+            'class_sub_id_fk'   => $classSubId,
+            'class_id_fk'       => $r['classId'],
+            'student_id_fk'     => $ctx['myId'],
+            'teacher_id_fk'     => $teacher['teacher_id'] ?? null,
+            'sch_sub_id_fk'     => $teacher['sch_sub_id'] ?? null,
+            'overall_rating'    => $overall,
+            'teaching_rating'   => $teaching,
+            'content_rating'    => $content,
+            'engagement_rating' => $engagement,
+            'comment'           => $comment ?: null,
+            'is_anonymous'      => $anonymous ? 1 : 0,
+        ];
+
+        $ok = $this->subjectFeedbackModel->upsert($row, $existing['feedback_id'] ?? null);
+
+        return $this->response->setJSON([
+            'success'  => (bool) $ok,
+            'message'  => $existing ? 'Feedback updated. Thank you!' : 'Thank you for your feedback!',
+            'feedback' => $this->subjectFeedbackModel->getStudentFeedback($classSubId, $ctx['myId']),
         ]);
     }
 }
