@@ -1614,11 +1614,63 @@ class ClassroomController extends Controller
             WHERE r.reply_id = ?
         ", [$replyId])->getRowArray();
 
-        $row['reply_id']      = (int) $row['reply_id'];
-        $row['author_id']     = (int) $row['author_id'];
-        $row['like_count']    = 0;
-        $row['dislike_count'] = 0;
-        $row['user_reaction'] = null;
+        $row['reply_id']            = (int) $row['reply_id'];
+        $row['author_id']           = (int) $row['author_id'];
+        $row['parent_reply_id_fk']  = null;
+        $row['like_count']          = 0;
+        $row['dislike_count']       = 0;
+        $row['user_reaction']       = null;
+        $row['replies']             = [];
+
+        return $this->response->setJSON(['success' => true, 'reply' => $row]);
+    }
+
+    /**
+     * POST /api/classroom/lesson/discussion/reply/{replyId}/reply — body/form: reply
+     * Replies to an existing reply (nested thread), inheriting its parent comment.
+     */
+    public function lessonDiscussionReplyReply(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx   = $r['ctx'];
+        $body  = $this->request->getJSON(true) ?? [];
+        $reply = trim($this->request->getPost('reply') ?? ($body['reply'] ?? ''));
+        if ($reply === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Reply cannot be empty.']);
+        }
+
+        $db = \Config\Database::connect();
+        $parent = $db->table('lesson_discussion_comment_reply')
+            ->select('comment_id_fk')->where('reply_id', $replyId)->get()->getRowArray();
+
+        $now = date('Y-m-d H:i:s');
+        $db->table('lesson_discussion_comment_reply')->insert([
+            'comment_id_fk'      => (int) $parent['comment_id_fk'],
+            'parent_reply_id_fk' => $replyId,
+            'author'             => $ctx['myId'],
+            'reply'              => $reply,
+            'created_at'         => $now,
+            'reply_status'       => 'Active',
+        ]);
+        $newReplyId = $db->insertID();
+
+        $row = $db->query("
+            SELECT r.reply_id, r.parent_reply_id_fk, r.reply, r.created_at, r.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo
+            FROM lesson_discussion_comment_reply r INNER JOIN users u ON u.user_id = r.author
+            WHERE r.reply_id = ?
+        ", [$newReplyId])->getRowArray();
+
+        $row['reply_id']           = (int) $row['reply_id'];
+        $row['parent_reply_id_fk'] = (int) $row['parent_reply_id_fk'];
+        $row['author_id']          = (int) $row['author_id'];
+        $row['like_count']         = 0;
+        $row['dislike_count']      = 0;
+        $row['user_reaction']      = null;
+        $row['replies']            = [];
 
         return $this->response->setJSON(['success' => true, 'reply' => $row]);
     }
