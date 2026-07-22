@@ -214,6 +214,9 @@ class ClassroomModel extends Model
 
         $core = []; $optional = [];
         foreach ($rows as $row) {
+            $row['class_sub_id'] = (int) ($row['class_sub_id'] ?? 0);
+            $row['sch_sub_id']   = (int) ($row['sch_sub_id'] ?? 0);
+            $row['teacher_id']   = $row['teacher_id'] !== null ? (int) $row['teacher_id'] : null;
             if ($row['subject_type'] === 'optional') {
                 $optional[(int)($row['option_num'] ?? 0)][] = $row;
             } else {

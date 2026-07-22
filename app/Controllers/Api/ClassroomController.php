@@ -484,6 +484,21 @@ class ClassroomController extends Controller
             );
         }
 
+        $childId = $this->request->getGet('childId');
+        if ($childId !== null && $childId !== '') {
+            $childId = (int) $childId;
+            if (!in_array($childId, $this->linkedChildIdsInClassroom($ctx, $id), true)) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'That child is not enrolled in this classroom.']);
+            }
+            $subjectIds = $this->studentSubjectIds($id, $childId);
+            $inIds = fn ($s) => in_array((int) ($s['sch_sub_id'] ?? 0), $subjectIds, true);
+            $subjects['core']     = array_values(array_filter($subjects['core'], $inIds));
+            $subjects['optional'] = array_filter(
+                array_map(fn ($group) => array_values(array_filter($group, $inIds)), $subjects['optional']),
+                fn ($group) => !empty($group)
+            );
+        }
+
         return $this->response->setJSON([
             'success'       => true,
             'canFullAccess' => $canFullAccess,
@@ -514,6 +529,20 @@ class ClassroomController extends Controller
     private function childLinkedToClassroom(array $ctx, int $classId): bool
     {
         return !empty($this->linkedChildIdsInClassroom($ctx, $classId));
+    }
+
+    /**
+     * sch_sub_id values of the subjects a given student is actively enrolled in for a classroom.
+     */
+    private function studentSubjectIds(int $classId, int $childUserId): array
+    {
+        $rows = \Config\Database::connect()->query("
+            SELECT ss.sch_sub_id_fk
+            FROM student_subject ss
+            INNER JOIN admission ad ON ad.admission_id = ss.admission_id_fk
+            WHERE ss.class_id_fk = ? AND ad.user_id_fk = ? AND ss.stud_sub_status = 'Active'
+        ", [$classId, $childUserId])->getResultArray();
+        return array_map(fn ($r) => (int) $r['sch_sub_id_fk'], $rows);
     }
 
     /**
