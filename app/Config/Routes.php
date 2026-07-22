@@ -752,6 +752,9 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->get('classroom/(:num)/subjects',  'Api\ClassroomController::subjects/$1');
         $routes->get('classroom/(:num)/staff',     'Api\ClassroomController::staff/$1');
         $routes->get('classroom/(:num)/students',  'Api\ClassroomController::students/$1');
+        $routes->get('classroom/(:num)/attendance','Api\ClassroomController::attendance/$1');
+        $routes->get('classroom/(:num)/exam',      'Api\ClassroomController::exam/$1');
+        $routes->get('classroom/(:num)/discussion','Api\ClassroomController::discussion/$1');
         $routes->get('classroom/(:num)',           'Api\ClassroomController::detail/$1');
         $routes->put('classroom/(:num)',           'Api\ClassroomController::update/$1');
         $routes->delete('classroom/(:num)',        'Api\ClassroomController::delete/$1');

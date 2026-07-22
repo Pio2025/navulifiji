@@ -4,11 +4,14 @@ namespace App\Controllers\Api;
 
 use App\Libraries\ApiAuth;
 use App\Models\AdmissionModel;
+use App\Models\ClassDiscussionModel;
 use App\Models\ClassroomModel;
 use App\Models\ClassroomStaffModel;
 use App\Models\ParentStudentModel;
 use App\Models\RolePermissionModel;
 use App\Models\SchoolModel;
+use App\Models\StudentAttendanceModel;
+use App\Models\TermExamModel;
 use CodeIgniter\Controller;
 
 class ClassroomController extends Controller
@@ -19,16 +22,22 @@ class ClassroomController extends Controller
     protected $parentStudentModel;
     protected $rolePermissionModel;
     protected $schoolModel;
+    protected $studentAttendanceModel;
+    protected $termExamModel;
+    protected $classDiscussionModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-        $this->classroomModel      = new ClassroomModel();
-        $this->classroomStaffModel = new ClassroomStaffModel();
-        $this->admissionModel      = new AdmissionModel();
-        $this->parentStudentModel  = new ParentStudentModel();
-        $this->rolePermissionModel = new RolePermissionModel();
-        $this->schoolModel         = new SchoolModel();
+        $this->classroomModel         = new ClassroomModel();
+        $this->classroomStaffModel    = new ClassroomStaffModel();
+        $this->admissionModel         = new AdmissionModel();
+        $this->parentStudentModel     = new ParentStudentModel();
+        $this->rolePermissionModel    = new RolePermissionModel();
+        $this->schoolModel            = new SchoolModel();
+        $this->studentAttendanceModel = new StudentAttendanceModel();
+        $this->termExamModel          = new TermExamModel();
+        $this->classDiscussionModel   = new ClassDiscussionModel();
     }
 
     private function grantAccess(int $roleId, string $permCode): bool
@@ -477,20 +486,28 @@ class ClassroomController extends Controller
     }
 
     /**
+     * IDs of the caller's linked children who have an active enrolment in this classroom.
+     */
+    private function linkedChildIdsInClassroom(array $ctx, int $classId): array
+    {
+        $childIds = array_column($ctx['children'], 'user_id');
+        if (empty($childIds)) {
+            return [];
+        }
+        $ph   = implode(',', array_fill(0, count($childIds), '?'));
+        $rows = \Config\Database::connect()->query("
+            SELECT user_id_fk FROM classroom_student
+            WHERE class_id_fk = ? AND user_id_fk IN ($ph) AND class_stud_status = 'Active'
+        ", [$classId, ...$childIds])->getResultArray();
+        return array_map(fn ($r) => (int) $r['user_id_fk'], $rows);
+    }
+
+    /**
      * Whether one of the caller's linked children has an active enrolment in this classroom.
      */
     private function childLinkedToClassroom(array $ctx, int $classId): bool
     {
-        $childIds = array_column($ctx['children'], 'user_id');
-        if (empty($childIds)) {
-            return false;
-        }
-        $ph  = implode(',', array_fill(0, count($childIds), '?'));
-        $row = \Config\Database::connect()->query("
-            SELECT COUNT(*) AS cnt FROM classroom_student
-            WHERE class_id_fk = ? AND user_id_fk IN ($ph) AND class_stud_status = 'Active'
-        ", [$classId, ...$childIds])->getRowArray();
-        return (int) ($row['cnt'] ?? 0) > 0;
+        return !empty($this->linkedChildIdsInClassroom($ctx, $classId));
     }
 
     /**
@@ -564,6 +581,199 @@ class ClassroomController extends Controller
                 'photo'  => $s['profile_photo'] ?? null,
                 'status' => $s['class_stud_status'] ?? null,
             ], $page),
+        ]);
+    }
+
+    /**
+     * GET /api/classroom/{id}/attendance — read-only, scoped to the viewer.
+     */
+    public function attendance(int $id)
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $streamId    = (int) ($classroom['stream_id'] ?? 0);
+        $isTeacher   = $ctx['roleCatId'] === 3;
+        $isStudent   = $ctx['roleCatId'] === 4;
+        $childIds    = $this->linkedChildIdsInClassroom($ctx, $id);
+        $privileged  = $isTeacher || $ctx['isSuperAdmin'] || $ctx['canViewAllListing'];
+
+        if ($privileged) {
+            return $this->response->setJSON([
+                'success' => true,
+                'mode'    => 'summary',
+                'summary' => $this->summarizeAttendance($this->studentAttendanceModel->getAttendanceDatesForStream($streamId)),
+            ]);
+        }
+
+        if (!empty($childIds)) {
+            $children = [];
+            foreach ($ctx['children'] as $child) {
+                $childId = (int) $child['user_id'];
+                if (!in_array($childId, $childIds, true)) {
+                    continue;
+                }
+                $rows = $this->studentAttendanceModel->getStudentDailyAttendance($childId, $streamId);
+                $children[] = [
+                    'childUserId' => $childId,
+                    'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'records'     => array_map(fn ($r) => [
+                        'date'   => $r['attendance_date'] ?? null,
+                        'status' => $r['attendance_status'] ?? null,
+                    ], $rows),
+                ];
+            }
+            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'children' => $children]);
+        }
+
+        if ($isStudent) {
+            $rows = $this->studentAttendanceModel->getStudentDailyAttendance($ctx['myId'], $streamId);
+            return $this->response->setJSON([
+                'success' => true,
+                'mode'    => 'self',
+                'records' => array_map(fn ($r) => [
+                    'date'   => $r['attendance_date'] ?? null,
+                    'status' => $r['attendance_status'] ?? null,
+                ], $rows),
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'mode'    => 'summary',
+            'summary' => $this->summarizeAttendance($this->studentAttendanceModel->getAttendanceDatesForStream($streamId)),
+        ]);
+    }
+
+    private function summarizeAttendance(array $dateRows): array
+    {
+        $present = 0;
+        $absent  = 0;
+        $days    = [];
+        foreach ($dateRows as $r) {
+            $present += (int) ($r['present_count'] ?? 0);
+            $absent  += (int) ($r['absent_count'] ?? 0);
+            $days[]   = [
+                'date'         => $r['attendance_date'] ?? null,
+                'studentCount' => (int) ($r['student_count'] ?? 0),
+                'presentCount' => (int) ($r['present_count'] ?? 0),
+                'absentCount'  => (int) ($r['absent_count'] ?? 0),
+            ];
+        }
+        return [
+            'totalPresent' => $present,
+            'totalAbsent'  => $absent,
+            'days'         => $days,
+        ];
+    }
+
+    /**
+     * GET /api/classroom/{id}/exam — read-only, scoped to the viewer.
+     */
+    public function exam(int $id)
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $isTeacher  = $ctx['roleCatId'] === 3;
+        $isStudent  = $ctx['roleCatId'] === 4;
+        $childIds   = $this->linkedChildIdsInClassroom($ctx, $id);
+        $privileged = $isTeacher || $ctx['isSuperAdmin'] || $ctx['canViewAllListing'];
+
+        if ($privileged) {
+            $terms = [];
+            for ($term = 1; $term <= 3; $term++) {
+                $terms[$term] = [
+                    'marks' => $this->termExamModel->getAllMarksForClassTerm($id, $term),
+                    'stats' => $this->termExamModel->getClassStats($id, $term, 0),
+                ];
+            }
+            return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'terms' => $terms]);
+        }
+
+        if (!empty($childIds)) {
+            $children = [];
+            foreach ($ctx['children'] as $child) {
+                $childId = (int) $child['user_id'];
+                if (!in_array($childId, $childIds, true)) {
+                    continue;
+                }
+                $terms = [];
+                for ($term = 1; $term <= 3; $term++) {
+                    $terms[$term] = $this->examReportOut($id, $childId, $term);
+                }
+                $children[] = [
+                    'childUserId' => $childId,
+                    'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'terms'       => $terms,
+                ];
+            }
+            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'children' => $children]);
+        }
+
+        if ($isStudent) {
+            $terms = [];
+            for ($term = 1; $term <= 3; $term++) {
+                $terms[$term] = $this->examReportOut($id, $ctx['myId'], $term);
+            }
+            return $this->response->setJSON(['success' => true, 'mode' => 'self', 'terms' => $terms]);
+        }
+
+        $terms = [];
+        for ($term = 1; $term <= 3; $term++) {
+            $terms[$term] = [
+                'marks' => $this->termExamModel->getAllMarksForClassTerm($id, $term),
+                'stats' => $this->termExamModel->getClassStats($id, $term, 0),
+            ];
+        }
+        return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'terms' => $terms]);
+    }
+
+    /**
+     * Self/child term report, gated: unpublished reports are hidden from the student/parent view.
+     */
+    private function examReportOut(int $classId, int $studentId, int $term): array
+    {
+        $report = $this->termExamModel->getStudentReport($classId, $studentId, $term);
+        if (($report['status'] ?? '') !== 'published') {
+            return ['published' => false, 'report' => null, 'stats' => null];
+        }
+        return [
+            'published' => true,
+            'report'    => $report,
+            'stats'     => $this->termExamModel->getClassStats($classId, $term, $studentId),
+        ];
+    }
+
+    /**
+     * GET /api/classroom/{id}/discussion — classroom-shared post feed.
+     */
+    public function discussion(int $id)
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        return $this->response->setJSON([
+            'success' => true,
+            'posts'   => $this->classDiscussionModel->getPosts($id, $ctx['myId']),
         ]);
     }
 }
