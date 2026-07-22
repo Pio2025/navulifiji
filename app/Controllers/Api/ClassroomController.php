@@ -8,6 +8,8 @@ use App\Models\ClassDiscussionModel;
 use App\Models\ClassroomLessonModel;
 use App\Models\ClassroomModel;
 use App\Models\ClassroomStaffModel;
+use App\Models\LessonDiscussionModel;
+use App\Models\LessonQuizzeModel;
 use App\Models\ParentStudentModel;
 use App\Models\PublicHolidayModel;
 use App\Models\RolePermissionModel;
@@ -31,6 +33,8 @@ class ClassroomController extends Controller
     protected $termExamModel;
     protected $classDiscussionModel;
     protected $classroomLessonModel;
+    protected $lessonDiscussionModel;
+    protected $lessonQuizzeModel;
     protected $subjectFeedbackModel;
     protected $schoolCategoryConfigModel;
     protected $schoolCategoryTermModel;
@@ -49,6 +53,8 @@ class ClassroomController extends Controller
         $this->termExamModel            = new TermExamModel();
         $this->classDiscussionModel     = new ClassDiscussionModel();
         $this->classroomLessonModel     = new ClassroomLessonModel();
+        $this->lessonDiscussionModel    = new LessonDiscussionModel();
+        $this->lessonQuizzeModel        = new LessonQuizzeModel();
         $this->subjectFeedbackModel     = new SubjectFeedbackModel();
         $this->schoolCategoryConfigModel = new SchoolCategoryConfigModel();
         $this->schoolCategoryTermModel   = new SchoolCategoryTermModel();
@@ -1241,5 +1247,352 @@ class ClassroomController extends Controller
             'message'  => $existing ? 'Feedback updated. Thank you!' : 'Thank you for your feedback!',
             'feedback' => $this->subjectFeedbackModel->getStudentFeedback($classSubId, $ctx['myId']),
         ]);
+    }
+
+    // ================================================================
+    // LESSON DETAIL + LESSON DISCUSSION (mobile "My Classroom"/"My Child Classroom" flow)
+    // ================================================================
+
+    /**
+     * Resolves and access-checks a classroom_lesson id. Returns either an 'error'
+     * key or the resolved subjectAccess context plus 'lessonId'/'classSubId'.
+     */
+    private function resolveLessonAccess(int $lessonId): array
+    {
+        $lesson = \Config\Database::connect()->table('classroom_lesson')
+            ->select('class_sub_id_fk')->where('lesson_id', $lessonId)->get()->getRowArray();
+        if (!$lesson) {
+            return ['error' => ['status' => 404, 'message' => 'Lesson not found.']];
+        }
+
+        $r = $this->resolveSubjectAccess((int) $lesson['class_sub_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+
+        $r['lessonId']  = $lessonId;
+        $r['classSubId'] = (int) $lesson['class_sub_id_fk'];
+        return $r;
+    }
+
+    private function resolveDiscussionAccess(int $discussionId): array
+    {
+        $discussion = \Config\Database::connect()->table('lesson_discussion')
+            ->select('lesson_id_fk')->where('lesson_discussion_id', $discussionId)->get()->getRowArray();
+        if (!$discussion) {
+            return ['error' => ['status' => 404, 'message' => 'Discussion not found.']];
+        }
+
+        $r = $this->resolveLessonAccess((int) $discussion['lesson_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+        $r['discussionId'] = $discussionId;
+        return $r;
+    }
+
+    private function resolveCommentAccess(int $commentId): array
+    {
+        $comment = \Config\Database::connect()->table('lesson_discussion_comment')
+            ->select('discussion_id_fk')->where('comment_id', $commentId)->get()->getRowArray();
+        if (!$comment) {
+            return ['error' => ['status' => 404, 'message' => 'Comment not found.']];
+        }
+
+        $r = $this->resolveDiscussionAccess((int) $comment['discussion_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+        $r['commentId'] = $commentId;
+        return $r;
+    }
+
+    private function resolveReplyAccess(int $replyId): array
+    {
+        $reply = \Config\Database::connect()->table('lesson_discussion_comment_reply')
+            ->select('comment_id_fk')->where('reply_id', $replyId)->get()->getRowArray();
+        if (!$reply) {
+            return ['error' => ['status' => 404, 'message' => 'Reply not found.']];
+        }
+
+        $r = $this->resolveCommentAccess((int) $reply['comment_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+        $r['replyId'] = $replyId;
+        return $r;
+    }
+
+    /**
+     * GET /api/classroom/lesson/{lessonId} — full lesson detail: info, files, videos,
+     * links, published assessments (name/type/duration only), and discussion feed.
+     */
+    public function lessonDetail(int $lessonId)
+    {
+        $r = $this->resolveLessonAccess($lessonId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        $lesson = $this->classroomLessonModel->getLessonWithSteps($lessonId);
+        if (!$lesson) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Lesson not found.']);
+        }
+
+        $this->lessonDiscussionModel->ensureTables();
+
+        $assessments = \Config\Database::connect()->table('lesson_quizze')
+            ->select('lesson_quizze_id, quizze_name, assessment_type, quizze_duration')
+            ->where('lesson_id_fk', $lessonId)->where('quizze_status', 'Published')
+            ->get()->getResultArray();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'lesson' => [
+                'id'         => (int) $lesson['lesson_id'],
+                'classSubId' => (int) $lesson['class_sub_id_fk'],
+                'title'      => $lesson['lesson_title'],
+                'desc'       => $lesson['lesson_desc'],
+                'term'       => $lesson['lesson_term'] !== null ? (int) $lesson['lesson_term'] : null,
+                'week'       => $lesson['lesson_week'] !== null ? (int) $lesson['lesson_week'] : null,
+                'day'        => $lesson['lesson_day']  !== null ? (int) $lesson['lesson_day']  : null,
+                'duration'   => $lesson['lesson_duration'],
+                'status'     => $lesson['lesson_status'],
+                'subjectName' => $lesson['subject_name'],
+                'levelName'  => $lesson['level_name'],
+                'schName'    => $lesson['sch_name'],
+            ],
+            'files'   => array_map(fn ($f) => [
+                'id'   => (int) $f['file_id'],
+                'name' => $f['file_name'],
+                'path' => $f['file_path'],
+                'type' => $f['file_type'],
+                'size' => (int) ($f['file_size'] ?? 0),
+            ], $lesson['files']),
+            'videos'  => array_map(fn ($v) => [
+                'id'    => (int) $v['video_id'],
+                'url'   => $v['video_url'],
+                'title' => $v['video_title'],
+                'order' => (int) $v['video_order'],
+            ], $lesson['videos']),
+            'links'   => array_map(fn ($l) => [
+                'id'    => (int) $l['link_id'],
+                'url'   => $l['link_url'],
+                'title' => $l['link_title'],
+                'order' => (int) $l['link_order'],
+            ], $lesson['links']),
+            'assessments' => array_map(fn ($a) => [
+                'id'       => (int) $a['lesson_quizze_id'],
+                'name'     => $a['quizze_name'],
+                'type'     => $a['assessment_type'],
+                'duration' => (int) $a['quizze_duration'],
+            ], $assessments),
+            'discussion' => $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']),
+        ]);
+    }
+
+    /**
+     * POST /api/classroom/lesson/{lessonId}/discussion — multipart: message?, photos[]?
+     */
+    public function lessonDiscussionPost(int $lessonId)
+    {
+        $r = $this->resolveLessonAccess($lessonId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        $message   = trim($this->request->getPost('message') ?? '');
+        $files     = $this->request->getFileMultiple('photos') ?? [];
+        $validFiles = array_filter($files, fn ($f) => $f instanceof \CodeIgniter\HTTP\Files\UploadedFile && $f->isValid() && !$f->hasMoved());
+
+        if ($message === '' && empty($validFiles)) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Post must have a message or at least one photo.']);
+        }
+        if (count($validFiles) > 10) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Maximum 10 photos allowed.']);
+        }
+
+        $allowedImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $uploadPath = FCPATH . 'uploads/lesson_discussion/';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        $photos = [];
+        foreach ($validFiles as $file) {
+            $ext = strtolower($file->getClientExtension());
+            if (!in_array($ext, $allowedImg, true)) {
+                return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Only image files allowed (jpg, jpeg, png, gif, webp).']);
+            }
+            $newName = 'ldp_' . time() . '_' . random_int(1000, 9999) . '.' . $ext;
+            $file->move($uploadPath, $newName);
+            $photos[] = $newName;
+        }
+
+        $db  = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+
+        $db->table('lesson_discussion')->insert([
+            'lesson_id_fk'   => $lessonId,
+            'author'         => $ctx['myId'],
+            'message'        => $message ?: null,
+            'created_at'     => $now,
+            'message_status' => 1,
+        ]);
+        $discussionId = $db->insertID();
+
+        foreach ($photos as $i => $path) {
+            $db->table('lesson_discussion_photo')->insert([
+                'ld_id_fk'    => $discussionId,
+                'photo_path'  => $path,
+                'photo_order' => $i,
+            ]);
+        }
+
+        $post = $db->query("
+            SELECT ld.lesson_discussion_id, ld.message, ld.created_at, ld.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo
+            FROM lesson_discussion ld INNER JOIN users u ON u.user_id = ld.author
+            WHERE ld.lesson_discussion_id = ?
+        ", [$discussionId])->getRowArray();
+
+        $post['photos']        = $this->lessonDiscussionModel->getPhotos($discussionId);
+        $post['comments']      = [];
+        $post['comment_count'] = 0;
+        $post['like_count']    = 0;
+        $post['dislike_count'] = 0;
+        $post['user_reaction'] = null;
+
+        return $this->response->setJSON(['success' => true, 'post' => $post]);
+    }
+
+    /**
+     * POST /api/classroom/lesson/discussion/{discussionId}/like — body/form: type ('like'|'dislike')
+     */
+    public function lessonDiscussionLike(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $body   = $this->request->getJSON(true) ?? [];
+        $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
+        $result = $this->lessonDiscussionModel->toggleLike($discussionId, $r['ctx']['myId'], $type);
+        return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * POST /api/classroom/lesson/discussion/{discussionId}/comment — body/form: comment
+     */
+    public function lessonDiscussionComment(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx     = $r['ctx'];
+        $body    = $this->request->getJSON(true) ?? [];
+        $comment = trim($this->request->getPost('comment') ?? ($body['comment'] ?? ''));
+        if ($comment === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Comment cannot be empty.']);
+        }
+
+        $db  = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+        $db->table('lesson_discussion_comment')->insert([
+            'discussion_id_fk' => $discussionId,
+            'author'           => $ctx['myId'],
+            'comment'          => $comment,
+            'created_at'       => $now,
+            'comment_status'   => 'Active',
+        ]);
+        $commentId = $db->insertID();
+
+        $row = $db->query("
+            SELECT ldc.comment_id, ldc.comment, ldc.created_at, ldc.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo
+            FROM lesson_discussion_comment ldc INNER JOIN users u ON u.user_id = ldc.author
+            WHERE ldc.comment_id = ?
+        ", [$commentId])->getRowArray();
+
+        $row['like_count']    = 0;
+        $row['dislike_count'] = 0;
+        $row['user_reaction'] = null;
+        $row['replies']       = [];
+
+        return $this->response->setJSON(['success' => true, 'comment' => $row]);
+    }
+
+    /**
+     * POST /api/classroom/lesson/discussion/comment/{commentId}/like — body/form: type
+     */
+    public function lessonDiscussionCommentLike(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $body   = $this->request->getJSON(true) ?? [];
+        $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
+        $result = $this->lessonDiscussionModel->toggleCommentLike($commentId, $r['ctx']['myId'], $type);
+        return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * POST /api/classroom/lesson/discussion/comment/{commentId}/reply — body/form: reply
+     */
+    public function lessonDiscussionCommentReply(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx   = $r['ctx'];
+        $body  = $this->request->getJSON(true) ?? [];
+        $reply = trim($this->request->getPost('reply') ?? ($body['reply'] ?? ''));
+        if ($reply === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Reply cannot be empty.']);
+        }
+
+        $db  = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+        $db->table('lesson_discussion_comment_reply')->insert([
+            'comment_id_fk' => $commentId,
+            'author'        => $ctx['myId'],
+            'reply'         => $reply,
+            'created_at'    => $now,
+            'reply_status'  => 'Active',
+        ]);
+        $replyId = $db->insertID();
+
+        $row = $db->query("
+            SELECT r.reply_id, r.reply, r.created_at, r.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo
+            FROM lesson_discussion_comment_reply r INNER JOIN users u ON u.user_id = r.author
+            WHERE r.reply_id = ?
+        ", [$replyId])->getRowArray();
+
+        $row['like_count']    = 0;
+        $row['dislike_count'] = 0;
+        $row['user_reaction'] = null;
+
+        return $this->response->setJSON(['success' => true, 'reply' => $row]);
+    }
+
+    /**
+     * POST /api/classroom/lesson/discussion/reply/{replyId}/like — body/form: type
+     */
+    public function lessonDiscussionReplyLike(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $body   = $this->request->getJSON(true) ?? [];
+        $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
+        $result = $this->lessonDiscussionModel->toggleReplyLike($replyId, $r['ctx']['myId'], $type);
+        return $this->response->setJSON(['success' => true] + $result);
     }
 }

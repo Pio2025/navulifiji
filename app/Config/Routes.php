@@ -761,6 +761,13 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->get('classroom/subject/(:num)/assignments', 'Api\ClassroomController::subjectAssignments/$1');
         $routes->get('classroom/subject/(:num)/feedback',    'Api\ClassroomController::subjectFeedback/$1');
         $routes->post('classroom/subject/(:num)/feedback',   'Api\ClassroomController::subjectFeedbackStore/$1');
+        $routes->get('classroom/lesson/(:num)',                                   'Api\ClassroomController::lessonDetail/$1');
+        $routes->post('classroom/lesson/(:num)/discussion',                       'Api\ClassroomController::lessonDiscussionPost/$1');
+        $routes->post('classroom/lesson/discussion/(:num)/like',                  'Api\ClassroomController::lessonDiscussionLike/$1');
+        $routes->post('classroom/lesson/discussion/(:num)/comment',               'Api\ClassroomController::lessonDiscussionComment/$1');
+        $routes->post('classroom/lesson/discussion/comment/(:num)/like',          'Api\ClassroomController::lessonDiscussionCommentLike/$1');
+        $routes->post('classroom/lesson/discussion/comment/(:num)/reply',         'Api\ClassroomController::lessonDiscussionCommentReply/$1');
+        $routes->post('classroom/lesson/discussion/reply/(:num)/like',            'Api\ClassroomController::lessonDiscussionReplyLike/$1');
         $routes->get('classroom/(:num)',           'Api\ClassroomController::detail/$1');
         $routes->put('classroom/(:num)',           'Api\ClassroomController::update/$1');
         $routes->delete('classroom/(:num)',        'Api\ClassroomController::delete/$1');
