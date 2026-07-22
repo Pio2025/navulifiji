@@ -5746,6 +5746,7 @@ class ClassroomController extends BaseController
                 l.level_name,
                 sch.sch_name, sch.sch_logo, sch.sch_address, sch.sch_phone, sch.sch_email,
                 e.enrol_status, e.enrol_year,
+                cs.class_stud_status,
                 (SELECT COUNT(*) FROM enrolment e2
                  WHERE e2.stream_id_fk = c.stream_id_fk AND e2.enrol_year = c.class_year
                 ) AS student_count,
@@ -5782,6 +5783,7 @@ class ClassroomController extends BaseController
             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
             INNER JOIN level l      ON l.level_id = sl.level_id_fk
             INNER JOIN school sch   ON sch.sch_id = a.sch_id_fk
+            LEFT JOIN classroom_student cs ON cs.class_id_fk = c.class_id AND cs.user_id_fk = stu.user_id
             WHERE ps.parent_user_id_fk = ? AND c.class_id = ?
             LIMIT 1
         ", [$userId, $classId])->getRowArray();
