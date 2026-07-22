@@ -280,6 +280,7 @@ class ClassroomController extends Controller
                 'name'        => $classroom['class_name'],
                 'year'        => (int) $classroom['class_year'],
                 'status'      => $classroom['class_status'],
+                'streamId'    => isset($classroom['stream_id']) ? (int) $classroom['stream_id'] : null,
                 'streamName'  => $classroom['stream_name'] ?? null,
                 'levelName'   => $classroom['level_name'] ?? null,
                 'schoolId'    => isset($classroom['sch_id']) ? (int) $classroom['sch_id'] : null,
@@ -294,7 +295,135 @@ class ClassroomController extends Controller
                 'classTeacher' => $classTeacher
                     ? trim(($classTeacher['fname'] ?? '') . ' ' . ($classTeacher['lname'] ?? ''))
                     : null,
+                'classTeacherPhoto' => $classTeacher['profile_photo'] ?? null,
             ],
+        ]);
+    }
+
+    /**
+     * PUT /api/classroom/{id} — body (JSON): stream_id, class_name, class_year, class_status
+     */
+    public function update(int $id)
+    {
+        $ctx = $this->context();
+        $canEdit = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_edit_classroom');
+        if (!$canEdit) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to edit this classroom.']);
+        }
+
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $body = $this->request->getJSON(true) ?? [];
+
+        $streamId  = (int) ($body['stream_id'] ?? 0);
+        $className = trim((string) ($body['class_name'] ?? ''));
+        $classYear = (int) ($body['class_year'] ?? 0);
+        $status    = $body['class_status'] ?? 'Active';
+        if (!in_array($status, ['Active', 'Inactive', 'Archived'], true)) {
+            $status = 'Active';
+        }
+
+        if (!$streamId || !$className || !$classYear) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Stream, class name and year are required.']);
+        }
+        if (!$this->classroomModel->isClassNameUnique($className, $id)) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'A classroom named "' . $className . '" already exists. Please use a unique name.']);
+        }
+
+        $oldStatus = $classroom['class_status'] ?? '';
+
+        $this->classroomModel->update($id, [
+            'stream_id_fk'     => $streamId,
+            'class_name'       => $className,
+            'class_year'       => $classYear,
+            'class_updated_at' => date('Y-m-d H:i:s'),
+            'class_updated_by' => $ctx['myId'],
+            'class_status'     => $status,
+        ]);
+
+        if ($status !== $oldStatus) {
+            $db = \Config\Database::connect();
+
+            $db->table('classroom_student')
+               ->where('class_id_fk', $id)
+               ->update(['class_stud_status' => $status]);
+
+            $classSubIds = array_column(
+                $db->table('classroom_subject')->select('class_sub_id')
+                   ->where('class_id_fk', $id)->get()->getResultArray(),
+                'class_sub_id'
+            );
+            if (!empty($classSubIds)) {
+                $db->table('classroom_subject_teacher')
+                   ->whereIn('class_sub_id_fk', $classSubIds)
+                   ->update(['class_sub_teacher_status' => $status]);
+            }
+
+            $db->table('classroom_role')
+               ->where('class_id_fk', $id)
+               ->update(['cs_status' => $status]);
+        }
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'classroom' => $this->classroomOut($this->classroomModel->getDetail($id)),
+        ]);
+    }
+
+    /**
+     * DELETE /api/classroom/{id}
+     */
+    public function delete(int $id)
+    {
+        $ctx = $this->context();
+        $canDelete = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_remove_classroom');
+        if (!$canDelete) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to delete this classroom.']);
+        }
+
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $db = \Config\Database::connect();
+
+        $staffCount = $db->table('classroom_role')
+            ->where('class_id_fk', $id)
+            ->where('cs_status', 'Active')
+            ->countAllResults();
+        if ($staffCount > 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'success' => false,
+                'message' => 'Cannot delete this classroom — it has ' . $staffCount . ' staff member(s) assigned. Please remove all staff first.',
+            ]);
+        }
+
+        $studentCount = $db->table('enrolment')
+            ->where('stream_id_fk', $classroom['stream_id_fk'])
+            ->where('enrol_year',   $classroom['class_year'])
+            ->countAllResults();
+        if ($studentCount > 0) {
+            return $this->response->setStatusCode(422)->setJSON([
+                'success' => false,
+                'message' => 'Cannot delete this classroom — it has ' . $studentCount . ' enrolled student(s). Please remove all students first.',
+            ]);
+        }
+
+        $this->classroomModel->delete($id);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'message' => 'Classroom deleted successfully.',
         ]);
     }
 
