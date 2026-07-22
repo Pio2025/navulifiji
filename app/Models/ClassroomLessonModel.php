@@ -42,6 +42,26 @@ class ClassroomLessonModel extends Model
     }
 
     /**
+     * Published lessons for a subject within a single term, with file/video/link/assessment
+     * counts, for the mobile term/week/day lesson calendar.
+     */
+    public function getLessonsForSubjectTerm(int $classSubId, int $term): array
+    {
+        $db = \Config\Database::connect();
+        return $db->query("
+            SELECT
+                cl.lesson_id, cl.lesson_title, cl.lesson_desc, cl.lesson_week, cl.lesson_day,
+                (SELECT COUNT(*) FROM lesson_file  lf WHERE lf.lesson_id_fk = cl.lesson_id) AS file_count,
+                (SELECT COUNT(*) FROM lesson_video lv WHERE lv.lesson_id_fk = cl.lesson_id) AS video_count,
+                (SELECT COUNT(*) FROM lesson_link  ll WHERE ll.lesson_id_fk = cl.lesson_id) AS link_count,
+                (SELECT COUNT(*) FROM lesson_quizze lq WHERE lq.lesson_id_fk = cl.lesson_id AND lq.quizze_status = 'Published') AS assessment_count
+            FROM classroom_lesson cl
+            WHERE cl.class_sub_id_fk = ? AND cl.lesson_term = ? AND cl.lesson_status = 'Published'
+            ORDER BY COALESCE(cl.lesson_week, 99) ASC, COALESCE(cl.lesson_day, 9) ASC, cl.lesson_order ASC
+        ", [$classSubId, $term])->getResultArray();
+    }
+
+    /**
      * All subjects a teacher is assigned to across given classroom IDs (one query, grouped).
      */
     public function getTeacherSubjectsByClassrooms(array $classIds, int $userId): array

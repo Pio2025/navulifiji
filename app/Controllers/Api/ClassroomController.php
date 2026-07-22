@@ -9,7 +9,10 @@ use App\Models\ClassroomLessonModel;
 use App\Models\ClassroomModel;
 use App\Models\ClassroomStaffModel;
 use App\Models\ParentStudentModel;
+use App\Models\PublicHolidayModel;
 use App\Models\RolePermissionModel;
+use App\Models\SchoolCategoryConfigModel;
+use App\Models\SchoolCategoryTermModel;
 use App\Models\SchoolModel;
 use App\Models\StudentAttendanceModel;
 use App\Models\SubjectFeedbackModel;
@@ -29,21 +32,27 @@ class ClassroomController extends Controller
     protected $classDiscussionModel;
     protected $classroomLessonModel;
     protected $subjectFeedbackModel;
+    protected $schoolCategoryConfigModel;
+    protected $schoolCategoryTermModel;
+    protected $publicHolidayModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
-        $this->classroomModel         = new ClassroomModel();
-        $this->classroomStaffModel    = new ClassroomStaffModel();
-        $this->admissionModel         = new AdmissionModel();
-        $this->parentStudentModel     = new ParentStudentModel();
-        $this->rolePermissionModel    = new RolePermissionModel();
-        $this->schoolModel            = new SchoolModel();
-        $this->studentAttendanceModel = new StudentAttendanceModel();
-        $this->termExamModel          = new TermExamModel();
-        $this->classDiscussionModel   = new ClassDiscussionModel();
-        $this->classroomLessonModel   = new ClassroomLessonModel();
-        $this->subjectFeedbackModel   = new SubjectFeedbackModel();
+        $this->classroomModel           = new ClassroomModel();
+        $this->classroomStaffModel      = new ClassroomStaffModel();
+        $this->admissionModel           = new AdmissionModel();
+        $this->parentStudentModel       = new ParentStudentModel();
+        $this->rolePermissionModel      = new RolePermissionModel();
+        $this->schoolModel              = new SchoolModel();
+        $this->studentAttendanceModel   = new StudentAttendanceModel();
+        $this->termExamModel            = new TermExamModel();
+        $this->classDiscussionModel     = new ClassDiscussionModel();
+        $this->classroomLessonModel     = new ClassroomLessonModel();
+        $this->subjectFeedbackModel     = new SubjectFeedbackModel();
+        $this->schoolCategoryConfigModel = new SchoolCategoryConfigModel();
+        $this->schoolCategoryTermModel   = new SchoolCategoryTermModel();
+        $this->publicHolidayModel        = new PublicHolidayModel();
     }
 
     private function grantAccess(int $roleId, string $permCode): bool
@@ -888,6 +897,176 @@ class ClassroomController extends Controller
             'success' => true,
             'lessons' => $this->classroomLessonModel->getLessonsForSubject($classSubId),
         ]);
+    }
+
+    /**
+     * GET /api/classroom/subject/{classSubId}/lessons/calendar?term= — term/week/day
+     * lesson calendar, driven by school_category_config + sch_cat_term_entry (mirrors
+     * the term-grid date math already used by AttendanceController::_showTermGrid).
+     */
+    public function subjectLessonsCalendar(int $classSubId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+
+        $classroom  = $this->classroomModel->getDetail($r['classId']);
+        $schId      = (int) ($classroom['sch_id'] ?? 0);
+        $schCatData = $this->loadSchCatDataForSchool($schId);
+        $termLabel  = $schCatData['label'];
+        $terms      = $schCatData['terms'];
+
+        if (empty($terms)) {
+            return $this->response->setJSON([
+                'success'      => true,
+                'termLabel'    => $termLabel,
+                'terms'        => [],
+                'selectedTerm' => 0,
+                'currentTerm'  => 0,
+                'weeks'        => [],
+            ]);
+        }
+
+        $termNums     = array_keys($terms);
+        $currentTerm  = $this->resolveCurrentTermNum($terms);
+        $requestedTerm = (int) ($this->request->getGet('term') ?? 0);
+        $selectedTerm  = ($requestedTerm && isset($terms[$requestedTerm])) ? $requestedTerm : $currentTerm;
+
+        $termsOut = array_map(
+            fn ($n) => ['termNum' => $n, 'numWeeks' => (int) $terms[$n]['num_of_week']],
+            $termNums
+        );
+
+        $termInfo   = $terms[$selectedTerm];
+        $numWeeks   = (int) $termInfo['num_of_week'];
+        $startDay   = (int) $termInfo['term_start_day'];
+        $startMonth = (int) $termInfo['term_start_month'];
+
+        $startDt = \DateTime::createFromFormat('Y-n-j', date('Y') . '-' . $startMonth . '-' . $startDay);
+        if (!$startDt || $numWeeks <= 0) {
+            return $this->response->setJSON([
+                'success'      => true,
+                'termLabel'    => $termLabel,
+                'terms'        => $termsOut,
+                'selectedTerm' => $selectedTerm,
+                'currentTerm'  => $currentTerm,
+                'weeks'        => [],
+            ]);
+        }
+
+        $dayNames   = ['M', 'T', 'W', 'TH', 'F'];
+        $weekDates  = [];
+        $allDates   = [];
+        for ($w = 0; $w < $numWeeks; $w++) {
+            foreach ($dayNames as $di => $dn) {
+                $dt = clone $startDt;
+                $dt->modify('+' . ($w * 7 + $di) . ' days');
+                $dateStr           = $dt->format('Y-m-d');
+                $weekDates[$w][$di] = $dateStr;
+                $allDates[]         = $dateStr;
+            }
+        }
+
+        $holidays   = $this->publicHolidayModel->getByDates($allDates, $schId);
+        $lessonRows = $this->classroomLessonModel->getLessonsForSubjectTerm($classSubId, $selectedTerm);
+
+        $byBucket = [];
+        foreach ($lessonRows as $lr) {
+            $week = $lr['lesson_week'] !== null ? (int) $lr['lesson_week'] : null;
+            $day  = $lr['lesson_day']  !== null ? (int) $lr['lesson_day']  : null;
+            if ($week === null || $day === null || $day < 1 || $day > 5 || $week < 1 || $week > $numWeeks) {
+                continue;
+            }
+            $key = ($week - 1) . '-' . ($day - 1);
+            $byBucket[$key][] = [
+                'lessonId'        => (int) $lr['lesson_id'],
+                'title'           => $lr['lesson_title'],
+                'desc'            => $lr['lesson_desc'],
+                'fileCount'       => (int) $lr['file_count'],
+                'videoCount'      => (int) $lr['video_count'],
+                'linkCount'       => (int) $lr['link_count'],
+                'assessmentCount' => (int) $lr['assessment_count'],
+            ];
+        }
+
+        $weeks = [];
+        for ($w = 0; $w < $numWeeks; $w++) {
+            $days = [];
+            foreach ($dayNames as $di => $dn) {
+                $dateStr    = $weekDates[$w][$di];
+                $dayLessons = $byBucket[$w . '-' . $di] ?? [];
+                $days[] = [
+                    'date'            => $dateStr,
+                    'dayIndex'        => $di,
+                    'isHoliday'       => isset($holidays[$dateStr]),
+                    'holidayName'     => $holidays[$dateStr] ?? null,
+                    'lessonCount'     => count($dayLessons),
+                    'fileCount'       => array_sum(array_column($dayLessons, 'fileCount')),
+                    'videoCount'      => array_sum(array_column($dayLessons, 'videoCount')),
+                    'linkCount'       => array_sum(array_column($dayLessons, 'linkCount')),
+                    'assessmentCount' => array_sum(array_column($dayLessons, 'assessmentCount')),
+                    'lessons'         => $dayLessons,
+                ];
+            }
+            $weeks[] = ['weekNum' => $w + 1, 'days' => $days];
+        }
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'termLabel'    => $termLabel,
+            'terms'        => $termsOut,
+            'selectedTerm' => $selectedTerm,
+            'currentTerm'  => $currentTerm,
+            'weeks'        => $weeks,
+        ]);
+    }
+
+    private function loadSchCatDataForSchool(int $schId): array
+    {
+        if (!$schId) {
+            return ['label' => 'Term', 'terms' => []];
+        }
+        $school = \Config\Database::connect()->table('school')
+            ->select('sch_cat_id_fk')->where('sch_id', $schId)->get()->getRowArray();
+        if (!$school || empty($school['sch_cat_id_fk'])) {
+            return ['label' => 'Term', 'terms' => []];
+        }
+        $config = $this->schoolCategoryConfigModel->getByCategoryId((int) $school['sch_cat_id_fk']);
+        if (!$config) {
+            return ['label' => 'Term', 'terms' => []];
+        }
+        $rows  = $this->schoolCategoryTermModel->getByConfigId((int) $config['sch_cat_con_id']);
+        $terms = [];
+        foreach ($rows as $t) {
+            $terms[(int) $t['term_num']] = [
+                'num_of_week'      => (int) $t['num_of_week'],
+                'term_start_day'   => (int) $t['term_start_day'],
+                'term_start_month' => (int) $t['term_start_month'],
+                'term_end_day'     => (int) $t['term_end_day'],
+                'term_end_month'   => (int) $t['term_end_month'],
+            ];
+        }
+        ksort($terms);
+        return ['label' => $config['label_for_term'] ?: 'Term', 'terms' => $terms];
+    }
+
+    /**
+     * First term whose end date (this calendar year) is still >= today; falls back to
+     * the last configured term if today is past every term's end date.
+     */
+    private function resolveCurrentTermNum(array $terms): int
+    {
+        $today = new \DateTime('today');
+        $year  = (int) date('Y');
+        foreach ($terms as $num => $t) {
+            $end = \DateTime::createFromFormat('Y-n-j', $year . '-' . $t['term_end_month'] . '-' . $t['term_end_day']);
+            if ($end && $today <= $end) {
+                return $num;
+            }
+        }
+        $termNums = array_keys($terms);
+        return (int) end($termNums);
     }
 
     /**
