@@ -708,6 +708,338 @@ class ClassroomController extends Controller
         ]);
     }
 
+    /**
+     * Resolves which student's attendance to view within a classroom: an explicit
+     * ?childId= (validated against the caller's linked children), else the caller's
+     * first linked child if a parent, else the caller themself if a student.
+     */
+    private function resolveAttendanceTarget(array $ctx, int $classId): array
+    {
+        $childIds = $this->linkedChildIdsInClassroom($ctx, $classId);
+
+        if (!empty($childIds)) {
+            $requestedChildId = (int) ($this->request->getGet('childId') ?? 0);
+            $targetId = ($requestedChildId && in_array($requestedChildId, $childIds, true)) ? $requestedChildId : $childIds[0];
+            $name = null;
+            foreach ($ctx['children'] as $c) {
+                if ((int) $c['user_id'] === $targetId) {
+                    $name = trim(($c['fname'] ?? '') . ' ' . ($c['lname'] ?? ''));
+                    break;
+                }
+            }
+            return ['userId' => $targetId, 'name' => $name];
+        }
+
+        if ($ctx['roleCatId'] === 4) {
+            return ['userId' => $ctx['myId'], 'name' => null];
+        }
+
+        return ['error' => ['status' => 403, 'message' => 'No student attendance available to view here.']];
+    }
+
+    /**
+     * GET /api/classroom/{id}/attendance/terms — term tabs driven by the school's
+     * sch_cat config. Empty terms[] means the school category has no term config
+     * (mobile hides the term tabs entirely in that case).
+     */
+    public function attendanceTerms(int $id)
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $schId      = (int) ($classroom['sch_id'] ?? 0);
+        $schCatData = $this->loadSchCatDataForSchool($schId);
+        $terms      = $schCatData['terms'];
+
+        if (empty($terms)) {
+            return $this->response->setJSON([
+                'success'     => true,
+                'termLabel'   => $schCatData['label'],
+                'terms'       => [],
+                'currentTerm' => 0,
+            ]);
+        }
+
+        return $this->response->setJSON([
+            'success'     => true,
+            'termLabel'   => $schCatData['label'],
+            'terms'       => array_map(fn ($n) => ['termNum' => $n, 'numWeeks' => (int) $terms[$n]['num_of_week']], array_keys($terms)),
+            'currentTerm' => $this->resolveCurrentTermNum($terms),
+        ]);
+    }
+
+    /**
+     * GET /api/classroom/{id}/attendance/daily?term=&childId= — weekly attendance grid
+     * + stats for one student in one term (mirrors AttendanceController::_computeDailyAttendanceView).
+     */
+    public function attendanceDaily(int $id)
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $target = $this->resolveAttendanceTarget($ctx, $id);
+        if (isset($target['error'])) {
+            return $this->errorResponse($target);
+        }
+
+        $streamId   = (int) ($classroom['stream_id'] ?? 0);
+        $schId      = (int) ($classroom['sch_id'] ?? 0);
+        $schCatData = $this->loadSchCatDataForSchool($schId);
+        $terms      = $schCatData['terms'];
+
+        $termNo = (int) ($this->request->getGet('term') ?? 0);
+        if (!$termNo || !isset($terms[$termNo])) {
+            $termNo = $terms ? $this->resolveCurrentTermNum($terms) : 0;
+        }
+        $termInfo = $terms[$termNo] ?? null;
+
+        $dayNames = ['M', 'T', 'W', 'TH', 'F'];
+        $weeks    = [];
+        $allDates = [];
+        if ($termInfo) {
+            $startDt = \DateTime::createFromFormat(
+                'Y-n-j',
+                date('Y') . '-' . $termInfo['term_start_month'] . '-' . $termInfo['term_start_day']
+            );
+            if ($startDt) {
+                for ($w = 0; $w < (int) $termInfo['num_of_week']; $w++) {
+                    $weekRow = [];
+                    foreach ($dayNames as $di => $dn) {
+                        $dt = clone $startDt;
+                        $dt->modify('+' . ($w * 7 + $di) . ' days');
+                        $dateStr   = $dt->format('Y-m-d');
+                        $weekRow[] = ['day' => $dn, 'date' => $dateStr];
+                        $allDates[] = $dateStr;
+                    }
+                    $weeks[] = ['weekNum' => $w + 1, 'days' => $weekRow];
+                }
+            }
+        }
+
+        $db  = \Config\Database::connect();
+        $adm = $db->table('admission')->select('admission_id')
+            ->where('user_id_fk', $target['userId'])
+            ->where('admission_status', 'Active')
+            ->get()->getRowArray();
+        if (!$adm) {
+            $adm = $db->table('admission')->select('admission_id')
+                ->where('user_id_fk', $target['userId'])
+                ->get()->getRowArray();
+        }
+
+        $enrolId    = 0;
+        $attendance = [];
+        if ($adm && $streamId) {
+            $enrolRow = $db->table('enrolment')->select('enrol_id')
+                ->where('admission_id_fk', $adm['admission_id'])
+                ->where('stream_id_fk', $streamId)
+                ->where('enrol_status', 'Active')
+                ->get()->getRowArray();
+            if ($enrolRow) {
+                $enrolId = (int) $enrolRow['enrol_id'];
+            }
+            if ($enrolId && !empty($allDates)) {
+                $rows = $db->table('student_attendance')
+                    ->select('attendance_date, attendance_status')
+                    ->where('enrol_id_fk', $enrolId)
+                    ->where('stream_id_fk', $streamId)
+                    ->where('attendance_type', 'Daily')
+                    ->whereIn('attendance_date', $allDates)
+                    ->get()->getResultArray();
+                foreach ($rows as $row) {
+                    $attendance[$row['attendance_date']] = $row['attendance_status'];
+                }
+            }
+        }
+
+        $today       = date('Y-m-d');
+        $holidays    = $allDates ? $this->publicHolidayModel->getByDates($allDates, $schId) : [];
+        $markedDates = array_values(array_filter($allDates, fn ($d) => $d <= $today && !isset($holidays[$d])));
+        $present = $absent = $unmarked = 0;
+        foreach ($markedDates as $d) {
+            $st = $attendance[$d] ?? null;
+            if ($st === 'Present') {
+                $present++;
+            } elseif ($st === 'Absent') {
+                $absent++;
+            } else {
+                $unmarked++;
+            }
+        }
+        $numMarked = count($markedDates);
+        $pct       = $numMarked > 0 ? round($present / $numMarked * 100, 1) : 0.0;
+
+        $weeksOut = [];
+        foreach ($weeks as $week) {
+            $weekPresent = 0;
+            $weekMarked  = 0;
+            $daysOut     = [];
+            foreach ($week['days'] as $d) {
+                $status = 'future';
+                if (isset($holidays[$d['date']])) {
+                    $status = 'holiday';
+                } elseif ($d['date'] <= $today) {
+                    $st = $attendance[$d['date']] ?? null;
+                    if ($st === 'Present') {
+                        $status = 'present';
+                        $weekPresent++;
+                        $weekMarked++;
+                    } elseif ($st === 'Absent') {
+                        $status = 'absent';
+                        $weekMarked++;
+                    } else {
+                        $status = 'unmarked';
+                    }
+                }
+                $daysOut[] = ['day' => $d['day'], 'date' => $d['date'], 'status' => $status];
+            }
+            $weeksOut[] = [
+                'weekNum' => $week['weekNum'],
+                'days'    => $daysOut,
+                'pct'     => $weekMarked > 0 ? round($weekPresent / $weekMarked * 100, 1) : null,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success'      => true,
+            'childName'    => $target['name'],
+            'streamInfo'   => [
+                'streamName' => $classroom['stream_name'] ?? null,
+                'levelName'  => $classroom['level_name'] ?? null,
+            ],
+            'termNo'       => $termNo,
+            'termLabel'    => $schCatData['label'],
+            'terms'        => array_map(fn ($n) => ['termNum' => $n, 'numWeeks' => (int) $terms[$n]['num_of_week']], array_keys($terms)),
+            'dayNames'     => $dayNames,
+            'weeks'        => $weeksOut,
+            'summaryStats' => [
+                'present'   => $present,
+                'absent'    => $absent,
+                'unmarked'  => $unmarked,
+                'numMarked' => $numMarked,
+                'pct'       => $pct,
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/classroom/{id}/attendance/subject?term=&childId= — per-subject attendance
+     * stats for one student, filtered to one term's date range (mirrors my_subject.php).
+     */
+    public function attendanceSubject(int $id)
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($id);
+        if (!$classroom) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Classroom not found.']);
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
+        }
+
+        $target = $this->resolveAttendanceTarget($ctx, $id);
+        if (isset($target['error'])) {
+            return $this->errorResponse($target);
+        }
+
+        $streamId   = (int) ($classroom['stream_id'] ?? 0);
+        $schId      = (int) ($classroom['sch_id'] ?? 0);
+        $schCatData = $this->loadSchCatDataForSchool($schId);
+        $terms      = $schCatData['terms'];
+
+        $termNo = (int) ($this->request->getGet('term') ?? 0);
+        if (!$termNo || !isset($terms[$termNo])) {
+            $termNo = $terms ? $this->resolveCurrentTermNum($terms) : 0;
+        }
+        $termInfo = $terms[$termNo] ?? null;
+
+        $fromDate = $toDate = null;
+        if ($termInfo) {
+            $year     = date('Y');
+            $startDt  = \DateTime::createFromFormat('Y-n-j', $year . '-' . $termInfo['term_start_month'] . '-' . $termInfo['term_start_day']);
+            $fromDate = $startDt ? $startDt->format('Y-m-d') : null;
+            $endDt    = \DateTime::createFromFormat('Y-n-j', $year . '-' . $termInfo['term_end_month'] . '-' . $termInfo['term_end_day']);
+            $toDate   = $endDt ? $endDt->format('Y-m-d') : null;
+        }
+
+        $records = $this->studentAttendanceModel->getStudentSubjectAttendance($target['userId'], $streamId, $fromDate, $toDate);
+
+        $bySubject = [];
+        $total = 0;
+        $present = 0;
+        $absent = 0;
+        foreach ($records as $r) {
+            $subj = $r['subject_name'] ?? '—';
+            $st   = strtolower($r['attendance_status'] ?? '');
+            if (!isset($bySubject[$subj])) {
+                $bySubject[$subj] = ['present' => 0, 'absent' => 0, 'late' => 0, 'other' => 0, 'total' => 0];
+            }
+            $bySubject[$subj]['total']++;
+            $total++;
+            if ($st === 'present') {
+                $bySubject[$subj]['present']++;
+                $present++;
+            } elseif ($st === 'absent') {
+                $bySubject[$subj]['absent']++;
+                $absent++;
+            } elseif ($st === 'late') {
+                $bySubject[$subj]['late']++;
+            } else {
+                $bySubject[$subj]['other']++;
+            }
+        }
+        $overallPct = $total > 0 ? round($present / $total * 100, 1) : 0.0;
+
+        $subjectsOut = [];
+        foreach ($bySubject as $name => $counts) {
+            $subjectsOut[] = [
+                'subjectName' => $name,
+                'present'     => $counts['present'],
+                'absent'      => $counts['absent'],
+                'late'        => $counts['late'],
+                'total'       => $counts['total'],
+                'pct'         => $counts['total'] > 0 ? round($counts['present'] / $counts['total'] * 100, 1) : 0.0,
+            ];
+        }
+
+        return $this->response->setJSON([
+            'success'    => true,
+            'childName'  => $target['name'],
+            'streamInfo' => [
+                'streamName' => $classroom['stream_name'] ?? null,
+                'levelName'  => $classroom['level_name'] ?? null,
+            ],
+            'termNo'     => $termNo,
+            'termLabel'  => $schCatData['label'],
+            'terms'      => array_map(fn ($n) => ['termNum' => $n, 'numWeeks' => (int) $terms[$n]['num_of_week']], array_keys($terms)),
+            'summary'    => [
+                'total'   => $total,
+                'present' => $present,
+                'absent'  => $absent,
+                'pct'     => $overallPct,
+            ],
+            'bySubject'  => $subjectsOut,
+            'records'    => array_map(fn ($r) => [
+                'date'    => $r['attendance_date'] ?? null,
+                'subject' => $r['subject_name'] ?? null,
+                'status'  => $r['attendance_status'] ?? null,
+                'note'    => $r['attendance_note'] ?? null,
+            ], $records),
+        ]);
+    }
+
     private function summarizeAttendance(array $dateRows): array
     {
         $present = 0;

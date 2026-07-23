@@ -286,7 +286,7 @@ class StudentAttendanceModel extends Model
             ->get()->getResultArray();
     }
 
-    public function getStudentSubjectAttendance(int $userId, int $streamId): array
+    public function getStudentSubjectAttendance(int $userId, int $streamId, ?string $fromDate = null, ?string $toDate = null): array
     {
         $db  = \Config\Database::connect();
         $adm = $db->table('admission')
@@ -302,16 +302,24 @@ class StudentAttendanceModel extends Model
         }
         if (!$adm) return [];
 
+        $params = [$adm['admission_id'], $streamId];
+        $dateFilter = '';
+        if ($fromDate && $toDate) {
+            $dateFilter = ' AND sa.attendance_date BETWEEN ? AND ?';
+            $params[] = $fromDate;
+            $params[] = $toDate;
+        }
+
         $sql = "
             SELECT sa.stud_att_id, sa.attendance_date, sa.attendance_status, sa.attendance_note,
                    COALESCE(sub.subject_name, '—') AS subject_name
             FROM student_attendance sa
             LEFT JOIN sch_subject ss ON ss.sch_sub_id = sa.subject_id_fk
             LEFT JOIN subject sub    ON sub.subject_id = ss.subject_id_fk
-            WHERE sa.admission_id_fk = ? AND sa.stream_id_fk = ? AND sa.attendance_type = 'Subject'
+            WHERE sa.admission_id_fk = ? AND sa.stream_id_fk = ? AND sa.attendance_type = 'Subject'{$dateFilter}
             ORDER BY sa.attendance_date ASC, sub.subject_name ASC
         ";
-        return $db->query($sql, [$adm['admission_id'], $streamId])->getResultArray();
+        return $db->query($sql, $params)->getResultArray();
     }
 
     // ── Term grid helpers ─────────────────────────────────────────────────────
