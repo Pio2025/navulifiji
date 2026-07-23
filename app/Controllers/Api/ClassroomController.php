@@ -1103,6 +1103,41 @@ class ClassroomController extends Controller
             'schoolEmail'   => $classroom['sch_email'],
         ];
 
+        // An explicit ?childId= (sent only when the mobile app reached this screen via
+        // "My Child Classroom") always wins over the caller's own staff/admin privilege —
+        // otherwise a super admin who is also a linked parent would see the staff gradebook
+        // instead of their child's report when browsing their own child's classroom.
+        $requestedChildId = $this->request->getGet('childId');
+        if ($requestedChildId !== null && $requestedChildId !== '') {
+            $requestedChildId = (int) $requestedChildId;
+            if (!in_array($requestedChildId, $childIds, true)) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'That child is not enrolled in this classroom.']);
+            }
+            $child = null;
+            foreach ($ctx['children'] as $c) {
+                if ((int) $c['user_id'] === $requestedChildId) {
+                    $child = $c;
+                    break;
+                }
+            }
+            $terms = [];
+            foreach ($termNums as $term) {
+                $terms[$term] = $this->examReportOut($id, $requestedChildId, $term);
+            }
+            return $this->response->setJSON([
+                'success'   => true,
+                'mode'      => 'children',
+                'termLabel' => $termLabel,
+                'classroom' => $classroomOut,
+                'children'  => [[
+                    'childUserId' => $requestedChildId,
+                    'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'childPhoto'  => $child['profile_photo'] ?? null,
+                    'terms'       => $terms,
+                ]],
+            ]);
+        }
+
         if ($privileged) {
             $terms = [];
             foreach ($termNums as $term) {
