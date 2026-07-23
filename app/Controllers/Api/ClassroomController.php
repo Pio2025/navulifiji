@@ -9,6 +9,7 @@ use App\Models\ClassroomLessonModel;
 use App\Models\ClassroomModel;
 use App\Models\ClassroomStaffModel;
 use App\Models\LessonDiscussionModel;
+use App\Models\LessonQuizzeAttemptModel;
 use App\Models\LessonQuizzeModel;
 use App\Models\ParentStudentModel;
 use App\Models\PublicHolidayModel;
@@ -35,6 +36,7 @@ class ClassroomController extends Controller
     protected $classroomLessonModel;
     protected $lessonDiscussionModel;
     protected $lessonQuizzeModel;
+    protected $lessonQuizzeAttemptModel;
     protected $subjectFeedbackModel;
     protected $schoolCategoryConfigModel;
     protected $schoolCategoryTermModel;
@@ -55,6 +57,7 @@ class ClassroomController extends Controller
         $this->classroomLessonModel     = new ClassroomLessonModel();
         $this->lessonDiscussionModel    = new LessonDiscussionModel();
         $this->lessonQuizzeModel        = new LessonQuizzeModel();
+        $this->lessonQuizzeAttemptModel = new LessonQuizzeAttemptModel();
         $this->subjectFeedbackModel     = new SubjectFeedbackModel();
         $this->schoolCategoryConfigModel = new SchoolCategoryConfigModel();
         $this->schoolCategoryTermModel   = new SchoolCategoryTermModel();
@@ -1389,6 +1392,99 @@ class ClassroomController extends Controller
                 'duration' => (int) $a['quizze_duration'],
             ], $assessments),
             'discussion' => $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']),
+        ]);
+    }
+
+    /**
+     * GET /api/classroom/lesson/quiz/{quizId}/score — the logged-in student's own completed
+     * attempt for this quiz: score summary + per-question review (mirrors the web app's
+     * classroom/student/{classSubId}/lesson/{lessonId}/quiz/{quizId}/score page, reused here
+     * as the single data source for both the mobile "View Score" screen and the PDF transcript
+     * it can generate client-side).
+     */
+    public function lessonQuizScore(int $quizId)
+    {
+        $quiz = \Config\Database::connect()->table('lesson_quizze')
+            ->select('lesson_id_fk, quizze_name, quizze_duration')
+            ->where('lesson_quizze_id', $quizId)->get()->getRowArray();
+        if (!$quiz) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Quiz not found.']);
+        }
+
+        $r = $this->resolveLessonAccess((int) $quiz['lesson_id_fk']);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        if (!$r['isStudent']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Only students can view their own quiz results.']);
+        }
+
+        $attempt = $this->lessonQuizzeAttemptModel->getStudentAttempt($quizId, $ctx['myId']);
+        if (!$attempt || $attempt['status'] === 'in_progress') {
+            return $this->response->setJSON(['success' => false, 'message' => 'No completed attempt found.']);
+        }
+
+        $attemptDetail = $this->lessonQuizzeAttemptModel->getAttemptWithResponses((int) $attempt['attempt_id']);
+        $fullQuiz      = $this->lessonQuizzeModel->getQuizWithQuestions($quizId);
+        $lesson        = $this->classroomLessonModel->getLessonWithSteps((int) $quiz['lesson_id_fk']);
+
+        $score      = (float) $attemptDetail['score'];
+        $correct    = (int) $attemptDetail['correct_answers'];
+        $total      = (int) $attemptDetail['total_questions'];
+        $responded  = count($attemptDetail['responses'] ?? []);
+        $status     = $attemptDetail['status'];
+
+        $responseMap = [];
+        foreach ($attemptDetail['responses'] as $resp) {
+            $responseMap[(int) $resp['question_id_fk']] = $resp;
+        }
+
+        $questions = array_map(function ($q) use ($responseMap) {
+            $qId       = (int) $q['quizze_quest_id'];
+            $response  = $responseMap[$qId] ?? null;
+            $isCorrect = $response && (int) $response['is_correct'] === 1;
+
+            return [
+                'id'         => $qId,
+                'question'   => $q['question'],
+                'isAnswered' => $response !== null,
+                'isCorrect'  => $isCorrect,
+                'files'      => array_map(fn ($f) => [
+                    'id'  => (int) $f['lesson_quizze_quest_file_id'],
+                    'url' => base_url('uploads/quiz_files/' . $f['file_src']),
+                ], $q['files']),
+                'answers'    => array_map(fn ($a) => [
+                    'id'         => (int) $a['lesson_quizze_answer_id'],
+                    'answer'     => $a['answer'],
+                    'isCorrect'  => (int) $a['is_correct_answer'] === 1,
+                    'isSelected' => $response !== null && (int) $response['answer_id_fk'] === (int) $a['lesson_quizze_answer_id'],
+                ], $q['answers']),
+            ];
+        }, $fullQuiz['questions']);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'quiz' => [
+                'id'       => $quizId,
+                'name'     => $fullQuiz['quizze_name'],
+                'duration' => (int) $fullQuiz['quizze_duration'],
+            ],
+            'lesson' => [
+                'title' => $lesson['lesson_title'] ?? '',
+            ],
+            'attempt' => [
+                'score'         => $score,
+                'correct'       => $correct,
+                'total'         => $total,
+                'unanswered'    => $total - $responded,
+                'status'        => $status,
+                'statusLabel'   => $status === 'timed_out' ? 'Timed Out' : 'Submitted',
+                'startedAt'     => $attemptDetail['started_at'],
+                'submittedAt'   => $attemptDetail['submitted_at'],
+            ],
+            'questions' => $questions,
         ]);
     }
 

@@ -762,6 +762,7 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->get('classroom/subject/(:num)/feedback',    'Api\ClassroomController::subjectFeedback/$1');
         $routes->post('classroom/subject/(:num)/feedback',   'Api\ClassroomController::subjectFeedbackStore/$1');
         $routes->get('classroom/lesson/(:num)',                                   'Api\ClassroomController::lessonDetail/$1');
+        $routes->get('classroom/lesson/quiz/(:num)/score',                        'Api\ClassroomController::lessonQuizScore/$1');
         $routes->post('classroom/lesson/(:num)/discussion',                       'Api\ClassroomController::lessonDiscussionPost/$1');
         $routes->post('classroom/lesson/discussion/(:num)/like',                  'Api\ClassroomController::lessonDiscussionLike/$1');
         $routes->get('classroom/lesson/discussion/(:num)/reactions',              'Api\ClassroomController::lessonDiscussionReactions/$1');
