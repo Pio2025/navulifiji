@@ -1085,6 +1085,17 @@ class ClassroomController extends Controller
         $termNums   = !empty($schCatData['terms']) ? array_keys($schCatData['terms']) : [1, 2, 3];
         $termLabel  = $schCatData['label'];
 
+        $classroomOut = [
+            'className'     => $classroom['class_name'],
+            'classYear'     => $classroom['class_year'],
+            'streamName'    => $classroom['stream_name'],
+            'schoolName'    => $classroom['sch_name'],
+            'schoolLogo'    => $classroom['sch_logo'],
+            'schoolAddress' => $classroom['sch_address'],
+            'schoolPhone'   => $classroom['sch_phone'],
+            'schoolEmail'   => $classroom['sch_email'],
+        ];
+
         if ($privileged) {
             $terms = [];
             foreach ($termNums as $term) {
@@ -1095,7 +1106,7 @@ class ClassroomController extends Controller
                     'stats'    => $this->termExamModel->getClassStats($id, $term, 0),
                 ];
             }
-            return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'termLabel' => $termLabel, 'terms' => $terms]);
+            return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'termLabel' => $termLabel, 'classroom' => $classroomOut, 'terms' => $terms]);
         }
 
         if (!empty($childIds)) {
@@ -1112,18 +1123,35 @@ class ClassroomController extends Controller
                 $children[] = [
                     'childUserId' => $childId,
                     'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'childPhoto'  => $child['profile_photo'] ?: null,
                     'terms'       => $terms,
                 ];
             }
-            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'termLabel' => $termLabel, 'children' => $children]);
+            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'termLabel' => $termLabel, 'classroom' => $classroomOut, 'children' => $children]);
         }
 
         if ($isStudent) {
+            $self = \Config\Database::connect()->query(
+                'SELECT fname, lname, profile_photo FROM users WHERE user_id = ?',
+                [$ctx['myId']]
+            )->getRowArray();
             $terms = [];
             foreach ($termNums as $term) {
                 $terms[$term] = $this->examReportOut($id, $ctx['myId'], $term);
             }
-            return $this->response->setJSON(['success' => true, 'mode' => 'self', 'termLabel' => $termLabel, 'terms' => $terms]);
+            return $this->response->setJSON([
+                'success'   => true,
+                'mode'      => 'self',
+                'termLabel' => $termLabel,
+                'classroom' => $classroomOut,
+                'student'   => [
+                    'userId' => $ctx['myId'],
+                    'fname'  => $self['fname']  ?? '',
+                    'lname'  => $self['lname']  ?? '',
+                    'photo'  => $self['profile_photo'] ?? null,
+                ],
+                'terms'     => $terms,
+            ]);
         }
 
         $terms = [];
@@ -1135,22 +1163,41 @@ class ClassroomController extends Controller
                 'stats'    => $this->termExamModel->getClassStats($id, $term, 0),
             ];
         }
-        return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'termLabel' => $termLabel, 'terms' => $terms]);
+        return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'termLabel' => $termLabel, 'classroom' => $classroomOut, 'terms' => $terms]);
     }
 
     /**
      * Self/child term report, gated: unpublished reports are hidden from the student/parent view.
+     * Also carries the term's term_exam_def list, since the mobile UI lists individual named exams
+     * per term but — since "published" is only tracked per (class, term), not per exam — every exam
+     * within a term opens this same aggregated report.
      */
     private function examReportOut(int $classId, int $studentId, int $term): array
     {
+        $exams    = $this->termExamModel->getExamsForClass($classId, $term);
+        $examsOut = array_map(static fn ($e) => [
+            'termExamId' => (int) $e['term_exam_id'],
+            'examName'   => $e['exam_name'],
+        ], $exams);
+
         $report = $this->termExamModel->getStudentReport($classId, $studentId, $term);
         if (($report['status'] ?? '') !== 'published') {
-            return ['published' => false, 'report' => null, 'stats' => null];
+            return ['published' => false, 'report' => null, 'stats' => null, 'exams' => $examsOut];
         }
+
+        $verifyToken = \App\Libraries\ApiJwt::encode([
+            'purpose'   => 'report_verify',
+            'classId'   => $classId,
+            'studentId' => $studentId,
+            'term'      => $term,
+        ], 60 * 60 * 24 * 365 * 20);
+
         return [
             'published' => true,
             'report'    => $report,
             'stats'     => $this->termExamModel->getClassStats($classId, $term, $studentId),
+            'exams'     => $examsOut,
+            'verifyUrl' => base_url('verify-report/' . $verifyToken),
         ];
     }
 

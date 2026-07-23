@@ -553,6 +553,7 @@ $routes->post('classroom/principal-exam/(:num)/comment',            'ClassroomCo
 $routes->post('classroom/principal-exam/(:num)/term/(:num)/publish','ClassroomController::publishReport/$1/$2');
 $routes->get( 'classroom/report/(:num)/student/(:num)/term/(:num)', 'ClassroomController::reportCard/$1/$2/$3');
 $routes->get( 'classroom/report/(:num)/student/(:num)/term/(:num)/pdf', 'ClassroomController::reportCardPdf/$1/$2/$3');
+$routes->get( 'verify-report/(:any)',                               'ClassroomController::verifyReport/$1');
 // Class Discussion
 $routes->post('classroom/(:num)/discussion/post',              'ClassroomController::classDiscussionPost/$1');
 $routes->post('classroom/discussion/(:num)/like',              'ClassroomController::classDiscussionLike/$1');

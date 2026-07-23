@@ -7289,4 +7289,58 @@ class ClassroomController extends BaseController
         $pdf->Output($filename, 'I');
         exit;
     }
+
+    /**
+     * Public, unauthenticated verification page for a report-card QR code (mobile PDF).
+     * The token is a signed App\Libraries\ApiJwt payload encoding class/student/term — no
+     * login required, but only a minimal confirmation summary is shown (no subject marks),
+     * and only while the report remains currently published.
+     */
+    public function verifyReport(string $token)
+    {
+        $claims = \App\Libraries\ApiJwt::decode($token);
+        $db     = \Config\Database::connect();
+
+        $valid = false;
+        $info  = null;
+
+        if (is_array($claims) && ($claims['purpose'] ?? '') === 'report_verify') {
+            $classId   = (int) ($claims['classId']   ?? 0);
+            $studentId = (int) ($claims['studentId'] ?? 0);
+            $term      = (int) ($claims['term']      ?? 0);
+
+            $status = $this->termExamModel->getReportStatus($classId, $term);
+            if ($status['status'] === 'published') {
+                $classroom = $db->query("
+                    SELECT c.class_name, c.class_year, sch.sch_name
+                    FROM classroom c INNER JOIN stream s ON s.stream_id = c.stream_id_fk
+                    INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
+                    INNER JOIN school sch ON sch.sch_id = sl.sch_id_fk
+                    WHERE c.class_id = ?
+                ", [$classId])->getRowArray();
+
+                $student = $db->query('SELECT fname, lname FROM users WHERE user_id = ?', [$studentId])->getRowArray();
+                $report  = $this->termExamModel->getStudentReport($classId, $studentId, $term);
+
+                if ($classroom && $student && ($report['status'] ?? '') === 'published') {
+                    $ovPct = $report['overall_pct'] ?? null;
+                    $grade = $ovPct !== null ? \App\Models\TermExamModel::grade((float) $ovPct) : null;
+                    $valid = true;
+                    $info  = [
+                        'studentName' => trim($student['fname'] . ' ' . $student['lname']),
+                        'schoolName'  => $classroom['sch_name'],
+                        'className'   => $classroom['class_name'],
+                        'classYear'   => $classroom['class_year'],
+                        'term'        => $term,
+                        'overallPct'  => $ovPct,
+                        'grade'       => $grade,
+                        'publishedAt' => $report['published_at'] ?? null,
+                    ];
+                }
+            }
+        }
+
+        $this->response->setContentType('text/html');
+        return view('app/classroom/verify_report', ['valid' => $valid, 'info' => $info]);
+    }
 }
