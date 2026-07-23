@@ -1081,15 +1081,21 @@ class ClassroomController extends Controller
         $childIds   = $this->linkedChildIdsInClassroom($ctx, $id);
         $privileged = $isTeacher || $ctx['isSuperAdmin'] || $ctx['canViewAllListing'];
 
+        $schCatData = $this->loadSchCatDataForSchool((int) ($classroom['sch_id'] ?? 0));
+        $termNums   = !empty($schCatData['terms']) ? array_keys($schCatData['terms']) : [1, 2, 3];
+        $termLabel  = $schCatData['label'];
+
         if ($privileged) {
             $terms = [];
-            for ($term = 1; $term <= 3; $term++) {
+            foreach ($termNums as $term) {
+                $examData     = $this->termExamModel->getAllMarksForClassTerm($id, $term);
                 $terms[$term] = [
-                    'marks' => $this->termExamModel->getAllMarksForClassTerm($id, $term),
-                    'stats' => $this->termExamModel->getClassStats($id, $term, 0),
+                    'marks'    => $examData['students'],
+                    'subjects' => $examData['subjects'],
+                    'stats'    => $this->termExamModel->getClassStats($id, $term, 0),
                 ];
             }
-            return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'terms' => $terms]);
+            return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'termLabel' => $termLabel, 'terms' => $terms]);
         }
 
         if (!empty($childIds)) {
@@ -1100,7 +1106,7 @@ class ClassroomController extends Controller
                     continue;
                 }
                 $terms = [];
-                for ($term = 1; $term <= 3; $term++) {
+                foreach ($termNums as $term) {
                     $terms[$term] = $this->examReportOut($id, $childId, $term);
                 }
                 $children[] = [
@@ -1109,25 +1115,27 @@ class ClassroomController extends Controller
                     'terms'       => $terms,
                 ];
             }
-            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'children' => $children]);
+            return $this->response->setJSON(['success' => true, 'mode' => 'children', 'termLabel' => $termLabel, 'children' => $children]);
         }
 
         if ($isStudent) {
             $terms = [];
-            for ($term = 1; $term <= 3; $term++) {
+            foreach ($termNums as $term) {
                 $terms[$term] = $this->examReportOut($id, $ctx['myId'], $term);
             }
-            return $this->response->setJSON(['success' => true, 'mode' => 'self', 'terms' => $terms]);
+            return $this->response->setJSON(['success' => true, 'mode' => 'self', 'termLabel' => $termLabel, 'terms' => $terms]);
         }
 
         $terms = [];
-        for ($term = 1; $term <= 3; $term++) {
+        foreach ($termNums as $term) {
+            $examData     = $this->termExamModel->getAllMarksForClassTerm($id, $term);
             $terms[$term] = [
-                'marks' => $this->termExamModel->getAllMarksForClassTerm($id, $term),
-                'stats' => $this->termExamModel->getClassStats($id, $term, 0),
+                'marks'    => $examData['students'],
+                'subjects' => $examData['subjects'],
+                'stats'    => $this->termExamModel->getClassStats($id, $term, 0),
             ];
         }
-        return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'terms' => $terms]);
+        return $this->response->setJSON(['success' => true, 'mode' => 'summary', 'termLabel' => $termLabel, 'terms' => $terms]);
     }
 
     /**
