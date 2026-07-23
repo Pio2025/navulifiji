@@ -1417,11 +1417,27 @@ class ClassroomController extends Controller
         }
         $ctx = $r['ctx'];
 
+        $targetUserId = $ctx['myId'];
         if (!$r['isStudent']) {
-            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Only students can view their own quiz results.']);
+            if (empty($r['childIds'])) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Only students or their parents can view quiz results.']);
+            }
+
+            $childId = $this->request->getGet('childId');
+            if ($childId !== null && $childId !== '') {
+                $childId = (int) $childId;
+                if (!in_array($childId, $r['childIds'], true)) {
+                    return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'That child is not enrolled in this classroom.']);
+                }
+                $targetUserId = $childId;
+            } elseif (count($r['childIds']) === 1) {
+                $targetUserId = $r['childIds'][0];
+            } else {
+                return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'childId is required.', 'children' => $r['childIds']]);
+            }
         }
 
-        $attempt = $this->lessonQuizzeAttemptModel->getStudentAttempt($quizId, $ctx['myId']);
+        $attempt = $this->lessonQuizzeAttemptModel->getStudentAttempt($quizId, $targetUserId);
         if (!$attempt || $attempt['status'] === 'in_progress') {
             return $this->response->setJSON(['success' => false, 'message' => 'No completed attempt found.']);
         }
