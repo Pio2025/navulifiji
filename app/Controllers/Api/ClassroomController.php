@@ -165,9 +165,16 @@ class ClassroomController extends Controller
         }
         $classSchId = (int) ($classroom['sch_id'] ?? 0);
         if ($ctx['hasActiveAdmission']) {
-            return $classSchId === $ctx['admissionSchId'];
+            if ($classSchId === $ctx['admissionSchId']) {
+                return true;
+            }
+        } elseif ($classSchId === $ctx['ownSchId']) {
+            return true;
         }
-        return $classSchId === $ctx['ownSchId'];
+        // A parent (or a super-admin/staff account that is also linked as a parent)
+        // can always reach a classroom one of their children is actively enrolled in,
+        // regardless of the caller's own school/admission.
+        return $this->childLinkedToClassroom($ctx, (int) ($classroom['class_id'] ?? 0));
     }
 
     /**
