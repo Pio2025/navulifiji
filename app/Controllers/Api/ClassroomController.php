@@ -1316,9 +1316,10 @@ class ClassroomController extends Controller
                     continue;
                 }
                 $children[] = [
-                    'childUserId' => $childId,
-                    'childName'   => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
-                    'feedback'    => $this->subjectFeedbackModel->getStudentFeedback($classSubId, $childId),
+                    'childUserId'  => $childId,
+                    'childName'    => trim(($child['fname'] ?? '') . ' ' . ($child['lname'] ?? '')),
+                    'childPhoto'   => $child['profile_photo'] ?? null,
+                    'feedback'     => $this->subjectFeedbackModel->getStudentFeedback($classSubId, $childId),
                 ];
             }
             return $this->response->setJSON(['success' => true, 'mode' => 'children', 'children' => $children]);
