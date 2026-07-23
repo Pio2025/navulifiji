@@ -1149,6 +1149,145 @@ class ClassroomController extends Controller
     }
 
     /**
+     * GET /api/classroom/subject/{classSubId}/assignment/{assignmentId} — assignment files,
+     * class-wide stats (submissions, % passed, average, high/low), and the caller's (or a
+     * linked child's) own submission/score + rank — mirroring the quiz score screen.
+     */
+    public function subjectAssignmentDetail(int $classSubId, int $assignmentId)
+    {
+        $r = $this->resolveSubjectAccess($classSubId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        $db = \Config\Database::connect();
+        $assignment = $db->query("
+            SELECT assignment_id, assignment_name, assignment_due_date, assignment_total_score,
+                   assignment_status, assignment_file
+            FROM lesson_assignment
+            WHERE assignment_id = ? AND class_sub_id_fk = ?
+            LIMIT 1
+        ", [$assignmentId, $classSubId])->getRowArray();
+
+        if (!$assignment || (!$r['isTeacher'] && $assignment['assignment_status'] !== 'Published')) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Assignment not found.']);
+        }
+
+        $totalScore = (float) ($assignment['assignment_total_score'] ?? 100);
+
+        $fileRows = $db->table('lesson_assignment_file')->where('assignment_id_fk', $assignmentId)->get()->getResultArray();
+        if (empty($fileRows) && !empty($assignment['assignment_file'])) {
+            $fileRows[] = ['assign_file_id' => null, 'file_src' => $assignment['assignment_file'], 'file_type' => null];
+        }
+        $files = array_map(fn ($f) => [
+            'id'  => $f['assign_file_id'] !== null ? (int) $f['assign_file_id'] : null,
+            'url' => base_url('uploads/assignments/' . $f['file_src']),
+            'ext' => strtolower(pathinfo($f['file_src'], PATHINFO_EXTENSION)),
+        ], $fileRows);
+
+        $classStats = $db->query("
+            SELECT COUNT(*) AS total_submitted, SUM(submission_status = 'Late') AS total_late
+            FROM assignment_submission WHERE assignment_id_fk = ?
+        ", [$assignmentId])->getRowArray();
+
+        $scoreStats = $db->query("
+            SELECT ROUND(AVG(assignment_mark), 2) AS avg_mark,
+                   MAX(assignment_mark) AS high_mark,
+                   MIN(assignment_mark) AS low_mark,
+                   COUNT(*) AS graded_count,
+                   SUM(assignment_mark >= ?) AS passed_count
+            FROM student_assignment_score WHERE assignment_id_fk = ?
+        ", [$totalScore * 0.5, $assignmentId])->getRowArray();
+
+        $gradedCount = (int) ($scoreStats['graded_count'] ?? 0);
+        $result = [
+            'success'    => true,
+            'assignment' => [
+                'id'         => (int) $assignment['assignment_id'],
+                'name'       => $assignment['assignment_name'],
+                'dueDate'    => $assignment['assignment_due_date'],
+                'totalScore' => $totalScore,
+                'files'      => $files,
+            ],
+            'stats' => [
+                'totalSubmitted' => (int) ($classStats['total_submitted'] ?? 0),
+                'totalLate'      => (int) ($classStats['total_late'] ?? 0),
+                'gradedCount'    => $gradedCount,
+                'avgMark'        => $scoreStats['avg_mark'] !== null ? (float) $scoreStats['avg_mark'] : null,
+                'avgPct'         => ($scoreStats['avg_mark'] !== null && $totalScore > 0)
+                    ? round(((float) $scoreStats['avg_mark'] / $totalScore) * 100, 1) : null,
+                'highMark'       => $scoreStats['high_mark'] !== null ? (float) $scoreStats['high_mark'] : null,
+                'lowMark'        => $scoreStats['low_mark'] !== null ? (float) $scoreStats['low_mark'] : null,
+                'passedCount'    => (int) ($scoreStats['passed_count'] ?? 0),
+                'passedPct'      => $gradedCount > 0 ? round(((int) $scoreStats['passed_count'] / $gradedCount) * 100, 1) : null,
+            ],
+        ];
+
+        $targetUserId = null;
+        if (!empty($r['childIds'])) {
+            $childId = $this->request->getGet('childId');
+            if ($childId !== null && $childId !== '') {
+                $childId = (int) $childId;
+                if (!in_array($childId, $r['childIds'], true)) {
+                    return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'That child is not enrolled in this classroom.']);
+                }
+                $targetUserId = $childId;
+            } elseif (count($r['childIds']) === 1) {
+                $targetUserId = $r['childIds'][0];
+            } else {
+                return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'childId is required.', 'children' => $r['childIds']]);
+            }
+        } elseif ($r['isStudent']) {
+            $targetUserId = $ctx['myId'];
+        }
+
+        if ($targetUserId === null) {
+            $result['mode'] = 'summary';
+            return $this->response->setJSON($result);
+        }
+
+        $submission = $db->table('assignment_submission')
+            ->where('assignment_id_fk', $assignmentId)->where('user_id_fk', $targetUserId)
+            ->get()->getRowArray();
+
+        $score = $submission ? $db->table('student_assignment_score')
+            ->where('assignment_id_fk', $assignmentId)->where('user_id_fk', $targetUserId)
+            ->get()->getRowArray() : null;
+
+        $position = null;
+        if ($score) {
+            $higher = $db->query("
+                SELECT COUNT(*) AS c FROM student_assignment_score
+                WHERE assignment_id_fk = ? AND assignment_mark > ?
+            ", [$assignmentId, $score['assignment_mark']])->getRowArray();
+            $position = 1 + (int) $higher['c'];
+        }
+
+        $mark = $score ? (float) $score['assignment_mark'] : null;
+        $result['mode'] = 'self';
+        $result['submission'] = $submission ? [
+            'id'          => (int) $submission['submission_id'],
+            'status'      => $submission['submission_status'],
+            'submittedAt' => $submission['submitted_at'],
+            'file'        => $submission['submission_file'] ? [
+                'url' => base_url('uploads/assignment_submissions/' . $submission['submission_file']),
+                'ext' => strtolower($submission['submission_file_type'] ?? pathinfo($submission['submission_file'], PATHINFO_EXTENSION)),
+            ] : null,
+        ] : null;
+        $result['score'] = $score ? [
+            'mark'     => $mark,
+            'pct'      => $totalScore > 0 ? round(($mark / $totalScore) * 100, 1) : null,
+            'feedback' => $score['feedback'],
+            'gradedAt' => $score['graded_at'],
+            'position' => $position,
+            'outOf'    => $gradedCount,
+        ] : null;
+
+        return $this->response->setJSON($result);
+    }
+
+    /**
      * GET /api/classroom/subject/{classSubId}/feedback — read-only, scoped to the viewer.
      * Teachers see class averages + the feedback list; students/parents see one rating.
      */
