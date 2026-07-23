@@ -20,6 +20,8 @@ use App\Models\SchoolModel;
 use App\Models\StudentAttendanceModel;
 use App\Models\SubjectFeedbackModel;
 use App\Models\TermExamModel;
+use App\Models\UserLogModel;
+use App\Libraries\RealtimeNotifier;
 use CodeIgniter\Controller;
 
 class ClassroomController extends Controller
@@ -41,10 +43,12 @@ class ClassroomController extends Controller
     protected $schoolCategoryConfigModel;
     protected $schoolCategoryTermModel;
     protected $publicHolidayModel;
+    protected $userLogModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
+        $this->userLogModel              = new UserLogModel();
         $this->classroomModel           = new ClassroomModel();
         $this->classroomStaffModel      = new ClassroomStaffModel();
         $this->admissionModel           = new AdmissionModel();
@@ -1327,6 +1331,79 @@ class ClassroomController extends Controller
     }
 
     /**
+     * Everyone with access to a lesson's discussion: all actively-enrolled students in
+     * the classroom plus the subject's active teacher(s), excluding the actor themselves.
+     */
+    private function lessonDiscussionRecipients(int $classId, int $classSubId, int $excludeUserId): array
+    {
+        $db  = \Config\Database::connect();
+        $ids = [];
+
+        $students = $db->query(
+            "SELECT user_id_fk FROM classroom_student WHERE class_id_fk = ? AND class_stud_status = 'Active'",
+            [$classId]
+        )->getResultArray();
+        foreach ($students as $row) {
+            $ids[] = (int) $row['user_id_fk'];
+        }
+
+        $teachers = $db->query(
+            "SELECT user_id_fk FROM classroom_subject_teacher WHERE class_sub_id_fk = ? AND class_sub_teacher_status = 'Active'",
+            [$classSubId]
+        )->getResultArray();
+        foreach ($teachers as $row) {
+            $ids[] = (int) $row['user_id_fk'];
+        }
+
+        return array_values(array_diff(array_unique($ids), [$excludeUserId]));
+    }
+
+    private function lessonTitle(int $lessonId): string
+    {
+        $lesson = \Config\Database::connect()->table('classroom_lesson')
+            ->select('lesson_title')->where('lesson_id', $lessonId)->get()->getRowArray();
+        return $lesson['lesson_title'] ?? 'a lesson';
+    }
+
+    private function userName(int $userId): string
+    {
+        $user = \Config\Database::connect()->table('users')
+            ->select("CONCAT(fname, ' ', lname) AS name")->where('user_id', $userId)->get()->getRowArray();
+        return $user['name'] ?? 'Someone';
+    }
+
+    /**
+     * Pushes a live 'lesson_discussion' socket event and logs an Activity entry (which
+     * itself triggers a separate 'activity_alert' push) for everyone with access to the
+     * lesson, so both the open discussion screen and the notifications feed stay in sync.
+     */
+    private function notifyLessonDiscussion(array $r, string $action, string $title, string $desc, array $payload = []): void
+    {
+        $actorId = (int) $r['ctx']['myId'];
+        $recipients = $this->lessonDiscussionRecipients((int) $r['classId'], (int) $r['classSubId'], $actorId);
+        if (empty($recipients)) {
+            return;
+        }
+
+        RealtimeNotifier::notify($recipients, 'lesson_discussion', array_merge([
+            'action'   => $action,
+            'lessonId' => (int) $r['lessonId'],
+        ], $payload));
+
+        $now = time();
+        foreach ($recipients as $userId) {
+            $this->userLogModel->addUserLog([
+                'user_id_fk' => $userId,
+                'log_title'  => $title,
+                'log_desc'   => $desc,
+                'log_date'   => date('Y-m-d', $now),
+                'log_time'   => $now,
+                'log_theme'  => 'info',
+            ]);
+        }
+    }
+
+    /**
      * GET /api/classroom/lesson/{lessonId} — full lesson detail: info, files, videos,
      * links, published assessments (name/type/duration only), and discussion feed.
      */
@@ -1505,6 +1582,27 @@ class ClassroomController extends Controller
     }
 
     /**
+     * GET /api/classroom/lesson/{lessonId}/discussion/feed — lightweight refresh endpoint
+     * (just the discussion feed, not the full lesson payload), used by the mobile app's
+     * realtime/polling refresh so it doesn't have to reload files/videos/assessments too.
+     */
+    public function lessonDiscussionFeed(int $lessonId)
+    {
+        $r = $this->resolveLessonAccess($lessonId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        $this->lessonDiscussionModel->ensureTables();
+
+        return $this->response->setJSON([
+            'success'    => true,
+            'discussion' => $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']),
+        ]);
+    }
+
+    /**
      * POST /api/classroom/lesson/{lessonId}/discussion — multipart: message?, photos[]?
      */
     public function lessonDiscussionPost(int $lessonId)
@@ -1579,6 +1677,14 @@ class ClassroomController extends Controller
         $post['dislike_count'] = 0;
         $post['user_reaction'] = null;
 
+        $this->notifyLessonDiscussion(
+            $r,
+            'post',
+            'New Discussion Post',
+            $this->userName($ctx['myId']) . ' posted in ' . $this->lessonTitle($lessonId) . '.',
+            ['discussionId' => $discussionId]
+        );
+
         return $this->response->setJSON(['success' => true, 'post' => $post]);
     }
 
@@ -1594,6 +1700,17 @@ class ClassroomController extends Controller
         $body   = $this->request->getJSON(true) ?? [];
         $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
         $result = $this->lessonDiscussionModel->toggleLike($discussionId, $r['ctx']['myId'], $type);
+
+        if ($result['reaction'] !== null) {
+            $this->notifyLessonDiscussion(
+                $r,
+                'like',
+                'New Reaction',
+                $this->userName($r['ctx']['myId']) . ' reacted to a post in ' . $this->lessonTitle($r['lessonId']) . '.',
+                ['discussionId' => $discussionId]
+            );
+        }
+
         return $this->response->setJSON(['success' => true] + $result);
     }
 
@@ -1656,6 +1773,14 @@ class ClassroomController extends Controller
         $row['user_reaction'] = null;
         $row['replies']       = [];
 
+        $this->notifyLessonDiscussion(
+            $r,
+            'comment',
+            'New Comment',
+            $this->userName($ctx['myId']) . ' commented in ' . $this->lessonTitle($r['lessonId']) . '.',
+            ['discussionId' => $discussionId, 'commentId' => $commentId]
+        );
+
         return $this->response->setJSON(['success' => true, 'comment' => $row]);
     }
 
@@ -1671,6 +1796,17 @@ class ClassroomController extends Controller
         $body   = $this->request->getJSON(true) ?? [];
         $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
         $result = $this->lessonDiscussionModel->toggleCommentLike($commentId, $r['ctx']['myId'], $type);
+
+        if ($result['reaction'] !== null) {
+            $this->notifyLessonDiscussion(
+                $r,
+                'commentLike',
+                'New Reaction',
+                $this->userName($r['ctx']['myId']) . ' reacted to a comment in ' . $this->lessonTitle($r['lessonId']) . '.',
+                ['commentId' => $commentId]
+            );
+        }
+
         return $this->response->setJSON(['success' => true] + $result);
     }
 
@@ -1734,6 +1870,14 @@ class ClassroomController extends Controller
         $row['user_reaction']       = null;
         $row['replies']             = [];
 
+        $this->notifyLessonDiscussion(
+            $r,
+            'commentReply',
+            'New Reply',
+            $this->userName($ctx['myId']) . ' replied in ' . $this->lessonTitle($r['lessonId']) . '.',
+            ['commentId' => $commentId, 'replyId' => $replyId]
+        );
+
         return $this->response->setJSON(['success' => true, 'reply' => $row]);
     }
 
@@ -1784,6 +1928,14 @@ class ClassroomController extends Controller
         $row['user_reaction']      = null;
         $row['replies']            = [];
 
+        $this->notifyLessonDiscussion(
+            $r,
+            'replyReply',
+            'New Reply',
+            $this->userName($ctx['myId']) . ' replied in ' . $this->lessonTitle($r['lessonId']) . '.',
+            ['commentId' => (int) $parent['comment_id_fk'], 'replyId' => $newReplyId]
+        );
+
         return $this->response->setJSON(['success' => true, 'reply' => $row]);
     }
 
@@ -1799,6 +1951,17 @@ class ClassroomController extends Controller
         $body   = $this->request->getJSON(true) ?? [];
         $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
         $result = $this->lessonDiscussionModel->toggleReplyLike($replyId, $r['ctx']['myId'], $type);
+
+        if ($result['reaction'] !== null) {
+            $this->notifyLessonDiscussion(
+                $r,
+                'replyLike',
+                'New Reaction',
+                $this->userName($r['ctx']['myId']) . ' reacted to a reply in ' . $this->lessonTitle($r['lessonId']) . '.',
+                ['replyId' => $replyId]
+            );
+        }
+
         return $this->response->setJSON(['success' => true] + $result);
     }
 
