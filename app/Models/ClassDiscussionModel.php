@@ -26,9 +26,12 @@ class ClassDiscussionModel extends Model
                 'message'     => ['type' => 'LONGTEXT', 'null' => true],
                 'created_at'  => ['type' => 'DATETIME', 'null' => true],
                 'post_status' => ['type' => 'TINYINT', 'constraint' => 1, 'default' => 1],
+                'edited_at'   => ['type' => 'DATETIME', 'null' => true],
             ]);
             $forge->addPrimaryKey('cd_id');
             $forge->createTable('class_discussion', true);
+        } elseif (!$db->fieldExists('edited_at', 'class_discussion')) {
+            $db->query("ALTER TABLE class_discussion ADD COLUMN edited_at DATETIME NULL");
         }
 
         if (!$db->tableExists('class_discussion_photo')) {
@@ -62,9 +65,12 @@ class ClassDiscussionModel extends Model
                 'comment'        => ['type' => 'LONGTEXT', 'null' => false],
                 'created_at'     => ['type' => 'DATETIME', 'null' => true],
                 'comment_status' => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
+                'edited_at'      => ['type' => 'DATETIME', 'null' => true],
             ]);
             $forge->addPrimaryKey('cdc_id');
             $forge->createTable('class_discussion_comment', true);
+        } elseif (!$db->fieldExists('edited_at', 'class_discussion_comment')) {
+            $db->query("ALTER TABLE class_discussion_comment ADD COLUMN edited_at DATETIME NULL");
         }
 
         if (!$db->tableExists('class_discussion_comment_like')) {
@@ -88,11 +94,17 @@ class ClassDiscussionModel extends Model
                 'reply'              => ['type' => 'LONGTEXT', 'null' => false],
                 'created_at'         => ['type' => 'DATETIME', 'null' => true],
                 'reply_status'       => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
+                'edited_at'          => ['type' => 'DATETIME', 'null' => true],
             ]);
             $forge->addPrimaryKey('cdcr_id');
             $forge->createTable('class_discussion_comment_reply', true);
-        } elseif (!$db->fieldExists('parent_reply_id_fk', 'class_discussion_comment_reply')) {
-            $db->query("ALTER TABLE class_discussion_comment_reply ADD COLUMN parent_reply_id_fk INT NULL AFTER cdc_id_fk");
+        } else {
+            if (!$db->fieldExists('parent_reply_id_fk', 'class_discussion_comment_reply')) {
+                $db->query("ALTER TABLE class_discussion_comment_reply ADD COLUMN parent_reply_id_fk INT NULL AFTER cdc_id_fk");
+            }
+            if (!$db->fieldExists('edited_at', 'class_discussion_comment_reply')) {
+                $db->query("ALTER TABLE class_discussion_comment_reply ADD COLUMN edited_at DATETIME NULL");
+            }
         }
 
         if (!$db->tableExists('class_discussion_comment_reply_like')) {
@@ -116,6 +128,8 @@ class ClassDiscussionModel extends Model
                 cd.cd_id,
                 cd.message,
                 cd.created_at,
+                cd.post_status,
+                cd.edited_at,
                 cd.author AS author_id,
                 CONCAT(u.fname, ' ', u.lname) AS author_name,
                 u.profile_photo AS author_photo,
@@ -140,12 +154,12 @@ class ClassDiscussionModel extends Model
                  LIMIT 1) AS user_reaction
             FROM class_discussion cd
             INNER JOIN users u ON u.user_id = cd.author
-            WHERE cd.class_id_fk = ? AND cd.post_status = 1
+            WHERE cd.class_id_fk = ? AND cd.post_status IN (1, 2)
             ORDER BY cd.created_at DESC
         ", [$userId, $classId])->getResultArray();
 
         foreach ($rows as &$row) {
-            $row['photos']   = $this->getPhotos((int) $row['cd_id']);
+            $row['photos']   = (int) $row['post_status'] === 2 ? [] : $this->getPhotos((int) $row['cd_id']);
             $row['comments'] = $this->getComments((int) $row['cd_id'], $userId);
         }
         return $rows;
@@ -168,6 +182,8 @@ class ClassDiscussionModel extends Model
                 cdc.cdc_id,
                 cdc.comment,
                 cdc.created_at,
+                cdc.comment_status,
+                cdc.edited_at,
                 cdc.author AS author_id,
                 CONCAT(u.fname, ' ', u.lname) AS author_name,
                 u.profile_photo AS author_photo,
@@ -189,7 +205,7 @@ class ClassDiscussionModel extends Model
                  WHERE cl2.cdc_id_fk = cdc.cdc_id AND cl2.user_id_fk = ? LIMIT 1) AS user_reaction
             FROM class_discussion_comment cdc
             INNER JOIN users u ON u.user_id = cdc.author
-            WHERE cdc.cd_id_fk = ? AND cdc.comment_status = 'Active'
+            WHERE cdc.cd_id_fk = ? AND cdc.comment_status IN ('Active', 'Removed')
             ORDER BY cdc.created_at ASC
         ", [$userId, $cdId])->getResultArray();
 
@@ -212,6 +228,8 @@ class ClassDiscussionModel extends Model
                 r.parent_reply_id_fk,
                 r.reply,
                 r.created_at,
+                r.reply_status,
+                r.edited_at,
                 r.author AS author_id,
                 CONCAT(u.fname, ' ', u.lname) AS author_name,
                 u.profile_photo AS author_photo,
@@ -233,7 +251,7 @@ class ClassDiscussionModel extends Model
                  WHERE rl2.cdcr_id_fk = r.cdcr_id AND rl2.user_id_fk = ? LIMIT 1) AS user_reaction
             FROM class_discussion_comment_reply r
             INNER JOIN users u ON u.user_id = r.author
-            WHERE r.cdc_id_fk = ? AND r.reply_status = 'Active'
+            WHERE r.cdc_id_fk = ? AND r.reply_status IN ('Active', 'Removed')
             ORDER BY r.created_at ASC
         ", [$userId, $cdcId])->getResultArray();
 
@@ -362,5 +380,71 @@ class ClassDiscussionModel extends Model
             'likes'    => (int) $db->table('class_discussion_comment_reply_like')->where('cdcr_id_fk', $cdcrId)->where('like_type', 'like')->countAllResults(),
             'dislikes' => (int) $db->table('class_discussion_comment_reply_like')->where('cdcr_id_fk', $cdcrId)->where('like_type', 'dislike')->countAllResults(),
         ];
+    }
+
+    public function getPostAuthor(int $cdId): ?int
+    {
+        $row = \Config\Database::connect()->table('class_discussion')->select('author')->where('cd_id', $cdId)->get()->getRowArray();
+        return $row ? (int) $row['author'] : null;
+    }
+
+    public function getCommentAuthor(int $cdcId): ?int
+    {
+        $row = \Config\Database::connect()->table('class_discussion_comment')->select('author')->where('cdc_id', $cdcId)->get()->getRowArray();
+        return $row ? (int) $row['author'] : null;
+    }
+
+    public function getReplyAuthor(int $cdcrId): ?int
+    {
+        $row = \Config\Database::connect()->table('class_discussion_comment_reply')->select('author')->where('cdcr_id', $cdcrId)->get()->getRowArray();
+        return $row ? (int) $row['author'] : null;
+    }
+
+    public function editPost(int $cdId, string $message): void
+    {
+        \Config\Database::connect()->table('class_discussion')->where('cd_id', $cdId)
+            ->update(['message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function selfDeletePost(int $cdId): void
+    {
+        \Config\Database::connect()->table('class_discussion')->where('cd_id', $cdId)->update(['post_status' => 0]);
+    }
+
+    public function moderateRemovePost(int $cdId): void
+    {
+        \Config\Database::connect()->table('class_discussion')->where('cd_id', $cdId)->update(['post_status' => 2]);
+    }
+
+    public function editComment(int $cdcId, string $comment): void
+    {
+        \Config\Database::connect()->table('class_discussion_comment')->where('cdc_id', $cdcId)
+            ->update(['comment' => $comment, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function selfDeleteComment(int $cdcId): void
+    {
+        \Config\Database::connect()->table('class_discussion_comment')->where('cdc_id', $cdcId)->update(['comment_status' => 'Deleted']);
+    }
+
+    public function moderateRemoveComment(int $cdcId): void
+    {
+        \Config\Database::connect()->table('class_discussion_comment')->where('cdc_id', $cdcId)->update(['comment_status' => 'Removed']);
+    }
+
+    public function editReply(int $cdcrId, string $reply): void
+    {
+        \Config\Database::connect()->table('class_discussion_comment_reply')->where('cdcr_id', $cdcrId)
+            ->update(['reply' => $reply, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function selfDeleteReply(int $cdcrId): void
+    {
+        \Config\Database::connect()->table('class_discussion_comment_reply')->where('cdcr_id', $cdcrId)->update(['reply_status' => 'Deleted']);
+    }
+
+    public function moderateRemoveReply(int $cdcrId): void
+    {
+        \Config\Database::connect()->table('class_discussion_comment_reply')->where('cdcr_id', $cdcrId)->update(['reply_status' => 'Removed']);
     }
 }

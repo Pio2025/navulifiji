@@ -8,6 +8,7 @@ use App\Models\ClassDiscussionModel;
 use App\Models\ClassroomLessonModel;
 use App\Models\ClassroomModel;
 use App\Models\ClassroomStaffModel;
+use App\Models\DiscussionReportModel;
 use App\Models\LessonDiscussionModel;
 use App\Models\LessonQuizzeAttemptModel;
 use App\Models\LessonQuizzeModel;
@@ -37,6 +38,7 @@ class ClassroomController extends Controller
     protected $classDiscussionModel;
     protected $classroomLessonModel;
     protected $lessonDiscussionModel;
+    protected $discussionReportModel;
     protected $lessonQuizzeModel;
     protected $lessonQuizzeAttemptModel;
     protected $subjectFeedbackModel;
@@ -60,6 +62,7 @@ class ClassroomController extends Controller
         $this->classDiscussionModel     = new ClassDiscussionModel();
         $this->classroomLessonModel     = new ClassroomLessonModel();
         $this->lessonDiscussionModel    = new LessonDiscussionModel();
+        $this->discussionReportModel    = new DiscussionReportModel();
         $this->lessonQuizzeModel        = new LessonQuizzeModel();
         $this->lessonQuizzeAttemptModel = new LessonQuizzeAttemptModel();
         $this->subjectFeedbackModel     = new SubjectFeedbackModel();
@@ -1258,12 +1261,99 @@ class ClassroomController extends Controller
         }
 
         $this->classDiscussionModel->ensureTables();
+        $this->discussionReportModel->ensureTables();
+
+        $posts = $this->classDiscussionModel->getPosts($id, $ctx['myId']);
+        $this->decorateClassDiscussionTree($posts, $ctx);
 
         return $this->response->setJSON([
-            'success' => true,
-            'canPost' => $this->canPostToClassroomDiscussion($ctx, $id),
-            'posts'   => $this->classDiscussionModel->getPosts($id, $ctx['myId']),
+            'success'      => true,
+            'canPost'      => $this->canPostToClassroomDiscussion($ctx, $id),
+            'canModerate'  => $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_report_class_discussion'),
+            'posts'        => $posts,
         ]);
+    }
+
+    /**
+     * Adds is_mine/can_edit/can_delete/is_edited/is_reported/report_count/is_removed
+     * (and, when removed, a 'removal' detail block) to a post/comment/reply node, and
+     * strips its real text once moderator-removed so the content isn't leaked.
+     */
+    private function decorateDiscussionNode(array &$node, array $ctx, string $contentType, string $idField, string $statusField, $removedVal, string $textField, string $editPerm, string $deletePerm): void
+    {
+        $contentId = (int) $node[$idField];
+        $authorId  = (int) $node['author_id'];
+        $isMine    = $authorId === $ctx['myId'];
+        $canModEdit   = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], $editPerm);
+        $canModDelete = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], $deletePerm);
+
+        $node['is_mine']    = $isMine;
+        $node['can_edit']   = $isMine || $canModEdit;
+        $node['can_delete'] = $isMine || $canModDelete;
+        $node['is_edited']  = !empty($node['edited_at']);
+
+        $isRemoved = (string) $node[$statusField] === (string) $removedVal;
+        $node['is_removed'] = $isRemoved;
+
+        $summary = $this->discussionReportModel->pendingSummaryForContent($contentType, $contentId);
+        $node['is_reported']  = $summary['is_reported'];
+        $node['report_count'] = $summary['report_count'];
+
+        if ($isRemoved) {
+            unset($node[$textField]);
+            $node['removal'] = $this->discussionReportModel->getRemovalDetail($contentType, $contentId);
+        }
+    }
+
+    /** Flags for a just-created post/comment/reply: always the author's own, never yet removed/reported. */
+    private function freshContentFlags(): array
+    {
+        return [
+            'is_mine'      => true,
+            'can_edit'     => true,
+            'can_delete'   => true,
+            'is_edited'    => false,
+            'is_removed'   => false,
+            'is_reported'  => false,
+            'report_count' => 0,
+        ];
+    }
+
+    private function decorateReplyTree(array &$replies, array $ctx, string $contentType, string $idField, string $editPerm, string $deletePerm): void
+    {
+        foreach ($replies as &$reply) {
+            $this->decorateDiscussionNode($reply, $ctx, $contentType, $idField, 'reply_status', 'Removed', 'reply', $editPerm, $deletePerm);
+            if (!empty($reply['replies'])) {
+                $this->decorateReplyTree($reply['replies'], $ctx, $contentType, $idField, $editPerm, $deletePerm);
+            }
+        }
+        unset($reply);
+    }
+
+    private function decorateClassDiscussionTree(array &$posts, array $ctx): void
+    {
+        foreach ($posts as &$post) {
+            $this->decorateDiscussionNode($post, $ctx, DiscussionReportModel::TYPE_CLASS_POST, 'cd_id', 'post_status', 2, 'message', '_edit_class_discussion', '_delete_class_discussion');
+            foreach ($post['comments'] as &$comment) {
+                $this->decorateDiscussionNode($comment, $ctx, DiscussionReportModel::TYPE_CLASS_COMMENT, 'cdc_id', 'comment_status', 'Removed', 'comment', '_edit_class_discussion', '_delete_class_discussion');
+                $this->decorateReplyTree($comment['replies'], $ctx, DiscussionReportModel::TYPE_CLASS_REPLY, 'cdcr_id', '_edit_class_discussion', '_delete_class_discussion');
+            }
+            unset($comment);
+        }
+        unset($post);
+    }
+
+    private function decorateLessonDiscussionTree(array &$posts, array $ctx): void
+    {
+        foreach ($posts as &$post) {
+            $this->decorateDiscussionNode($post, $ctx, DiscussionReportModel::TYPE_LESSON_POST, 'lesson_discussion_id', 'message_status', 2, 'message', '_edit_lesson_discussion', '_delete_lesson_discussion');
+            foreach ($post['comments'] as &$comment) {
+                $this->decorateDiscussionNode($comment, $ctx, DiscussionReportModel::TYPE_LESSON_COMMENT, 'comment_id', 'comment_status', 'Removed', 'comment', '_edit_lesson_discussion', '_delete_lesson_discussion');
+                $this->decorateReplyTree($comment['replies'], $ctx, DiscussionReportModel::TYPE_LESSON_REPLY, 'reply_id', '_edit_lesson_discussion', '_delete_lesson_discussion');
+            }
+            unset($comment);
+        }
+        unset($post);
     }
 
     /**
@@ -1348,6 +1438,22 @@ class ClassroomController extends Controller
     private function errorResponse(array $r)
     {
         return $this->response->setStatusCode($r['error']['status'])->setJSON(['success' => false, 'message' => $r['error']['message']]);
+    }
+
+    /** Whether this user has had their discussion posting privileges stripped by a moderator. */
+    private function isPostingSuspended(int $userId): bool
+    {
+        $row = \Config\Database::connect()->table('users')
+            ->select('discussion_posting_status')->where('user_id', $userId)->get()->getRowArray();
+        return ($row['discussion_posting_status'] ?? 'Active') === 'Suspended';
+    }
+
+    private function postingSuspendedResponse()
+    {
+        return $this->response->setStatusCode(403)->setJSON([
+            'success' => false,
+            'message' => 'Your discussion posting privileges have been suspended.',
+        ]);
     }
 
     /**
@@ -2032,6 +2138,7 @@ class ClassroomController extends Controller
         }
 
         $this->lessonDiscussionModel->ensureTables();
+        $this->discussionReportModel->ensureTables();
 
         $assessments = \Config\Database::connect()->table('lesson_quizze')
             ->select('lesson_quizze_id, quizze_name, assessment_type, quizze_duration')
@@ -2079,7 +2186,13 @@ class ClassroomController extends Controller
                 'type'     => $a['assessment_type'],
                 'duration' => (int) $a['quizze_duration'],
             ], $assessments),
-            'discussion' => $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']),
+            'classId'     => (int) $r['classId'],
+            'canModerate' => $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_report_lesson_discussion'),
+            'discussion' => (function () use ($lessonId, $ctx) {
+                $discussions = $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']);
+                $this->decorateLessonDiscussionTree($discussions, $ctx);
+                return $discussions;
+            })(),
         ]);
     }
 
@@ -2206,10 +2319,15 @@ class ClassroomController extends Controller
         $ctx = $r['ctx'];
 
         $this->lessonDiscussionModel->ensureTables();
+        $this->discussionReportModel->ensureTables();
+
+        $discussions = $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']);
+        $this->decorateLessonDiscussionTree($discussions, $ctx);
 
         return $this->response->setJSON([
-            'success'    => true,
-            'discussion' => $this->lessonDiscussionModel->getDiscussions($lessonId, $ctx['myId']),
+            'success'     => true,
+            'canModerate' => $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_report_lesson_discussion'),
+            'discussion'  => $discussions,
         ]);
     }
 
@@ -2223,6 +2341,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
 
         $message   = trim($this->request->getPost('message') ?? '');
         $files     = $this->request->getFileMultiple('photos') ?? [];
@@ -2287,6 +2408,7 @@ class ClassroomController extends Controller
         $post['like_count']    = 0;
         $post['dislike_count'] = 0;
         $post['user_reaction'] = null;
+        $post += $this->freshContentFlags();
 
         $this->notifyLessonDiscussion(
             $r,
@@ -2353,6 +2475,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx     = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         $body    = $this->request->getJSON(true) ?? [];
         $comment = trim($this->request->getPost('comment') ?? ($body['comment'] ?? ''));
         if ($comment === '') {
@@ -2383,6 +2508,7 @@ class ClassroomController extends Controller
         $row['dislike_count'] = 0;
         $row['user_reaction'] = null;
         $row['replies']       = [];
+        $row += $this->freshContentFlags();
 
         $this->notifyLessonDiscussion(
             $r,
@@ -2449,6 +2575,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx   = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         $body  = $this->request->getJSON(true) ?? [];
         $reply = trim($this->request->getPost('reply') ?? ($body['reply'] ?? ''));
         if ($reply === '') {
@@ -2480,6 +2609,7 @@ class ClassroomController extends Controller
         $row['dislike_count']       = 0;
         $row['user_reaction']       = null;
         $row['replies']             = [];
+        $row += $this->freshContentFlags();
 
         $this->notifyLessonDiscussion(
             $r,
@@ -2503,6 +2633,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx   = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         $body  = $this->request->getJSON(true) ?? [];
         $reply = trim($this->request->getPost('reply') ?? ($body['reply'] ?? ''));
         if ($reply === '') {
@@ -2538,6 +2671,7 @@ class ClassroomController extends Controller
         $row['dislike_count']      = 0;
         $row['user_reaction']      = null;
         $row['replies']            = [];
+        $row += $this->freshContentFlags();
 
         $this->notifyLessonDiscussion(
             $r,
@@ -2680,6 +2814,9 @@ class ClassroomController extends Controller
         }
         $ctx = $r['ctx'];
 
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         if (!$this->canPostToClassroomDiscussion($ctx, $classId)) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
         }
@@ -2760,6 +2897,7 @@ class ClassroomController extends Controller
         $post['like_count']    = 0;
         $post['dislike_count'] = 0;
         $post['user_reaction'] = null;
+        $post += $this->freshContentFlags();
 
         return $this->response->setJSON(['success' => true, 'post' => $post]);
     }
@@ -2808,6 +2946,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         if (!$this->canPostToClassroomDiscussion($ctx, $r['classId'])) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
         }
@@ -2852,6 +2993,7 @@ class ClassroomController extends Controller
         $row['dislike_count'] = 0;
         $row['user_reaction'] = null;
         $row['replies']       = [];
+        $row += $this->freshContentFlags();
 
         return $this->response->setJSON(['success' => true, 'comment' => $row]);
     }
@@ -2900,6 +3042,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         if (!$this->canPostToClassroomDiscussion($ctx, $r['classId'])) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
         }
@@ -2945,6 +3090,7 @@ class ClassroomController extends Controller
         $row['dislike_count']      = 0;
         $row['user_reaction']      = null;
         $row['replies']            = [];
+        $row += $this->freshContentFlags();
 
         return $this->response->setJSON(['success' => true, 'reply' => $row]);
     }
@@ -2960,6 +3106,9 @@ class ClassroomController extends Controller
             return $this->errorResponse($r);
         }
         $ctx = $r['ctx'];
+        if ($this->isPostingSuspended($ctx['myId'])) {
+            return $this->postingSuspendedResponse();
+        }
         if (!$this->canPostToClassroomDiscussion($ctx, $r['classId'])) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
         }
@@ -3009,6 +3158,7 @@ class ClassroomController extends Controller
         $row['dislike_count']      = 0;
         $row['user_reaction']      = null;
         $row['replies']            = [];
+        $row += $this->freshContentFlags();
 
         return $this->response->setJSON(['success' => true, 'reply' => $row]);
     }
@@ -3045,5 +3195,620 @@ class ClassroomController extends Controller
         ], $this->classDiscussionModel->getReplyReactions($replyId));
 
         return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
+    }
+
+    // ================================================================
+    // DISCUSSION MODERATION — edit/delete, report, review (class + lesson)
+    // ================================================================
+
+    private function validateReportReason(string $reason): ?string
+    {
+        $reason = trim($reason);
+        if ($reason === '') {
+            return 'Please describe the reason for this report.';
+        }
+        $wordCount = count(preg_split('/\s+/', $reason, -1, PREG_SPLIT_NO_EMPTY));
+        if ($wordCount > 250) {
+            return 'Report description must be 250 words or fewer.';
+        }
+        return null;
+    }
+
+    /** Dispatches a (content_type, content_id) pair to the matching view-access resolver. */
+    private function resolveContentViewAccess(string $contentType, int $contentId): array
+    {
+        switch ($contentType) {
+            case DiscussionReportModel::TYPE_CLASS_POST:
+                return $this->resolveClassDiscussionPostAccess($contentId);
+            case DiscussionReportModel::TYPE_CLASS_COMMENT:
+                return $this->resolveClassDiscussionCommentAccess($contentId);
+            case DiscussionReportModel::TYPE_CLASS_REPLY:
+                return $this->resolveClassDiscussionReplyAccess($contentId);
+            case DiscussionReportModel::TYPE_LESSON_POST:
+                return $this->resolveDiscussionAccess($contentId);
+            case DiscussionReportModel::TYPE_LESSON_COMMENT:
+                return $this->resolveCommentAccess($contentId);
+            case DiscussionReportModel::TYPE_LESSON_REPLY:
+                return $this->resolveReplyAccess($contentId);
+            default:
+                return ['error' => ['status' => 400, 'message' => 'Unknown content type.']];
+        }
+    }
+
+    /** Applies a moderator "delete reported item" decision to the actual content row. */
+    private function applyModerationRemoval(string $contentType, int $contentId): void
+    {
+        switch ($contentType) {
+            case DiscussionReportModel::TYPE_CLASS_POST:
+                $this->classDiscussionModel->moderateRemovePost($contentId);
+                break;
+            case DiscussionReportModel::TYPE_CLASS_COMMENT:
+                $this->classDiscussionModel->moderateRemoveComment($contentId);
+                break;
+            case DiscussionReportModel::TYPE_CLASS_REPLY:
+                $this->classDiscussionModel->moderateRemoveReply($contentId);
+                break;
+            case DiscussionReportModel::TYPE_LESSON_POST:
+                $this->lessonDiscussionModel->moderateRemovePost($contentId);
+                break;
+            case DiscussionReportModel::TYPE_LESSON_COMMENT:
+                $this->lessonDiscussionModel->moderateRemoveComment($contentId);
+                break;
+            case DiscussionReportModel::TYPE_LESSON_REPLY:
+                $this->lessonDiscussionModel->moderateRemoveReply($contentId);
+                break;
+        }
+    }
+
+    private function isModerationDeleteCode(string $contentType): string
+    {
+        return str_starts_with($contentType, 'lesson_') ? '_delete_lesson_discussion' : '_delete_class_discussion';
+    }
+
+    private function isModerationReportCode(string $contentType): string
+    {
+        return str_starts_with($contentType, 'lesson_') ? '_report_lesson_discussion' : '_report_class_discussion';
+    }
+
+    // ---------------- Class discussion: edit/delete ----------------
+
+    /** PUT /api/classroom/discussion/{postId}/edit — body: message */
+    public function classDiscussionEdit(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->classDiscussionModel->getPostAuthor($postId);
+        $isMine   = $authorId === $ctx['myId'];
+        if (!$isMine && !$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], '_edit_class_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot edit this post.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $message = trim((string) ($body['message'] ?? ''));
+        if ($message === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Post message cannot be empty.']);
+        }
+
+        $this->classDiscussionModel->editPost($postId, $message);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** DELETE /api/classroom/discussion/{postId} */
+    public function classDiscussionDelete(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->classDiscussionModel->getPostAuthor($postId);
+        if ($authorId !== $ctx['myId'] && !$ctx['isSuperAdmin']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot delete this post.']);
+        }
+
+        $this->classDiscussionModel->selfDeletePost($postId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /** PUT /api/classroom/discussion/comment/{commentId}/edit — body: message */
+    public function classDiscussionCommentEdit(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->classDiscussionModel->getCommentAuthor($commentId);
+        $isMine   = $authorId === $ctx['myId'];
+        if (!$isMine && !$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], '_edit_class_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot edit this comment.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $message = trim((string) ($body['message'] ?? ''));
+        if ($message === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Comment cannot be empty.']);
+        }
+
+        $this->classDiscussionModel->editComment($commentId, $message);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** DELETE /api/classroom/discussion/comment/{commentId} */
+    public function classDiscussionCommentDelete(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->classDiscussionModel->getCommentAuthor($commentId);
+        if ($authorId !== $ctx['myId'] && !$ctx['isSuperAdmin']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot delete this comment.']);
+        }
+
+        $this->classDiscussionModel->selfDeleteComment($commentId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /** PUT /api/classroom/discussion/reply/{replyId}/edit — body: message */
+    public function classDiscussionReplyEdit(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->classDiscussionModel->getReplyAuthor($replyId);
+        $isMine   = $authorId === $ctx['myId'];
+        if (!$isMine && !$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], '_edit_class_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot edit this reply.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $message = trim((string) ($body['message'] ?? ''));
+        if ($message === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Reply cannot be empty.']);
+        }
+
+        $this->classDiscussionModel->editReply($replyId, $message);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** DELETE /api/classroom/discussion/reply/{replyId} */
+    public function classDiscussionReplyDelete(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->classDiscussionModel->getReplyAuthor($replyId);
+        if ($authorId !== $ctx['myId'] && !$ctx['isSuperAdmin']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot delete this reply.']);
+        }
+
+        $this->classDiscussionModel->selfDeleteReply($replyId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    // ---------------- Lesson discussion: edit/delete ----------------
+
+    /** PUT /api/classroom/lesson/discussion/{discussionId}/edit — body: message */
+    public function lessonDiscussionEdit(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->lessonDiscussionModel->getPostAuthor($discussionId);
+        $isMine   = $authorId === $ctx['myId'];
+        if (!$isMine && !$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], '_edit_lesson_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot edit this post.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $message = trim((string) ($body['message'] ?? ''));
+        if ($message === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Post message cannot be empty.']);
+        }
+
+        $this->lessonDiscussionModel->editPost($discussionId, $message);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** DELETE /api/classroom/lesson/discussion/{discussionId} */
+    public function lessonDiscussionDelete(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->lessonDiscussionModel->getPostAuthor($discussionId);
+        if ($authorId !== $ctx['myId'] && !$ctx['isSuperAdmin']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot delete this post.']);
+        }
+
+        $this->lessonDiscussionModel->selfDeletePost($discussionId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /** PUT /api/classroom/lesson/discussion/comment/{commentId}/edit — body: message */
+    public function lessonDiscussionCommentEdit(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->lessonDiscussionModel->getCommentAuthor($commentId);
+        $isMine   = $authorId === $ctx['myId'];
+        if (!$isMine && !$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], '_edit_lesson_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot edit this comment.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $message = trim((string) ($body['message'] ?? ''));
+        if ($message === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Comment cannot be empty.']);
+        }
+
+        $this->lessonDiscussionModel->editComment($commentId, $message);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** DELETE /api/classroom/lesson/discussion/comment/{commentId} */
+    public function lessonDiscussionCommentDelete(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->lessonDiscussionModel->getCommentAuthor($commentId);
+        if ($authorId !== $ctx['myId'] && !$ctx['isSuperAdmin']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot delete this comment.']);
+        }
+
+        $this->lessonDiscussionModel->selfDeleteComment($commentId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /** PUT /api/classroom/lesson/discussion/reply/{replyId}/edit — body: message */
+    public function lessonDiscussionReplyEdit(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->lessonDiscussionModel->getReplyAuthor($replyId);
+        $isMine   = $authorId === $ctx['myId'];
+        if (!$isMine && !$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], '_edit_lesson_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot edit this reply.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $message = trim((string) ($body['message'] ?? ''));
+        if ($message === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Reply cannot be empty.']);
+        }
+
+        $this->lessonDiscussionModel->editReply($replyId, $message);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    /** DELETE /api/classroom/lesson/discussion/reply/{replyId} */
+    public function lessonDiscussionReplyDelete(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx      = $r['ctx'];
+        $authorId = $this->lessonDiscussionModel->getReplyAuthor($replyId);
+        if ($authorId !== $ctx['myId'] && !$ctx['isSuperAdmin']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot delete this reply.']);
+        }
+
+        $this->lessonDiscussionModel->selfDeleteReply($replyId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    // ---------------- Report submission (class + lesson; post/comment/reply) ----------------
+
+    private function submitContentReport(array $r, string $contentType, int $contentId, int $authorId): mixed
+    {
+        $ctx    = $r['ctx'];
+        $body   = $this->request->getJSON(true) ?? [];
+        $reason = trim((string) ($body['description'] ?? ($body['reason'] ?? '')));
+        $error  = $this->validateReportReason($reason);
+        if ($error !== null) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => $error]);
+        }
+
+        $this->discussionReportModel->ensureTables();
+        $report = $this->discussionReportModel->submitReport($contentType, $contentId, $authorId, $ctx['myId'], $reason);
+
+        return $this->response->setJSON(['success' => true, 'report' => $report]);
+    }
+
+    /** POST /api/classroom/discussion/{postId}/report — body: description (max 250 words) */
+    public function classDiscussionReport(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $authorId = $this->classDiscussionModel->getPostAuthor($postId);
+        return $this->submitContentReport($r, DiscussionReportModel::TYPE_CLASS_POST, $postId, (int) $authorId);
+    }
+
+    /** POST /api/classroom/discussion/comment/{commentId}/report — body: description (max 250 words) */
+    public function classDiscussionCommentReport(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $authorId = $this->classDiscussionModel->getCommentAuthor($commentId);
+        return $this->submitContentReport($r, DiscussionReportModel::TYPE_CLASS_COMMENT, $commentId, (int) $authorId);
+    }
+
+    /** POST /api/classroom/discussion/reply/{replyId}/report — body: description (max 250 words) */
+    public function classDiscussionReplyReport(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $authorId = $this->classDiscussionModel->getReplyAuthor($replyId);
+        return $this->submitContentReport($r, DiscussionReportModel::TYPE_CLASS_REPLY, $replyId, (int) $authorId);
+    }
+
+    /** POST /api/classroom/lesson/discussion/{discussionId}/report — body: description (max 250 words) */
+    public function lessonDiscussionReport(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $authorId = $this->lessonDiscussionModel->getPostAuthor($discussionId);
+        return $this->submitContentReport($r, DiscussionReportModel::TYPE_LESSON_POST, $discussionId, (int) $authorId);
+    }
+
+    /** POST /api/classroom/lesson/discussion/comment/{commentId}/report — body: description (max 250 words) */
+    public function lessonDiscussionCommentReport(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $authorId = $this->lessonDiscussionModel->getCommentAuthor($commentId);
+        return $this->submitContentReport($r, DiscussionReportModel::TYPE_LESSON_COMMENT, $commentId, (int) $authorId);
+    }
+
+    /** POST /api/classroom/lesson/discussion/reply/{replyId}/report — body: description (max 250 words) */
+    public function lessonDiscussionReplyReport(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $authorId = $this->lessonDiscussionModel->getReplyAuthor($replyId);
+        return $this->submitContentReport($r, DiscussionReportModel::TYPE_LESSON_REPLY, $replyId, (int) $authorId);
+    }
+
+    // ---------------- Report listing (class + lesson; post/comment/reply) ----------------
+
+    private function listContentReports(array $r, string $contentType, int $contentId)
+    {
+        $this->discussionReportModel->ensureTables();
+        return $this->response->setJSON([
+            'success' => true,
+            'reports' => $this->discussionReportModel->getReportsForContent($contentType, $contentId, $r['ctx']['myId']),
+        ]);
+    }
+
+    /** GET /api/classroom/discussion/{postId}/reports */
+    public function classDiscussionReports(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        return $this->listContentReports($r, DiscussionReportModel::TYPE_CLASS_POST, $postId);
+    }
+
+    /** GET /api/classroom/discussion/comment/{commentId}/reports */
+    public function classDiscussionCommentReports(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        return $this->listContentReports($r, DiscussionReportModel::TYPE_CLASS_COMMENT, $commentId);
+    }
+
+    /** GET /api/classroom/discussion/reply/{replyId}/reports */
+    public function classDiscussionReplyReports(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        return $this->listContentReports($r, DiscussionReportModel::TYPE_CLASS_REPLY, $replyId);
+    }
+
+    /** GET /api/classroom/lesson/discussion/{discussionId}/reports */
+    public function lessonDiscussionReports(int $discussionId)
+    {
+        $r = $this->resolveDiscussionAccess($discussionId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        return $this->listContentReports($r, DiscussionReportModel::TYPE_LESSON_POST, $discussionId);
+    }
+
+    /** GET /api/classroom/lesson/discussion/comment/{commentId}/reports */
+    public function lessonDiscussionCommentReports(int $commentId)
+    {
+        $r = $this->resolveCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        return $this->listContentReports($r, DiscussionReportModel::TYPE_LESSON_COMMENT, $commentId);
+    }
+
+    /** GET /api/classroom/lesson/discussion/reply/{replyId}/reports */
+    public function lessonDiscussionReplyReports(int $replyId)
+    {
+        $r = $this->resolveReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        return $this->listContentReports($r, DiscussionReportModel::TYPE_LESSON_REPLY, $replyId);
+    }
+
+    // ---------------- Shared moderation: queue / vote / decision / history / suspend ----------------
+
+    /** GET /api/classroom/{classId}/discussion/reports — pending moderation queue for this classroom */
+    public function discussionModerationQueue(int $classId)
+    {
+        $r = $this->resolveClassDiscussionAccess($classId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+        if (!$ctx['isSuperAdmin']
+            && !$this->grantAccess($ctx['roleId'], '_report_class_discussion')
+            && !$this->grantAccess($ctx['roleId'], '_report_lesson_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $this->discussionReportModel->ensureTables();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'reports' => $this->discussionReportModel->queuePendingForClassroom($classId),
+        ]);
+    }
+
+    /** POST /api/classroom/discussion/report/{reportId}/vote — body: {type: support|oppose} */
+    public function discussionReportVote(int $reportId)
+    {
+        $this->discussionReportModel->ensureTables();
+        $report = $this->discussionReportModel->getReport($reportId);
+        if (!$report) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Report not found.']);
+        }
+
+        $r = $this->resolveContentViewAccess($report['content_type'], (int) $report['content_id']);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+
+        $body = $this->request->getJSON(true) ?? [];
+        $type = ($body['type'] ?? 'support') === 'oppose' ? 'oppose' : 'support';
+
+        $result = $this->discussionReportModel->vote($reportId, $r['ctx']['myId'], $type);
+
+        return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /** POST /api/classroom/discussion/report/{reportId}/decision — body: {decision: delete|dismiss} */
+    public function discussionReportDecision(int $reportId)
+    {
+        $this->discussionReportModel->ensureTables();
+        $report = $this->discussionReportModel->getReport($reportId);
+        if (!$report) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Report not found.']);
+        }
+
+        $r = $this->resolveContentViewAccess($report['content_type'], (int) $report['content_id']);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        $body     = $this->request->getJSON(true) ?? [];
+        $decision = ($body['decision'] ?? '') === 'delete' ? 'delete' : 'dismiss';
+
+        $requiredCode = $decision === 'delete'
+            ? $this->isModerationDeleteCode($report['content_type'])
+            : $this->isModerationReportCode($report['content_type']);
+        if (!$ctx['isSuperAdmin'] && !$this->grantAccess($ctx['roleId'], $requiredCode)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to review reports.']);
+        }
+
+        $resolved = $this->discussionReportModel->decide($reportId, $ctx['myId'], $decision);
+        if ($resolved === null) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Report not found.']);
+        }
+
+        if ($decision === 'delete') {
+            $this->applyModerationRemoval($report['content_type'], (int) $report['content_id']);
+        }
+
+        return $this->response->setJSON(['success' => true, 'decision' => $decision]);
+    }
+
+    /** GET /api/classroom/discussion/user/{userId}/report-history — moderator-gated */
+    public function discussionUserReportHistory(int $userId)
+    {
+        $ctx = $this->context();
+        if (!$ctx['isSuperAdmin']
+            && !$this->grantAccess($ctx['roleId'], '_report_class_discussion')
+            && !$this->grantAccess($ctx['roleId'], '_report_lesson_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $this->discussionReportModel->ensureTables();
+        $history = $this->discussionReportModel->reportHistoryForUser($userId);
+
+        $user = \Config\Database::connect()->table('users')
+            ->select('discussion_posting_status')->where('user_id', $userId)->get()->getRowArray();
+
+        return $this->response->setJSON([
+            'success' => true,
+            'history' => $history,
+            'posting_status' => $user['discussion_posting_status'] ?? 'Active',
+        ]);
+    }
+
+    /** POST /api/classroom/discussion/user/{userId}/suspend — body: {suspended: bool} */
+    public function discussionUserSuspend(int $userId)
+    {
+        $ctx = $this->context();
+        if (!$ctx['isSuperAdmin']
+            && !$this->grantAccess($ctx['roleId'], '_delete_class_discussion')
+            && !$this->grantAccess($ctx['roleId'], '_delete_lesson_discussion')) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to suspend a user.']);
+        }
+
+        $body      = $this->request->getJSON(true) ?? [];
+        $suspended = (bool) ($body['suspended'] ?? false);
+
+        \Config\Database::connect()->table('users')->where('user_id', $userId)
+            ->update(['discussion_posting_status' => $suspended ? 'Suspended' : 'Active']);
+
+        return $this->response->setJSON(['success' => true, 'posting_status' => $suspended ? 'Suspended' : 'Active']);
     }
 }

@@ -19,6 +19,10 @@ class LessonDiscussionModel extends Model
         $db  = \Config\Database::connect();
         $forge = \Config\Database::forge();
 
+        if ($db->tableExists('lesson_discussion') && !$db->fieldExists('edited_at', 'lesson_discussion')) {
+            $db->query("ALTER TABLE lesson_discussion ADD COLUMN edited_at DATETIME NULL");
+        }
+
         if (!$db->tableExists('lesson_discussion_like')) {
             $forge->addField([
                 'like_id'          => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
@@ -39,9 +43,12 @@ class LessonDiscussionModel extends Model
                 'comment'          => ['type' => 'LONGTEXT', 'null' => false],
                 'created_at'       => ['type' => 'DATETIME', 'null' => true],
                 'comment_status'   => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
+                'edited_at'        => ['type' => 'DATETIME', 'null' => true],
             ]);
             $forge->addPrimaryKey('comment_id');
             $forge->createTable('lesson_discussion_comment', true);
+        } elseif (!$db->fieldExists('edited_at', 'lesson_discussion_comment')) {
+            $db->query("ALTER TABLE lesson_discussion_comment ADD COLUMN edited_at DATETIME NULL");
         }
 
         if (!$db->tableExists('lesson_discussion_comment_like')) {
@@ -78,11 +85,17 @@ class LessonDiscussionModel extends Model
                 'reply'              => ['type' => 'LONGTEXT', 'null' => false],
                 'created_at'         => ['type' => 'DATETIME', 'null' => true],
                 'reply_status'       => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
+                'edited_at'          => ['type' => 'DATETIME', 'null' => true],
             ]);
             $forge->addPrimaryKey('reply_id');
             $forge->createTable('lesson_discussion_comment_reply', true);
-        } elseif (!$db->fieldExists('parent_reply_id_fk', 'lesson_discussion_comment_reply')) {
-            $db->query("ALTER TABLE lesson_discussion_comment_reply ADD COLUMN parent_reply_id_fk INT NULL AFTER comment_id_fk");
+        } else {
+            if (!$db->fieldExists('parent_reply_id_fk', 'lesson_discussion_comment_reply')) {
+                $db->query("ALTER TABLE lesson_discussion_comment_reply ADD COLUMN parent_reply_id_fk INT NULL AFTER comment_id_fk");
+            }
+            if (!$db->fieldExists('edited_at', 'lesson_discussion_comment_reply')) {
+                $db->query("ALTER TABLE lesson_discussion_comment_reply ADD COLUMN edited_at DATETIME NULL");
+            }
         }
 
         if (!$db->tableExists('lesson_discussion_comment_reply_like')) {
@@ -106,9 +119,16 @@ class LessonDiscussionModel extends Model
                 ld.lesson_discussion_id,
                 ld.message,
                 ld.created_at,
+                ld.message_status,
+                ld.edited_at,
                 ld.author AS author_id,
                 CONCAT(u.fname, ' ', u.lname) AS author_name,
                 u.profile_photo AS author_photo,
+                (SELECT rc_p.role_cat_name FROM user_role ur_p
+                 INNER JOIN role ro_p ON ro_p.role_id = ur_p.role_id_fk
+                 INNER JOIN role_category rc_p ON rc_p.role_cat_id = ro_p.role_cat_id_fk
+                 WHERE ur_p.user_id_fk = ld.author AND ur_p.user_role_status = 'Active'
+                 LIMIT 1) AS author_role_cat_name,
                 (SELECT COUNT(*) FROM lesson_discussion_comment ldc
                  WHERE ldc.discussion_id_fk = ld.lesson_discussion_id AND ldc.comment_status = 'Active') AS comment_count,
                 (SELECT COUNT(*) FROM lesson_discussion_like ldl
@@ -120,7 +140,7 @@ class LessonDiscussionModel extends Model
                  LIMIT 1) AS user_reaction
             FROM lesson_discussion ld
             INNER JOIN users u ON u.user_id = ld.author
-            WHERE ld.lesson_id_fk = ? AND ld.message_status = 1
+            WHERE ld.lesson_id_fk = ? AND ld.message_status IN (1, 2)
             ORDER BY ld.created_at DESC
         ", [$userId, $lessonId])->getResultArray();
 
@@ -130,7 +150,7 @@ class LessonDiscussionModel extends Model
             $row['comment_count']        = (int) $row['comment_count'];
             $row['like_count']           = (int) $row['like_count'];
             $row['dislike_count']        = (int) $row['dislike_count'];
-            $row['photos']   = $this->getPhotos($row['lesson_discussion_id']);
+            $row['photos']   = (int) $row['message_status'] === 2 ? [] : $this->getPhotos($row['lesson_discussion_id']);
             $row['comments'] = $this->getComments($row['lesson_discussion_id'], $userId);
         }
         return $rows;
@@ -153,9 +173,16 @@ class LessonDiscussionModel extends Model
                 ldc.comment_id,
                 ldc.comment,
                 ldc.created_at,
+                ldc.comment_status,
+                ldc.edited_at,
                 ldc.author AS author_id,
                 CONCAT(u.fname, ' ', u.lname) AS author_name,
                 u.profile_photo AS author_photo,
+                (SELECT rc_c.role_cat_name FROM user_role ur_c
+                 INNER JOIN role ro_c ON ro_c.role_id = ur_c.role_id_fk
+                 INNER JOIN role_category rc_c ON rc_c.role_cat_id = ro_c.role_cat_id_fk
+                 WHERE ur_c.user_id_fk = ldc.author AND ur_c.user_role_status = 'Active'
+                 LIMIT 1) AS author_role_cat_name,
                 (SELECT COUNT(*) FROM lesson_discussion_comment_like cl
                  WHERE cl.comment_id_fk = ldc.comment_id AND cl.like_type = 'like') AS like_count,
                 (SELECT COUNT(*) FROM lesson_discussion_comment_like cl
@@ -164,7 +191,7 @@ class LessonDiscussionModel extends Model
                  WHERE cl2.comment_id_fk = ldc.comment_id AND cl2.user_id_fk = ? LIMIT 1) AS user_reaction
             FROM lesson_discussion_comment ldc
             INNER JOIN users u ON u.user_id = ldc.author
-            WHERE ldc.discussion_id_fk = ? AND ldc.comment_status = 'Active'
+            WHERE ldc.discussion_id_fk = ? AND ldc.comment_status IN ('Active', 'Removed')
             ORDER BY ldc.created_at ASC
         ", [$userId, $discussionId])->getResultArray();
 
@@ -191,9 +218,16 @@ class LessonDiscussionModel extends Model
                 r.parent_reply_id_fk,
                 r.reply,
                 r.created_at,
+                r.reply_status,
+                r.edited_at,
                 r.author AS author_id,
                 CONCAT(u.fname, ' ', u.lname) AS author_name,
                 u.profile_photo AS author_photo,
+                (SELECT rc_r.role_cat_name FROM user_role ur_r
+                 INNER JOIN role ro_r ON ro_r.role_id = ur_r.role_id_fk
+                 INNER JOIN role_category rc_r ON rc_r.role_cat_id = ro_r.role_cat_id_fk
+                 WHERE ur_r.user_id_fk = r.author AND ur_r.user_role_status = 'Active'
+                 LIMIT 1) AS author_role_cat_name,
                 (SELECT COUNT(*) FROM lesson_discussion_comment_reply_like rl
                  WHERE rl.reply_id_fk = r.reply_id AND rl.like_type = 'like') AS like_count,
                 (SELECT COUNT(*) FROM lesson_discussion_comment_reply_like rl
@@ -202,7 +236,7 @@ class LessonDiscussionModel extends Model
                  WHERE rl2.reply_id_fk = r.reply_id AND rl2.user_id_fk = ? LIMIT 1) AS user_reaction
             FROM lesson_discussion_comment_reply r
             INNER JOIN users u ON u.user_id = r.author
-            WHERE r.comment_id_fk = ? AND r.reply_status = 'Active'
+            WHERE r.comment_id_fk = ? AND r.reply_status IN ('Active', 'Removed')
             ORDER BY r.created_at ASC
         ", [$userId, $commentId])->getResultArray();
 
@@ -366,5 +400,71 @@ class LessonDiscussionModel extends Model
             ->where('discussion_id_fk', $discussionId)->where('like_type', 'dislike')->countAllResults();
 
         return ['reaction' => $reaction, 'likes' => $likes, 'dislikes' => $dislikes];
+    }
+
+    public function getPostAuthor(int $discussionId): ?int
+    {
+        $row = \Config\Database::connect()->table('lesson_discussion')->select('author')->where('lesson_discussion_id', $discussionId)->get()->getRowArray();
+        return $row ? (int) $row['author'] : null;
+    }
+
+    public function getCommentAuthor(int $commentId): ?int
+    {
+        $row = \Config\Database::connect()->table('lesson_discussion_comment')->select('author')->where('comment_id', $commentId)->get()->getRowArray();
+        return $row ? (int) $row['author'] : null;
+    }
+
+    public function getReplyAuthor(int $replyId): ?int
+    {
+        $row = \Config\Database::connect()->table('lesson_discussion_comment_reply')->select('author')->where('reply_id', $replyId)->get()->getRowArray();
+        return $row ? (int) $row['author'] : null;
+    }
+
+    public function editPost(int $discussionId, string $message): void
+    {
+        \Config\Database::connect()->table('lesson_discussion')->where('lesson_discussion_id', $discussionId)
+            ->update(['message' => $message, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function selfDeletePost(int $discussionId): void
+    {
+        \Config\Database::connect()->table('lesson_discussion')->where('lesson_discussion_id', $discussionId)->update(['message_status' => 0]);
+    }
+
+    public function moderateRemovePost(int $discussionId): void
+    {
+        \Config\Database::connect()->table('lesson_discussion')->where('lesson_discussion_id', $discussionId)->update(['message_status' => 2]);
+    }
+
+    public function editComment(int $commentId, string $comment): void
+    {
+        \Config\Database::connect()->table('lesson_discussion_comment')->where('comment_id', $commentId)
+            ->update(['comment' => $comment, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function selfDeleteComment(int $commentId): void
+    {
+        \Config\Database::connect()->table('lesson_discussion_comment')->where('comment_id', $commentId)->update(['comment_status' => 'Deleted']);
+    }
+
+    public function moderateRemoveComment(int $commentId): void
+    {
+        \Config\Database::connect()->table('lesson_discussion_comment')->where('comment_id', $commentId)->update(['comment_status' => 'Removed']);
+    }
+
+    public function editReply(int $replyId, string $reply): void
+    {
+        \Config\Database::connect()->table('lesson_discussion_comment_reply')->where('reply_id', $replyId)
+            ->update(['reply' => $reply, 'edited_at' => date('Y-m-d H:i:s')]);
+    }
+
+    public function selfDeleteReply(int $replyId): void
+    {
+        \Config\Database::connect()->table('lesson_discussion_comment_reply')->where('reply_id', $replyId)->update(['reply_status' => 'Deleted']);
+    }
+
+    public function moderateRemoveReply(int $replyId): void
+    {
+        \Config\Database::connect()->table('lesson_discussion_comment_reply')->where('reply_id', $replyId)->update(['reply_status' => 'Removed']);
     }
 }
