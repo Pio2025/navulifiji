@@ -759,6 +759,16 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->get('classroom/(:num)/attendance/subject','Api\ClassroomController::attendanceSubject/$1');
         $routes->get('classroom/(:num)/exam',      'Api\ClassroomController::exam/$1');
         $routes->get('classroom/(:num)/discussion','Api\ClassroomController::discussion/$1');
+        $routes->post('classroom/(:num)/discussion',                    'Api\ClassroomController::classDiscussionPost/$1');
+        $routes->post('classroom/discussion/(:num)/like',                'Api\ClassroomController::classDiscussionLike/$1');
+        $routes->get('classroom/discussion/(:num)/reactions',            'Api\ClassroomController::classDiscussionReactions/$1');
+        $routes->post('classroom/discussion/(:num)/comment',              'Api\ClassroomController::classDiscussionComment/$1');
+        $routes->post('classroom/discussion/comment/(:num)/like',         'Api\ClassroomController::classDiscussionCommentLike/$1');
+        $routes->get('classroom/discussion/comment/(:num)/reactions',     'Api\ClassroomController::classDiscussionCommentReactions/$1');
+        $routes->post('classroom/discussion/comment/(:num)/reply',        'Api\ClassroomController::classDiscussionCommentReply/$1');
+        $routes->post('classroom/discussion/reply/(:num)/like',           'Api\ClassroomController::classDiscussionReplyLike/$1');
+        $routes->get('classroom/discussion/reply/(:num)/reactions',       'Api\ClassroomController::classDiscussionReplyReactions/$1');
+        $routes->post('classroom/discussion/reply/(:num)/reply',          'Api\ClassroomController::classDiscussionReplyReply/$1');
         $routes->get('classroom/subject/(:num)/dashboard',   'Api\ClassroomController::subjectDashboard/$1');
         $routes->get('classroom/subject/(:num)/lessons',     'Api\ClassroomController::subjectLessons/$1');
         $routes->get('classroom/subject/(:num)/lessons/calendar', 'Api\ClassroomController::subjectLessonsCalendar/$1');

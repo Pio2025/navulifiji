@@ -81,15 +81,18 @@ class ClassDiscussionModel extends Model
 
         if (!$db->tableExists('class_discussion_comment_reply')) {
             $forge->addField([
-                'cdcr_id'      => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
-                'cdc_id_fk'    => ['type' => 'INT', 'null' => false],
-                'author'       => ['type' => 'INT', 'null' => false],
-                'reply'        => ['type' => 'LONGTEXT', 'null' => false],
-                'created_at'   => ['type' => 'DATETIME', 'null' => true],
-                'reply_status' => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
+                'cdcr_id'            => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+                'cdc_id_fk'          => ['type' => 'INT', 'null' => false],
+                'parent_reply_id_fk' => ['type' => 'INT', 'null' => true],
+                'author'             => ['type' => 'INT', 'null' => false],
+                'reply'              => ['type' => 'LONGTEXT', 'null' => false],
+                'created_at'         => ['type' => 'DATETIME', 'null' => true],
+                'reply_status'       => ['type' => 'VARCHAR', 'constraint' => 20, 'default' => 'Active'],
             ]);
             $forge->addPrimaryKey('cdcr_id');
             $forge->createTable('class_discussion_comment_reply', true);
+        } elseif (!$db->fieldExists('parent_reply_id_fk', 'class_discussion_comment_reply')) {
+            $db->query("ALTER TABLE class_discussion_comment_reply ADD COLUMN parent_reply_id_fk INT NULL AFTER cdc_id_fk");
         }
 
         if (!$db->tableExists('class_discussion_comment_reply_like')) {
@@ -196,11 +199,17 @@ class ClassDiscussionModel extends Model
         return $rows;
     }
 
+    /**
+     * Returns replies for a comment as a nested tree: top-level replies (direct
+     * replies to the comment) each carry a 'replies' array of replies-to-that-reply,
+     * recursively, so the mobile app can render an unlimited-depth reply thread.
+     */
     public function getReplies(int $cdcId, int $userId = 0): array
     {
-        return \Config\Database::connect()->query("
+        $rows = \Config\Database::connect()->query("
             SELECT
                 r.cdcr_id,
+                r.parent_reply_id_fk,
                 r.reply,
                 r.created_at,
                 r.author AS author_id,
@@ -227,6 +236,27 @@ class ClassDiscussionModel extends Model
             WHERE r.cdc_id_fk = ? AND r.reply_status = 'Active'
             ORDER BY r.created_at ASC
         ", [$userId, $cdcId])->getResultArray();
+
+        $byId = [];
+        foreach ($rows as &$row) {
+            $row['parent_reply_id_fk'] = $row['parent_reply_id_fk'] !== null ? (int) $row['parent_reply_id_fk'] : null;
+            $row['replies']            = [];
+            $byId[$row['cdcr_id']]      = &$row;
+        }
+        unset($row);
+
+        $tree = [];
+        foreach ($byId as &$row) {
+            $parentId = $row['parent_reply_id_fk'];
+            if ($parentId !== null && isset($byId[$parentId])) {
+                $byId[$parentId]['replies'][] = &$row;
+            } else {
+                $tree[] = &$row;
+            }
+        }
+        unset($row);
+
+        return $tree;
     }
 
     public function togglePostLike(int $cdId, int $userId, string $type): array

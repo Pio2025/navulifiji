@@ -1257,10 +1257,52 @@ class ClassroomController extends Controller
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this classroom.']);
         }
 
+        $this->classDiscussionModel->ensureTables();
+
         return $this->response->setJSON([
             'success' => true,
+            'canPost' => $this->canPostToClassroomDiscussion($ctx, $id),
             'posts'   => $this->classDiscussionModel->getPosts($id, $ctx['myId']),
         ]);
+    }
+
+    /**
+     * Whether the caller may post/comment/reply in a classroom's discussion: actively
+     * enrolled students, classroom-role holders (e.g. class teacher), active subject
+     * teachers for the class, super admins, or a parent with a child actively enrolled
+     * in this (active) classroom. Mirrors the web app's userCanPostDiscussion()
+     * (ClassroomController.php:5949-5998).
+     */
+    private function canPostToClassroomDiscussion(array $ctx, int $classId): bool
+    {
+        if ($ctx['isSuperAdmin']) {
+            return true;
+        }
+
+        $db = \Config\Database::connect();
+
+        if ($db->table('classroom_student')
+            ->where('class_id_fk', $classId)->where('user_id_fk', $ctx['myId'])
+            ->where('class_stud_status', 'Active')->countAllResults() > 0) {
+            return true;
+        }
+
+        if ($db->table('classroom_role')
+            ->where('class_id_fk', $classId)->where('user_id_fk', $ctx['myId'])
+            ->where('cs_status', 'Active')->countAllResults() > 0) {
+            return true;
+        }
+
+        $subjectTeacherCount = $db->query("
+            SELECT COUNT(*) AS c FROM classroom_subject_teacher cst
+            INNER JOIN classroom_subject cs ON cs.class_sub_id = cst.class_sub_id_fk
+            WHERE cs.class_id_fk = ? AND cst.user_id_fk = ? AND cst.class_sub_teacher_status = 'Active'
+        ", [$classId, $ctx['myId']])->getRowArray()['c'];
+        if ((int) $subjectTeacherCount > 0) {
+            return true;
+        }
+
+        return $this->childLinkedToClassroom($ctx, $classId);
     }
 
     /**
@@ -2548,6 +2590,459 @@ class ClassroomController extends Controller
             'name'  => $row['name'],
             'photo' => $row['photo'],
         ], $this->lessonDiscussionModel->getReplyReactions($replyId));
+
+        return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
+    }
+
+    // ================================================================
+    // CLASS DISCUSSION (classroom-level, as opposed to per-lesson above)
+    // ================================================================
+
+    /**
+     * Resolves and access-checks a classroom id for discussion purposes. Returns either
+     * an 'error' key or the resolved ctx/classId. This is the view-access gate only —
+     * write endpoints must additionally call canPostToClassroomDiscussion().
+     */
+    private function resolveClassDiscussionAccess(int $classId): array
+    {
+        $ctx       = $this->context();
+        $classroom = $this->classroomModel->getDetail($classId);
+        if (!$classroom) {
+            return ['error' => ['status' => 404, 'message' => 'Classroom not found.']];
+        }
+        if (!$this->canAccessClassroom($ctx, $classroom)) {
+            return ['error' => ['status' => 403, 'message' => 'You do not have access to this classroom.']];
+        }
+
+        return [
+            'ctx'       => $ctx,
+            'classId'   => $classId,
+            'classroom' => $classroom,
+        ];
+    }
+
+    private function resolveClassDiscussionPostAccess(int $postId): array
+    {
+        $post = \Config\Database::connect()->table('class_discussion')
+            ->select('class_id_fk')->where('cd_id', $postId)->get()->getRowArray();
+        if (!$post) {
+            return ['error' => ['status' => 404, 'message' => 'Post not found.']];
+        }
+
+        $r = $this->resolveClassDiscussionAccess((int) $post['class_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+        $r['postId'] = $postId;
+        return $r;
+    }
+
+    private function resolveClassDiscussionCommentAccess(int $commentId): array
+    {
+        $comment = \Config\Database::connect()->table('class_discussion_comment')
+            ->select('cd_id_fk')->where('cdc_id', $commentId)->get()->getRowArray();
+        if (!$comment) {
+            return ['error' => ['status' => 404, 'message' => 'Comment not found.']];
+        }
+
+        $r = $this->resolveClassDiscussionPostAccess((int) $comment['cd_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+        $r['commentId'] = $commentId;
+        return $r;
+    }
+
+    private function resolveClassDiscussionReplyAccess(int $replyId): array
+    {
+        $reply = \Config\Database::connect()->table('class_discussion_comment_reply')
+            ->select('cdc_id_fk')->where('cdcr_id', $replyId)->get()->getRowArray();
+        if (!$reply) {
+            return ['error' => ['status' => 404, 'message' => 'Reply not found.']];
+        }
+
+        $r = $this->resolveClassDiscussionCommentAccess((int) $reply['cdc_id_fk']);
+        if (isset($r['error'])) {
+            return $r;
+        }
+        $r['replyId'] = $replyId;
+        return $r;
+    }
+
+    /**
+     * POST /api/classroom/{classId}/discussion — multipart: message?, photos[]?
+     */
+    public function classDiscussionPost(int $classId)
+    {
+        $r = $this->resolveClassDiscussionAccess($classId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+
+        if (!$this->canPostToClassroomDiscussion($ctx, $classId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+        if (($r['classroom']['class_status'] ?? '') !== 'Active') {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'This classroom is no longer active.']);
+        }
+
+        $message    = trim($this->request->getPost('message') ?? '');
+        $files      = $this->request->getFileMultiple('photos') ?? [];
+        $validFiles = array_filter($files, fn ($f) => $f instanceof \CodeIgniter\HTTP\Files\UploadedFile && $f->isValid() && !$f->hasMoved());
+
+        if ($message === '' && empty($validFiles)) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Post must have a message or at least one photo.']);
+        }
+        if (count($validFiles) > 10) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Maximum 10 photos allowed.']);
+        }
+
+        $allowedImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $uploadPath = FCPATH . 'uploads/class_discussion/';
+        if (!is_dir($uploadPath)) {
+            mkdir($uploadPath, 0755, true);
+        }
+
+        $photos = [];
+        foreach ($validFiles as $file) {
+            $ext = strtolower($file->getClientExtension());
+            if (!in_array($ext, $allowedImg, true)) {
+                return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Only image files allowed (jpg, jpeg, png, gif, webp).']);
+            }
+            $newName = 'cdp_' . time() . '_' . random_int(1000, 9999) . '.' . $ext;
+            $file->move($uploadPath, $newName);
+            $photos[] = $newName;
+        }
+
+        $db  = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+
+        $db->table('class_discussion')->insert([
+            'class_id_fk' => $classId,
+            'author'      => $ctx['myId'],
+            'message'     => $message ?: null,
+            'created_at'  => $now,
+            'post_status' => 1,
+        ]);
+        $postId = $db->insertID();
+
+        foreach ($photos as $i => $path) {
+            $db->table('class_discussion_photo')->insert([
+                'cd_id_fk'    => $postId,
+                'photo_path'  => $path,
+                'photo_order' => $i,
+            ]);
+        }
+
+        $post = $db->query("
+            SELECT cd.cd_id, cd.message, cd.created_at, cd.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo,
+                   (SELECT rc.role_cat_id FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = cd.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_id,
+                   (SELECT rc.role_cat_name FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = cd.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_name
+            FROM class_discussion cd INNER JOIN users u ON u.user_id = cd.author
+            WHERE cd.cd_id = ?
+        ", [$postId])->getRowArray();
+
+        $post['cd_id']         = (int) $post['cd_id'];
+        $post['author_id']     = (int) $post['author_id'];
+        $post['photos']        = $this->classDiscussionModel->getPhotos($postId);
+        $post['comments']      = [];
+        $post['comment_count'] = 0;
+        $post['like_count']    = 0;
+        $post['dislike_count'] = 0;
+        $post['user_reaction'] = null;
+
+        return $this->response->setJSON(['success' => true, 'post' => $post]);
+    }
+
+    /**
+     * POST /api/classroom/discussion/{postId}/like — body/form: type ('like'|'dislike')
+     */
+    public function classDiscussionLike(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $body   = $this->request->getJSON(true) ?? [];
+        $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
+        $result = $this->classDiscussionModel->togglePostLike($postId, $r['ctx']['myId'], $type);
+
+        return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * GET /api/classroom/discussion/{postId}/reactions — who liked/disliked this post
+     */
+    public function classDiscussionReactions(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $reactions = array_map(fn ($row) => [
+            'type'  => $row['like_type'],
+            'name'  => $row['name'],
+            'photo' => $row['photo'],
+        ], $this->classDiscussionModel->getPostReactions($postId));
+
+        return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
+    }
+
+    /**
+     * POST /api/classroom/discussion/{postId}/comment — body/form: comment
+     */
+    public function classDiscussionComment(int $postId)
+    {
+        $r = $this->resolveClassDiscussionPostAccess($postId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+        if (!$this->canPostToClassroomDiscussion($ctx, $r['classId'])) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $body    = $this->request->getJSON(true) ?? [];
+        $comment = trim($this->request->getPost('comment') ?? ($body['comment'] ?? ''));
+        if ($comment === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Comment cannot be empty.']);
+        }
+
+        $db  = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+        $db->table('class_discussion_comment')->insert([
+            'cd_id_fk'       => $postId,
+            'author'         => $ctx['myId'],
+            'comment'        => $comment,
+            'created_at'     => $now,
+            'comment_status' => 'Active',
+        ]);
+        $commentId = $db->insertID();
+
+        $row = $db->query("
+            SELECT cdc.cdc_id, cdc.comment, cdc.created_at, cdc.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo,
+                   (SELECT rc.role_cat_id FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = cdc.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_id,
+                   (SELECT rc.role_cat_name FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = cdc.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_name
+            FROM class_discussion_comment cdc INNER JOIN users u ON u.user_id = cdc.author
+            WHERE cdc.cdc_id = ?
+        ", [$commentId])->getRowArray();
+
+        $row['cdc_id']        = (int) $row['cdc_id'];
+        $row['author_id']     = (int) $row['author_id'];
+        $row['like_count']    = 0;
+        $row['dislike_count'] = 0;
+        $row['user_reaction'] = null;
+        $row['replies']       = [];
+
+        return $this->response->setJSON(['success' => true, 'comment' => $row]);
+    }
+
+    /**
+     * POST /api/classroom/discussion/comment/{commentId}/like — body/form: type
+     */
+    public function classDiscussionCommentLike(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $body   = $this->request->getJSON(true) ?? [];
+        $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
+        $result = $this->classDiscussionModel->toggleCommentLike($commentId, $r['ctx']['myId'], $type);
+
+        return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * GET /api/classroom/discussion/comment/{commentId}/reactions — who liked/disliked this comment
+     */
+    public function classDiscussionCommentReactions(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $reactions = array_map(fn ($row) => [
+            'type'  => $row['like_type'],
+            'name'  => $row['name'],
+            'photo' => $row['photo'],
+        ], $this->classDiscussionModel->getCommentReactions($commentId));
+
+        return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
+    }
+
+    /**
+     * POST /api/classroom/discussion/comment/{commentId}/reply — body/form: reply
+     */
+    public function classDiscussionCommentReply(int $commentId)
+    {
+        $r = $this->resolveClassDiscussionCommentAccess($commentId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+        if (!$this->canPostToClassroomDiscussion($ctx, $r['classId'])) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $body  = $this->request->getJSON(true) ?? [];
+        $reply = trim($this->request->getPost('reply') ?? ($body['reply'] ?? ''));
+        if ($reply === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Reply cannot be empty.']);
+        }
+
+        $db  = \Config\Database::connect();
+        $now = date('Y-m-d H:i:s');
+        $db->table('class_discussion_comment_reply')->insert([
+            'cdc_id_fk'    => $commentId,
+            'author'       => $ctx['myId'],
+            'reply'        => $reply,
+            'created_at'   => $now,
+            'reply_status' => 'Active',
+        ]);
+        $replyId = $db->insertID();
+
+        $row = $db->query("
+            SELECT r.cdcr_id, r.reply, r.created_at, r.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo,
+                   (SELECT rc.role_cat_id FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = r.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_id,
+                   (SELECT rc.role_cat_name FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = r.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_name
+            FROM class_discussion_comment_reply r INNER JOIN users u ON u.user_id = r.author
+            WHERE r.cdcr_id = ?
+        ", [$replyId])->getRowArray();
+
+        $row['cdcr_id']            = (int) $row['cdcr_id'];
+        $row['author_id']          = (int) $row['author_id'];
+        $row['parent_reply_id_fk'] = null;
+        $row['like_count']         = 0;
+        $row['dislike_count']      = 0;
+        $row['user_reaction']      = null;
+        $row['replies']            = [];
+
+        return $this->response->setJSON(['success' => true, 'reply' => $row]);
+    }
+
+    /**
+     * POST /api/classroom/discussion/reply/{replyId}/reply — body/form: reply
+     * Replies to an existing reply (nested thread), inheriting its parent comment.
+     */
+    public function classDiscussionReplyReply(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $ctx = $r['ctx'];
+        if (!$this->canPostToClassroomDiscussion($ctx, $r['classId'])) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied.']);
+        }
+
+        $body  = $this->request->getJSON(true) ?? [];
+        $reply = trim($this->request->getPost('reply') ?? ($body['reply'] ?? ''));
+        if ($reply === '') {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Reply cannot be empty.']);
+        }
+
+        $db     = \Config\Database::connect();
+        $parent = $db->table('class_discussion_comment_reply')
+            ->select('cdc_id_fk')->where('cdcr_id', $replyId)->get()->getRowArray();
+
+        $now = date('Y-m-d H:i:s');
+        $db->table('class_discussion_comment_reply')->insert([
+            'cdc_id_fk'          => (int) $parent['cdc_id_fk'],
+            'parent_reply_id_fk' => $replyId,
+            'author'             => $ctx['myId'],
+            'reply'              => $reply,
+            'created_at'         => $now,
+            'reply_status'       => 'Active',
+        ]);
+        $newReplyId = $db->insertID();
+
+        $row = $db->query("
+            SELECT r.cdcr_id, r.parent_reply_id_fk, r.reply, r.created_at, r.author AS author_id,
+                   CONCAT(u.fname, ' ', u.lname) AS author_name, u.profile_photo AS author_photo,
+                   (SELECT rc.role_cat_id FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = r.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_id,
+                   (SELECT rc.role_cat_name FROM user_role ur
+                    INNER JOIN role ro ON ro.role_id = ur.role_id_fk
+                    INNER JOIN role_category rc ON rc.role_cat_id = ro.role_cat_id_fk
+                    WHERE ur.user_id_fk = r.author AND ur.user_role_status = 'Active'
+                    LIMIT 1) AS author_role_cat_name
+            FROM class_discussion_comment_reply r INNER JOIN users u ON u.user_id = r.author
+            WHERE r.cdcr_id = ?
+        ", [$newReplyId])->getRowArray();
+
+        $row['cdcr_id']            = (int) $row['cdcr_id'];
+        $row['parent_reply_id_fk'] = (int) $row['parent_reply_id_fk'];
+        $row['author_id']          = (int) $row['author_id'];
+        $row['like_count']         = 0;
+        $row['dislike_count']      = 0;
+        $row['user_reaction']      = null;
+        $row['replies']            = [];
+
+        return $this->response->setJSON(['success' => true, 'reply' => $row]);
+    }
+
+    /**
+     * POST /api/classroom/discussion/reply/{replyId}/like — body/form: type
+     */
+    public function classDiscussionReplyLike(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $body   = $this->request->getJSON(true) ?? [];
+        $type   = ($this->request->getPost('type') ?? ($body['type'] ?? 'like')) === 'dislike' ? 'dislike' : 'like';
+        $result = $this->classDiscussionModel->toggleReplyLike($replyId, $r['ctx']['myId'], $type);
+
+        return $this->response->setJSON(['success' => true] + $result);
+    }
+
+    /**
+     * GET /api/classroom/discussion/reply/{replyId}/reactions — who liked/disliked this reply
+     */
+    public function classDiscussionReplyReactions(int $replyId)
+    {
+        $r = $this->resolveClassDiscussionReplyAccess($replyId);
+        if (isset($r['error'])) {
+            return $this->errorResponse($r);
+        }
+        $reactions = array_map(fn ($row) => [
+            'type'  => $row['like_type'],
+            'name'  => $row['name'],
+            'photo' => $row['photo'],
+        ], $this->classDiscussionModel->getReplyReactions($replyId));
 
         return $this->response->setJSON(['success' => true, 'reactions' => $reactions]);
     }
