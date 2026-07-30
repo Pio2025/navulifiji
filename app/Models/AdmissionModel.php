@@ -204,4 +204,89 @@ class AdmissionModel extends Model
             ->get()
             ->getRowArray();
     }
+
+    private const API_JOIN = '
+        FROM admission
+        LEFT JOIN users         ON users.user_id             = admission.user_id_fk
+        LEFT JOIN user_role     ON user_role.user_id_fk       = users.user_id
+        LEFT JOIN role          ON role.role_id               = user_role.role_id_fk
+        LEFT JOIN role_category ON role_category.role_cat_id  = role.role_cat_id_fk
+        LEFT JOIN school        ON school.sch_id              = admission.sch_id_fk
+    ';
+
+    private const API_SELECT = "
+        admission.admission_id, admission.user_id_fk, admission.sch_id_fk,
+        admission.admission_date, admission.admission_status, admission.admission_note,
+        users.fname, users.lname, users.oname, users.email, users.gender, users.profile_photo,
+        school.sch_name, role.role_name, role_category.role_cat_name, role_category.role_cat_id
+    ";
+
+    private function apiFilters(?int $schId, ?string $search, ?string $status): array
+    {
+        $where  = ['user_role.user_role_status = "Active"'];
+        $params = [];
+
+        if ($schId) {
+            $where[]  = 'admission.sch_id_fk = ?';
+            $params[] = $schId;
+        }
+        if ($search !== null && $search !== '') {
+            $where[]  = '(users.fname LIKE ? OR users.lname LIKE ? OR users.email LIKE ?)';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+        }
+        if ($status !== null && $status !== '') {
+            $where[]  = 'admission.admission_status = ?';
+            $params[] = $status;
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
+    /**
+     * Total admissions matching the given API filters (for pagination).
+     */
+    public function countForApi(?int $schId, ?string $search, ?string $status): int
+    {
+        [$where, $params] = $this->apiFilters($schId, $search, $status);
+        $db  = \Config\Database::connect();
+        $row = $db->query('SELECT COUNT(*) AS cnt ' . self::API_JOIN . " WHERE $where", $params)->getRowArray();
+
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * One page of admissions matching the given API filters, newest first.
+     */
+    public function getPageForApi(?int $schId, ?string $search, ?string $status, int $limit, int $offset): array
+    {
+        [$where, $params] = $this->apiFilters($schId, $search, $status);
+        $db       = \Config\Database::connect();
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $db->query(
+            'SELECT ' . self::API_SELECT . self::API_JOIN . " WHERE $where ORDER BY admission.admission_id DESC LIMIT ? OFFSET ?",
+            $params
+        )->getResultArray();
+    }
+
+    /**
+     * All admissions belonging to the given child user IDs (unpaginated — small result set).
+     */
+    public function getChildAdmissions(array $childUserIds): array
+    {
+        if (empty($childUserIds)) {
+            return [];
+        }
+
+        $db = \Config\Database::connect();
+        $in = implode(',', array_fill(0, count($childUserIds), '?'));
+
+        return $db->query(
+            'SELECT ' . self::API_SELECT . self::API_JOIN . " WHERE admission.user_id_fk IN ($in) ORDER BY admission.admission_id DESC",
+            $childUserIds
+        )->getResultArray();
+    }
 }

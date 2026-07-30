@@ -824,6 +824,18 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->get('classroom',                  'Api\ClassroomController::index');
         $routes->post('classroom',                 'Api\ClassroomController::store');
 
+        $routes->get('intake/permissions', 'Api\IntakeController::permissions');
+
+        $routes->get('admission/schools', 'Api\AdmissionController::schools');
+        $routes->get('admission/users',   'Api\AdmissionController::eligibleUsers');
+        $routes->get('admission',         'Api\AdmissionController::index');
+        $routes->post('admission',        'Api\AdmissionController::store');
+
+        $routes->get('enrolment/streams',    'Api\EnrolmentController::streams');
+        $routes->get('enrolment/admissions', 'Api\EnrolmentController::eligibleAdmissions');
+        $routes->get('enrolment',            'Api\EnrolmentController::index');
+        $routes->post('enrolment',           'Api\EnrolmentController::store');
+
         $routes->get('wall/feed',                    'Api\WallController::feed');
         $routes->post('wall/post',                    'Api\WallController::createPost');
         $routes->get('wall/post/(:num)/comments',     'Api\WallController::comments/$1');

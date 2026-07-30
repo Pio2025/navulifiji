@@ -312,4 +312,95 @@ class EnrolmentModel extends Model
 
         return $builder->get()->getResultArray();
     }
+
+    private const API_JOIN = '
+        FROM enrolment
+        LEFT JOIN admission     ON admission.admission_id    = enrolment.admission_id_fk
+        LEFT JOIN users         ON users.user_id              = admission.user_id_fk
+        LEFT JOIN user_role     ON user_role.user_id_fk        = users.user_id
+        LEFT JOIN role          ON role.role_id                = user_role.role_id_fk
+        LEFT JOIN role_category ON role_category.role_cat_id   = role.role_cat_id_fk
+        LEFT JOIN school        ON school.sch_id               = admission.sch_id_fk
+        LEFT JOIN stream        ON stream.stream_id            = enrolment.stream_id_fk
+        LEFT JOIN sch_level     ON sch_level.sch_level_id      = stream.sch_level_id_fk
+        LEFT JOIN level         ON level.level_id              = sch_level.level_id_fk
+    ';
+
+    private const API_SELECT = "
+        enrolment.enrol_id, enrolment.admission_id_fk, enrolment.stream_id_fk,
+        enrolment.enrol_date, enrolment.enrol_term, enrolment.enrol_year,
+        enrolment.enrol_status, enrolment.enrol_note,
+        admission.sch_id_fk, users.fname, users.lname, users.oname, users.email, users.profile_photo,
+        school.sch_name, stream.stream_name, level.level_name,
+        role.role_name, role_category.role_cat_name
+    ";
+
+    private function apiFilters(?int $schId, ?string $search, ?string $status): array
+    {
+        $where  = ['user_role.user_role_status = "Active"'];
+        $params = [];
+
+        if ($schId) {
+            $where[]  = 'admission.sch_id_fk = ?';
+            $params[] = $schId;
+        }
+        if ($search !== null && $search !== '') {
+            $where[]  = '(users.fname LIKE ? OR users.lname LIKE ? OR users.email LIKE ?)';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+            $params[] = '%' . $search . '%';
+        }
+        if ($status !== null && $status !== '') {
+            $where[]  = 'enrolment.enrol_status = ?';
+            $params[] = $status;
+        }
+
+        return [implode(' AND ', $where), $params];
+    }
+
+    /**
+     * Total enrolments matching the given API filters (for pagination).
+     */
+    public function countForApi(?int $schId, ?string $search, ?string $status): int
+    {
+        [$where, $params] = $this->apiFilters($schId, $search, $status);
+        $db  = \Config\Database::connect();
+        $row = $db->query('SELECT COUNT(*) AS cnt ' . self::API_JOIN . " WHERE $where", $params)->getRowArray();
+
+        return (int) ($row['cnt'] ?? 0);
+    }
+
+    /**
+     * One page of enrolments matching the given API filters, newest first.
+     */
+    public function getPageForApi(?int $schId, ?string $search, ?string $status, int $limit, int $offset): array
+    {
+        [$where, $params] = $this->apiFilters($schId, $search, $status);
+        $db       = \Config\Database::connect();
+        $params[] = $limit;
+        $params[] = $offset;
+
+        return $db->query(
+            'SELECT ' . self::API_SELECT . self::API_JOIN . " WHERE $where ORDER BY enrolment.enrol_id DESC LIMIT ? OFFSET ?",
+            $params
+        )->getResultArray();
+    }
+
+    /**
+     * All enrolments belonging to the given child user IDs (unpaginated — small result set).
+     */
+    public function getChildEnrolments(array $childUserIds): array
+    {
+        if (empty($childUserIds)) {
+            return [];
+        }
+
+        $db = \Config\Database::connect();
+        $in = implode(',', array_fill(0, count($childUserIds), '?'));
+
+        return $db->query(
+            'SELECT ' . self::API_SELECT . self::API_JOIN . " WHERE admission.user_id_fk IN ($in) ORDER BY enrolment.enrol_id DESC",
+            $childUserIds
+        )->getResultArray();
+    }
 }
