@@ -828,11 +828,19 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
 
         $routes->get('admission/schools', 'Api\AdmissionController::schools');
         $routes->get('admission/users',   'Api\AdmissionController::eligibleUsers');
+        $routes->post('admission/(:num)/leadership', 'Api\AdmissionController::leadership/$1');
+        $routes->get('admission/(:num)',    'Api\AdmissionController::detail/$1');
+        $routes->put('admission/(:num)',    'Api\AdmissionController::update/$1');
+        $routes->delete('admission/(:num)', 'Api\AdmissionController::delete/$1');
         $routes->get('admission',         'Api\AdmissionController::index');
         $routes->post('admission',        'Api\AdmissionController::store');
 
         $routes->get('enrolment/streams',    'Api\EnrolmentController::streams');
         $routes->get('enrolment/admissions', 'Api\EnrolmentController::eligibleAdmissions');
+        $routes->get('enrolment/schools',    'Api\EnrolmentController::schools');
+        $routes->get('enrolment/(:num)',    'Api\EnrolmentController::detail/$1');
+        $routes->put('enrolment/(:num)',    'Api\EnrolmentController::update/$1');
+        $routes->delete('enrolment/(:num)', 'Api\EnrolmentController::delete/$1');
         $routes->get('enrolment',            'Api\EnrolmentController::index');
         $routes->post('enrolment',           'Api\EnrolmentController::store');
 

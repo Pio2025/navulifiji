@@ -5,6 +5,7 @@ namespace App\Controllers\Api;
 use App\Libraries\ApiAuth;
 use App\Models\EnrolmentModel;
 use App\Models\ParentStudentModel;
+use App\Models\RolePermissionModel;
 use App\Models\SchoolModel;
 use App\Models\UserModel;
 use CodeIgniter\Controller;
@@ -13,6 +14,7 @@ class EnrolmentController extends Controller
 {
     protected $enrolmentModel;
     protected $parentStudentModel;
+    protected $rolePermissionModel;
     protected $schoolModel;
     protected $userModel;
 
@@ -21,8 +23,14 @@ class EnrolmentController extends Controller
         parent::initController($request, $response, $logger);
         $this->enrolmentModel     = new EnrolmentModel();
         $this->parentStudentModel = new ParentStudentModel();
+        $this->rolePermissionModel = new RolePermissionModel();
         $this->schoolModel        = new SchoolModel();
         $this->userModel          = new UserModel();
+    }
+
+    private function grantAccess(int $roleId, string $permCode): bool
+    {
+        return !empty($this->rolePermissionModel->grant_role_access($roleId, $permCode));
     }
 
     /**
@@ -34,26 +42,35 @@ class EnrolmentController extends Controller
         $myId      = ApiAuth::userId();
         $roleId    = (int) ($claims['roleID'] ?? 0);
         $roleCatId = (int) ($claims['roleCatID'] ?? 0);
-        $ownSchId  = (int) ($claims['schID'] ?? 0);
+        $claimSchId = (int) ($claims['schID'] ?? 0);
 
         $isSuperAdmin = $roleId === 1;
         $isAdmin      = $roleCatId === 7;
-        // Super Admin or Admin only, per the Intake tab's access rule.
-        $canAccess = $isSuperAdmin || $isAdmin;
+        $isTeacher    = $roleCatId === 3;
+        $isStudent    = $roleCatId === 4;
+
+        $admissionModel   = new \App\Models\AdmissionModel();
+        $activeAdmissions = $admissionModel->getAdmissionByUser($myId);
+        $resolvedSchId    = !empty($activeAdmissions) ? (int) $activeAdmissions[0]['sch_id_fk'] : $claimSchId;
+
+        $canAccess = $isSuperAdmin || $isAdmin || $isTeacher;
 
         $user      = $this->userModel->find($myId);
         $isAParent = !empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1;
         $children  = $isAParent ? $this->parentStudentModel->getChildrenOf($myId) : [];
 
         return [
-            'myId'         => $myId,
-            'roleId'       => $roleId,
-            'roleCatId'    => $roleCatId,
-            'ownSchId'     => $ownSchId,
-            'isSuperAdmin' => $isSuperAdmin,
-            'canAccess'    => $canAccess,
-            'isAParent'    => $isAParent,
-            'children'     => $children,
+            'myId'          => $myId,
+            'roleId'        => $roleId,
+            'roleCatId'     => $roleCatId,
+            'resolvedSchId' => $resolvedSchId,
+            'isSuperAdmin'  => $isSuperAdmin,
+            'isAdmin'       => $isAdmin,
+            'isTeacher'     => $isTeacher,
+            'isStudent'     => $isStudent,
+            'canAccess'     => $canAccess,
+            'isAParent'     => $isAParent,
+            'children'      => $children,
         ];
     }
 
@@ -63,6 +80,7 @@ class EnrolmentController extends Controller
             'canViewListing'          => $ctx['canAccess'],
             'canAdd'                  => $ctx['canAccess'],
             'canViewMyChildEnrolment' => $ctx['isAParent'],
+            'canViewMyEnrolment'      => $ctx['isStudent'],
         ];
     }
 
@@ -89,11 +107,34 @@ class EnrolmentController extends Controller
 
     private function effectiveSchId(array $ctx, ?int $requestedSchId): ?int
     {
-        return $ctx['isSuperAdmin'] ? $requestedSchId : ($ctx['ownSchId'] ?: null);
+        return $ctx['isSuperAdmin'] ? $requestedSchId : ($ctx['resolvedSchId'] ?: null);
     }
 
     /**
-     * GET /api/enrolment?scope=all|child&childId=&search=&status=&sch_id=&limit=&offset=
+     * Whether the caller may view a given enrolment row (from getDetail()/getAllWithDetails()).
+     */
+    private function canViewEnrolment(array $ctx, array $e): bool
+    {
+        if ($ctx['isSuperAdmin']) {
+            return true;
+        }
+        $schId  = (int) ($e['sch_id_fk'] ?? $e['sch_id'] ?? 0);
+        $userId = (int) ($e['user_id_fk'] ?? $e['user_id'] ?? 0);
+
+        if ($ctx['canAccess'] && $schId === $ctx['resolvedSchId']) {
+            return true;
+        }
+        if ($ctx['isStudent'] && $userId === $ctx['myId']) {
+            return true;
+        }
+        if ($ctx['isAParent'] && in_array($userId, array_column($ctx['children'], 'user_id'), true)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * GET /api/enrolment?scope=all|child|mine&childId=&search=&status=&sch_id=&limit=&offset=
      */
     public function index()
     {
@@ -107,6 +148,22 @@ class EnrolmentController extends Controller
             $childId  = $this->request->getGet('childId');
             $childIds = $childId !== null && $childId !== '' ? [(int) $childId] : array_column($ctx['children'], 'user_id');
             $rows     = $this->enrolmentModel->getChildEnrolments($childIds);
+
+            return $this->response->setJSON([
+                'success'     => true,
+                'enrolments'  => array_map(fn ($e) => $this->enrolmentOut($e), $rows),
+                'total'       => count($rows),
+                'hasMore'     => false,
+                'schools'     => [],
+                'permissions' => $this->permissionsOut($ctx),
+            ]);
+        }
+
+        if ($scope === 'mine') {
+            if (!$ctx['isStudent']) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to view this.']);
+            }
+            $rows = $this->enrolmentModel->getChildEnrolments([$ctx['myId']]);
 
             return $this->response->setJSON([
                 'success'     => true,
@@ -155,7 +212,7 @@ class EnrolmentController extends Controller
     }
 
     /**
-     * GET /api/enrolment/streams?sch_id=
+     * GET /api/enrolment/streams?sch_id= — Teacher/Admin get only their own school's streams.
      */
     public function streams()
     {
@@ -197,6 +254,26 @@ class EnrolmentController extends Controller
         ], $rows);
 
         return $this->response->setJSON(['success' => true, 'admissions' => $admissions]);
+    }
+
+    /**
+     * GET /api/enrolment/schools — school picker for the Add Enrolment form (mirrors admission/schools).
+     */
+    public function schools()
+    {
+        $ctx = $this->context();
+        if (!$ctx['canAccess']) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission.']);
+        }
+
+        if ($ctx['isSuperAdmin']) {
+            $schools = array_map(fn ($s) => ['schId' => (int) $s['sch_id'], 'schName' => $s['sch_name']], $this->schoolModel->getAllSchool());
+        } else {
+            $own     = $ctx['resolvedSchId'] ? $this->schoolModel->getSchool($ctx['resolvedSchId']) : null;
+            $schools = $own ? [['schId' => (int) $own['sch_id'], 'schName' => $own['sch_name']]] : [];
+        }
+
+        return $this->response->setJSON(['success' => true, 'schools' => $schools]);
     }
 
     /**
@@ -250,5 +327,116 @@ class EnrolmentController extends Controller
             'success'   => true,
             'enrolment' => $this->enrolmentOut($this->enrolmentModel->getDetail((int) $enrolId)),
         ]);
+    }
+
+    /**
+     * GET /api/enrolment/{id} — full detail payload for the Enrolment Detail screen.
+     */
+    public function detail(int $id)
+    {
+        $ctx = $this->context();
+        $e   = $this->enrolmentModel->getDetail($id);
+        if (!$e) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Enrolment not found.']);
+        }
+        if (!$this->canViewEnrolment($ctx, $e)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this enrolment.']);
+        }
+
+        $canEdit   = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_edit_enrolment');
+        $canDelete = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_delete_enrolment');
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'canEdit'   => $canEdit,
+            'canDelete' => $canDelete,
+            'enrolment' => array_merge($this->enrolmentOut($e), [
+                'admissionId'     => (int) $e['admission_id_fk'],
+                'admissionStatus' => $e['admission_status'] ?? null,
+                'admissionDate'   => $e['admission_date'] ?? null,
+                'roleName'        => $e['role_name'] ?? null,
+                'roleCatName'     => $e['role_cat_name'] ?? null,
+                'gender'          => $e['gender'] ?? null,
+                'dob'             => $e['dob'] ?? null,
+                'phone'           => $e['phone'] ?? null,
+                'address'         => $e['address'] ?? null,
+                'schoolAddress'   => $e['sch_address'] ?? null,
+                'schoolPhone'     => $e['sch_phone'] ?? null,
+                'schoolEmail'     => $e['sch_email'] ?? null,
+                'schoolLogo'      => $e['sch_logo'] ?? null,
+            ]),
+        ]);
+    }
+
+    /**
+     * PUT /api/enrolment/{id} — body (JSON): stream_id, enrol_date, enrol_term, enrol_year, enrol_status, enrol_note?
+     */
+    public function update(int $id)
+    {
+        $ctx = $this->context();
+        $e   = $this->enrolmentModel->getDetail($id);
+        if (!$e) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Enrolment not found.']);
+        }
+        if (!$this->canViewEnrolment($ctx, $e)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this enrolment.']);
+        }
+        $canEdit = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_edit_enrolment');
+        if (!$canEdit) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to edit this enrolment.']);
+        }
+
+        $body = $this->request->getJSON(true) ?? [];
+
+        $streamId = (int) ($body['stream_id'] ?? ($e['stream_id_fk'] ?? 0));
+        $date     = trim((string) ($body['enrol_date'] ?? ($e['enrol_date'] ?? '')));
+        $term     = trim((string) ($body['enrol_term'] ?? ($e['enrol_term'] ?? '')));
+        $year     = (int) ($body['enrol_year'] ?? ($e['enrol_year'] ?? date('Y')));
+        $note     = $body['enrol_note'] ?? $e['enrol_note'];
+        $status   = $body['enrol_status'] ?? $e['enrol_status'];
+        if (!in_array($status, ['Active', 'Inactive'], true)) {
+            $status = 'Active';
+        }
+
+        if (!$streamId || !$date || !$term) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Stream, date and term are required.']);
+        }
+
+        $this->enrolmentModel->update($id, [
+            'stream_id_fk' => $streamId,
+            'enrol_date'   => $date,
+            'enrol_term'   => $term,
+            'enrol_year'   => $year,
+            'enrol_note'   => $note ?: null,
+            'enrol_status' => $status,
+        ]);
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'enrolment' => $this->enrolmentOut($this->enrolmentModel->getDetail($id)),
+        ]);
+    }
+
+    /**
+     * DELETE /api/enrolment/{id}
+     */
+    public function delete(int $id)
+    {
+        $ctx = $this->context();
+        $e   = $this->enrolmentModel->getDetail($id);
+        if (!$e) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Enrolment not found.']);
+        }
+        if (!$this->canViewEnrolment($ctx, $e)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this enrolment.']);
+        }
+        $canDelete = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_delete_enrolment');
+        if (!$canDelete) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to delete this enrolment.']);
+        }
+
+        $this->enrolmentModel->delete($id);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Enrolment deleted successfully.']);
     }
 }

@@ -28,7 +28,9 @@ class IntakeController extends Controller
 
         $isSuperAdmin = $roleId === 1;
         $isAdmin      = $roleCatId === 7;
-        $canAccess    = $isSuperAdmin || $isAdmin;
+        $isTeacher    = $roleCatId === 3;
+        $isStudent    = $roleCatId === 4;
+        $canAccess    = $isSuperAdmin || $isAdmin || $isTeacher;
 
         $user      = $this->userModel->find($myId);
         $isAParent = !empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1;
@@ -38,6 +40,8 @@ class IntakeController extends Controller
             'permissions' => [
                 'canAccessAdmission'      => $canAccess,
                 'canAccessEnrolment'      => $canAccess,
+                'canViewMyAdmission'      => $isStudent,
+                'canViewMyEnrolment'      => $isStudent,
                 'canViewMyChildAdmission' => $isAParent,
                 'canViewMyChildEnrolment' => $isAParent,
             ],

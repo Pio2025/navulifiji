@@ -205,6 +205,57 @@ class AdmissionModel extends Model
             ->getRowArray();
     }
 
+    /**
+     * Enrolment records for one admission (for the mobile Admission Detail screen).
+     */
+    public function getEnrolmentsForAdmission(int $admissionId): array
+    {
+        $db = \Config\Database::connect();
+        return $db->table('enrolment')
+            ->select('
+                enrolment.enrol_id, enrolment.enrol_date, enrolment.enrol_term,
+                enrolment.enrol_year, enrolment.enrol_status,
+                stream.stream_name, level.level_name
+            ')
+            ->join('stream',    'stream.stream_id       = enrolment.stream_id_fk', 'left')
+            ->join('sch_level', 'sch_level.sch_level_id = stream.sch_level_id_fk',  'left')
+            ->join('level',     'level.level_id         = sch_level.level_id_fk',   'left')
+            ->where('enrolment.admission_id_fk', $admissionId)
+            ->orderBy('enrolment.enrol_id', 'DESC')
+            ->get()
+            ->getResultArray();
+    }
+
+    /**
+     * Current leadership/prefect role for an admission, if any.
+     */
+    public function getLeadershipRole(int $admissionId): ?string
+    {
+        $db  = \Config\Database::connect();
+        $row = $db->table('admission_student_role')
+            ->select('leadership_role')
+            ->where('admission_id_fk', $admissionId)
+            ->get()->getRowArray();
+        return $row['leadership_role'] ?? null;
+    }
+
+    /**
+     * Save (replace) the leadership/prefect role for an admission. Pass null/empty to clear it.
+     */
+    public function saveLeadershipRole(int $admissionId, ?string $role): void
+    {
+        $db = \Config\Database::connect();
+        $db->table('admission_student_role')->where('admission_id_fk', $admissionId)->delete();
+        if (!empty($role)) {
+            $db->table('admission_student_role')->insert([
+                'admission_id_fk' => $admissionId,
+                'leadership_role' => $role,
+                'created_date'    => date('Y-m-d'),
+                'created_time'    => time(),
+            ]);
+        }
+    }
+
     private const API_JOIN = '
         FROM admission
         LEFT JOIN users         ON users.user_id             = admission.user_id_fk

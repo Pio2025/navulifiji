@@ -5,6 +5,7 @@ namespace App\Controllers\Api;
 use App\Libraries\ApiAuth;
 use App\Models\AdmissionModel;
 use App\Models\ParentStudentModel;
+use App\Models\RolePermissionModel;
 use App\Models\SchoolModel;
 use App\Models\UserModel;
 use CodeIgniter\Controller;
@@ -13,16 +14,29 @@ class AdmissionController extends Controller
 {
     protected $admissionModel;
     protected $parentStudentModel;
+    protected $rolePermissionModel;
     protected $schoolModel;
     protected $userModel;
+
+    private const LEADERSHIP_ROLES = [
+        'school_prefect', 'hostel_prefect',
+        'head_boy', 'deputy_head_boy',
+        'head_girl', 'deputy_head_girl',
+    ];
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
         $this->admissionModel     = new AdmissionModel();
         $this->parentStudentModel = new ParentStudentModel();
+        $this->rolePermissionModel = new RolePermissionModel();
         $this->schoolModel        = new SchoolModel();
         $this->userModel          = new UserModel();
+    }
+
+    private function grantAccess(int $roleId, string $permCode): bool
+    {
+        return !empty($this->rolePermissionModel->grant_role_access($roleId, $permCode));
     }
 
     /**
@@ -34,26 +48,37 @@ class AdmissionController extends Controller
         $myId      = ApiAuth::userId();
         $roleId    = (int) ($claims['roleID'] ?? 0);
         $roleCatId = (int) ($claims['roleCatID'] ?? 0);
-        $ownSchId  = (int) ($claims['schID'] ?? 0);
+        $claimSchId = (int) ($claims['schID'] ?? 0);
 
         $isSuperAdmin = $roleId === 1;
         $isAdmin      = $roleCatId === 7;
-        // Super Admin or Admin only, per the Intake tab's access rule.
-        $canAccess = $isSuperAdmin || $isAdmin;
+        $isTeacher    = $roleCatId === 3;
+        $isStudent    = $roleCatId === 4;
+
+        // Resolve "own school" fresh from an active admission (never trust the
+        // JWT's schID unconditionally — it can go stale over the token's 30-day life).
+        $activeAdmissions = $this->admissionModel->getAdmissionByUser($myId);
+        $resolvedSchId    = !empty($activeAdmissions) ? (int) $activeAdmissions[0]['sch_id_fk'] : $claimSchId;
+
+        // Super Admin, Admin or Teacher — Teacher/Admin scoped to their own school below.
+        $canAccess = $isSuperAdmin || $isAdmin || $isTeacher;
 
         $user      = $this->userModel->find($myId);
         $isAParent = !empty($user['is_a_parent']) && (int) $user['is_a_parent'] === 1;
         $children  = $isAParent ? $this->parentStudentModel->getChildrenOf($myId) : [];
 
         return [
-            'myId'         => $myId,
-            'roleId'       => $roleId,
-            'roleCatId'    => $roleCatId,
-            'ownSchId'     => $ownSchId,
-            'isSuperAdmin' => $isSuperAdmin,
-            'canAccess'    => $canAccess,
-            'isAParent'    => $isAParent,
-            'children'     => $children,
+            'myId'          => $myId,
+            'roleId'        => $roleId,
+            'roleCatId'     => $roleCatId,
+            'resolvedSchId' => $resolvedSchId,
+            'isSuperAdmin'  => $isSuperAdmin,
+            'isAdmin'       => $isAdmin,
+            'isTeacher'     => $isTeacher,
+            'isStudent'     => $isStudent,
+            'canAccess'     => $canAccess,
+            'isAParent'     => $isAParent,
+            'children'      => $children,
         ];
     }
 
@@ -63,6 +88,7 @@ class AdmissionController extends Controller
             'canViewListing'          => $ctx['canAccess'],
             'canAdd'                  => $ctx['canAccess'],
             'canViewMyChildAdmission' => $ctx['isAParent'],
+            'canViewMyAdmission'      => $ctx['isStudent'],
         ];
     }
 
@@ -77,6 +103,7 @@ class AdmissionController extends Controller
             'profilePhoto'  => $a['profile_photo'] ?? null,
             'roleName'      => $a['role_name'] ?? null,
             'roleCatName'   => $a['role_cat_name'] ?? null,
+            'roleCatId'     => isset($a['role_cat_id']) ? (int) $a['role_cat_id'] : null,
             'schoolId'      => isset($a['sch_id_fk']) ? (int) $a['sch_id_fk'] : null,
             'schoolName'    => $a['sch_name'] ?? null,
             'admissionDate' => $a['admission_date'] ?? null,
@@ -86,7 +113,30 @@ class AdmissionController extends Controller
     }
 
     /**
-     * GET /api/admission?scope=all|child&childId=&search=&status=&sch_id=&limit=&offset=
+     * Whether the caller may view a given admission row (from getAdmissionDetail()).
+     */
+    private function canViewAdmission(array $ctx, array $a): bool
+    {
+        if ($ctx['isSuperAdmin']) {
+            return true;
+        }
+        $schId  = (int) ($a['sch_id_fk'] ?? $a['sch_id'] ?? 0);
+        $userId = (int) ($a['user_id_fk'] ?? $a['user_id'] ?? 0);
+
+        if ($ctx['canAccess'] && $schId === $ctx['resolvedSchId']) {
+            return true;
+        }
+        if ($ctx['isStudent'] && $userId === $ctx['myId']) {
+            return true;
+        }
+        if ($ctx['isAParent'] && in_array($userId, array_column($ctx['children'], 'user_id'), true)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * GET /api/admission?scope=all|child|mine&childId=&search=&status=&sch_id=&limit=&offset=
      */
     public function index()
     {
@@ -111,6 +161,22 @@ class AdmissionController extends Controller
             ]);
         }
 
+        if ($scope === 'mine') {
+            if (!$ctx['isStudent']) {
+                return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to view this.']);
+            }
+            $rows = $this->admissionModel->getChildAdmissions([$ctx['myId']]);
+
+            return $this->response->setJSON([
+                'success'     => true,
+                'admissions'  => array_map(fn ($a) => $this->admissionOut($a), $rows),
+                'total'       => count($rows),
+                'hasMore'     => false,
+                'schools'     => [],
+                'permissions' => $this->permissionsOut($ctx),
+            ]);
+        }
+
         if (!$ctx['canAccess']) {
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to view admissions.']);
         }
@@ -123,7 +189,7 @@ class AdmissionController extends Controller
 
         $requestedSchId = $this->request->getGet('sch_id');
         $requestedSchId = $requestedSchId !== null && $requestedSchId !== '' ? (int) $requestedSchId : null;
-        $schId          = $ctx['isSuperAdmin'] ? $requestedSchId : ($ctx['ownSchId'] ?: null);
+        $schId          = $ctx['isSuperAdmin'] ? $requestedSchId : ($ctx['resolvedSchId'] ?: null);
 
         $schools = [];
         if ($ctx['isSuperAdmin']) {
@@ -149,6 +215,7 @@ class AdmissionController extends Controller
 
     /**
      * GET /api/admission/schools — school picker for the Add Admission form.
+     * Super Admin gets every school; Admin/Teacher get only their own (single-item list).
      */
     public function schools()
     {
@@ -157,9 +224,12 @@ class AdmissionController extends Controller
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission.']);
         }
 
-        $schools = $ctx['isSuperAdmin']
-            ? array_map(fn ($s) => ['schId' => (int) $s['sch_id'], 'schName' => $s['sch_name']], $this->schoolModel->getAllSchool())
-            : [];
+        if ($ctx['isSuperAdmin']) {
+            $schools = array_map(fn ($s) => ['schId' => (int) $s['sch_id'], 'schName' => $s['sch_name']], $this->schoolModel->getAllSchool());
+        } else {
+            $own     = $ctx['resolvedSchId'] ? $this->schoolModel->getSchool($ctx['resolvedSchId']) : null;
+            $schools = $own ? [['schId' => (int) $own['sch_id'], 'schName' => $own['sch_name']]] : [];
+        }
 
         return $this->response->setJSON(['success' => true, 'schools' => $schools]);
     }
@@ -207,13 +277,13 @@ class AdmissionController extends Controller
             $status = 'Active';
         }
 
-        if (!$userId || !$schId || !$date) {
-            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'User, school and admission date are required.']);
+        // Non Super Admin — enforce their own resolved school, same as the web flow.
+        if (!$ctx['isSuperAdmin']) {
+            $schId = $ctx['resolvedSchId'];
         }
 
-        // Non Super Admin — enforce their own school, same as the web flow.
-        if (!$ctx['isSuperAdmin']) {
-            $schId = $ctx['ownSchId'];
+        if (!$userId || !$schId || !$date) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'User, school and admission date are required.']);
         }
 
         $existing = $this->admissionModel->where('user_id_fk', $userId)->where('admission_status', 'Active')->first();
@@ -238,5 +308,158 @@ class AdmissionController extends Controller
             'success'   => true,
             'admission' => $this->admissionOut($this->admissionModel->getAdmissionDetail((int) $admissionId)),
         ]);
+    }
+
+    /**
+     * GET /api/admission/{id} — full detail payload for the Admission Detail screen.
+     */
+    public function detail(int $id)
+    {
+        $ctx = $this->context();
+        $a   = $this->admissionModel->getAdmissionDetail($id);
+        if (!$a) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Admission not found.']);
+        }
+        if (!$this->canViewAdmission($ctx, $a)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this admission.']);
+        }
+
+        $canEdit   = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_edit_admission');
+        $canDelete = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_remove_admission');
+
+        $enrolments = array_map(fn ($e) => [
+            'id'        => (int) $e['enrol_id'],
+            'enrolDate' => $e['enrol_date'] ?? null,
+            'term'      => $e['enrol_term'] ?? null,
+            'year'      => isset($e['enrol_year']) ? (int) $e['enrol_year'] : null,
+            'status'    => $e['enrol_status'] ?? null,
+            'streamName' => $e['stream_name'] ?? null,
+            'levelName'  => $e['level_name'] ?? null,
+        ], $this->admissionModel->getEnrolmentsForAdmission($id));
+
+        $roleCatId = isset($a['role_cat_id']) ? (int) $a['role_cat_id'] : null;
+        $leadershipRole = $roleCatId === 4 ? $this->admissionModel->getLeadershipRole($id) : null;
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'canEdit'   => $canEdit,
+            'canDelete' => $canDelete,
+            'admission' => array_merge($this->admissionOut($a), [
+                'dob'           => $a['dob'] ?? null,
+                'phone'         => $a['phone'] ?? null,
+                'address'       => $a['address'] ?? null,
+                'schoolAddress' => $a['sch_address'] ?? null,
+                'schoolPhone'   => $a['sch_phone'] ?? null,
+                'schoolEmail'   => $a['sch_email'] ?? null,
+                'schoolLogo'    => $a['sch_logo'] ?? null,
+            ]),
+            'enrolments'      => $enrolments,
+            'showLeadership'  => $roleCatId === 4,
+            'leadershipRole'  => $leadershipRole,
+            'leadershipRoles' => self::LEADERSHIP_ROLES,
+        ]);
+    }
+
+    /**
+     * PUT /api/admission/{id} — body (JSON): sch_id?, admission_date, admission_status, admission_note?
+     */
+    public function update(int $id)
+    {
+        $ctx = $this->context();
+        $a   = $this->admissionModel->getAdmissionDetail($id);
+        if (!$a) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Admission not found.']);
+        }
+        if (!$this->canViewAdmission($ctx, $a)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this admission.']);
+        }
+        $canEdit = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_edit_admission');
+        if (!$canEdit) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to edit this admission.']);
+        }
+
+        $body = $this->request->getJSON(true) ?? [];
+
+        $date   = trim((string) ($body['admission_date'] ?? ($a['admission_date'] ?? '')));
+        $status = $body['admission_status'] ?? $a['admission_status'];
+        $note   = $body['admission_note'] ?? $a['admission_note'];
+        if (!in_array($status, ['Active', 'Inactive'], true)) {
+            $status = 'Active';
+        }
+
+        $schId = (int) ($a['sch_id_fk'] ?? 0);
+        if ($ctx['isSuperAdmin'] && isset($body['sch_id']) && (int) $body['sch_id']) {
+            $schId = (int) $body['sch_id'];
+        }
+
+        if (!$date) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Admission date is required.']);
+        }
+
+        $this->admissionModel->updateAdmission($id, [
+            'sch_id_fk'        => $schId,
+            'admission_date'   => $date,
+            'admission_status' => $status,
+            'admission_note'   => $note ?: null,
+        ]);
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'admission' => $this->admissionOut($this->admissionModel->getAdmissionDetail($id)),
+        ]);
+    }
+
+    /**
+     * DELETE /api/admission/{id}
+     */
+    public function delete(int $id)
+    {
+        $ctx = $this->context();
+        $a   = $this->admissionModel->getAdmissionDetail($id);
+        if (!$a) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Admission not found.']);
+        }
+        if (!$this->canViewAdmission($ctx, $a)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this admission.']);
+        }
+        $canDelete = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_remove_admission');
+        if (!$canDelete) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to delete this admission.']);
+        }
+
+        $db = \Config\Database::connect();
+        $db->table('enrolment')->where('admission_id_fk', $id)->delete();
+        $this->admissionModel->deleteAdmission($id);
+
+        return $this->response->setJSON(['success' => true, 'message' => 'Admission deleted successfully.']);
+    }
+
+    /**
+     * POST /api/admission/{id}/leadership — body (JSON): role (one of LEADERSHIP_ROLES, or null/empty to clear)
+     */
+    public function leadership(int $id)
+    {
+        $ctx = $this->context();
+        $a   = $this->admissionModel->getAdmissionDetail($id);
+        if (!$a) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Admission not found.']);
+        }
+        if (!$this->canViewAdmission($ctx, $a)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have access to this admission.']);
+        }
+        $canEdit = $ctx['isSuperAdmin'] || $this->grantAccess($ctx['roleId'], '_edit_admission');
+        if (!$canEdit) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to edit this admission.']);
+        }
+
+        $body = $this->request->getJSON(true) ?? [];
+        $role = trim((string) ($body['role'] ?? ''));
+        if ($role !== '' && !in_array($role, self::LEADERSHIP_ROLES, true)) {
+            return $this->response->setStatusCode(422)->setJSON(['success' => false, 'message' => 'Invalid leadership role.']);
+        }
+
+        $this->admissionModel->saveLeadershipRole($id, $role ?: null);
+
+        return $this->response->setJSON(['success' => true, 'leadershipRole' => $role ?: null]);
     }
 }
