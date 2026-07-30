@@ -88,9 +88,19 @@ class WallModel extends Model
 
     // ─── posts ───────────────────────────────────────────────────────────────
 
-    public function getPosts(int $schId, int $offset = 0, int $limit = 10): array
+    public function getPosts(int $schId, int $offset = 0, int $limit = 10, string $authorSearch = ''): array
     {
         $db = \Config\Database::connect();
+        $searchSQL = '';
+        $params    = [$schId];
+        if ($authorSearch !== '') {
+            $searchSQL = " AND (u.fname LIKE ? OR u.lname LIKE ? OR CONCAT(u.fname, ' ', u.lname) LIKE ?)";
+            $like      = '%' . $authorSearch . '%';
+            $params    = array_merge($params, [$like, $like, $like]);
+        }
+        $params[] = $limit;
+        $params[] = $offset;
+
         return $db->query("
             SELECT wp.*,
                    u.fname, u.lname, u.profile_photo AS photo,
@@ -102,10 +112,10 @@ class WallModel extends Model
                     WHERE ur.user_id_fk = wp.user_id_fk AND ur.user_role_status = 'Active' LIMIT 1) AS role_cat_name
             FROM wall_post wp
             INNER JOIN users u ON u.user_id = wp.user_id_fk
-            WHERE wp.sch_id_fk = ? AND wp.post_status = 'Active'
+            WHERE wp.sch_id_fk = ? AND wp.post_status = 'Active' $searchSQL
             ORDER BY wp.created_at DESC
             LIMIT ? OFFSET ?
-        ", [$schId, $limit, $offset])->getResultArray();
+        ", $params)->getResultArray();
     }
 
     public function getPost(int $postId): ?array

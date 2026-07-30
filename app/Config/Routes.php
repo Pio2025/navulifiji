@@ -854,6 +854,21 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->post('notifications/mark-read', 'Api\NotificationController::markRead');
 
         $routes->get('chat/socket-token', 'Api\ChatController::getSocketToken');
+        $routes->get('chat/users',        'Api\ChatController::users');
+        $routes->get('chat/conversations','Api\ChatController::getConversations');
+        $routes->get('chat/conversation/(:num)',       'Api\ChatController::getOrCreateConversation/$1');
+        $routes->post('chat/conversation/(:num)/clear','Api\ChatController::clearConversation/$1');
+        $routes->get('chat/messages/(:num)/new', 'Api\ChatController::getNewMessages/$1');
+        $routes->get('chat/messages/(:num)',     'Api\ChatController::getMessages/$1');
+        $routes->post('chat/messages',           'Api\ChatController::sendMessage');
+        $routes->post('chat/upload',             'Api\ChatController::uploadFile');
+        $routes->get('chat/unread-count',    'Api\ChatController::getUnreadCount');
+        $routes->get('chat/unread-per-user', 'Api\ChatController::getUnreadPerUser');
+        $routes->post('chat/read/(:num)',    'Api\ChatController::markRead/$1');
+        $routes->post('chat/message/(:num)/delete', 'Api\ChatController::deleteMessage/$1');
+        $routes->post('chat/message/(:num)/react',  'Api\ChatController::reactMessage/$1');
+        $routes->post('chat/block/(:num)',       'Api\ChatController::block/$1');
+        $routes->get('chat/block-status/(:num)', 'Api\ChatController::blockStatus/$1');
     });
 });
 

@@ -105,13 +105,14 @@ class WallController extends Controller
         $offset     = max(0, (int) $this->request->getGet('offset'));
         $limit      = 10;
         $reqSchId   = $this->request->getGet('sch_id');
+        $search     = trim((string) ($this->request->getGet('q') ?? ''));
         [$schools, $schID] = $this->resolveSchools($reqSchId !== null ? (int) $reqSchId : null);
 
         if ($schID === 0) {
             return $this->response->setJSON(['success' => true, 'posts' => [], 'hasMore' => false, 'schools' => [], 'activeSchoolId' => 0]);
         }
 
-        $posts   = $this->wallModel->getPosts($schID, $offset, $limit + 1);
+        $posts   = $this->wallModel->getPosts($schID, $offset, $limit + 1, $search);
         $hasMore = count($posts) > $limit;
         if ($hasMore) array_pop($posts);
 
