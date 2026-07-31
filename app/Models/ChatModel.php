@@ -67,7 +67,7 @@ class ChatModel extends Model
 
     public function getConversations(int $userId): array
     {
-        return $this->db->query("
+        $rows = $this->db->query("
             SELECT
                 cc.id              AS conversation_id,
                 cc.type,
@@ -107,6 +107,15 @@ class ChatModel extends Model
                        )
             ORDER BY COALESCE(lm.created_at, cc.created_at) DESC
         ", [$userId, $userId, $userId])->getResultArray();
+
+        foreach ($rows as &$row) {
+            $row['conversation_id'] = (int) $row['conversation_id'];
+            $row['other_user_id']   = $row['other_user_id'] !== null ? (int) $row['other_user_id'] : null;
+            $row['unread_count']    = (int) $row['unread_count'];
+        }
+        unset($row);
+
+        return $rows;
     }
 
     // ------------------------------------------------------------------ Messages
@@ -131,13 +140,16 @@ class ChatModel extends Model
         ", [$userId, $conversationId, $perPage, $offset])->getResultArray();
 
         foreach ($rows as &$row) {
+            $row['id']              = (int) $row['id'];
+            $row['conversation_id'] = (int) $row['conversation_id'];
+            $row['sender_id']       = (int) $row['sender_id'];
             if ((int) $row['deleted_for_everyone']) {
                 $row['message_type'] = 'deleted';
                 $row['content']      = null;
                 $row['files']        = [];
             } else {
                 $row['files'] = ($row['message_type'] !== 'text')
-                    ? $this->getMessageFiles((int) $row['id'])
+                    ? $this->getMessageFiles($row['id'])
                     : [];
             }
         }
@@ -200,9 +212,12 @@ class ChatModel extends Model
 
         if (!$row) return null;
 
-        $result              = (array) $row;
-        $result['files']     = $this->getMessageFiles($messageId);
-        $result['reactions'] = $this->getReactionSummary($messageId, $viewerId ?? (int) $row->sender_id);
+        $result                    = (array) $row;
+        $result['id']              = (int) $result['id'];
+        $result['conversation_id'] = (int) $result['conversation_id'];
+        $result['sender_id']       = (int) $result['sender_id'];
+        $result['files']           = $this->getMessageFiles($messageId);
+        $result['reactions']       = $this->getReactionSummary($messageId, $viewerId ?? (int) $row->sender_id);
 
         return $result;
     }
@@ -226,13 +241,16 @@ class ChatModel extends Model
         ", [$userId, $conversationId, $afterId])->getResultArray();
 
         foreach ($rows as &$row) {
+            $row['id']              = (int) $row['id'];
+            $row['conversation_id'] = (int) $row['conversation_id'];
+            $row['sender_id']       = (int) $row['sender_id'];
             if ((int) $row['deleted_for_everyone']) {
                 $row['message_type'] = 'deleted';
                 $row['content']      = null;
                 $row['files']        = [];
             } else {
                 $row['files'] = ($row['message_type'] !== 'text')
-                    ? $this->getMessageFiles((int) $row['id'])
+                    ? $this->getMessageFiles($row['id'])
                     : [];
             }
         }
@@ -528,11 +546,19 @@ class ChatModel extends Model
 
     private function getMessageFiles(int $messageId): array
     {
-        return $this->db->query(
+        $rows = $this->db->query(
             "SELECT id, original_name, file_path, file_type, file_size
              FROM   chat_message_files
              WHERE  message_id = ?",
             [$messageId]
         )->getResultArray();
+
+        foreach ($rows as &$row) {
+            $row['id']        = (int) $row['id'];
+            $row['file_size'] = (int) $row['file_size'];
+        }
+        unset($row);
+
+        return $rows;
     }
 }

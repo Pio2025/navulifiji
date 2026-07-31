@@ -142,7 +142,7 @@ class WallController extends Controller
                 'authorRole'    => $p['role_cat_name'] ?? null,
                 'commentCount'  => (int) $p['comment_count'],
                 'reactionCount' => (int) $p['reaction_count'],
-                'reactions'     => $postReactions[$pid] ?? ['summary' => [], 'my_emoji' => null],
+                'reactions'     => $postReactions[$pid] ?? ['summary' => new \stdClass(), 'my_emoji' => null],
                 'media'         => $this->mediaOut($mediaMap[$pid] ?? []),
                 'isMine'        => (int) $p['user_id_fk'] === $myId,
             ];
@@ -221,7 +221,7 @@ class WallController extends Controller
                 'authorRole'    => $claims['roleCatName'] ?? null,
                 'commentCount'  => 0,
                 'reactionCount' => 0,
-                'reactions'     => ['summary' => [], 'my_emoji' => null],
+                'reactions'     => ['summary' => new \stdClass(), 'my_emoji' => null],
                 'media'         => $this->mediaOut($media),
                 'isMine'        => true,
             ],
@@ -256,7 +256,7 @@ class WallController extends Controller
                 'authorPhoto'     => $this->photoUrl($c['photo']),
                 'authorRole'      => $c['role_cat_name'] ?? null,
                 'reactionCount'   => (int) $c['reaction_count'],
-                'reactions'       => $reactions[$cid] ?? ['summary' => [], 'my_emoji' => null],
+                'reactions'       => $reactions[$cid] ?? ['summary' => new \stdClass(), 'my_emoji' => null],
                 'isMine'          => (int) $c['user_id_fk'] === $myId,
             ];
         }
@@ -294,7 +294,7 @@ class WallController extends Controller
                 'authorPhoto'     => $this->photoUrl(($this->userModel->find($myId))['profile_photo'] ?? null),
                 'authorRole'      => $claims['roleCatName'] ?? null,
                 'reactionCount'   => 0,
-                'reactions'       => ['summary' => [], 'my_emoji' => null],
+                'reactions'       => ['summary' => new \stdClass(), 'my_emoji' => null],
                 'isMine'          => true,
             ],
         ]);

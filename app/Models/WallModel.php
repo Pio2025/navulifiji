@@ -357,7 +357,7 @@ class WallModel extends Model
             $summary[$r['emoji']] = (int) $r['cnt'];
             if ($r['is_mine']) $myEmoji = $r['emoji'];
         }
-        return ['summary' => $summary, 'my_emoji' => $myEmoji];
+        return ['summary' => empty($summary) ? new \stdClass() : $summary, 'my_emoji' => $myEmoji];
     }
 
     /**
