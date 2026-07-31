@@ -39,6 +39,7 @@ class WallController extends Controller
         $this->wallModel    = new WallModel();
         $this->userModel    = new UserModel();
         $this->schoolAccess = new SchoolAccess();
+        $this->wallModel->ensureTables();
     }
 
     /**
@@ -55,6 +56,19 @@ class WallController extends Controller
         $schId   = $this->schoolAccess->resolveActiveSchoolId($schools, $requestedSchId);
 
         return [$schools, $schId];
+    }
+
+    /**
+     * Super Admin (roleID 1) or School Admin / Admin staff (roleCatID 2 or 7)
+     * may edit or delete any post, mirroring the web app's delete permission
+     * (extended here to also cover edit, per mobile app requirements).
+     */
+    private function canModerate(): bool
+    {
+        $claims    = ApiAuth::claims();
+        $roleID    = (int) ($claims['roleID'] ?? 0);
+        $roleCatID = (int) ($claims['roleCatID'] ?? 0);
+        return $roleID === 1 || in_array($roleCatID, [2, 7], true);
     }
 
     private function myName(int $userId): string
@@ -127,10 +141,12 @@ class WallController extends Controller
         foreach ($mediaRaw as $m) $mediaMap[$m['wall_post_id_fk']][] = $m;
 
         $postReactions = $this->wallModel->getReactionSummaryBulk('post', $postIds, $myId);
+        $isAdmin       = $this->canModerate();
 
         $out = [];
         foreach ($posts as $p) {
-            $pid = (int) $p['wall_post_id'];
+            $pid    = (int) $p['wall_post_id'];
+            $isMine = (int) $p['user_id_fk'] === $myId;
             $out[] = [
                 'wallPostId'    => $pid,
                 'userId'        => (int) $p['user_id_fk'],
@@ -144,7 +160,10 @@ class WallController extends Controller
                 'reactionCount' => (int) $p['reaction_count'],
                 'reactions'     => $postReactions[$pid] ?? ['summary' => new \stdClass(), 'my_emoji' => null],
                 'media'         => $this->mediaOut($mediaMap[$pid] ?? []),
-                'isMine'        => (int) $p['user_id_fk'] === $myId,
+                'isMine'        => $isMine,
+                'canEdit'       => $isMine || $isAdmin,
+                'canDelete'     => $isMine || $isAdmin,
+                'reported'      => $this->wallModel->hasUserReported($pid, $myId),
             ];
         }
 
@@ -224,8 +243,127 @@ class WallController extends Controller
                 'reactions'     => ['summary' => new \stdClass(), 'my_emoji' => null],
                 'media'         => $this->mediaOut($media),
                 'isMine'        => true,
+                'canEdit'       => true,
+                'canDelete'     => true,
+                'reported'      => false,
             ],
         ]);
+    }
+
+    /**
+     * POST /api/wall/post/(:num)/update — multipart: content, delete_media_ids[]?, media[]?, video_urls[]?
+     */
+    public function updatePost(int $postId)
+    {
+        $myId = ApiAuth::userId();
+        $post = $this->wallModel->getPost($postId);
+        if (!$post) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Post not found.']);
+        }
+        if ((int) $post['user_id_fk'] !== $myId && !$this->canModerate()) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        $content = trim($this->request->getPost('content') ?? '');
+
+        $deleteIds = array_filter(array_map('intval', (array) ($this->request->getPost('delete_media_ids') ?? [])));
+        foreach ($deleteIds as $mediaId) {
+            $media = $this->wallModel->getMedia($mediaId);
+            if (!$media || (int) $media['wall_post_id_fk'] !== $postId) continue;
+            if ($media['media_type'] !== 'video_url') {
+                $path = FCPATH . self::UPLOAD_DIR . $media['file_src'];
+                if (file_exists($path)) unlink($path);
+            }
+            $this->wallModel->deleteMedia($mediaId);
+        }
+
+        $dir = FCPATH . self::UPLOAD_DIR;
+        if (!is_dir($dir)) mkdir($dir, 0755, true);
+
+        $files = $this->request->getFileMultiple('media') ?? [];
+        foreach ($files as $file) {
+            if (!$file || !$file->isValid() || $file->hasMoved()) continue;
+            if ($file->getSize() > self::MAX_FILE_MB * 1024 * 1024) continue;
+            $mime = $file->getMimeType();
+            $type = in_array($mime, self::IMAGE_MIME) ? 'image' : (in_array($mime, self::FILE_MIME) ? 'file' : null);
+            if (!$type) continue;
+            $ext     = strtolower($file->getExtension());
+            $newName = time() . '_' . bin2hex(random_bytes(6)) . '.' . $ext;
+            $file->move($dir, $newName);
+            $this->wallModel->addMedia($postId, $type, $newName, $file->getClientName());
+        }
+
+        $videoUrls = array_filter(array_map('trim', (array) ($this->request->getPost('video_urls') ?? [])));
+        foreach ($videoUrls as $url) {
+            if (filter_var($url, FILTER_VALIDATE_URL)) {
+                $this->wallModel->addMedia($postId, 'video_url', $url);
+            }
+        }
+
+        $this->wallModel->updatePost($postId, $content);
+
+        $updated = $this->wallModel->getPost($postId);
+        $media   = $this->wallModel->getMediaForPosts([$postId]);
+
+        return $this->response->setJSON([
+            'success' => true,
+            'post'    => [
+                'wallPostId' => $postId,
+                'content'    => $updated['content'],
+                'media'      => $this->mediaOut($media),
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/wall/post/(:num)/delete
+     */
+    public function deletePost(int $postId)
+    {
+        $myId = ApiAuth::userId();
+        $post = $this->wallModel->getPost($postId);
+        if (!$post) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Post not found.']);
+        }
+        if ((int) $post['user_id_fk'] !== $myId && !$this->canModerate()) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        $media = $this->wallModel->getMediaForPosts([$postId]);
+        foreach ($media as $m) {
+            if ($m['media_type'] !== 'video_url') {
+                $path = FCPATH . self::UPLOAD_DIR . $m['file_src'];
+                if (file_exists($path)) unlink($path);
+            }
+            $this->wallModel->deleteMedia((int) $m['wall_media_id']);
+        }
+
+        $this->wallModel->deletePost($postId);
+
+        return $this->response->setJSON(['success' => true]);
+    }
+
+    /**
+     * POST /api/wall/post/(:num)/report — body: reason?
+     */
+    public function reportPost(int $postId)
+    {
+        $myId = ApiAuth::userId();
+        $post = $this->wallModel->getPost($postId);
+        if (!$post) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Post not found.']);
+        }
+
+        $body   = $this->request->getJSON(true) ?? [];
+        $reason = trim($this->request->getPost('reason') ?? ($body['reason'] ?? ''));
+
+        if ($this->wallModel->hasUserReported($postId, $myId)) {
+            return $this->response->setJSON(['success' => true, 'message' => 'You already reported this post.']);
+        }
+
+        $this->wallModel->reportPost($postId, $myId, $reason !== '' ? $reason : null);
+
+        return $this->response->setJSON(['success' => true]);
     }
 
     /**

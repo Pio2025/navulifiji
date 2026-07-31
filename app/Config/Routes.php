@@ -846,6 +846,9 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
 
         $routes->get('wall/feed',                    'Api\WallController::feed');
         $routes->post('wall/post',                    'Api\WallController::createPost');
+        $routes->post('wall/post/(:num)/update',      'Api\WallController::updatePost/$1');
+        $routes->post('wall/post/(:num)/delete',      'Api\WallController::deletePost/$1');
+        $routes->post('wall/post/(:num)/report',      'Api\WallController::reportPost/$1');
         $routes->get('wall/post/(:num)/comments',     'Api\WallController::comments/$1');
         $routes->post('wall/post/(:num)/comment',     'Api\WallController::addComment/$1');
         $routes->post('wall/react',                   'Api\WallController::react');

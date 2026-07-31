@@ -84,6 +84,22 @@ class WallModel extends Model
             $dbf->addKey(['target_type', 'target_id']);
             $dbf->createTable('wall_reaction', true, ['ENGINE' => 'MyISAM']);
         }
+
+        // wall_post_report — user reports on a post; admins review/act on these
+        if (!$db->tableExists('wall_post_report')) {
+            $dbf->addField([
+                'wall_post_report_id' => ['type' => 'INT', 'unsigned' => true, 'auto_increment' => true],
+                'wall_post_id_fk'     => ['type' => 'INT', 'unsigned' => true],
+                'reporter_user_id_fk' => ['type' => 'INT', 'unsigned' => true],
+                'reason'              => ['type' => 'VARCHAR', 'constraint' => 500, 'null' => true],
+                'report_status'       => ['type' => 'ENUM', 'constraint' => ['Open','Resolved'], 'default' => 'Open'],
+                'created_at'          => ['type' => 'DATETIME'],
+            ]);
+            $dbf->addPrimaryKey('wall_post_report_id');
+            $dbf->addUniqueKey(['wall_post_id_fk', 'reporter_user_id_fk'], 'uq_wall_post_report');
+            $dbf->addKey('wall_post_id_fk');
+            $dbf->createTable('wall_post_report', true, ['ENGINE' => 'MyISAM']);
+        }
     }
 
     // ─── posts ───────────────────────────────────────────────────────────────
@@ -160,10 +176,16 @@ class WallModel extends Model
         ]);
     }
 
+    /**
+     * Soft-deletes the post and cascades to all of its comments/replies
+     * (media rows are left for the caller to remove, since that also
+     * involves deleting the physical files from disk).
+     */
     public function deletePost(int $postId): void
     {
         $db = \Config\Database::connect();
         $db->table('wall_post')->where('wall_post_id', $postId)->update(['post_status' => 'Deleted', 'updated_at' => date('Y-m-d H:i:s')]);
+        $db->table('wall_comment')->where('wall_post_id_fk', $postId)->update(['comment_status' => 'Deleted']);
     }
 
     // ─── read tracking ──────────────────────────────────────────────────────
@@ -402,5 +424,38 @@ class WallModel extends Model
             if ($r['is_mine']) $out[$tid]['my_emoji'] = $r['emoji'];
         }
         return $out;
+    }
+
+    // ─── reports ─────────────────────────────────────────────────────────────
+
+    /**
+     * Records a report against a post. Returns false if this user already
+     * reported this post (unique key on post+reporter).
+     */
+    public function reportPost(int $postId, int $reporterUserId, ?string $reason): bool
+    {
+        $db = \Config\Database::connect();
+        try {
+            $db->table('wall_post_report')->insert([
+                'wall_post_id_fk'     => $postId,
+                'reporter_user_id_fk' => $reporterUserId,
+                'reason'              => $reason,
+                'report_status'       => 'Open',
+                'created_at'          => date('Y-m-d H:i:s'),
+            ]);
+            return true;
+        } catch (\Throwable $e) {
+            return false; // duplicate report from the same user
+        }
+    }
+
+    public function hasUserReported(int $postId, int $userId): bool
+    {
+        $db  = \Config\Database::connect();
+        $row = $db->table('wall_post_report')
+            ->where('wall_post_id_fk', $postId)
+            ->where('reporter_user_id_fk', $userId)
+            ->get()->getRowArray();
+        return (bool) $row;
     }
 }
