@@ -80,6 +80,7 @@ class ChatModel extends Model
                 lm.content         AS last_message,
                 lm.message_type    AS last_message_type,
                 lm.created_at      AS last_message_at,
+                lm.sender_id       AS last_message_sender_id,
                 (
                     SELECT COUNT(*)
                     FROM   chat_messages m2
@@ -109,9 +110,10 @@ class ChatModel extends Model
         ", [$userId, $userId, $userId])->getResultArray();
 
         foreach ($rows as &$row) {
-            $row['conversation_id'] = (int) $row['conversation_id'];
-            $row['other_user_id']   = $row['other_user_id'] !== null ? (int) $row['other_user_id'] : null;
-            $row['unread_count']    = (int) $row['unread_count'];
+            $row['conversation_id']      = (int) $row['conversation_id'];
+            $row['other_user_id']        = $row['other_user_id'] !== null ? (int) $row['other_user_id'] : null;
+            $row['unread_count']         = (int) $row['unread_count'];
+            $row['last_message_sender_id'] = $row['last_message_sender_id'] !== null ? (int) $row['last_message_sender_id'] : null;
         }
         unset($row);
 
