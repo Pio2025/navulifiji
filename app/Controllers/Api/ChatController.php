@@ -48,6 +48,7 @@ class ChatController extends Controller
         $this->chatModel->ensureDeletionTable();
         $this->chatModel->ensureReactionsTable();
         $this->chatModel->ensureBlocksTable();
+        $this->chatModel->ensureReplyPinColumns();
         $this->db = \Config\Database::connect();
     }
 
@@ -170,13 +171,65 @@ class ChatController extends Controller
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot message this user.']);
         }
 
-        $messageId = $this->chatModel->saveMessage($conversationId, $myId, 'text', $content);
+        $replyToId = $this->resolveReplyToId($conversationId, (int) ($this->request->getPost('reply_to_message_id') ?? ($body['reply_to_message_id'] ?? 0)));
+        $messageId = $this->chatModel->saveMessage($conversationId, $myId, 'text', $content, $replyToId);
         $message   = $this->chatModel->getMessage($messageId, $myId);
 
         return $this->response->setJSON([
             'success' => true,
             'message' => $message,
         ]);
+    }
+
+    private function resolveReplyToId(int $conversationId, int $replyToId): ?int
+    {
+        if (!$replyToId) {
+            return null;
+        }
+        $parent = $this->db->table('chat_messages')
+            ->where('id', $replyToId)
+            ->where('conversation_id', $conversationId)
+            ->get()->getRowArray();
+
+        return $parent ? $replyToId : null;
+    }
+
+    // ------------------------------------------------------------------ Call log
+
+    /**
+     * POST /api/chat/call-event
+     * Logs a completed/missed/declined/cancelled voice or video call as a
+     * chat message (message_type='call'). Only the outgoing caller side
+     * should call this — mirrors the web ChatController::callEvent().
+     */
+    public function callEvent()
+    {
+        $myId           = ApiAuth::userId();
+        $body           = $this->request->getJSON(true) ?? [];
+        $conversationId = (int) ($this->request->getPost('conversation_id') ?? ($body['conversation_id'] ?? 0));
+        $callType       = (($this->request->getPost('call_type') ?? ($body['call_type'] ?? '')) === 'video') ? 'video' : 'voice';
+        $rawStatus      = $this->request->getPost('status') ?? ($body['status'] ?? '');
+        $status         = in_array($rawStatus, ['ended', 'missed', 'declined', 'cancelled'], true) ? $rawStatus : 'ended';
+        $duration       = max(0, (int) ($this->request->getPost('duration') ?? ($body['duration'] ?? 0)));
+
+        if (!$conversationId) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        if (!$this->chatModel->isParticipant($conversationId, $myId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        $otherUserId = $this->chatModel->getOtherParticipant($conversationId, $myId);
+        if ($otherUserId && $this->chatModel->isBlockedBetween($myId, $otherUserId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot call this user.']);
+        }
+
+        $content   = json_encode(['call_type' => $callType, 'status' => $status, 'duration' => $duration]);
+        $messageId = $this->chatModel->saveMessage($conversationId, $myId, 'call', $content);
+        $message   = $this->chatModel->getMessage($messageId, $myId);
+
+        return $this->response->setJSON(['success' => true, 'message' => $message]);
     }
 
     // ------------------------------------------------------------------ File upload
@@ -209,6 +262,8 @@ class ChatController extends Controller
             return $this->response->setStatusCode(500)->setJSON(['success' => false, 'message' => 'Could not create upload directory']);
         }
 
+        $replyToId = $this->resolveReplyToId($conversationId, (int) ($this->request->getPost('reply_to_message_id') ?? 0));
+
         // ── Multiple photo upload ─────────────────────────────────────────
         $multiFiles = $this->request->getFileMultiple('files');
         if ($multiFiles && isset($multiFiles[0]) && $multiFiles[0]->isValid()) {
@@ -239,7 +294,7 @@ class ChatController extends Controller
                 return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'No valid images']);
             }
 
-            $messageId = $this->chatModel->saveMessage($conversationId, $myId, 'image', null);
+            $messageId = $this->chatModel->saveMessage($conversationId, $myId, 'image', null, $replyToId);
             foreach ($saved as $s) {
                 $this->chatModel->saveMessageFile($messageId, $s);
             }
@@ -271,7 +326,7 @@ class ChatController extends Controller
         }
 
         $messageType = str_starts_with($mimeType, 'image/') ? 'image' : 'file';
-        $messageId   = $this->chatModel->saveMessage($conversationId, $myId, $messageType, null);
+        $messageId   = $this->chatModel->saveMessage($conversationId, $myId, $messageType, null, $replyToId);
         $this->chatModel->saveMessageFile($messageId, [
             'original_name' => $file->getClientName(),
             'stored_name'   => $storedName,
@@ -440,6 +495,96 @@ class ChatController extends Controller
             'messageId'      => $messageId,
             'conversationId' => $conversationId,
             'reactions'      => $reactions,
+        ]);
+    }
+
+    // ------------------------------------------------------------------ Pin
+
+    /**
+     * POST /api/chat/message/(:num)/pin
+     */
+    public function pinMessage(int $messageId)
+    {
+        $myId = ApiAuth::userId();
+
+        $msg = $this->db->table('chat_messages')->where('id', $messageId)->get()->getRowArray();
+        if (!$msg) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Message not found']);
+        }
+
+        $conversationId = (int) $msg['conversation_id'];
+        if (!$this->chatModel->isParticipant($conversationId, $myId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        $result = $this->chatModel->togglePin($messageId, $myId);
+
+        return $this->response->setJSON([
+            'success'        => true,
+            'messageId'      => $messageId,
+            'conversationId' => $conversationId,
+            'pinned'         => $result['pinned'],
+        ]);
+    }
+
+    /**
+     * GET /api/chat/conversation/(:num)/pinned
+     */
+    public function getPinnedMessages(int $conversationId)
+    {
+        $myId = ApiAuth::userId();
+
+        if (!$this->chatModel->isParticipant($conversationId, $myId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        return $this->response->setJSON([
+            'success'  => true,
+            'messages' => $this->chatModel->getPinnedMessages($conversationId, $myId),
+        ]);
+    }
+
+    // ------------------------------------------------------------------ Forward
+
+    /**
+     * POST /api/chat/message/(:num)/forward
+     */
+    public function forwardMessage(int $messageId)
+    {
+        $myId                  = ApiAuth::userId();
+        $body                  = $this->request->getJSON(true) ?? [];
+        $targetConversationId  = (int) ($this->request->getPost('target_conversation_id') ?? ($body['target_conversation_id'] ?? 0));
+
+        if (!$targetConversationId) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid request']);
+        }
+
+        $msg = $this->db->table('chat_messages')->where('id', $messageId)->get()->getRowArray();
+        if (!$msg) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'Message not found']);
+        }
+
+        if (!$this->chatModel->isParticipant((int) $msg['conversation_id'], $myId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+        if (!$this->chatModel->isParticipant($targetConversationId, $myId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'Access denied']);
+        }
+
+        $otherUserId = $this->chatModel->getOtherParticipant($targetConversationId, $myId);
+        if ($otherUserId && $this->chatModel->isBlockedBetween($myId, $otherUserId)) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You cannot message this user.']);
+        }
+
+        $newId = $this->chatModel->forwardMessage($messageId, $targetConversationId, $myId);
+        if (!$newId) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'This message can no longer be forwarded']);
+        }
+
+        return $this->response->setJSON([
+            'success'        => true,
+            'conversationId' => $targetConversationId,
+            'message'        => $this->chatModel->getMessage($newId, $myId),
         ]);
     }
 

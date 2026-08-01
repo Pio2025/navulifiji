@@ -127,6 +127,7 @@ class ChatModel extends Model
         $rows = $this->db->query("
             SELECT
                 m.id, m.conversation_id, m.sender_id, m.message_type, m.content, m.created_at,
+                m.reply_to_message_id, m.is_pinned, m.pinned_at, m.pinned_by, m.is_forwarded,
                 CASE WHEN m.deleted_at IS NOT NULL THEN 1 ELSE 0 END AS deleted_for_everyone,
                 u.fname, u.lname, u.profile_photo
             FROM   chat_messages m
@@ -143,6 +144,9 @@ class ChatModel extends Model
             $row['id']              = (int) $row['id'];
             $row['conversation_id'] = (int) $row['conversation_id'];
             $row['sender_id']       = (int) $row['sender_id'];
+            $row['is_pinned']       = (bool) $row['is_pinned'];
+            $row['is_forwarded']    = (bool) $row['is_forwarded'];
+            $row['pinned_by']       = $row['pinned_by'] !== null ? (int) $row['pinned_by'] : null;
             if ((int) $row['deleted_for_everyone']) {
                 $row['message_type'] = 'deleted';
                 $row['content']      = null;
@@ -156,15 +160,23 @@ class ChatModel extends Model
         unset($row);
 
         $this->attachReactions($rows, $userId);
+        $this->attachReplyPreviews($rows);
 
         return array_reverse($rows);
     }
 
-    public function saveMessage(int $conversationId, int $senderId, string $type, ?string $content): int
-    {
+    public function saveMessage(
+        int $conversationId,
+        int $senderId,
+        string $type,
+        ?string $content,
+        ?int $replyToMessageId = null,
+        bool $isForwarded = false
+    ): int {
         $this->db->query(
-            "INSERT INTO chat_messages (conversation_id, sender_id, message_type, content) VALUES (?, ?, ?, ?)",
-            [$conversationId, $senderId, $type, $content]
+            "INSERT INTO chat_messages (conversation_id, sender_id, message_type, content, reply_to_message_id, is_forwarded)
+             VALUES (?, ?, ?, ?, ?, ?)",
+            [$conversationId, $senderId, $type, $content, $replyToMessageId, $isForwarded ? 1 : 0]
         );
         $messageId = $this->db->insertID();
 
@@ -202,6 +214,11 @@ class ChatModel extends Model
                 m.message_type,
                 m.content,
                 m.created_at,
+                m.reply_to_message_id,
+                m.is_pinned,
+                m.pinned_at,
+                m.pinned_by,
+                m.is_forwarded,
                 u.fname,
                 u.lname,
                 u.profile_photo
@@ -216,10 +233,16 @@ class ChatModel extends Model
         $result['id']              = (int) $result['id'];
         $result['conversation_id'] = (int) $result['conversation_id'];
         $result['sender_id']       = (int) $result['sender_id'];
+        $result['is_pinned']       = (bool) $result['is_pinned'];
+        $result['is_forwarded']    = (bool) $result['is_forwarded'];
+        $result['pinned_by']       = $result['pinned_by'] !== null ? (int) $result['pinned_by'] : null;
         $result['files']           = $this->getMessageFiles($messageId);
         $result['reactions']       = $this->getReactionSummary($messageId, $viewerId ?? (int) $row->sender_id);
 
-        return $result;
+        $rows = [$result];
+        $this->attachReplyPreviews($rows);
+
+        return $rows[0];
     }
 
     /** Returns all messages newer than $afterId — used for fallback polling. */
@@ -227,6 +250,7 @@ class ChatModel extends Model
     {
         $rows = $this->db->query("
             SELECT m.id, m.conversation_id, m.sender_id, m.message_type, m.content, m.created_at,
+                   m.reply_to_message_id, m.is_pinned, m.pinned_at, m.pinned_by, m.is_forwarded,
                    CASE WHEN m.deleted_at IS NOT NULL THEN 1 ELSE 0 END AS deleted_for_everyone,
                    u.fname, u.lname, u.profile_photo
             FROM   chat_messages m
@@ -244,6 +268,9 @@ class ChatModel extends Model
             $row['id']              = (int) $row['id'];
             $row['conversation_id'] = (int) $row['conversation_id'];
             $row['sender_id']       = (int) $row['sender_id'];
+            $row['is_pinned']       = (bool) $row['is_pinned'];
+            $row['is_forwarded']    = (bool) $row['is_forwarded'];
+            $row['pinned_by']       = $row['pinned_by'] !== null ? (int) $row['pinned_by'] : null;
             if ((int) $row['deleted_for_everyone']) {
                 $row['message_type'] = 'deleted';
                 $row['content']      = null;
@@ -257,6 +284,7 @@ class ChatModel extends Model
         unset($row);
 
         $this->attachReactions($rows, $userId);
+        $this->attachReplyPreviews($rows);
 
         return $rows;
     }
@@ -396,6 +424,61 @@ class ChatModel extends Model
         unset($row);
     }
 
+    // ------------------------------------------------------------------ Reply previews
+
+    /** Batch-attaches a `reply_to` preview (or null) to each row in $rows (avoids N+1 queries). */
+    private function attachReplyPreviews(array &$rows): void
+    {
+        if (empty($rows)) return;
+
+        $replyIds = array_values(array_unique(array_filter(
+            array_map(fn($r) => $r['reply_to_message_id'] ?? null, $rows)
+        )));
+
+        if (empty($replyIds)) {
+            foreach ($rows as &$row) { $row['reply_to'] = null; }
+            unset($row);
+            return;
+        }
+
+        $in = implode(',', array_fill(0, count($replyIds), '?'));
+        $parents = $this->db->query("
+            SELECT m.id, m.sender_id, m.message_type, m.content, m.deleted_at, u.fname, u.lname
+            FROM   chat_messages m
+            INNER JOIN users u ON u.user_id = m.sender_id
+            WHERE  m.id IN ($in)
+        ", array_map('intval', $replyIds))->getResultArray();
+
+        $byId = [];
+        foreach ($parents as $p) {
+            $deleted = $p['deleted_at'] !== null;
+            $byId[(int) $p['id']] = [
+                'id'           => (int) $p['id'],
+                'sender_id'    => (int) $p['sender_id'],
+                'sender_name'  => trim($p['fname'] . ' ' . $p['lname']),
+                'message_type' => $deleted ? 'deleted' : $p['message_type'],
+                'snippet'      => $deleted ? null : $this->contentSnippet($p['message_type'], $p['content']),
+            ];
+        }
+
+        foreach ($rows as &$row) {
+            $rid = $row['reply_to_message_id'] ?? null;
+            $row['reply_to'] = ($rid && isset($byId[(int) $rid])) ? $byId[(int) $rid] : null;
+        }
+        unset($row);
+    }
+
+    private function contentSnippet(string $type, ?string $content): string
+    {
+        return match ($type) {
+            'text'  => mb_strimwidth((string) $content, 0, 120, '…'),
+            'image' => '📷 Photo',
+            'file'  => '📎 File',
+            'call'  => '📞 Call',
+            default => '',
+        };
+    }
+
     /** Auto-create the reactions table if it doesn't exist yet. */
     public function ensureReactionsTable(): void
     {
@@ -469,6 +552,101 @@ class ChatModel extends Model
         $forge->addUniqueKey(['blocker_id', 'blocked_id']);
         $forge->addKey('blocked_id');
         $forge->createTable('chat_user_blocks', true);
+    }
+
+    /** Auto-adds the reply/pin/forward columns to chat_messages if they don't exist yet. */
+    public function ensureReplyPinColumns(): void
+    {
+        $db = \Config\Database::connect();
+        if ($db->fieldExists('reply_to_message_id', 'chat_messages')) return;
+        $forge = \Config\Database::forge();
+        $forge->addColumn('chat_messages', [
+            'reply_to_message_id' => ['type' => 'INT', 'unsigned' => true, 'null' => true, 'after' => 'content'],
+            'is_pinned'           => ['type' => 'TINYINT', 'constraint' => 1, 'null' => false, 'default' => 0, 'after' => 'reply_to_message_id'],
+            'pinned_at'           => ['type' => 'DATETIME', 'null' => true, 'after' => 'is_pinned'],
+            'pinned_by'           => ['type' => 'INT', 'unsigned' => true, 'null' => true, 'after' => 'pinned_at'],
+            'is_forwarded'        => ['type' => 'TINYINT', 'constraint' => 1, 'null' => false, 'default' => 0, 'after' => 'pinned_by'],
+        ]);
+    }
+
+    // ------------------------------------------------------------------ Pin
+
+    /** Toggles the pinned state of a message. Returns ['pinned' => bool]. */
+    public function togglePin(int $messageId, int $userId): array
+    {
+        $msg = $this->db->table('chat_messages')->where('id', $messageId)->get()->getRowArray();
+        if (!$msg) return ['pinned' => false];
+
+        $nowPinned = !((bool) $msg['is_pinned']);
+        if ($nowPinned) {
+            $this->db->query(
+                "UPDATE chat_messages SET is_pinned = 1, pinned_at = NOW(), pinned_by = ? WHERE id = ?",
+                [$userId, $messageId]
+            );
+        } else {
+            $this->db->query(
+                "UPDATE chat_messages SET is_pinned = 0, pinned_at = NULL, pinned_by = NULL WHERE id = ?",
+                [$messageId]
+            );
+        }
+
+        return ['pinned' => $nowPinned];
+    }
+
+    /** All currently-pinned, non-deleted messages in a conversation, newest pin first. */
+    public function getPinnedMessages(int $conversationId, int $viewerId): array
+    {
+        $rows = $this->db->query("
+            SELECT
+                m.id, m.conversation_id, m.sender_id, m.message_type, m.content, m.created_at,
+                m.reply_to_message_id, m.is_pinned, m.pinned_at, m.pinned_by, m.is_forwarded,
+                u.fname, u.lname, u.profile_photo
+            FROM   chat_messages m
+            INNER JOIN users u ON u.user_id = m.sender_id
+            WHERE  m.conversation_id = ? AND m.is_pinned = 1 AND m.deleted_at IS NULL
+            ORDER  BY m.pinned_at DESC
+        ", [$conversationId])->getResultArray();
+
+        foreach ($rows as &$row) {
+            $row['id']              = (int) $row['id'];
+            $row['conversation_id'] = (int) $row['conversation_id'];
+            $row['sender_id']       = (int) $row['sender_id'];
+            $row['is_pinned']       = true;
+            $row['is_forwarded']    = (bool) $row['is_forwarded'];
+            $row['pinned_by']       = $row['pinned_by'] !== null ? (int) $row['pinned_by'] : null;
+            $row['files']           = ($row['message_type'] !== 'text') ? $this->getMessageFiles($row['id']) : [];
+        }
+        unset($row);
+
+        $this->attachReactions($rows, $viewerId);
+        $this->attachReplyPreviews($rows);
+
+        return $rows;
+    }
+
+    // ------------------------------------------------------------------ Forward
+
+    /** Copies a message (and its files, if any) into another conversation as a new message. */
+    public function forwardMessage(int $messageId, int $targetConversationId, int $senderId): ?int
+    {
+        $msg = $this->db->table('chat_messages')->where('id', $messageId)->get()->getRowArray();
+        if (!$msg || $msg['deleted_at'] !== null) return null;
+
+        $newId = $this->saveMessage($targetConversationId, $senderId, $msg['message_type'], $msg['content'], null, true);
+
+        if ($msg['message_type'] !== 'text') {
+            foreach ($this->getMessageFiles($messageId) as $f) {
+                $this->saveMessageFile($newId, [
+                    'original_name' => $f['original_name'],
+                    'stored_name'   => basename($f['file_path']),
+                    'file_path'     => $f['file_path'],
+                    'file_type'     => $f['file_type'],
+                    'file_size'     => $f['file_size'],
+                ]);
+            }
+        }
+
+        return $newId;
     }
 
     /** Returns the other participant's user_id in a direct conversation, or null. */
