@@ -5,6 +5,7 @@ namespace App\Controllers\Api;
 use App\Libraries\ApiAuth;
 use App\Libraries\ApiJwt;
 use App\Models\AdmissionModel;
+use App\Models\ModuleModel;
 use App\Models\ParentStudentModel;
 use App\Models\RolePermissionModel;
 use App\Models\TwoFactorModel;
@@ -25,6 +26,7 @@ class AuthController extends Controller
     protected $admissionModel;
     protected $rolePermissionModel;
     protected $parentStudentModel;
+    protected $moduleModel;
 
     public function initController(\CodeIgniter\HTTP\RequestInterface $request, \CodeIgniter\HTTP\ResponseInterface $response, \Psr\Log\LoggerInterface $logger)
     {
@@ -36,6 +38,7 @@ class AuthController extends Controller
         $this->admissionModel = new AdmissionModel();
         $this->rolePermissionModel = new RolePermissionModel();
         $this->parentStudentModel  = new ParentStudentModel();
+        $this->moduleModel = new ModuleModel();
     }
 
     /**
@@ -51,6 +54,34 @@ class AuthController extends Controller
             static fn ($row) => $row['perm_code'],
             $this->rolePermissionModel->get_permission_for_role($roleID)
         ));
+    }
+
+    /**
+     * Names of modules the role has at least one show_in_nav permission for.
+     * Mirrors App\Libraries\Navigation::generateMenu()'s visibility filter.
+     */
+    private function buildModules(int $roleID): array
+    {
+        if ($roleID <= 0) {
+            return [];
+        }
+
+        $permissions = $this->rolePermissionModel->get_permission_for_role($roleID);
+        if (!$permissions) {
+            return [];
+        }
+
+        $modules = [];
+        foreach ($this->moduleModel->get_all_modules() as $module) {
+            foreach ($permissions as $perm) {
+                if ((int) $perm['module_id_fk'] === (int) $module['module_id'] && (int) $perm['show_in_nav'] === 1) {
+                    $modules[] = $module['module_name'];
+                    break;
+                }
+            }
+        }
+
+        return $modules;
     }
 
     /**
@@ -231,6 +262,7 @@ class AuthController extends Controller
                 'roleCatName' => $roleCatName,
                 'schID'       => $schID,
                 'permissions' => $this->buildPermissions($roleID),
+                'modules'     => $this->buildModules($roleID),
                 'isAParent'   => $isAParent,
                 'children'    => $isAParent ? $this->buildChildren($userID) : [],
             ],
@@ -275,6 +307,7 @@ class AuthController extends Controller
                 'roleCatName' => $claims['roleCatName'] ?? 'Unknown',
                 'schID'       => $claims['schID'] ?? 0,
                 'permissions' => $this->buildPermissions($roleID),
+                'modules'     => $this->buildModules($roleID),
                 'isAParent'   => $isAParent,
                 'children'    => $isAParent ? $this->buildChildren($userID) : [],
             ],
