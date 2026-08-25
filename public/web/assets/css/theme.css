@@ -1,0 +1,475 @@
+/*--------------------------------------------------------------
+# Navuli Brand Theme
+# Overrides the Sailor template's color tokens with Navuli's brand
+# palette: #005B96 (primary blue) and #EE2A7B (accent pink).
+--------------------------------------------------------------*/
+:root {
+  --background-color: #ffffff;
+  --default-color: #4a5568;
+  --heading-color: #12263a;
+  --accent-color: #005B96;
+  --accent-color-2: #EE2A7B;
+  --surface-color: #ffffff;
+  --contrast-color: #ffffff;
+}
+
+:root {
+  --nav-color: #12263a;
+  --nav-hover-color: #005B96;
+  --nav-mobile-background-color: #ffffff;
+  --nav-dropdown-background-color: #ffffff;
+  --nav-dropdown-color: #12263a;
+  --nav-dropdown-hover-color: #005B96;
+}
+
+.light-background {
+  --background-color: #f5f8fb;
+  --surface-color: #ffffff;
+}
+
+.dark-background {
+  --background-color: #0b2540;
+  --default-color: #dce6f0;
+  --heading-color: #ffffff;
+  --surface-color: #123258;
+  --contrast-color: #ffffff;
+}
+
+/* Brand gradient + accent utilities */
+.text-gradient {
+  background: linear-gradient(90deg, var(--accent-color), var(--accent-color-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bg-gradient-brand {
+  background: linear-gradient(135deg, var(--accent-color) 0%, #003f6b 55%, var(--accent-color-2) 130%);
+}
+
+.badge-brand-pink {
+  display: inline-block;
+  background: color-mix(in srgb, var(--accent-color-2), transparent 88%);
+  color: var(--accent-color-2);
+  border: 1px solid color-mix(in srgb, var(--accent-color-2), transparent 70%);
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .3px;
+}
+
+.btn-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-color);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: .3s;
+  border: 2px solid var(--accent-color);
+}
+
+.btn-brand:hover {
+  background: color-mix(in srgb, var(--accent-color), black 12%);
+  border-color: color-mix(in srgb, var(--accent-color), black 12%);
+  color: #fff;
+}
+
+.btn-brand-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--accent-color);
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 2px solid var(--accent-color);
+  transition: .3s;
+}
+
+.btn-brand-outline:hover {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.btn-brand-pink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-color-2);
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 2px solid var(--accent-color-2);
+  transition: .3s;
+}
+
+.btn-brand-pink:hover {
+  background: color-mix(in srgb, var(--accent-color-2), black 12%);
+  border-color: color-mix(in srgb, var(--accent-color-2), black 12%);
+  color: #fff;
+}
+
+/* Header */
+.header .btn-getstarted,
+.header .btn-getstarted:focus {
+  background: var(--accent-color-2);
+  border-radius: 50px;
+}
+
+.header .btn-getstarted:hover,
+.header .btn-getstarted:focus:hover {
+  background: color-mix(in srgb, var(--accent-color-2), black 10%);
+}
+
+.header .logo img {
+  max-height: 42px;
+}
+
+/* Icon boxes reused across feature/service sections */
+.icon-box {
+  background: var(--surface-color);
+  border-radius: 12px;
+  padding: 30px;
+  height: 100%;
+  transition: .3s;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+}
+
+.icon-box:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0, 91, 150, .1);
+  border-color: transparent;
+}
+
+.icon-box .icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  color: var(--accent-color);
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.icon-box:nth-child(3n+2) .icon {
+  background: color-mix(in srgb, var(--accent-color-2), transparent 90%);
+  color: var(--accent-color-2);
+}
+
+.icon-box h3 {
+  font-size: 19px;
+  margin-bottom: 10px;
+}
+
+.icon-box p {
+  font-size: 15px;
+  margin-bottom: 0;
+}
+
+/* Hero */
+.hero-section {
+  position: relative;
+  padding: 140px 0 90px;
+  overflow: hidden;
+  color: #fff;
+}
+
+.hero-section .hero-eyebrow {
+  color: #ffd9ec;
+  font-weight: 600;
+  letter-spacing: .5px;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.hero-section h1 {
+  color: #fff;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.hero-section h1 span {
+  color: #ffe0ee;
+}
+
+.hero-section p.lead {
+  color: rgba(255, 255, 255, .88);
+  font-size: 18px;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  flex-wrap: wrap;
+  margin-top: 40px;
+}
+
+.hero-stats .stat h3 {
+  color: #fff;
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}
+
+.hero-stats .stat span {
+  color: rgba(255, 255, 255, .75);
+  font-size: 14px;
+}
+
+.hero-visual {
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .18);
+  border-radius: 20px;
+  padding: 30px;
+  backdrop-filter: blur(6px);
+}
+
+@media (max-width: 991px) {
+  .hero-section {
+    padding: 110px 0 60px;
+    text-align: center;
+  }
+  .hero-section h1 {
+    font-size: 34px;
+  }
+  .hero-stats {
+    justify-content: center;
+  }
+  .hero-visual {
+    margin-top: 40px;
+  }
+}
+
+/* Section eyebrow badge above section titles */
+.section-title .badge-brand-pink {
+  margin-bottom: 14px;
+}
+
+/* Pricing */
+.pricing-card {
+  background: var(--surface-color);
+  border-radius: 16px;
+  padding: 40px 32px;
+  height: 100%;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+  transition: .3s;
+  position: relative;
+}
+
+.pricing-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 25px 50px rgba(0, 91, 150, .12);
+}
+
+.pricing-card.featured {
+  border: 2px solid var(--accent-color-2);
+  box-shadow: 0 25px 50px rgba(238, 42, 123, .14);
+}
+
+.pricing-card .plan-badge {
+  position: absolute;
+  top: -14px;
+  right: 32px;
+  background: var(--accent-color-2);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  padding: 6px 16px;
+  border-radius: 50px;
+}
+
+.pricing-card h3 {
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+
+.pricing-card .price {
+  font-size: 42px;
+  font-weight: 800;
+  color: var(--heading-color);
+  margin: 10px 0 4px;
+}
+
+.pricing-card .price span {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--default-color);
+}
+
+.pricing-card p.desc {
+  font-size: 14.5px;
+  color: var(--default-color);
+  min-height: 90px;
+}
+
+.pricing-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0 30px;
+}
+
+.pricing-card ul li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14.5px;
+  border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 92%);
+}
+
+.pricing-card ul li:first-child {
+  border-top: none;
+}
+
+.pricing-card ul li i {
+  color: var(--accent-color);
+  margin-top: 3px;
+}
+
+/* Timeline used on About page */
+.brand-timeline {
+  border-left: 3px solid color-mix(in srgb, var(--accent-color), transparent 75%);
+  padding-left: 30px;
+  margin-left: 10px;
+}
+
+.brand-timeline .timeline-item {
+  position: relative;
+  padding-bottom: 36px;
+}
+
+.brand-timeline .timeline-item:before {
+  content: "";
+  position: absolute;
+  left: -37px;
+  top: 4px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--accent-color-2);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-color-2), transparent 60%);
+}
+
+/* Value cards */
+.value-card {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.value-card .icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 18px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  font-size: 28px;
+}
+
+/* FAQ accordion tweaks */
+.accordion-item {
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 10px !important;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.accordion-button {
+  font-weight: 600;
+  color: var(--heading-color);
+}
+
+.accordion-button:not(.collapsed) {
+  color: var(--accent-color);
+  background-color: color-mix(in srgb, var(--accent-color), transparent 94%);
+}
+
+.accordion-button:focus {
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--accent-color), transparent 70%);
+}
+
+/* Resource cards */
+.resource-card {
+  display: block;
+  background: var(--surface-color);
+  border-radius: 14px;
+  padding: 30px;
+  height: 100%;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+  transition: .3s;
+}
+
+.resource-card:hover {
+  border-color: var(--accent-color);
+  transform: translateY(-4px);
+}
+
+/* Contact page */
+.contact-info-item {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 22px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+}
+
+.contact-info-item:last-child {
+  border-bottom: none;
+}
+
+.contact-info-item .icon {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  font-size: 20px;
+}
+
+/* CTA band */
+.cta-band {
+  border-radius: 24px;
+  padding: 60px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .cta-band {
+    padding: 40px 24px;
+    text-align: center;
+  }
+}
+
+/* Footer logo sizing */
+.footer .footer-about .logo img {
+  max-height: 46px;
+}
