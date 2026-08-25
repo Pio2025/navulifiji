@@ -15,11 +15,11 @@
 
 :root {
   --nav-color: #12263a;
-  --nav-hover-color: #005B96;
+  --nav-hover-color: #EE2A7B;
   --nav-mobile-background-color: #ffffff;
   --nav-dropdown-background-color: #ffffff;
   --nav-dropdown-color: #12263a;
-  --nav-dropdown-hover-color: #005B96;
+  --nav-dropdown-hover-color: #EE2A7B;
 }
 
 .light-background {
@@ -553,4 +553,37 @@
   .footer .footer-links ul {
     margin-bottom: 0;
   }
+}
+
+/* Brand-wide hyperlink hover/active color. Kept at element-level specificity
+   so the more specific .btn-brand / .btn-brand-pink / .btn-brand-outline /
+   .header .btn-getstarted button-style hover rules above still win and keep
+   their white-on-color hover treatment. */
+a:hover,
+a:active {
+  color: var(--accent-color-2);
+}
+
+.footer .social-links a:hover {
+  color: var(--accent-color-2);
+  border-color: var(--accent-color-2);
+}
+
+.footer .footer-links ul a:hover {
+  color: var(--accent-color-2);
+}
+
+/* Footer "Developed by" credit link: resting color matches the other
+   footer-links list links, hover turns brand pink, and the clicked/active
+   state keeps the blue it had before this link got a hover effect. */
+.footer .credits a {
+  color: color-mix(in srgb, var(--default-color), transparent 30%);
+}
+
+.footer .credits a:hover {
+  color: var(--accent-color-2);
+}
+
+.footer .credits a:active {
+  color: var(--accent-color);
 }
