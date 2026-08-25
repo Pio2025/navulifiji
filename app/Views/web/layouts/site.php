@@ -107,7 +107,7 @@
 
         <div class="container copyright text-center">
             <p>&copy; <?= date('Y') ?> <strong class="px-1">Navuli Fiji</strong> All Rights Reserved.</p>
-            <div class="credits">Developed by Precision Tech Pte Ltd</div>
+            <div class="credits">Developed by <a href="https://precisiontechfiji.com" target="_blank" rel="noopener">Precision Tech Pte Ltd</a></div>
         </div>
     </footer>
 
