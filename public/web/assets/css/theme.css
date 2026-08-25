@@ -529,6 +529,13 @@
   max-height: 46px;
 }
 
+/* footer-top only had padding-top, so the tallest column (usually
+   footer-about, ending in the social icons) sat flush against the
+   copyright bar's border-top divider */
+.footer .footer-top {
+  padding-bottom: 40px;
+}
+
 @media (max-width: 767px) {
   .footer .footer-top .row > div {
     text-align: center;

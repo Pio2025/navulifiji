@@ -63,7 +63,7 @@
     <footer id="footer" class="footer dark-background">
         <div class="container footer-top">
             <div class="row gy-4">
-                <div class="col-lg-4 col-md-6 footer-about">
+                <div class="col-lg-3 col-md-6 footer-about">
                     <a href="<?= site_url('/') ?>" class="logo d-flex align-items-center">
                         <img src="<?= base_url('web/assets/img/logo-white-small.png') ?>" alt="Navuli">
                     </a>
@@ -76,7 +76,7 @@
                     </div>
                 </div>
 
-                <div class="col-lg-2 col-md-3 footer-links">
+                <div class="col-lg-3 col-md-6 footer-links">
                     <h4>Product</h4>
                     <ul>
                         <li><a href="<?= site_url('product') ?>">Features</a></li>
@@ -86,7 +86,7 @@
                     </ul>
                 </div>
 
-                <div class="col-lg-2 col-md-3 footer-links">
+                <div class="col-lg-3 col-md-6 footer-links">
                     <h4>Company</h4>
                     <ul>
                         <li><a href="<?= site_url('about') ?>">About Us</a></li>
@@ -96,7 +96,7 @@
                     </ul>
                 </div>
 
-                <div class="col-lg-4 col-md-12 footer-contact text-center text-md-start">
+                <div class="col-lg-3 col-md-6 footer-contact">
                     <h4>Get in Touch</h4>
                     <p><i class="bi bi-geo-alt"></i> Suva, Fiji</p>
                     <p><i class="bi bi-envelope"></i> <a href="mailto:info@navulifiji.com" style="color:inherit;">info@navulifiji.com</a></p>
