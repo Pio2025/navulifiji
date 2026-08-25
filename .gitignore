@@ -3,7 +3,7 @@
 navuli_chat/.env
 
 # ── PHP / Composer dependencies (re-install with: composer install) ───────────
-vendor/
+/vendor/
 
 # ── Node.js dependencies (re-install with: cd navuli_chat && npm install) ─────
 navuli_chat/node_modules/
