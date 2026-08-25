@@ -50,7 +50,7 @@
 
             <div class="d-flex align-items-center">
                 <a href="<?= site_url('auth/login') ?>" class="d-none d-lg-inline-block me-3" style="font-weight:600;color:var(--heading-color);">Sign In</a>
-                <a class="btn-getstarted" href="<?= site_url('account/subscribe') ?>">Get Started Free</a>
+                <a class="btn-getstarted d-none d-lg-inline-block" href="<?= site_url('account/subscribe') ?>">Get Started Free</a>
             </div>
 
         </div>
