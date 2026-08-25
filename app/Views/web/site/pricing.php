@@ -18,6 +18,7 @@
                             <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
                             <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
                         </div>
+                        <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
                         <p class="desc"><?= esc($plan['plan_desc']) ?></p>
                         <ul>
                             <?php if ($plan['plan_name'] === 'Starter'): ?>
@@ -38,13 +39,13 @@
                                 <li><i class="bi bi-check2"></i> Priority support</li>
                             <?php endif; ?>
                         </ul>
-                        <a href="<?= site_url('account/subscribe') ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                        <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <p class="text-center text-muted mt-5" data-aos="fade-up">All prices in FJD, exclusive of VAT. Need something custom for your district or group of schools? <a href="<?= site_url('contact') ?>">Talk to us</a>.</p>
+        <p class="text-center text-muted mt-5" data-aos="fade-up">All prices in FJD, inclusive of VAT. Need something custom for your district or group of schools? <a href="<?= site_url('contact') ?>">Talk to us</a>.</p>
     </div>
 </section>
 

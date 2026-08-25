@@ -207,8 +207,9 @@
                             <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
                             <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
                         </div>
+                        <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
                         <p class="desc"><?= esc($plan['plan_desc']) ?></p>
-                        <a href="<?= site_url('account/subscribe') ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                        <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
                     </div>
                 </div>
             <?php endforeach; ?>

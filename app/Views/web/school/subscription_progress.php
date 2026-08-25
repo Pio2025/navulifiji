@@ -1,37 +1,41 @@
-
-			<!--begin::How It Works Section-->
-			<div class="mb-n10 mb-lg-n20 z-index-2">
-				<!--begin::Container-->
-				<div class="container">
-					<!--begin::Heading-->
-					<div class="text-center mb-17">
-						<!--begin::Title-->
-						<h3 class="fs-2hx text-gray-900 mb-5" id="how-it-works" data-kt-scroll-offset="{default: 100, lg: 150}">School Account Registration</h3>
-						<!--end::Title-->
-						<!--begin::Text-->
-						<div class="fs-5 text-muted fw-bold">Welcome! Please complete the form below to register your school for Navuli Fiji. This initial setup creates your school's master account, which you can use to add administrators, teachers, and students once approved. All applications are reviewed to ensure the best experience for every school.</div>
-						<!--end::Text-->
-					</div>
-					<!--end::Heading-->
-					<!--begin::Row-->
-					<div class="row w-100 gy-10 mb-md-20">
-						<!--begin::Col-->
-						<div class="col-md-12 px-5">
-							<!--begin::Stepper-->
-							<div class="stepper stepper-pills stepper-column d-flex flex-column flex-xl-row flex-row-fluid gap-10" id="kt_create_account_stepper2">
-								
-								<!--begin::Content-->
-								<div class="card d-flex flex-row-fluid flex-center">
-									<?= $this->include('templates/flash_messages') ?>
-								</div>
-								<!--end::Content-->
-							</div>
-							<!--end::Stepper-->
-						</div>
-						<!--end::Col-->
-					</div>
-					<!--end::Row-->
-				</div>
-				<!--end::Container-->
-			</div>
-			<!--end::How It Works Section-->
+<section class="page-title dark-background bg-gradient-brand" style="padding:150px 0 70px;">
+    <div class="container text-center" data-aos="fade-up">
+        <span class="badge-brand-pink">Get Started</span>
+        <h1 class="mt-3 text-white">School Account Registration</h1>
+        <p style="color:rgba(255,255,255,.85); max-width:700px; margin:0 auto;">Here's the status of your submission.</p>
+    </div>
+</section>
+
+<section class="section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <?php if (session()->getFlashdata('success')): ?>
+                    <div class="alert alert-success d-flex align-items-start gap-3 mb-4">
+                        <i class="bi bi-check-circle-fill fs-3"></i>
+                        <div><?= session()->getFlashdata('success') ?></div>
+                    </div>
+                    <div class="text-center">
+                        <a href="<?= site_url('/') ?>" class="btn-brand">Return to Homepage</a>
+                    </div>
+                <?php elseif (session()->getFlashdata('error')): ?>
+                    <div class="alert alert-danger d-flex align-items-start gap-3 mb-4">
+                        <i class="bi bi-exclamation-triangle-fill fs-3"></i>
+                        <div><?= session()->getFlashdata('error') ?></div>
+                    </div>
+                    <div class="text-center">
+                        <a href="<?= site_url('account/subscribe') ?>" class="btn-brand">Try Again</a>
+                    </div>
+                <?php else: ?>
+                    <div class="alert alert-info d-flex align-items-start gap-3 mb-4">
+                        <i class="bi bi-info-circle-fill fs-3"></i>
+                        <div>No submission found. Please complete the registration form.</div>
+                    </div>
+                    <div class="text-center">
+                        <a href="<?= site_url('account/subscribe') ?>" class="btn-brand">Go to Registration Form</a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</section>

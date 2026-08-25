@@ -369,6 +369,12 @@
   color: var(--default-color);
 }
 
+.pricing-card .price-note {
+  font-size: 12.5px;
+  color: color-mix(in srgb, var(--default-color), transparent 20%);
+  margin-bottom: 10px;
+}
+
 .pricing-card p.desc {
   font-size: 14.5px;
   color: var(--default-color);
@@ -586,4 +592,68 @@ a:active {
 
 .footer .credits a:active {
   color: var(--accent-color);
+}
+
+/* Subscribe (account registration) page — brought in line with the
+   marketing site's Bootstrap/theme.css look instead of the old
+   Metronic admin theme it used to borrow. */
+.subscribe-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--accent-color);
+  border-bottom: 2px solid color-mix(in srgb, var(--accent-color), transparent 85%);
+  padding-bottom: 10px;
+  margin-bottom: 20px;
+}
+
+.radio-card-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.radio-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  height: 100%;
+  padding: 18px 20px;
+  border: 2px solid color-mix(in srgb, var(--default-color), transparent 85%);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .2s;
+  background: var(--surface-color);
+}
+
+.radio-card:hover {
+  border-color: color-mix(in srgb, var(--accent-color), transparent 55%);
+}
+
+.radio-card .radio-card-title {
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--heading-color);
+}
+
+.radio-card .radio-card-desc {
+  font-size: 13.5px;
+  color: var(--default-color);
+}
+
+.radio-card-input:checked + .radio-card {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color), transparent 94%);
+  box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.radio-card-input:disabled + .radio-card {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.radio-card-input:disabled + .radio-card:hover {
+  border-color: color-mix(in srgb, var(--default-color), transparent 85%);
 }
