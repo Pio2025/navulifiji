@@ -107,7 +107,7 @@
 
         <div class="container copyright text-center">
             <p>&copy; <?= date('Y') ?> <strong class="px-1">Navuli Fiji</strong> All Rights Reserved.</p>
-            <div class="credits">Developed by <a href="https://baleicoqe.com" target="_blank" rel="noopener">Pio Baleicoqe</a></div>
+            <div class="credits">Developed by Precision Tech Pte Ltd</div>
         </div>
     </footer>
 
