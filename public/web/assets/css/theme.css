@@ -197,6 +197,32 @@
   margin-bottom: 0;
 }
 
+/* Modules-by-plan grid (pricing page) */
+.module-grid-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.module-icon {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--accent-color-2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color-2);
+  font-size: 20px;
+}
+
+.module-label {
+  font-weight: 600;
+  color: var(--heading-color);
+  font-size: 15px;
+}
+
 /* Hero */
 .hero-section {
   position: relative;
