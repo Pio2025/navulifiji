@@ -16,7 +16,7 @@
                     <div class="icon"><i class="bi bi-geo-alt"></i></div>
                     <div>
                         <h3 class="h6 mb-1">Office</h3>
-                        <p class="mb-0">Suva, Fiji</p>
+                        <p class="mb-0">6 Miles, Tacirua, Suva, Fiji Islands</p>
                     </div>
                 </div>
                 <div class="contact-info-item">
@@ -31,6 +31,13 @@
                     <div>
                         <h3 class="h6 mb-1">Phone</h3>
                         <p class="mb-0">+679 000 0000</p>
+                    </div>
+                </div>
+                <div class="contact-info-item">
+                    <div class="icon"><i class="bi bi-whatsapp"></i></div>
+                    <div>
+                        <h3 class="h6 mb-1">WhatsApp</h3>
+                        <p class="mb-0"><a href="https://wa.me/6799896700" target="_blank" rel="noopener">+679 989 6700</a></p>
                     </div>
                 </div>
                 <div class="contact-info-item">

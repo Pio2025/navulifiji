@@ -72,19 +72,22 @@
    * Scroll top button
    */
   let scrollTop = document.querySelector('.scroll-top');
+  let floatingActionBtns = document.querySelectorAll('.floating-action-btn');
 
   function toggleScrollTop() {
-    if (scrollTop) {
-      window.scrollY > 100 ? scrollTop.classList.add('active') : scrollTop.classList.remove('active');
-    }
-  }
-  scrollTop.addEventListener('click', (e) => {
-    e.preventDefault();
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
+    floatingActionBtns.forEach(btn => {
+      window.scrollY > 100 ? btn.classList.add('active') : btn.classList.remove('active');
     });
-  });
+  }
+  if (scrollTop) {
+    scrollTop.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    });
+  }
 
   window.addEventListener('load', toggleScrollTop);
   document.addEventListener('scroll', toggleScrollTop);

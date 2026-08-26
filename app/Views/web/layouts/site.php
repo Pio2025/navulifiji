@@ -100,9 +100,10 @@
 
                 <div class="col-lg-2 col-md-6 footer-contact">
                     <h4>Get in Touch</h4>
-                    <p><i class="bi bi-geo-alt"></i> Suva, Fiji</p>
+                    <p><i class="bi bi-geo-alt"></i> 6 Miles, Tacirua, Suva, Fiji Islands</p>
                     <p><i class="bi bi-envelope"></i> <a href="mailto:info@navulifiji.com" style="color:inherit;">info@navulifiji.com</a></p>
                     <p><i class="bi bi-telephone"></i> +679 000 0000</p>
+                    <p><i class="bi bi-whatsapp"></i> <a href="https://wa.me/6799896700" target="_blank" rel="noopener" style="color:inherit;">+679 989 6700</a></p>
                 </div>
             </div>
         </div>
@@ -113,7 +114,9 @@
         </div>
     </footer>
 
-    <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+    <a href="https://wa.me/6799896700" target="_blank" rel="noopener" class="floating-action-btn floating-call-btn d-flex align-items-center justify-content-center" aria-label="Chat with us on WhatsApp"><i class="bi bi-whatsapp"></i></a>
+    <a href="<?= site_url('contact') ?>" class="floating-action-btn floating-message-btn d-flex align-items-center justify-content-center" aria-label="Contact us"><i class="bi bi-envelope-fill"></i></a>
+    <a href="#" id="scroll-top" class="scroll-top floating-action-btn d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
     <script src="<?= base_url('web/assets/vendor/bootstrap/js/bootstrap.bundle.min.js') ?>"></script>
     <script src="<?= base_url('web/assets/vendor/php-email-form/validate.js') ?>"></script>
