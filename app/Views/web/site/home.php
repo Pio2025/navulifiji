@@ -204,17 +204,19 @@
                     <div class="pricing-card <?= $plan['plan_name'] === 'Ultimate' ? 'featured' : '' ?>">
                         <?php if ($plan['plan_name'] === 'Ultimate'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
                         <h3><?= esc($plan['plan_name']) ?></h3>
-                        <div class="price">
-                            <?= $isCustomQuote ? 'Contact us' : ($plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free') ?>
-                            <?php if (!$isCustomQuote && $plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
-                        </div>
-                        <?php if (!$isCustomQuote && $plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
-                        <p class="desc"><?= esc($plan['plan_desc']) ?></p>
                         <?php if ($isCustomQuote): ?>
-                            <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center">Contact Sales</a>
+                            <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center mt-3 mb-2">Contact Sales</a>
+                            <a href="<?= site_url('contact') ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Talk to Sales</a>
                         <?php else: ?>
-                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                            <div class="price">
+                                <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
+                                <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
+                            </div>
+                            <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
+                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Choose <?= esc($plan['plan_name']) ?></a>
                         <?php endif; ?>
+                        <p class="desc"><?= esc($plan['plan_desc']) ?></p>
+                        <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center mt-auto">Contact Us</a>
                     </div>
                 </div>
             <?php endforeach; ?>
