@@ -9,31 +9,31 @@
 <section class="section">
     <div class="container">
 
-        <?php if (session()->getFlashdata('success')): ?>
-            <div class="alert alert-success d-flex align-items-start gap-3 mb-4">
-                <i class="bi bi-check-circle-fill fs-4"></i>
-                <div><?= session()->getFlashdata('success') ?></div>
-            </div>
-        <?php endif; ?>
-        <?php if (session()->getFlashdata('error')): ?>
-            <div class="alert alert-danger d-flex align-items-start gap-3 mb-4">
-                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
-                <div><?= session()->getFlashdata('error') ?></div>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($validation) && $validation->getErrors()): ?>
-            <div class="alert alert-danger validation-summary-alert d-flex align-items-start gap-3 mb-4" data-aos="fade-up">
-                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
-                <div>
-                    <div class="validation-summary-title">Your application could not be submitted</div>
-                    <p>Please review the field(s) highlighted in red below and correct the error(s) shown before submitting again.</p>
-                </div>
-            </div>
-        <?php endif; ?>
-
         <div class="row justify-content-center">
             <div class="col-lg-10">
+                <?php if (session()->getFlashdata('success')): ?>
+                    <div class="alert alert-success d-flex align-items-start gap-3 mb-4">
+                        <i class="bi bi-check-circle-fill fs-4"></i>
+                        <div><?= session()->getFlashdata('success') ?></div>
+                    </div>
+                <?php endif; ?>
+                <?php if (session()->getFlashdata('error')): ?>
+                    <div class="alert alert-danger d-flex align-items-start gap-3 mb-4">
+                        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                        <div><?= session()->getFlashdata('error') ?></div>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (isset($validation) && $validation->getErrors()): ?>
+                    <div class="alert alert-danger validation-summary-alert d-flex align-items-start gap-3 mb-4" data-aos="fade-up">
+                        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                        <div>
+                            <div class="validation-summary-title">Your application could not be submitted</div>
+                            <p>Please review the field(s) highlighted in red below and correct the error(s) shown before submitting again.</p>
+                        </div>
+                    </div>
+                <?php endif; ?>
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-body p-4 p-lg-5">
                         <form method="post" enctype="multipart/form-data" action="<?= site_url('account/subscribe') ?>">
