@@ -42,7 +42,20 @@
                             <!-- Account Plan -->
                             <h4 class="subscribe-section-title">Account Plan</h4>
                             <p class="text-muted mb-1">Select the plan that best fits your school's needs and size. <a href="<?= site_url('pricing') ?>" target="_blank">See full plan comparison</a>.</p>
-                            <p class="required-note mb-4"><span class="required-note-star">*</span> Required</p>
+                            <p class="required-note mb-3"><span class="required-note-star">*</span> Required</p>
+
+                            <?php $billingCycle = old('billing_cycle', $old['billing_cycle'] ?? 'monthly'); ?>
+                            <ul class="nav billing-cycle-tabs mb-4">
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link <?= $billingCycle !== 'annual' ? 'active' : '' ?>" data-billing-cycle="monthly">Monthly</button>
+                                </li>
+                                <li class="nav-item">
+                                    <button type="button" class="nav-link <?= $billingCycle === 'annual' ? 'active' : '' ?>" data-billing-cycle="annual">
+                                        Annual <span class="badge-save">Save <?= (int) $annual_discount_percent ?>%</span>
+                                    </button>
+                                </li>
+                            </ul>
+                            <input type="hidden" name="billing_cycle" id="billing_cycle_input" value="<?= esc($billingCycle) ?>">
 
                             <div class="row gy-3">
                                 <?php foreach ($plans as $i => $plan): ?>
@@ -50,15 +63,25 @@
                                         $isChecked = isset($old['account_type'])
                                             ? ($old['account_type'] == $plan['plan_id'])
                                             : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0);
+                                        $monthlyCost = (float) $plan['plan_monthly_cost'];
+                                        $annualCost = (float) ($plan['plan_annual_cost'] ?? 0);
+                                        $isFreePlan = $monthlyCost <= 0;
+                                        $monthlyLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCost) . ' / month (VAT incl.)';
+                                        $annualLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualCost) . ' / year (VAT incl., ' . (int) $annual_discount_percent . '% off)';
                                     ?>
                                     <div class="col-md-4">
                                         <input type="radio" class="radio-card-input" name="account_type" required
                                                id="account_type_<?= $plan['plan_id'] ?>"
+                                               data-monthly-cost="<?= $monthlyCost ?>"
+                                               data-annual-cost="<?= $annualCost ?>"
+                                               data-is-free="<?= $isFreePlan ? '1' : '0' ?>"
                                                value="<?= $plan['plan_id'] ?>" <?= $isChecked ? 'checked' : '' ?>>
                                         <label class="radio-card" for="account_type_<?= $plan['plan_id'] ?>">
                                             <span class="radio-card-title"><?= esc($plan['plan_name']) ?></span>
-                                            <span class="radio-card-desc">
-                                                <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) . ' / month (VAT incl.)' : 'Free — limited time & features' ?>
+                                            <span class="radio-card-desc plan-price-desc"
+                                                  data-monthly-label="<?= esc($monthlyLabel) ?>"
+                                                  data-annual-label="<?= esc($annualLabel) ?>">
+                                                <?= $billingCycle === 'annual' ? $annualLabel : $monthlyLabel ?>
                                             </span>
                                         </label>
                                     </div>
@@ -67,6 +90,11 @@
                             <?php if (isset($validation) && $validation->hasError('account_type')): ?>
                                 <div class="text-danger mt-2"><small><?= $validation->getError('account_type') ?></small></div>
                             <?php endif; ?>
+
+                            <div class="alert alert-info billing-cycle-info mt-3 d-flex align-items-start gap-3" id="billingCycleInfo">
+                                <i class="bi bi-info-circle-fill fs-4"></i>
+                                <div id="billingCycleInfoText">Billed monthly. Switch to Annual and save <?= (int) $annual_discount_percent ?>%.</div>
+                            </div>
 
                             <hr class="my-5">
 
@@ -399,5 +427,45 @@
                 icon.removeClass('bi-eye').addClass('bi-eye-slash');
             }
         });
+
+        function updateBillingUI() {
+            var cycle = $('#billing_cycle_input').val();
+
+            $('.plan-price-desc').each(function () {
+                var $el = $(this);
+                $el.text(cycle === 'annual' ? $el.data('annual-label') : $el.data('monthly-label'));
+            });
+
+            var $selected = $('input[name="account_type"]:checked');
+            var isFree = $selected.data('is-free') == 1;
+            var monthly = parseFloat($selected.data('monthly-cost')) || 0;
+            var annual = parseFloat($selected.data('annual-cost')) || 0;
+            var discountPercent = <?= (int) $annual_discount_percent ?>;
+            var infoText;
+
+            if (!$selected.length) {
+                infoText = 'Select a plan above to see pricing details.';
+            } else if (isFree) {
+                infoText = 'The Free plan runs for one month and does not require billing.';
+            } else if (cycle === 'annual') {
+                var savings = (monthly * 12 - annual).toFixed(2);
+                infoText = 'Billed annually — FJD $' + annual.toFixed(2) + ' / year. You save FJD $' + savings + ' (' + discountPercent + '%) compared to monthly billing.';
+            } else {
+                infoText = 'Billed monthly — FJD $' + monthly.toFixed(2) + ' / month. Switch to Annual and save ' + discountPercent + '%.';
+            }
+
+            $('#billingCycleInfoText').text(infoText);
+        }
+
+        $('.billing-cycle-tabs .nav-link').click(function () {
+            $('.billing-cycle-tabs .nav-link').removeClass('active');
+            $(this).addClass('active');
+            $('#billing_cycle_input').val($(this).data('billing-cycle'));
+            updateBillingUI();
+        });
+
+        $('input[name="account_type"]').change(updateBillingUI);
+
+        updateBillingUI();
     });
 </script>

@@ -12,6 +12,26 @@ class PlanModel extends Model
     protected $returnType = 'array';
 
     /**
+     * Discount applied when a paid plan is billed annually instead of monthly.
+     */
+    public const ANNUAL_DISCOUNT_PERCENT = 5.0;
+
+    /**
+     * Total annual cost for a plan after the annual billing discount.
+     * Free plans (cost 0) always return 0.
+     */
+    public function getAnnualCost(array $plan): float
+    {
+        $monthlyCost = (float) ($plan['plan_monthly_cost'] ?? 0);
+
+        if ($monthlyCost <= 0) {
+            return 0.0;
+        }
+
+        return round($monthlyCost * 12 * (1 - self::ANNUAL_DISCOUNT_PERCENT / 100), 2);
+    }
+
+    /**
      * Get Plan by sch_id
      */
     public function getPlan($plan_id)

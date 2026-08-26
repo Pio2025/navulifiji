@@ -694,3 +694,47 @@ label.required::after {
   margin-bottom: 0;
   color: var(--default-color);
 }
+
+.billing-cycle-tabs {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  gap: 10px;
+}
+
+.billing-cycle-tabs .nav-link {
+  border: none;
+  background: color-mix(in srgb, var(--default-color), transparent 92%);
+  color: var(--default-color);
+  border-radius: 30px;
+  padding: 8px 22px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: .2s;
+}
+
+.billing-cycle-tabs .nav-link:hover {
+  background: color-mix(in srgb, var(--accent-color), transparent 85%);
+}
+
+.billing-cycle-tabs .nav-link.active {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.billing-cycle-tabs .badge-save {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+  background: var(--accent-color-2);
+  color: #fff;
+}
+
+.billing-cycle-tabs .nav-link.active .badge-save {
+  background: #fff;
+  color: var(--accent-color-2);
+}

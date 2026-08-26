@@ -79,6 +79,14 @@ class UserRoleModel extends Model
         $this->insert($params);
         return $this->getInsertID();
     }
+
+    /**
+     * Add new user_role (camelCase alias used by AccountController/SchoolController)
+     */
+    public function addUserRole($params)
+    {
+        return $this->add_user_role($params);
+    }
     
     /**
      * Update user_role

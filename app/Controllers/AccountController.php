@@ -141,7 +141,11 @@ class AccountController extends BaseController
             'district' => $this->districtModel->getAllDistrict(),
             'province' => $this->provinceModel->getAllProvince(),
             'department' => $this->departmentModel->getAllDepartment(),
-            'plans' => $this->planModel->getAllPlan(),
+            'plans' => array_map(function ($plan) {
+                $plan['plan_annual_cost'] = $this->planModel->getAnnualCost($plan);
+                return $plan;
+            }, $this->planModel->getAllPlan()),
+            'annual_discount_percent' => \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT,
             'selected_plan' => $this->request->getGet('plan'),
             'feedback_title' => 'Account Subscription!',
             'page_title' => 'Get Started — Subscribe Your School',
@@ -162,6 +166,7 @@ class AccountController extends BaseController
             // Define validation rules
             $validationRules = [
                 'account_type' => 'required|in_list[' . implode(',', $planIds) . ']',
+                'billing_cycle' => 'required|in_list[monthly,annual]',
                 'sch_category' => 'required|in_list[1,2,3,4]',
                 'account_name' => 'required|min_length[3]|max_length[100]',
                 'province' => 'required',
@@ -193,6 +198,10 @@ class AccountController extends BaseController
                 'account_type' => [
                     'required' => 'Please select an account type',
                     'in_list' => 'Please select a valid account type'
+                ],
+                'billing_cycle' => [
+                    'required' => 'Please select a billing cycle',
+                    'in_list' => 'Please select a valid billing cycle'
                 ],
                 'sch_category' => [
                     'required' => 'Please select school category',
@@ -326,13 +335,31 @@ class AccountController extends BaseController
                     $success .= 'Successfully registered school data.';
                     
                     //Navuli subscription data
+                    $accountType = $this->request->getPost('account_type');
+                    $planData = $this->planModel->getPlan($accountType);
+                    $isFreePlan = empty($planData) || (float) $planData['plan_monthly_cost'] <= 0;
+
+                    // The Free plan is always a 1-month trial, regardless of the
+                    // billing cycle tab that was active when the form was submitted.
+                    $billingCycle = $isFreePlan ? 'monthly' : $this->request->getPost('billing_cycle');
+                    if (!in_array($billingCycle, ['monthly', 'annual'], true)) {
+                        $billingCycle = 'monthly';
+                    }
+
+                    $subscriptionMonths = ($billingCycle === 'annual') ? 12 : 1;
+                    $discountPercent = ($billingCycle === 'annual' && !$isFreePlan) ? \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT : 0;
+                    $amountPaid = round((float) $planData['plan_monthly_cost'] * $subscriptionMonths * (1 - $discountPercent / 100), 2);
+
                     $subData = [
-                        'plan_id_fk' => $this->request->getPost('account_type'),
-                        'sch_id_fk ' => $addSchool,
+                        'plan_id_fk' => $accountType,
+                        'sch_id_fk' => $addSchool,
                         'subscription_start_date' => date('Y-m-d'),
-                        'subscription_time' => time(),
-                        'subscription_term' => 1,
-                        'subscription_status' => 'Active'
+                        'subscription_end_date' => $this->calculateSubscriptionEnd($subscriptionMonths),
+                        'subscription_term' => $subscriptionMonths,
+                        'billing_cycle' => $billingCycle,
+                        'discount_percent' => $discountPercent,
+                        'amount_paid' => $amountPaid,
+                        'subscription_status' => $isFreePlan ? 'Active' : 'Pending Verification'
                     ];
                     
                     //add subscription data
