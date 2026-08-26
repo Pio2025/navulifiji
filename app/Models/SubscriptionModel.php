@@ -10,6 +10,7 @@ class SubscriptionModel extends Model
     protected $primaryKey = 'subscription_id';
     protected $allowedFields = [
         'billing_cycle',
+        'package_type',
         'discount_percent',
         'amount_paid',
         'payment_mode',

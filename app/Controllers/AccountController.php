@@ -142,7 +142,8 @@ class AccountController extends BaseController
             'province' => $this->provinceModel->getAllProvince(),
             'department' => $this->departmentModel->getAllDepartment(),
             'plans' => array_map(function ($plan) {
-                $plan['plan_annual_cost'] = $this->planModel->getAnnualCost($plan);
+                $plan['plan_annual_cost'] = $this->planModel->getAnnualCost($plan, 'web');
+                $plan['plan_annual_cost_web_n_mobile'] = $this->planModel->getAnnualCost($plan, 'web_mobile');
                 return $plan;
             }, $this->planModel->getAllPlan()),
             'annual_discount_percent' => \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT,
@@ -167,6 +168,7 @@ class AccountController extends BaseController
             $validationRules = [
                 'account_type' => 'required|in_list[' . implode(',', $planIds) . ']',
                 'billing_cycle' => 'required|in_list[monthly,annual]',
+                'package_type' => 'required|in_list[web,web_mobile]',
                 'sch_category' => 'required|in_list[1,2,3,4]',
                 'account_name' => 'required|min_length[3]|max_length[100]',
                 'province' => 'required',
@@ -202,6 +204,10 @@ class AccountController extends BaseController
                 'billing_cycle' => [
                     'required' => 'Please select a billing cycle',
                     'in_list' => 'Please select a valid billing cycle'
+                ],
+                'package_type' => [
+                    'required' => 'Please select a package',
+                    'in_list' => 'Please select a valid package'
                 ],
                 'sch_category' => [
                     'required' => 'Please select school category',
@@ -354,7 +360,14 @@ class AccountController extends BaseController
                     //Navuli subscription data
                     $accountType = $this->request->getPost('account_type');
                     $planData = $this->planModel->getPlan($accountType);
-                    $isFreePlan = empty($planData) || (float) $planData['plan_monthly_cost'] <= 0;
+
+                    $packageType = $this->request->getPost('package_type');
+                    if (!in_array($packageType, ['web', 'web_mobile'], true)) {
+                        $packageType = 'web';
+                    }
+
+                    $monthlyCost = $this->planModel->getMonthlyCost($planData, $packageType) ?? 0.0;
+                    $isFreePlan = empty($planData) || $monthlyCost <= 0;
 
                     // The Free plan is always a 1-month trial, regardless of the
                     // billing cycle tab that was active when the form was submitted.
@@ -365,7 +378,7 @@ class AccountController extends BaseController
 
                     $subscriptionMonths = ($billingCycle === 'annual') ? 12 : 1;
                     $discountPercent = ($billingCycle === 'annual' && !$isFreePlan) ? \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT : 0;
-                    $amountPaid = round((float) $planData['plan_monthly_cost'] * $subscriptionMonths * (1 - $discountPercent / 100), 2);
+                    $amountPaid = round($monthlyCost * $subscriptionMonths * (1 - $discountPercent / 100), 2);
 
                     $subData = [
                         'plan_id_fk' => $accountType,
@@ -374,6 +387,7 @@ class AccountController extends BaseController
                         'subscription_end_date' => $this->calculateSubscriptionEnd($subscriptionMonths),
                         'subscription_term' => $subscriptionMonths,
                         'billing_cycle' => $billingCycle,
+                        'package_type' => $packageType,
                         'discount_percent' => $discountPercent,
                         'amount_paid' => $amountPaid,
                         'subscription_status' => $isFreePlan ? 'Active' : 'Pending Verification'

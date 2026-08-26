@@ -7,7 +7,7 @@ class PlanModel extends Model
 {
     protected $table = 'plans';
     protected $primaryKey = 'plan_id';
-    protected $allowedFields = ['plan_name','plan_desc','plan_monthly_cost'];
+    protected $allowedFields = ['plan_name','plan_desc','plan_monthly_cost','plan_monthly_cost_web_n_mobile'];
     protected $useTimestamps = false;
     protected $returnType = 'array';
 
@@ -17,18 +17,26 @@ class PlanModel extends Model
     public const ANNUAL_DISCOUNT_PERCENT = 5.0;
 
     /**
+     * Monthly cost for a plan under the given package type. Custom-quote
+     * plans (NULL in both cost columns) return null regardless of package.
+     */
+    public function getMonthlyCost(array $plan, string $packageType = 'web'): ?float
+    {
+        $costField = $packageType === 'web_mobile' ? 'plan_monthly_cost_web_n_mobile' : 'plan_monthly_cost';
+        $cost = $plan[$costField] ?? null;
+
+        return $cost === null ? null : (float) $cost;
+    }
+
+    /**
      * Total annual cost for a plan after the annual billing discount.
      * Free plans (cost 0) and custom-quote plans (cost NULL) always return 0.
      */
-    public function getAnnualCost(array $plan): float
+    public function getAnnualCost(array $plan, string $packageType = 'web'): float
     {
-        if ($plan['plan_monthly_cost'] === null) {
-            return 0.0;
-        }
+        $monthlyCost = $this->getMonthlyCost($plan, $packageType);
 
-        $monthlyCost = (float) $plan['plan_monthly_cost'];
-
-        if ($monthlyCost <= 0) {
+        if ($monthlyCost === null || $monthlyCost <= 0) {
             return 0.0;
         }
 

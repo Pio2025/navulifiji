@@ -65,6 +65,17 @@
                             </ul>
                             <input type="hidden" name="billing_cycle" id="billing_cycle_input" value="<?= esc($billingCycle) ?>">
 
+                            <?php $packageType = old('package_type', $old['package_type'] ?? 'web'); ?>
+                            <div class="package-toggle-wrap mb-4">
+                                <span class="package-toggle-label <?= $packageType !== 'web_mobile' ? 'active' : '' ?>" data-package="web">Web App</span>
+                                <label class="package-switch">
+                                    <input type="checkbox" id="packageSwitch" <?= $packageType === 'web_mobile' ? 'checked' : '' ?>>
+                                    <span class="package-switch-slider"></span>
+                                </label>
+                                <span class="package-toggle-label <?= $packageType === 'web_mobile' ? 'active' : '' ?>" data-package="web_mobile">Both Web &amp; Mobile App</span>
+                            </div>
+                            <input type="hidden" name="package_type" id="package_type_input" value="<?= esc($packageType) ?>">
+
                             <div class="row gy-3" id="accountTypeGroup">
                                 <?php foreach ($plans as $i => $plan): ?>
                                     <?php
@@ -72,18 +83,27 @@
                                             ? ($old['account_type'] == $plan['plan_id'])
                                             : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0);
                                         $isCustomQuote = $plan['plan_monthly_cost'] === null;
-                                        $monthlyCost = $isCustomQuote ? 0.0 : (float) $plan['plan_monthly_cost'];
-                                        $annualCost = (float) ($plan['plan_annual_cost'] ?? 0);
-                                        $annualMonthlyRate = $monthlyCost * (1 - $annual_discount_percent / 100);
-                                        $isFreePlan = !$isCustomQuote && $monthlyCost <= 0;
-                                        $monthlyLabel = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCost) . ' / month (VAT incl.)');
-                                        $annualLabel = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualMonthlyRate, 2) . ' / month (VAT incl., ' . (int) $annual_discount_percent . '% off, billed annually)');
+                                        $monthlyCostWeb = $isCustomQuote ? 0.0 : (float) $plan['plan_monthly_cost'];
+                                        $monthlyCostBundle = $isCustomQuote ? 0.0 : (float) ($plan['plan_monthly_cost_web_n_mobile'] ?? $plan['plan_monthly_cost']);
+                                        $annualCostWeb = (float) ($plan['plan_annual_cost'] ?? 0);
+                                        $annualCostBundle = (float) ($plan['plan_annual_cost_web_n_mobile'] ?? 0);
+                                        $annualMonthlyRateWeb = $monthlyCostWeb * (1 - $annual_discount_percent / 100);
+                                        $annualMonthlyRateBundle = $monthlyCostBundle * (1 - $annual_discount_percent / 100);
+                                        $isFreePlan = !$isCustomQuote && $monthlyCostWeb <= 0;
+                                        $monthlyLabelWeb = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCostWeb) . ' / month (VAT incl.)');
+                                        $monthlyLabelBundle = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCostBundle) . ' / month (VAT incl.)');
+                                        $annualLabelWeb = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualMonthlyRateWeb, 2) . ' / month (VAT incl., ' . (int) $annual_discount_percent . '% off, billed annually)');
+                                        $annualLabelBundle = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualMonthlyRateBundle, 2) . ' / month (VAT incl., ' . (int) $annual_discount_percent . '% off, billed annually)');
+                                        $monthlyLabel = $packageType === 'web_mobile' ? $monthlyLabelBundle : $monthlyLabelWeb;
+                                        $annualLabel = $packageType === 'web_mobile' ? $annualLabelBundle : $annualLabelWeb;
                                     ?>
                                     <div class="col-md-6 col-lg-3">
                                         <input type="radio" class="radio-card-input" name="account_type" required
                                                id="account_type_<?= $plan['plan_id'] ?>"
-                                               data-monthly-cost="<?= $monthlyCost ?>"
-                                               data-annual-cost="<?= $annualCost ?>"
+                                               data-monthly-cost-web="<?= $monthlyCostWeb ?>"
+                                               data-monthly-cost-bundle="<?= $monthlyCostBundle ?>"
+                                               data-annual-cost-web="<?= $annualCostWeb ?>"
+                                               data-annual-cost-bundle="<?= $annualCostBundle ?>"
                                                data-is-free="<?= $isFreePlan ? '1' : '0' ?>"
                                                data-is-custom-quote="<?= $isCustomQuote ? '1' : '0' ?>"
                                                data-plan-name="<?= esc($plan['plan_name']) ?>"
@@ -91,8 +111,10 @@
                                         <label class="radio-card" for="account_type_<?= $plan['plan_id'] ?>">
                                             <span class="radio-card-title"><?= esc($plan['plan_name']) ?></span>
                                             <span class="radio-card-desc plan-price-desc"
-                                                  data-monthly-label="<?= esc($monthlyLabel) ?>"
-                                                  data-annual-label="<?= esc($annualLabel) ?>">
+                                                  data-monthly-label-web="<?= esc($monthlyLabelWeb) ?>"
+                                                  data-monthly-label-bundle="<?= esc($monthlyLabelBundle) ?>"
+                                                  data-annual-label-web="<?= esc($annualLabelWeb) ?>"
+                                                  data-annual-label-bundle="<?= esc($annualLabelBundle) ?>">
                                                 <?= $billingCycle === 'annual' ? $annualLabel : $monthlyLabel ?>
                                             </span>
                                         </label>
@@ -408,17 +430,19 @@
 
         function updateBillingUI() {
             var cycle = $('#billing_cycle_input').val();
+            var pkg = $('#package_type_input').val();
+            var pkgKey = pkg === 'web_mobile' ? 'bundle' : 'web';
 
             $('.plan-price-desc').each(function () {
                 var $el = $(this);
-                $el.text(cycle === 'annual' ? $el.data('annual-label') : $el.data('monthly-label'));
+                $el.text(cycle === 'annual' ? $el.data('annual-label-' + pkgKey) : $el.data('monthly-label-' + pkgKey));
             });
 
             var $selected = $('input[name="account_type"]:checked');
             var isFree = $selected.data('is-free') == 1;
             var isCustomQuote = $selected.data('is-custom-quote') == 1;
-            var monthly = parseFloat($selected.data('monthly-cost')) || 0;
-            var annual = parseFloat($selected.data('annual-cost')) || 0;
+            var monthly = parseFloat($selected.data('monthly-cost-' + pkgKey)) || 0;
+            var annual = parseFloat($selected.data('annual-cost-' + pkgKey)) || 0;
             var discountPercent = <?= (int) $annual_discount_percent ?>;
             var infoText;
 
@@ -450,6 +474,19 @@
             $(this).addClass('active');
             $('#billing_cycle_input').val($(this).data('billing-cycle'));
             updateBillingUI();
+        });
+
+        $('#packageSwitch').change(function () {
+            var pkg = this.checked ? 'web_mobile' : 'web';
+            $('.package-toggle-label').removeClass('active');
+            $('.package-toggle-label[data-package="' + pkg + '"]').addClass('active');
+            $('#package_type_input').val(pkg);
+            updateBillingUI();
+        });
+
+        $('.package-toggle-label').click(function () {
+            var pkg = $(this).data('package');
+            $('#packageSwitch').prop('checked', pkg === 'web_mobile').trigger('change');
         });
 
         $('input[name="account_type"]').change(updateBillingUI);

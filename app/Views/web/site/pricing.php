@@ -8,9 +8,25 @@
 
 <section class="section">
     <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <div class="package-toggle-wrap">
+                <span class="package-toggle-label active" data-package="web">Web App</span>
+                <label class="package-switch">
+                    <input type="checkbox" id="packageSwitch">
+                    <span class="package-switch-slider"></span>
+                </label>
+                <span class="package-toggle-label" data-package="web_mobile">Both Web &amp; Mobile App</span>
+            </div>
+        </div>
+
         <div class="row gy-4 justify-content-center">
             <?php foreach ($plans as $i => $plan): ?>
-                <?php $isCustomQuote = $plan['plan_monthly_cost'] === null; ?>
+                <?php
+                    $isCustomQuote = $plan['plan_monthly_cost'] === null;
+                    $priceWeb = $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free';
+                    $bundleCost = $plan['plan_monthly_cost_web_n_mobile'] ?? null;
+                    $priceBundle = $bundleCost > 0 ? 'FJD $' . number_format($bundleCost) : 'Free';
+                ?>
                 <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="<?= 100 + ($i * 50) ?>">
                     <div class="pricing-card <?= $plan['plan_name'] === 'Ultimate' ? 'featured' : '' ?>">
                         <?php if ($plan['plan_name'] === 'Ultimate'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
@@ -20,7 +36,7 @@
                             <a href="<?= site_url('contact') ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Talk to Sales</a>
                         <?php else: ?>
                             <div class="price">
-                                <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
+                                <span class="price-amount" data-price-web="<?= esc($priceWeb) ?>" data-price-bundle="<?= esc($priceBundle) ?>"><?= $priceWeb ?></span>
                                 <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
                             </div>
                             <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
@@ -107,3 +123,34 @@
         </div>
     </div>
 </section>
+
+<script>
+(function () {
+    var toggle = document.getElementById('packageSwitch');
+    if (!toggle) return;
+
+    var labels = document.querySelectorAll('.package-toggle-label');
+    var amounts = document.querySelectorAll('.price-amount');
+
+    function applyPackage(pkg) {
+        labels.forEach(function (label) {
+            label.classList.toggle('active', label.dataset.package === pkg);
+        });
+        amounts.forEach(function (el) {
+            el.textContent = pkg === 'web_mobile' ? el.dataset.priceBundle : el.dataset.priceWeb;
+        });
+    }
+
+    toggle.addEventListener('change', function () {
+        applyPackage(this.checked ? 'web_mobile' : 'web');
+    });
+
+    labels.forEach(function (label) {
+        label.addEventListener('click', function () {
+            var pkg = this.dataset.package;
+            toggle.checked = pkg === 'web_mobile';
+            applyPackage(pkg);
+        });
+    });
+})();
+</script>

@@ -3457,18 +3457,19 @@ CREATE TABLE `plans` (
   `plan_id` int NOT NULL,
   `plan_name` varchar(45) DEFAULT NULL,
   `plan_desc` longtext,
-  `plan_monthly_cost` double DEFAULT NULL
+  `plan_monthly_cost` double DEFAULT NULL,
+  `plan_monthly_cost_web_n_mobile` double DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `plans`
 --
 
-INSERT INTO `plans` (`plan_id`, `plan_name`, `plan_desc`, `plan_monthly_cost`) VALUES
-(1, 'Standard', 'Start using Navuli with access to essential features. This plan is ideal for individuals or small school who are just getting started. You\'ll get limited access to core tools, allowing you to explore Navuli’s basic functionality at no cost.', 200),
-(2, 'Premium', 'Perfect for growing school. Manage up to 500 users and unlock Navuli\'s essential features. Designed for organizations that are expanding, the Standard plan offers enhanced functionality, better collaboration tools, and access to core integrations to help you manage users and operations more efficiently.', 300),
-(3, 'Ultimate', 'Unlimited users. Full power. Everything Navuli has to offer. Built for large organizations and mission-critical operations, the Enterprise plan gives you complete access to all Navuli features, premium support, and unlimited scalability. It’s the best choice for teams that need full control, customization, and performance.', 400),
-(4, 'Enterprise', 'Tailored for large institutions with unique operational needs. Get a fully customized Navuli experience built around your specific requirements — from user limits and feature sets to integrations and deployment. Includes dedicated onboarding, priority support, and a solution designed in partnership with our team to fit your organization exactly. Contact us for a custom quote.', NULL);
+INSERT INTO `plans` (`plan_id`, `plan_name`, `plan_desc`, `plan_monthly_cost`, `plan_monthly_cost_web_n_mobile`) VALUES
+(1, 'Standard', 'Start using Navuli with access to essential features. This plan is ideal for individuals or small school who are just getting started. You\'ll get limited access to core tools, allowing you to explore Navuli’s basic functionality at no cost.', 200, 300),
+(2, 'Premium', 'Perfect for growing school. Manage up to 500 users and unlock Navuli\'s essential features. Designed for organizations that are expanding, the Standard plan offers enhanced functionality, better collaboration tools, and access to core integrations to help you manage users and operations more efficiently.', 300, 400),
+(3, 'Ultimate', 'Unlimited users. Full power. Everything Navuli has to offer. Built for large organizations and mission-critical operations, the Enterprise plan gives you complete access to all Navuli features, premium support, and unlimited scalability. It’s the best choice for teams that need full control, customization, and performance.', 400, 500),
+(4, 'Enterprise', 'Tailored for large institutions with unique operational needs. Get a fully customized Navuli experience built around your specific requirements — from user limits and feature sets to integrations and deployment. Includes dedicated onboarding, priority support, and a solution designed in partnership with our team to fit your organization exactly. Contact us for a custom quote.', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -6248,6 +6249,7 @@ CREATE TABLE `subscription` (
   `subscription_time` int DEFAULT NULL,
   `subscription_term` int DEFAULT NULL,
   `billing_cycle` enum('monthly','annual') NOT NULL DEFAULT 'monthly',
+  `package_type` enum('web','web_mobile') NOT NULL DEFAULT 'web',
   `discount_percent` decimal(5,2) NOT NULL DEFAULT '0.00',
   `amount_paid` decimal(10,2) DEFAULT NULL,
   `payment_mode` varchar(260) NOT NULL DEFAULT '',
@@ -6258,12 +6260,12 @@ CREATE TABLE `subscription` (
 -- Dumping data for table `subscription`
 --
 
-INSERT INTO `subscription` (`subscription_id`, `plan_id_fk`, `sch_id_fk`, `subscription_start_date`, `subscription_end_date`, `subscription_time`, `subscription_term`, `billing_cycle`, `discount_percent`, `amount_paid`, `payment_mode`, `subscription_status`) VALUES
-(1, 1, 12, '2025-12-08', '2026-01-31', NULL, 12, 'annual', 0.00, NULL, 'Cash', 'Active'),
-(6, 3, 26, '2026-02-19', '2029-02-19', NULL, 36, 'annual', 0.00, NULL, 'Cash', 'Pending Payment'),
-(9, 1, 29, '2026-05-13', '2026-06-13', NULL, 12, 'annual', 0.00, NULL, 'Cash', 'Active'),
-(10, 3, 30, '2026-06-06', '2029-06-06', NULL, 36, 'annual', 0.00, NULL, '', 'Pending Verification'),
-(11, 1, 31, '2026-07-15', '2027-07-15', NULL, 12, 'annual', 0.00, NULL, '', 'Pending Verification');
+INSERT INTO `subscription` (`subscription_id`, `plan_id_fk`, `sch_id_fk`, `subscription_start_date`, `subscription_end_date`, `subscription_time`, `subscription_term`, `billing_cycle`, `package_type`, `discount_percent`, `amount_paid`, `payment_mode`, `subscription_status`) VALUES
+(1, 1, 12, '2025-12-08', '2026-01-31', NULL, 12, 'annual', 'web', 0.00, NULL, 'Cash', 'Active'),
+(6, 3, 26, '2026-02-19', '2029-02-19', NULL, 36, 'annual', 'web', 0.00, NULL, 'Cash', 'Pending Payment'),
+(9, 1, 29, '2026-05-13', '2026-06-13', NULL, 12, 'annual', 'web', 0.00, NULL, 'Cash', 'Active'),
+(10, 3, 30, '2026-06-06', '2029-06-06', NULL, 36, 'annual', 'web', 0.00, NULL, '', 'Pending Verification'),
+(11, 1, 31, '2026-07-15', '2027-07-15', NULL, 12, 'annual', 'web', 0.00, NULL, '', 'Pending Verification');
 
 -- --------------------------------------------------------
 
