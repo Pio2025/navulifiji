@@ -42,7 +42,6 @@
                             <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
                             <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Choose <?= esc($plan['plan_name']) ?></a>
                         <?php endif; ?>
-                        <p class="desc"><?= esc($plan['plan_desc']) ?></p>
                         <ul>
                             <?php if ($plan['plan_name'] === 'Standard'): ?>
                                 <li><i class="bi bi-check2"></i> Core admissions &amp; enrolment</li>

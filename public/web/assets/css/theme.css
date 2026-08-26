@@ -417,7 +417,7 @@
 .pricing-card ul li {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   text-align: left;
   gap: 10px;
   padding: 8px 0;
