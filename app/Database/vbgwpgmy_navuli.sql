@@ -3465,9 +3465,10 @@ CREATE TABLE `plans` (
 --
 
 INSERT INTO `plans` (`plan_id`, `plan_name`, `plan_desc`, `plan_monthly_cost`) VALUES
-(1, 'Starter', 'Start using Navuli for FREE with access to essential features. This plan is ideal for individuals or small school who are just getting started. You\'ll get limited access to core tools, allowing you to explore Navuli’s basic functionality at no cost.', 0),
-(2, 'Standard', 'Perfect for growing school. Manage up to 500 users and unlock Navuli\'s essential features. Designed for organizations that are expanding, the Standard plan offers enhanced functionality, better collaboration tools, and access to core integrations to help you manage users and operations more efficiently.', 300),
-(3, 'Enterprise', 'Unlimited users. Full power. Everything Navuli has to offer. Built for large organizations and mission-critical operations, the Enterprise plan gives you complete access to all Navuli features, premium support, and unlimited scalability. It’s the best choice for teams that need full control, customization, and performance.', 400);
+(1, 'Standard', 'Start using Navuli with access to essential features. This plan is ideal for individuals or small school who are just getting started. You\'ll get limited access to core tools, allowing you to explore Navuli’s basic functionality at no cost.', 200),
+(2, 'Premium', 'Perfect for growing school. Manage up to 500 users and unlock Navuli\'s essential features. Designed for organizations that are expanding, the Standard plan offers enhanced functionality, better collaboration tools, and access to core integrations to help you manage users and operations more efficiently.', 300),
+(3, 'Ultimate', 'Unlimited users. Full power. Everything Navuli has to offer. Built for large organizations and mission-critical operations, the Enterprise plan gives you complete access to all Navuli features, premium support, and unlimited scalability. It’s the best choice for teams that need full control, customization, and performance.', 400),
+(4, 'Enterprise', 'Tailored for large institutions with unique operational needs. Get a fully customized Navuli experience built around your specific requirements — from user limits and feature sets to integrations and deployment. Includes dedicated onboarding, priority support, and a solution designed in partnership with our team to fit your organization exactly. Contact us for a custom quote.', NULL);
 
 -- --------------------------------------------------------
 

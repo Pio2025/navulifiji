@@ -71,19 +71,22 @@
                                         $isChecked = isset($old['account_type'])
                                             ? ($old['account_type'] == $plan['plan_id'])
                                             : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0);
-                                        $monthlyCost = (float) $plan['plan_monthly_cost'];
+                                        $isCustomQuote = $plan['plan_monthly_cost'] === null;
+                                        $monthlyCost = $isCustomQuote ? 0.0 : (float) $plan['plan_monthly_cost'];
                                         $annualCost = (float) ($plan['plan_annual_cost'] ?? 0);
                                         $annualMonthlyRate = $monthlyCost * (1 - $annual_discount_percent / 100);
-                                        $isFreePlan = $monthlyCost <= 0;
-                                        $monthlyLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCost) . ' / month (VAT incl.)';
-                                        $annualLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualMonthlyRate, 2) . ' / month (VAT incl., ' . (int) $annual_discount_percent . '% off, billed annually)';
+                                        $isFreePlan = !$isCustomQuote && $monthlyCost <= 0;
+                                        $monthlyLabel = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCost) . ' / month (VAT incl.)');
+                                        $annualLabel = $isCustomQuote ? 'Contact us for pricing' : ($isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualMonthlyRate, 2) . ' / month (VAT incl., ' . (int) $annual_discount_percent . '% off, billed annually)');
                                     ?>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6 col-lg-3">
                                         <input type="radio" class="radio-card-input" name="account_type" required
                                                id="account_type_<?= $plan['plan_id'] ?>"
                                                data-monthly-cost="<?= $monthlyCost ?>"
                                                data-annual-cost="<?= $annualCost ?>"
                                                data-is-free="<?= $isFreePlan ? '1' : '0' ?>"
+                                               data-is-custom-quote="<?= $isCustomQuote ? '1' : '0' ?>"
+                                               data-plan-name="<?= esc($plan['plan_name']) ?>"
                                                value="<?= $plan['plan_id'] ?>" <?= $isChecked ? 'checked' : '' ?>>
                                         <label class="radio-card" for="account_type_<?= $plan['plan_id'] ?>">
                                             <span class="radio-card-title"><?= esc($plan['plan_name']) ?></span>
@@ -326,7 +329,7 @@
                                 </div>
                             </div>
 
-                            <button type="submit" class="btn-brand" name="submit_btn">Submit Application <i class="bi bi-arrow-right"></i></button>
+                            <button type="submit" class="btn-brand" name="submit_btn" id="subscribeSubmitBtn">Submit Application <i class="bi bi-arrow-right"></i></button>
                         </form>
                     </div>
                 </div>
@@ -413,6 +416,7 @@
 
             var $selected = $('input[name="account_type"]:checked');
             var isFree = $selected.data('is-free') == 1;
+            var isCustomQuote = $selected.data('is-custom-quote') == 1;
             var monthly = parseFloat($selected.data('monthly-cost')) || 0;
             var annual = parseFloat($selected.data('annual-cost')) || 0;
             var discountPercent = <?= (int) $annual_discount_percent ?>;
@@ -420,6 +424,8 @@
 
             if (!$selected.length) {
                 infoText = 'Select a plan above to see pricing details.';
+            } else if (isCustomQuote) {
+                infoText = 'The ' + $selected.data('plan-name') + ' plan is custom-priced for your school. Contact our sales team for a quote — this form cannot be submitted for this plan.';
             } else if (isFree) {
                 infoText = 'The Free plan runs for one month and does not require billing.';
             } else if (cycle === 'annual') {
@@ -430,6 +436,13 @@
             }
 
             $('#billingCycleInfoText').text(infoText);
+            $('#billingCycleInfo').toggleClass('alert-warning', isCustomQuote).toggleClass('alert-info', !isCustomQuote);
+
+            if (isCustomQuote) {
+                $('#subscribeSubmitBtn').html('Contact Sales Team <i class="bi bi-arrow-right"></i>');
+            } else {
+                $('#subscribeSubmitBtn').html('Submit Application <i class="bi bi-arrow-right"></i>');
+            }
         }
 
         $('.billing-cycle-tabs .nav-link').click(function () {
@@ -626,6 +639,13 @@
         $(document).on('input blur', '#re-type-password', validateRetypePassword);
 
         $('#subscribeForm').on('submit', function (e) {
+            var $selectedPlan = $('input[name="account_type"]:checked');
+            if ($selectedPlan.length && $selectedPlan.data('is-custom-quote') == 1) {
+                e.preventDefault();
+                window.location.href = "<?= site_url('contact') ?>";
+                return;
+            }
+
             var valid = true;
 
             $.each(textValidators, function (name) {

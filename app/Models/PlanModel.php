@@ -18,11 +18,15 @@ class PlanModel extends Model
 
     /**
      * Total annual cost for a plan after the annual billing discount.
-     * Free plans (cost 0) always return 0.
+     * Free plans (cost 0) and custom-quote plans (cost NULL) always return 0.
      */
     public function getAnnualCost(array $plan): float
     {
-        $monthlyCost = (float) ($plan['plan_monthly_cost'] ?? 0);
+        if ($plan['plan_monthly_cost'] === null) {
+            return 0.0;
+        }
+
+        $monthlyCost = (float) $plan['plan_monthly_cost'];
 
         if ($monthlyCost <= 0) {
             return 0.0;

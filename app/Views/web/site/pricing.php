@@ -2,7 +2,7 @@
     <div class="container text-center" data-aos="fade-up">
         <span class="badge-brand-pink">Pricing</span>
         <h1 class="mt-3 text-white">Simple, local Fiji pricing</h1>
-        <p style="color:rgba(255,255,255,.85); max-width:700px; margin:0 auto;">Priced in Fijian dollars, billed monthly. Start free, upgrade as your school grows — no lock-in contracts.</p>
+        <p style="color:rgba(255,255,255,.85); max-width:700px; margin:0 auto;">Priced in Fijian dollars, billed monthly. Pick the plan that fits your school, upgrade any time — no lock-in contracts.</p>
     </div>
 </section>
 
@@ -10,42 +10,52 @@
     <div class="container">
         <div class="row gy-4 justify-content-center">
             <?php foreach ($plans as $i => $plan): ?>
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="<?= 100 + ($i * 50) ?>">
-                    <div class="pricing-card <?= $plan['plan_name'] === 'Standard' ? 'featured' : '' ?>">
-                        <?php if ($plan['plan_name'] === 'Standard'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
+                <?php $isCustomQuote = $plan['plan_monthly_cost'] === null; ?>
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="<?= 100 + ($i * 50) ?>">
+                    <div class="pricing-card <?= $plan['plan_name'] === 'Ultimate' ? 'featured' : '' ?>">
+                        <?php if ($plan['plan_name'] === 'Ultimate'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
                         <h3><?= esc($plan['plan_name']) ?></h3>
                         <div class="price">
-                            <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
-                            <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
+                            <?= $isCustomQuote ? 'Contact us' : ($plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free') ?>
+                            <?php if (!$isCustomQuote && $plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
                         </div>
-                        <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
+                        <?php if (!$isCustomQuote && $plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
                         <p class="desc"><?= esc($plan['plan_desc']) ?></p>
                         <ul>
-                            <?php if ($plan['plan_name'] === 'Starter'): ?>
+                            <?php if ($plan['plan_name'] === 'Standard'): ?>
                                 <li><i class="bi bi-check2"></i> Core admissions &amp; enrolment</li>
                                 <li><i class="bi bi-check2"></i> Attendance &amp; classroom basics</li>
                                 <li><i class="bi bi-check2"></i> Wall &amp; chat communication</li>
                                 <li><i class="bi bi-check2"></i> Limited user accounts</li>
-                            <?php elseif ($plan['plan_name'] === 'Standard'): ?>
-                                <li><i class="bi bi-check2"></i> Everything in Starter</li>
+                            <?php elseif ($plan['plan_name'] === 'Premium'): ?>
+                                <li><i class="bi bi-check2"></i> Everything in Standard</li>
                                 <li><i class="bi bi-check2"></i> Up to 500 user accounts</li>
                                 <li><i class="bi bi-check2"></i> Exams, report cards &amp; timetables</li>
                                 <li><i class="bi bi-check2"></i> Conduct &amp; discipline management</li>
                                 <li><i class="bi bi-check2"></i> Two-factor authentication</li>
-                            <?php else: ?>
-                                <li><i class="bi bi-check2"></i> Everything in Standard</li>
+                            <?php elseif ($plan['plan_name'] === 'Ultimate'): ?>
+                                <li><i class="bi bi-check2"></i> Everything in Premium</li>
                                 <li><i class="bi bi-check2"></i> Unlimited user accounts</li>
                                 <li><i class="bi bi-check2"></i> Full feature access, all modules</li>
                                 <li><i class="bi bi-check2"></i> Priority support</li>
+                            <?php else: ?>
+                                <li><i class="bi bi-check2"></i> Everything in Ultimate</li>
+                                <li><i class="bi bi-check2"></i> Multi-school / district licensing</li>
+                                <li><i class="bi bi-check2"></i> Dedicated onboarding &amp; account manager</li>
+                                <li><i class="bi bi-check2"></i> Custom integrations, built to order</li>
                             <?php endif; ?>
                         </ul>
-                        <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                        <?php if ($isCustomQuote): ?>
+                            <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center">Contact Sales</a>
+                        <?php else: ?>
+                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>
         </div>
 
-        <p class="text-center text-muted mt-5" data-aos="fade-up">All prices in FJD, inclusive of VAT. Need something custom for your district or group of schools? <a href="<?= site_url('contact') ?>">Talk to us</a>.</p>
+        <p class="text-center text-muted mt-5" data-aos="fade-up">All prices in FJD, inclusive of VAT. Managing a district or group of schools? Our Enterprise plan above is tailored and quoted individually — <a href="<?= site_url('contact') ?>">talk to us</a>.</p>
     </div>
 </section>
 
@@ -63,7 +73,7 @@
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Can I try Navuli before paying?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#pricingFaq">
-                            <div class="accordion-body">Yes. The Starter plan is free and lets you set up your school, explore the core modules, and decide if Navuli is right for you before upgrading.</div>
+                            <div class="accordion-body">We don't currently offer a free trial, but our team is happy to walk you through a live demo before you commit — <a href="<?= site_url('contact') ?>">get in touch</a> to arrange one.</div>
                         </div>
                     </div>
                     <div class="accordion-item">

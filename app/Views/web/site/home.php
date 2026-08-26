@@ -199,17 +199,22 @@
     <div class="container">
         <div class="row gy-4 justify-content-center">
             <?php foreach ($plans as $i => $plan): ?>
-                <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="<?= 100 + ($i * 50) ?>">
-                    <div class="pricing-card <?= $plan['plan_name'] === 'Standard' ? 'featured' : '' ?>">
-                        <?php if ($plan['plan_name'] === 'Standard'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
+                <?php $isCustomQuote = $plan['plan_monthly_cost'] === null; ?>
+                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="<?= 100 + ($i * 50) ?>">
+                    <div class="pricing-card <?= $plan['plan_name'] === 'Ultimate' ? 'featured' : '' ?>">
+                        <?php if ($plan['plan_name'] === 'Ultimate'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
                         <h3><?= esc($plan['plan_name']) ?></h3>
                         <div class="price">
-                            <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
-                            <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
+                            <?= $isCustomQuote ? 'Contact us' : ($plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free') ?>
+                            <?php if (!$isCustomQuote && $plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
                         </div>
-                        <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
+                        <?php if (!$isCustomQuote && $plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
                         <p class="desc"><?= esc($plan['plan_desc']) ?></p>
-                        <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                        <?php if ($isCustomQuote): ?>
+                            <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center">Contact Sales</a>
+                        <?php else: ?>
+                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand w-100 justify-content-center">Choose <?= esc($plan['plan_name']) ?></a>
+                        <?php endif; ?>
                     </div>
                 </div>
             <?php endforeach; ?>

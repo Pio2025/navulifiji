@@ -305,6 +305,23 @@ class AccountController extends BaseController
                 return view('web/layouts/site', $data);
             } else {
                 // Validation passed - process the data
+
+                // Custom-quote plans (no fixed monthly cost) can't be self-service
+                // subscribed to — direct the applicant to contact sales instead.
+                $selectedPlan = $this->planModel->getPlan($this->request->getPost('account_type'));
+                if ($selectedPlan && $selectedPlan['plan_monthly_cost'] === null) {
+                    session()->setFlashdata('error', 'The ' . esc($selectedPlan['plan_name']) . ' plan is custom-priced. Please <a href="' . site_url('contact') . '">contact our sales team</a> for a quote instead of submitting this form.');
+
+                    if ($province) {
+                        $data['provinceDistrict'] = $this->districtModel->getDistrictByProvince($province);
+                    }
+                    if ($province2) {
+                        $data['provinceDistrict2'] = $this->districtModel->getDistrictByProvince($province2);
+                    }
+
+                    return view('web/layouts/site', $data);
+                }
+
                 $plainPassword = $this->request->getPost('password');
                 $encryptedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
                 
