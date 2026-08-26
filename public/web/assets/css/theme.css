@@ -661,6 +661,16 @@ a:active {
   border-color: color-mix(in srgb, var(--default-color), transparent 85%);
 }
 
+.group-invalid .radio-card {
+  border-color: #dc3545;
+}
+
+.group-invalid .radio-card-input:checked + .radio-card {
+  border-color: #dc3545;
+  background: color-mix(in srgb, #dc3545, transparent 94%);
+  box-shadow: 0 0 0 1px #dc3545;
+}
+
 .form-label.required::after,
 label.required::after {
   content: "*";

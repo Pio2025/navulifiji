@@ -34,9 +34,17 @@
                     </div>
                 <?php endif; ?>
 
+                <div class="alert alert-danger validation-summary-alert d-flex align-items-start gap-3 mb-4 d-none" id="clientValidationAlert">
+                    <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    <div>
+                        <div class="validation-summary-title">Your application could not be submitted</div>
+                        <p>Please review the field(s) highlighted in red below and correct the error(s) shown before submitting again.</p>
+                    </div>
+                </div>
+
                 <div class="card border-0 shadow-sm subscribe-card">
                     <div class="card-body p-4 p-lg-5">
-                        <form method="post" enctype="multipart/form-data" action="<?= site_url('account/subscribe') ?>">
+                        <form method="post" enctype="multipart/form-data" action="<?= site_url('account/subscribe') ?>" id="subscribeForm" novalidate>
                             <?= csrf_field() ?>
 
                             <!-- Account Plan -->
@@ -57,7 +65,7 @@
                             </ul>
                             <input type="hidden" name="billing_cycle" id="billing_cycle_input" value="<?= esc($billingCycle) ?>">
 
-                            <div class="row gy-3">
+                            <div class="row gy-3" id="accountTypeGroup">
                                 <?php foreach ($plans as $i => $plan): ?>
                                     <?php
                                         $isChecked = isset($old['account_type'])
@@ -88,9 +96,9 @@
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <?php if (isset($validation) && $validation->hasError('account_type')): ?>
-                                <div class="text-danger mt-2"><small><?= $validation->getError('account_type') ?></small></div>
-                            <?php endif; ?>
+                            <div class="text-danger mt-2 <?= (isset($validation) && $validation->hasError('account_type')) ? '' : 'd-none' ?>" id="accountTypeError">
+                                <small><?= (isset($validation) && $validation->hasError('account_type')) ? $validation->getError('account_type') : '' ?></small>
+                            </div>
 
                             <div class="alert alert-info billing-cycle-info mt-3 d-flex align-items-start gap-3" id="billingCycleInfo">
                                 <i class="bi bi-info-circle-fill fs-4"></i>
@@ -103,7 +111,7 @@
                             <h4 class="subscribe-section-title">School Detail</h4>
 
                             <label class="form-label mb-2 required">School category</label>
-                            <div class="row gy-3 mb-4">
+                            <div class="row gy-3 mb-4" id="schCategoryGroup">
                                 <?php $categories = [1 => 'Pre-School', 2 => 'Kindergarten', 3 => 'Primary', 4 => 'Secondary']; ?>
                                 <?php foreach ($categories as $catId => $catLabel): ?>
                                     <div class="col-6 col-md-3">
@@ -115,17 +123,15 @@
                                     </div>
                                 <?php endforeach; ?>
                             </div>
-                            <?php if (isset($validation) && $validation->hasError('sch_category')): ?>
-                                <div class="text-danger mb-4"><small><?= $validation->getError('sch_category') ?></small></div>
-                            <?php endif; ?>
+                            <div class="text-danger mb-4 <?= (isset($validation) && $validation->hasError('sch_category')) ? '' : 'd-none' ?>" id="schCategoryError">
+                                <small><?= (isset($validation) && $validation->hasError('sch_category')) ? $validation->getError('sch_category') : '' ?></small>
+                            </div>
 
                             <div class="mb-4">
                                 <label class="form-label required">School Name</label>
                                 <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('account_name')) ? 'is-invalid' : '' ?>"
                                        name="account_name" value="<?= old('account_name', $old['account_name'] ?? '') ?>" required>
-                                <?php if (isset($validation) && $validation->hasError('account_name')): ?>
-                                    <div class="invalid-feedback"><?= $validation->getError('account_name') ?></div>
-                                <?php endif; ?>
+                                <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('account_name')) ? $validation->getError('account_name') : '' ?></div>
                             </div>
 
                             <div class="row mb-4">
@@ -141,9 +147,7 @@
                                             <?php endif; ?>
                                         <?php endforeach; ?>
                                     </select>
-                                    <?php if (isset($validation) && $validation->hasError('province')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('province') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('province')) ? $validation->getError('province') : '' ?></div>
                                 </div>
                                 <div class="col-md-6">
                                     <span id="loader" style="display:none;"><img src="<?= base_url('resources/ajax-loader/ajax-loader-3.gif') ?>"></span>
@@ -158,9 +162,7 @@
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
-                                            <?php if (isset($validation) && $validation->hasError('district')): ?>
-                                                <div class="invalid-feedback"><?= $validation->getError('district') ?></div>
-                                            <?php endif; ?>
+                                            <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('district')) ? $validation->getError('district') : '' ?></div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -171,17 +173,13 @@
                                     <label class="form-label required">School Phone</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('phone')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('phone', $old['phone'] ?? '') ?>" placeholder="Enter school phone" name="phone" required>
-                                    <?php if (isset($validation) && $validation->hasError('phone')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('phone') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('phone')) ? $validation->getError('phone') : '' ?></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label required">School Address</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('address')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('address', $old['address'] ?? '') ?>" placeholder="Enter school address" name="address" required>
-                                    <?php if (isset($validation) && $validation->hasError('address')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('address') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('address')) ? $validation->getError('address') : '' ?></div>
                                 </div>
                             </div>
 
@@ -189,9 +187,7 @@
                                 <label class="form-label required">School Motto</label>
                                 <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('motto')) ? 'is-invalid' : '' ?>"
                                        value="<?= old('motto', $old['motto'] ?? '') ?>" placeholder="Enter school motto" name="motto" required>
-                                <?php if (isset($validation) && $validation->hasError('motto')): ?>
-                                    <div class="invalid-feedback"><?= $validation->getError('motto') ?></div>
-                                <?php endif; ?>
+                                <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('motto')) ? $validation->getError('motto') : '' ?></div>
                             </div>
 
                             <hr class="my-5">
@@ -208,17 +204,13 @@
                                     <label class="form-label required">First Name</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('fname')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('fname', $old['fname'] ?? '') ?>" placeholder="Enter first name" name="fname" required>
-                                    <?php if (isset($validation) && $validation->hasError('fname')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('fname') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('fname')) ? $validation->getError('fname') : '' ?></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label required">Last Name</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('lname')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('lname', $old['lname'] ?? '') ?>" placeholder="Enter last name" name="lname" required>
-                                    <?php if (isset($validation) && $validation->hasError('lname')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('lname') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('lname')) ? $validation->getError('lname') : '' ?></div>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Other Name(s)</label>
@@ -234,17 +226,13 @@
                                         <option value="Male" <?= (old('gender', $old['gender'] ?? '') == 'Male') ? 'selected' : '' ?>>Male</option>
                                         <option value="Female" <?= (old('gender', $old['gender'] ?? '') == 'Female') ? 'selected' : '' ?>>Female</option>
                                     </select>
-                                    <?php if (isset($validation) && $validation->hasError('gender')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('gender') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('gender')) ? $validation->getError('gender') : '' ?></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label required">Date of Birth</label>
                                     <input type="date" class="form-control <?= (isset($validation) && $validation->hasError('dob')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('dob', $old['dob'] ?? '') ?>" name="dob" min="1901-01-01" max="<?= date('Y-m-d') ?>" required>
-                                    <?php if (isset($validation) && $validation->hasError('dob')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('dob') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('dob')) ? $validation->getError('dob') : '' ?></div>
                                 </div>
                             </div>
 
@@ -253,17 +241,13 @@
                                     <label class="form-label required">Email</label>
                                     <input type="email" class="form-control <?= (isset($validation) && $validation->hasError('my_email')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('my_email', $old['my_email'] ?? '') ?>" placeholder="Enter your personal email" name="my_email" required>
-                                    <?php if (isset($validation) && $validation->hasError('my_email')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('my_email') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('my_email')) ? $validation->getError('my_email') : '' ?></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label required">Phone</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('my_phone')) ? 'is-invalid' : '' ?>"
                                            value="<?= old('my_phone', $old['my_phone'] ?? '') ?>" placeholder="Enter your personal phone" name="my_phone" required>
-                                    <?php if (isset($validation) && $validation->hasError('my_phone')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('my_phone') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('my_phone')) ? $validation->getError('my_phone') : '' ?></div>
                                 </div>
                             </div>
 
@@ -278,9 +262,7 @@
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
-                                    <?php if (isset($validation) && $validation->hasError('province2')): ?>
-                                        <div class="invalid-feedback"><?= $validation->getError('province2') ?></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('province2')) ? $validation->getError('province2') : '' ?></div>
                                 </div>
                                 <div class="col-md-6">
                                     <span id="loader2" style="display:none;"><img src="<?= base_url('resources/ajax-loader/ajax-loader-3.gif') ?>"></span>
@@ -295,9 +277,7 @@
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
-                                            <?php if (isset($validation) && $validation->hasError('district2')): ?>
-                                                <div class="invalid-feedback"><?= $validation->getError('district2') ?></div>
-                                            <?php endif; ?>
+                                            <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('district2')) ? $validation->getError('district2') : '' ?></div>
                                         <?php endif; ?>
                                     </div>
                                 </div>
@@ -307,9 +287,7 @@
                                 <label class="form-label required">Address</label>
                                 <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('my_address')) ? 'is-invalid' : '' ?>"
                                        value="<?= old('my_address', $old['my_address'] ?? '') ?>" placeholder="Enter your personal address" name="my_address" required>
-                                <?php if (isset($validation) && $validation->hasError('my_address')): ?>
-                                    <div class="invalid-feedback"><?= $validation->getError('my_address') ?></div>
-                                <?php endif; ?>
+                                <div class="invalid-feedback"><?= (isset($validation) && $validation->hasError('my_address')) ? $validation->getError('my_address') : '' ?></div>
                             </div>
 
                             <div class="alert alert-info mb-4">
@@ -333,9 +311,7 @@
                                             <i class="bi bi-eye-slash"></i>
                                         </span>
                                     </div>
-                                    <?php if (isset($validation) && $validation->hasError('password')): ?>
-                                        <div class="text-danger mt-1"><small><?= $validation->getError('password') ?></small></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback <?= (isset($validation) && $validation->hasError('password')) ? 'd-block' : '' ?>" id="passwordError"><?= (isset($validation) && $validation->hasError('password')) ? $validation->getError('password') : '' ?></div>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label required">Re-type Password</label>
@@ -346,9 +322,7 @@
                                             <i class="bi bi-eye-slash"></i>
                                         </span>
                                     </div>
-                                    <?php if (isset($validation) && $validation->hasError('re-type-password')): ?>
-                                        <div class="text-danger mt-1"><small><?= $validation->getError('re-type-password') ?></small></div>
-                                    <?php endif; ?>
+                                    <div class="invalid-feedback <?= (isset($validation) && $validation->hasError('re-type-password')) ? 'd-block' : '' ?>" id="reTypePasswordError"><?= (isset($validation) && $validation->hasError('re-type-password')) ? $validation->getError('re-type-password') : '' ?></div>
                                 </div>
                             </div>
 
@@ -468,5 +442,218 @@
         $('input[name="account_type"]').change(updateBillingUI);
 
         updateBillingUI();
+
+        // ================= Real-time client-side validation =================
+        // Mirrors the backend rules in AccountController::subscribe(). Note:
+        // email uniqueness (is_unique[users.email]) cannot be checked here and
+        // is still only enforced server-side.
+        var passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+        function setFieldError($input, $feedback, message) {
+            $input.addClass('is-invalid');
+            if (!$feedback || !$feedback.length) return;
+            $feedback.text(message);
+            if ($feedback.hasClass('invalid-feedback')) {
+                $feedback.addClass('d-block');
+            } else {
+                $feedback.removeClass('d-none');
+            }
+        }
+
+        function clearFieldError($input, $feedback) {
+            $input.removeClass('is-invalid');
+            if (!$feedback || !$feedback.length) return;
+            $feedback.text('');
+            var id = $feedback.attr('id');
+            if (id === 'passwordError' || id === 'reTypePasswordError') {
+                $feedback.removeClass('d-block');
+            } else if (!$feedback.hasClass('invalid-feedback')) {
+                $feedback.addClass('d-none');
+            }
+        }
+
+        var textValidators = {
+            account_name: { required: 'School name is required', minLength: [3, 'School name must be at least 3 characters'], maxLength: [100, 'School name cannot exceed 100 characters'] },
+            fname: { required: 'First name is required', minLength: [3, 'First name must be at least 3 characters'], maxLength: [100, 'First name cannot exceed 100 characters'] },
+            lname: { required: 'Last name is required', minLength: [3, 'Last name must be at least 3 characters'], maxLength: [100, 'Last name cannot exceed 100 characters'] },
+            phone: { required: 'Phone number is required', exactLength: [7, 'Phone number must be exactly 7 digits'] },
+            my_phone: { required: 'Phone number is required', exactLength: [7, 'Phone number must be exactly 7 digits'] },
+            address: { required: 'Address is required', minLength: [5, 'Address must be at least 5 characters'], maxLength: [255, 'Address cannot exceed 255 characters'] },
+            my_address: { required: 'Address is required', minLength: [5, 'Address must be at least 5 characters'], maxLength: [255, 'Address cannot exceed 255 characters'] },
+            motto: { required: 'School motto is required', minLength: [3, 'School motto must be at least 3 characters'], maxLength: [500, 'School motto cannot exceed 500 characters'] }
+        };
+
+        function validateTextField(name) {
+            var $input = $('[name="' + name + '"]');
+            if (!$input.length) return true;
+            var $feedback = $input.siblings('.invalid-feedback').first();
+            var rules = textValidators[name];
+            var val = $.trim($input.val());
+
+            if (!val) {
+                setFieldError($input, $feedback, rules.required);
+                return false;
+            }
+            if (rules.minLength && val.length < rules.minLength[0]) {
+                setFieldError($input, $feedback, rules.minLength[1]);
+                return false;
+            }
+            if (rules.maxLength && val.length > rules.maxLength[0]) {
+                setFieldError($input, $feedback, rules.maxLength[1]);
+                return false;
+            }
+            if (rules.exactLength && val.length !== rules.exactLength[0]) {
+                setFieldError($input, $feedback, rules.exactLength[1]);
+                return false;
+            }
+            clearFieldError($input, $feedback);
+            return true;
+        }
+
+        $.each(textValidators, function (name) {
+            $(document).on('input blur', '[name="' + name + '"]', function () {
+                validateTextField(name);
+            });
+        });
+
+        var selectMessages = {
+            province: 'Please select a province',
+            province2: 'Please select a province',
+            gender: 'Please select a gender',
+            district: 'Please select a district',
+            district2: 'Please select a district',
+            dob: 'Please select dob'
+        };
+
+        function validateRequiredField(name) {
+            var $input = $('[name="' + name + '"]');
+            if (!$input.length) return true;
+            var $feedback = $input.siblings('.invalid-feedback').first();
+            if (!$input.val()) {
+                setFieldError($input, $feedback, selectMessages[name]);
+                return false;
+            }
+            clearFieldError($input, $feedback);
+            return true;
+        }
+
+        $(document).on('change blur', '[name="province"], [name="province2"], [name="gender"], [name="dob"], [name="district"], [name="district2"]', function () {
+            validateRequiredField($(this).attr('name'));
+        });
+
+        function validateEmail() {
+            var $input = $('[name="my_email"]');
+            var $feedback = $input.siblings('.invalid-feedback').first();
+            var val = $.trim($input.val());
+            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!val) {
+                setFieldError($input, $feedback, 'Email is required');
+                return false;
+            }
+            if (!emailRegex.test(val)) {
+                setFieldError($input, $feedback, 'Please enter a valid email address');
+                return false;
+            }
+            clearFieldError($input, $feedback);
+            return true;
+        }
+        $(document).on('input blur', '[name="my_email"]', validateEmail);
+
+        function validateRadioGroup(name, groupId, errorId, message) {
+            var checked = $('input[name="' + name + '"]:checked').length > 0;
+            var $group = $('#' + groupId);
+            var $error = $('#' + errorId);
+            if (!checked) {
+                $group.addClass('group-invalid');
+                $error.removeClass('d-none').find('small').text(message);
+                return false;
+            }
+            $group.removeClass('group-invalid');
+            $error.addClass('d-none').find('small').text('');
+            return true;
+        }
+        $(document).on('change', 'input[name="account_type"]', function () {
+            validateRadioGroup('account_type', 'accountTypeGroup', 'accountTypeError', 'Please select an account type');
+        });
+        $(document).on('change', 'input[name="sch_category"]', function () {
+            validateRadioGroup('sch_category', 'schCategoryGroup', 'schCategoryError', 'Please select school category');
+        });
+
+        function validatePassword() {
+            var $input = $('#password');
+            var $feedback = $('#passwordError');
+            var val = $input.val();
+            if (!val) {
+                setFieldError($input, $feedback, 'Password is required');
+                return false;
+            }
+            if (val.length < 8) {
+                setFieldError($input, $feedback, 'Password must be at least 8 characters');
+                return false;
+            }
+            if (val.length > 32) {
+                setFieldError($input, $feedback, 'Password cannot exceed 32 characters');
+                return false;
+            }
+            if (!passwordRegex.test(val)) {
+                setFieldError($input, $feedback, 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)');
+                return false;
+            }
+            clearFieldError($input, $feedback);
+            if ($('#re-type-password').val()) {
+                validateRetypePassword();
+            }
+            return true;
+        }
+
+        function validateRetypePassword() {
+            var $input = $('#re-type-password');
+            var $feedback = $('#reTypePasswordError');
+            var val = $input.val();
+            if (!val) {
+                setFieldError($input, $feedback, 'Please re-type your password');
+                return false;
+            }
+            if (val !== $('#password').val()) {
+                setFieldError($input, $feedback, 'Passwords do not match');
+                return false;
+            }
+            clearFieldError($input, $feedback);
+            return true;
+        }
+
+        $(document).on('input blur', '#password', validatePassword);
+        $(document).on('input blur', '#re-type-password', validateRetypePassword);
+
+        $('#subscribeForm').on('submit', function (e) {
+            var valid = true;
+
+            $.each(textValidators, function (name) {
+                if (!validateTextField(name)) valid = false;
+            });
+
+            ['province', 'province2', 'gender', 'dob'].forEach(function (name) {
+                if (!validateRequiredField(name)) valid = false;
+            });
+            if ($('[name="district"]').length && !validateRequiredField('district')) valid = false;
+            if ($('[name="district2"]').length && !validateRequiredField('district2')) valid = false;
+
+            if (!validateEmail()) valid = false;
+            if (!validateRadioGroup('account_type', 'accountTypeGroup', 'accountTypeError', 'Please select an account type')) valid = false;
+            if (!validateRadioGroup('sch_category', 'schCategoryGroup', 'schCategoryError', 'Please select school category')) valid = false;
+            if (!validatePassword()) valid = false;
+            if (!validateRetypePassword()) valid = false;
+
+            if (!valid) {
+                e.preventDefault();
+                $('#clientValidationAlert').removeClass('d-none');
+                var $firstInvalid = $('.is-invalid, .group-invalid').first();
+                if ($firstInvalid.length) {
+                    $('html, body').animate({ scrollTop: $firstInvalid.offset().top - 120 }, 400);
+                }
+            } else {
+                $('#clientValidationAlert').addClass('d-none');
+            }
+        });
     });
 </script>

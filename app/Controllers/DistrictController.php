@@ -57,8 +57,8 @@ class DistrictController extends BaseController
                 foreach ($districts as $item) {
                     $html .= '<option value="'.$item['district_id'].'">'.$item['district_name'].'</option>';
                 }
-                
-                $html .= '</select>';
+
+                $html .= '</select><div class="invalid-feedback" id="districtError"></div>';
             }
 
             return $this->response->setJSON([
@@ -75,7 +75,7 @@ class DistrictController extends BaseController
             ]);
         }
     }
-    
+
     public function getDistrictByProvince2()
     {
         $html = '';
@@ -121,8 +121,8 @@ class DistrictController extends BaseController
                 foreach ($districts as $item) {
                     $html .= '<option value="'.$item['district_id'].'">'.$item['district_name'].'</option>';
                 }
-                
-                $html .= '</select>';
+
+                $html .= '</select><div class="invalid-feedback" id="district2Error"></div>';
             }
 
             return $this->response->setJSON([
@@ -139,7 +139,7 @@ class DistrictController extends BaseController
             ]);
         }
     }
-    
+
     public function getDistrictByProvinceAll()
     {
         $html = '';
