@@ -50,7 +50,7 @@ class DistrictController extends BaseController
             } else {
                 $html = '<!--begin::Label-->
                         <label class="form-label mb-3 required">Select District</label>
-                        <select class="form-select" aria-label="Select district" name="district">';
+                        <select class="form-select" aria-label="Select district" name="district" required>';
                         if($provinceID != 16){
                             $html .= '<option value="">Select District...</option>';
                         }
@@ -115,7 +115,7 @@ class DistrictController extends BaseController
             } else {
                 $html = '<!--begin::Label-->
                         <label class="form-label mb-3 required">Select District</label>
-                        <select class="form-select" aria-label="Select district" name="district2">
+                        <select class="form-select" aria-label="Select district" name="district2" required>
                             <option value="">Select District...</option>';
                 
                 foreach ($districts as $item) {

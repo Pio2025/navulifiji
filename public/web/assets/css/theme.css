@@ -657,3 +657,40 @@ a:active {
 .radio-card-input:disabled + .radio-card:hover {
   border-color: color-mix(in srgb, var(--default-color), transparent 85%);
 }
+
+.form-label.required::after,
+label.required::after {
+  content: "*";
+  color: var(--accent-color-2);
+  margin-left: 4px;
+  font-weight: 700;
+}
+
+.required-note {
+  font-size: 13px;
+  color: color-mix(in srgb, var(--default-color), transparent 30%);
+}
+
+.required-note .required-note-star {
+  color: var(--accent-color-2);
+  font-weight: 700;
+}
+
+.validation-summary-alert {
+  border: none;
+  border-left: 4px solid var(--accent-color-2);
+  background: color-mix(in srgb, var(--accent-color-2), transparent 92%);
+  border-radius: 8px;
+  padding: 18px 22px;
+}
+
+.validation-summary-alert .validation-summary-title {
+  font-weight: 700;
+  color: var(--heading-color);
+  margin-bottom: 4px;
+}
+
+.validation-summary-alert p {
+  margin-bottom: 0;
+  color: var(--default-color);
+}

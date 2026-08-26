@@ -22,6 +22,16 @@
             </div>
         <?php endif; ?>
 
+        <?php if (isset($validation) && $validation->getErrors()): ?>
+            <div class="alert alert-danger validation-summary-alert d-flex align-items-start gap-3 mb-4" data-aos="fade-up">
+                <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                <div>
+                    <div class="validation-summary-title">Your application could not be submitted</div>
+                    <p>Please review the field(s) highlighted in red below and correct the error(s) shown before submitting again.</p>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="row justify-content-center">
             <div class="col-lg-10">
                 <div class="card border-0 shadow-sm">
@@ -31,7 +41,8 @@
 
                             <!-- Account Plan -->
                             <h4 class="subscribe-section-title">Account Plan</h4>
-                            <p class="text-muted mb-4">Select the plan that best fits your school's needs and size. <a href="<?= site_url('pricing') ?>" target="_blank">See full plan comparison</a>.</p>
+                            <p class="text-muted mb-1">Select the plan that best fits your school's needs and size. <a href="<?= site_url('pricing') ?>" target="_blank">See full plan comparison</a>.</p>
+                            <p class="required-note mb-4"><span class="required-note-star">*</span> Required</p>
 
                             <div class="row gy-3">
                                 <?php foreach ($plans as $i => $plan): ?>
@@ -41,7 +52,7 @@
                                             : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0);
                                     ?>
                                     <div class="col-md-4">
-                                        <input type="radio" class="radio-card-input" name="account_type"
+                                        <input type="radio" class="radio-card-input" name="account_type" required
                                                id="account_type_<?= $plan['plan_id'] ?>"
                                                value="<?= $plan['plan_id'] ?>" <?= $isChecked ? 'checked' : '' ?>>
                                         <label class="radio-card" for="account_type_<?= $plan['plan_id'] ?>">
@@ -62,12 +73,12 @@
                             <!-- School Detail -->
                             <h4 class="subscribe-section-title">School Detail</h4>
 
-                            <label class="form-label mb-2">School category</label>
+                            <label class="form-label mb-2 required">School category</label>
                             <div class="row gy-3 mb-4">
                                 <?php $categories = [1 => 'Pre-School', 2 => 'Kindergarten', 3 => 'Primary', 4 => 'Secondary']; ?>
                                 <?php foreach ($categories as $catId => $catLabel): ?>
                                     <div class="col-6 col-md-3">
-                                        <input type="radio" class="radio-card-input" name="sch_category" id="sch_category_<?= $catId ?>"
+                                        <input type="radio" class="radio-card-input" name="sch_category" id="sch_category_<?= $catId ?>" required
                                                value="<?= $catId ?>" <?= (isset($old['sch_category']) && $old['sch_category'] == $catId) ? 'checked' : '' ?>>
                                         <label class="radio-card text-center align-items-center" for="sch_category_<?= $catId ?>">
                                             <span class="radio-card-title"><?= $catLabel ?></span>
@@ -80,9 +91,9 @@
                             <?php endif; ?>
 
                             <div class="mb-4">
-                                <label class="form-label">School Name</label>
+                                <label class="form-label required">School Name</label>
                                 <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('account_name')) ? 'is-invalid' : '' ?>"
-                                       name="account_name" value="<?= old('account_name', $old['account_name'] ?? '') ?>">
+                                       name="account_name" value="<?= old('account_name', $old['account_name'] ?? '') ?>" required>
                                 <?php if (isset($validation) && $validation->hasError('account_name')): ?>
                                     <div class="invalid-feedback"><?= $validation->getError('account_name') ?></div>
                                 <?php endif; ?>
@@ -90,8 +101,8 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label">Select Province</label>
-                                    <select class="form-select selectProvince <?= (isset($validation) && $validation->hasError('province')) ? 'is-invalid' : '' ?>" name="province">
+                                    <label class="form-label required">Select Province</label>
+                                    <select class="form-select selectProvince <?= (isset($validation) && $validation->hasError('province')) ? 'is-invalid' : '' ?>" name="province" required>
                                         <option value="">Select ...</option>
                                         <?php foreach ($province as $row): ?>
                                             <?php if ($row['province_name'] != 'Foreign Citizen'): ?>
@@ -109,8 +120,8 @@
                                     <span id="loader" style="display:none;"><img src="<?= base_url('resources/ajax-loader/ajax-loader-3.gif') ?>"></span>
                                     <div class="response">
                                         <?php if (!empty($old['province'])): ?>
-                                            <label class="form-label">Select District</label>
-                                            <select class="form-select <?= (isset($validation) && $validation->hasError('district')) ? 'is-invalid' : '' ?>" name="district">
+                                            <label class="form-label required">Select District</label>
+                                            <select class="form-select <?= (isset($validation) && $validation->hasError('district')) ? 'is-invalid' : '' ?>" name="district" required>
                                                 <option value="">Select ...</option>
                                                 <?php foreach ($provinceDistrict as $row): ?>
                                                     <option value="<?= esc($row['district_id']) ?>" <?= (old('district', $old['district'] ?? '') == $row['district_id']) ? 'selected' : '' ?>>
@@ -128,17 +139,17 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label">School Phone</label>
+                                    <label class="form-label required">School Phone</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('phone')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('phone', $old['phone'] ?? '') ?>" placeholder="Enter school phone" name="phone">
+                                           value="<?= old('phone', $old['phone'] ?? '') ?>" placeholder="Enter school phone" name="phone" required>
                                     <?php if (isset($validation) && $validation->hasError('phone')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('phone') ?></div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">School Address</label>
+                                    <label class="form-label required">School Address</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('address')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('address', $old['address'] ?? '') ?>" placeholder="Enter school address" name="address">
+                                           value="<?= old('address', $old['address'] ?? '') ?>" placeholder="Enter school address" name="address" required>
                                     <?php if (isset($validation) && $validation->hasError('address')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('address') ?></div>
                                     <?php endif; ?>
@@ -146,9 +157,9 @@
                             </div>
 
                             <div class="mb-5">
-                                <label class="form-label">School Motto</label>
+                                <label class="form-label required">School Motto</label>
                                 <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('motto')) ? 'is-invalid' : '' ?>"
-                                       value="<?= old('motto', $old['motto'] ?? '') ?>" placeholder="Enter school motto" name="motto">
+                                       value="<?= old('motto', $old['motto'] ?? '') ?>" placeholder="Enter school motto" name="motto" required>
                                 <?php if (isset($validation) && $validation->hasError('motto')): ?>
                                     <div class="invalid-feedback"><?= $validation->getError('motto') ?></div>
                                 <?php endif; ?>
@@ -165,17 +176,17 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-4">
-                                    <label class="form-label">First Name</label>
+                                    <label class="form-label required">First Name</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('fname')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('fname', $old['fname'] ?? '') ?>" placeholder="Enter first name" name="fname">
+                                           value="<?= old('fname', $old['fname'] ?? '') ?>" placeholder="Enter first name" name="fname" required>
                                     <?php if (isset($validation) && $validation->hasError('fname')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('fname') ?></div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="col-md-4">
-                                    <label class="form-label">Last Name</label>
+                                    <label class="form-label required">Last Name</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('lname')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('lname', $old['lname'] ?? '') ?>" placeholder="Enter last name" name="lname">
+                                           value="<?= old('lname', $old['lname'] ?? '') ?>" placeholder="Enter last name" name="lname" required>
                                     <?php if (isset($validation) && $validation->hasError('lname')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('lname') ?></div>
                                     <?php endif; ?>
@@ -188,8 +199,8 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label">Gender</label>
-                                    <select class="form-select <?= (isset($validation) && $validation->hasError('gender')) ? 'is-invalid' : '' ?>" name="gender">
+                                    <label class="form-label required">Gender</label>
+                                    <select class="form-select <?= (isset($validation) && $validation->hasError('gender')) ? 'is-invalid' : '' ?>" name="gender" required>
                                         <option value="">Select Gender</option>
                                         <option value="Male" <?= (old('gender', $old['gender'] ?? '') == 'Male') ? 'selected' : '' ?>>Male</option>
                                         <option value="Female" <?= (old('gender', $old['gender'] ?? '') == 'Female') ? 'selected' : '' ?>>Female</option>
@@ -199,9 +210,9 @@
                                     <?php endif; ?>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Date of Birth</label>
+                                    <label class="form-label required">Date of Birth</label>
                                     <input type="date" class="form-control <?= (isset($validation) && $validation->hasError('dob')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('dob', $old['dob'] ?? '') ?>" name="dob" min="1901-01-01" max="<?= date('Y-m-d') ?>">
+                                           value="<?= old('dob', $old['dob'] ?? '') ?>" name="dob" min="1901-01-01" max="<?= date('Y-m-d') ?>" required>
                                     <?php if (isset($validation) && $validation->hasError('dob')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('dob') ?></div>
                                     <?php endif; ?>
@@ -210,17 +221,17 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label">Email</label>
+                                    <label class="form-label required">Email</label>
                                     <input type="email" class="form-control <?= (isset($validation) && $validation->hasError('my_email')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('my_email', $old['my_email'] ?? '') ?>" placeholder="Enter your personal email" name="my_email">
+                                           value="<?= old('my_email', $old['my_email'] ?? '') ?>" placeholder="Enter your personal email" name="my_email" required>
                                     <?php if (isset($validation) && $validation->hasError('my_email')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('my_email') ?></div>
                                     <?php endif; ?>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Phone</label>
+                                    <label class="form-label required">Phone</label>
                                     <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('my_phone')) ? 'is-invalid' : '' ?>"
-                                           value="<?= old('my_phone', $old['my_phone'] ?? '') ?>" placeholder="Enter your personal phone" name="my_phone">
+                                           value="<?= old('my_phone', $old['my_phone'] ?? '') ?>" placeholder="Enter your personal phone" name="my_phone" required>
                                     <?php if (isset($validation) && $validation->hasError('my_phone')): ?>
                                         <div class="invalid-feedback"><?= $validation->getError('my_phone') ?></div>
                                     <?php endif; ?>
@@ -229,8 +240,8 @@
 
                             <div class="row mb-4">
                                 <div class="col-md-6">
-                                    <label class="form-label">Select Province</label>
-                                    <select class="form-select selectProvince2 <?= (isset($validation) && $validation->hasError('province2')) ? 'is-invalid' : '' ?>" name="province2">
+                                    <label class="form-label required">Select Province</label>
+                                    <select class="form-select selectProvince2 <?= (isset($validation) && $validation->hasError('province2')) ? 'is-invalid' : '' ?>" name="province2" required>
                                         <option value="">Select ...</option>
                                         <?php foreach ($province as $row): ?>
                                             <option value="<?= $row['province_id'] ?>" <?= (old('province2', $old['province2'] ?? '') == $row['province_id']) ? 'selected' : '' ?>>
@@ -246,8 +257,8 @@
                                     <span id="loader2" style="display:none;"><img src="<?= base_url('resources/ajax-loader/ajax-loader-3.gif') ?>"></span>
                                     <div class="response2">
                                         <?php if (!empty($old['province2'])): ?>
-                                            <label class="form-label">Select District</label>
-                                            <select class="form-select <?= (isset($validation) && $validation->hasError('district2')) ? 'is-invalid' : '' ?>" name="district2">
+                                            <label class="form-label required">Select District</label>
+                                            <select class="form-select <?= (isset($validation) && $validation->hasError('district2')) ? 'is-invalid' : '' ?>" name="district2" required>
                                                 <option value="">Select ...</option>
                                                 <?php foreach ($provinceDistrict2 as $row): ?>
                                                     <option value="<?= esc($row['district_id']) ?>" <?= (old('district2', $old['district2'] ?? '') == $row['district_id']) ? 'selected' : '' ?>>
@@ -264,9 +275,9 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label">Address</label>
+                                <label class="form-label required">Address</label>
                                 <input type="text" class="form-control <?= (isset($validation) && $validation->hasError('my_address')) ? 'is-invalid' : '' ?>"
-                                       value="<?= old('my_address', $old['my_address'] ?? '') ?>" placeholder="Enter your personal address" name="my_address">
+                                       value="<?= old('my_address', $old['my_address'] ?? '') ?>" placeholder="Enter your personal address" name="my_address" required>
                                 <?php if (isset($validation) && $validation->hasError('my_address')): ?>
                                     <div class="invalid-feedback"><?= $validation->getError('my_address') ?></div>
                                 <?php endif; ?>
@@ -285,10 +296,10 @@
 
                             <div class="row mb-5">
                                 <div class="col-md-6">
-                                    <label class="form-label">Password</label>
+                                    <label class="form-label required">Password</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control <?= (isset($validation) && $validation->hasError('password')) ? 'is-invalid' : '' ?>"
-                                               name="password" id="password" placeholder="Enter password">
+                                               name="password" id="password" placeholder="Enter password" required>
                                         <span class="input-group-text toggle-password" data-target="password" style="cursor:pointer;">
                                             <i class="bi bi-eye-slash"></i>
                                         </span>
@@ -298,10 +309,10 @@
                                     <?php endif; ?>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label">Re-type Password</label>
+                                    <label class="form-label required">Re-type Password</label>
                                     <div class="input-group">
                                         <input type="password" class="form-control <?= (isset($validation) && $validation->hasError('re-type-password')) ? 'is-invalid' : '' ?>"
-                                               name="re-type-password" id="re-type-password" placeholder="Re-type password">
+                                               name="re-type-password" id="re-type-password" placeholder="Re-type password" required>
                                         <span class="input-group-text toggle-password" data-target="re-type-password" style="cursor:pointer;">
                                             <i class="bi bi-eye-slash"></i>
                                         </span>
