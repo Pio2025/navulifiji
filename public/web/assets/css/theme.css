@@ -792,6 +792,16 @@ a:active {
   border-color: color-mix(in srgb, var(--accent-color), transparent 55%);
 }
 
+.radio-card .radio-card-icon {
+  font-size: 26px;
+  color: var(--accent-color);
+  margin-bottom: 4px;
+}
+
+.radio-card-input:checked + .radio-card .radio-card-icon {
+  color: var(--accent-color-2);
+}
+
 .radio-card .radio-card-title {
   font-weight: 700;
   font-size: 17px;
