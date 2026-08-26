@@ -34,7 +34,7 @@
                     </div>
                 <?php endif; ?>
 
-                <div class="card border-0 shadow-sm">
+                <div class="card border-0 shadow-sm subscribe-card">
                     <div class="card-body p-4 p-lg-5">
                         <form method="post" enctype="multipart/form-data" action="<?= site_url('account/subscribe') ?>">
                             <?= csrf_field() ?>

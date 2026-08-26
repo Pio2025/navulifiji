@@ -607,6 +607,9 @@ a:active {
   padding-bottom: 10px;
   margin-bottom: 20px;
 }
+.subscribe-card {
+  border-top: 3px solid var(--accent-color) !important;
+}
 
 .radio-card-input {
   position: absolute;
