@@ -21,8 +21,8 @@
     <link href="<?= base_url('web/assets/vendor/glightbox/css/glightbox.min.css') ?>" rel="stylesheet">
     <link href="<?= base_url('web/assets/vendor/swiper/swiper-bundle.min.css') ?>" rel="stylesheet">
 
-    <link href="<?= base_url('web/assets/css/main.css') ?>" rel="stylesheet">
-    <link href="<?= base_url('web/assets/css/theme.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('web/assets/css/main.css') ?>?v=<?= @filemtime(FCPATH . 'web/assets/css/main.css') ?>" rel="stylesheet">
+    <link href="<?= base_url('web/assets/css/theme.css') ?>?v=<?= @filemtime(FCPATH . 'web/assets/css/theme.css') ?>" rel="stylesheet">
     <?= $extra_head ?? '' ?>
 </head>
 

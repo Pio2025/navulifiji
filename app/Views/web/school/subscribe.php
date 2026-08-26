@@ -65,9 +65,10 @@
                                             : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0);
                                         $monthlyCost = (float) $plan['plan_monthly_cost'];
                                         $annualCost = (float) ($plan['plan_annual_cost'] ?? 0);
+                                        $annualMonthlyRate = $monthlyCost * (1 - $annual_discount_percent / 100);
                                         $isFreePlan = $monthlyCost <= 0;
                                         $monthlyLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($monthlyCost) . ' / month (VAT incl.)';
-                                        $annualLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualCost) . ' / year (VAT incl., ' . (int) $annual_discount_percent . '% off)';
+                                        $annualLabel = $isFreePlan ? 'Free — limited time & features' : 'FJD $' . number_format($annualMonthlyRate, 2) . ' / month (VAT incl., ' . (int) $annual_discount_percent . '% off, billed annually)';
                                     ?>
                                     <div class="col-md-4">
                                         <input type="radio" class="radio-card-input" name="account_type" required
