@@ -52,29 +52,38 @@
                             <p class="text-muted mb-1">Select the plan that best fits your school's needs and size. <a href="<?= site_url('pricing') ?>" target="_blank">See full plan comparison</a>.</p>
                             <p class="required-note mb-3"><span class="required-note-star">*</span> Required</p>
 
-                            <?php $billingCycle = old('billing_cycle', $old['billing_cycle'] ?? 'monthly'); ?>
-                            <ul class="nav billing-cycle-tabs mb-4">
-                                <li class="nav-item">
-                                    <button type="button" class="nav-link <?= $billingCycle !== 'annual' ? 'active' : '' ?>" data-billing-cycle="monthly">Monthly</button>
-                                </li>
-                                <li class="nav-item">
-                                    <button type="button" class="nav-link <?= $billingCycle === 'annual' ? 'active' : '' ?>" data-billing-cycle="annual">
-                                        Annual <span class="badge-save">Save <?= (int) $annual_discount_percent ?>%</span>
-                                    </button>
-                                </li>
-                            </ul>
-                            <input type="hidden" name="billing_cycle" id="billing_cycle_input" value="<?= esc($billingCycle) ?>">
-
-                            <?php $packageType = old('package_type', $old['package_type'] ?? 'web'); ?>
-                            <div class="package-toggle-wrap mb-4">
-                                <span class="package-toggle-label <?= $packageType !== 'web_mobile' ? 'active' : '' ?>" data-package="web">Web App</span>
-                                <label class="package-switch">
-                                    <input type="checkbox" id="packageSwitch" <?= $packageType === 'web_mobile' ? 'checked' : '' ?>>
-                                    <span class="package-switch-slider"></span>
-                                </label>
-                                <span class="package-toggle-label <?= $packageType === 'web_mobile' ? 'active' : '' ?>" data-package="web_mobile">Both Web &amp; Mobile App</span>
+                            <?php
+                                $packageType = old('package_type');
+                                if ($packageType === null) {
+                                    $packageType = (!empty($selected_package) && $selected_package === 'web_mobile') ? 'web_mobile' : 'web';
+                                }
+                            ?>
+                            <div class="text-center mb-4">
+                                <div class="package-toggle-wrap">
+                                    <span class="package-toggle-label <?= $packageType !== 'web_mobile' ? 'active' : '' ?>" data-package="web">Web App</span>
+                                    <label class="package-switch">
+                                        <input type="checkbox" id="packageSwitch" <?= $packageType === 'web_mobile' ? 'checked' : '' ?>>
+                                        <span class="package-switch-slider"></span>
+                                    </label>
+                                    <span class="package-toggle-label <?= $packageType === 'web_mobile' ? 'active' : '' ?>" data-package="web_mobile">Both Web &amp; Mobile App</span>
+                                </div>
                             </div>
                             <input type="hidden" name="package_type" id="package_type_input" value="<?= esc($packageType) ?>">
+
+                            <?php $billingCycle = old('billing_cycle', $old['billing_cycle'] ?? 'monthly'); ?>
+                            <div class="text-center mb-4">
+                                <ul class="nav billing-cycle-tabs">
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link <?= $billingCycle !== 'annual' ? 'active' : '' ?>" data-billing-cycle="monthly">Monthly</button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link <?= $billingCycle === 'annual' ? 'active' : '' ?>" data-billing-cycle="annual">
+                                            Annual <span class="badge-save">Save <?= (int) $annual_discount_percent ?>%</span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <input type="hidden" name="billing_cycle" id="billing_cycle_input" value="<?= esc($billingCycle) ?>">
 
                             <div class="row gy-3" id="accountTypeGroup">
                                 <?php foreach ($plans as $i => $plan): ?>

@@ -40,7 +40,7 @@
                                 <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
                             </div>
                             <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
-                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Choose <?= esc($plan['plan_name']) ?></a>
+                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>&package=web" data-plan-id="<?= (int) $plan['plan_id'] ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3 choose-plan-link">Choose <?= esc($plan['plan_name']) ?></a>
                         <?php endif; ?>
                         <ul>
                             <?php if ($plan['plan_name'] === 'Standard'): ?>
@@ -130,6 +130,8 @@
 
     var labels = document.querySelectorAll('.package-toggle-label');
     var amounts = document.querySelectorAll('.price-amount');
+    var chooseLinks = document.querySelectorAll('.choose-plan-link');
+    var subscribeBaseUrl = '<?= site_url('account/subscribe') ?>';
 
     function applyPackage(pkg) {
         labels.forEach(function (label) {
@@ -137,6 +139,9 @@
         });
         amounts.forEach(function (el) {
             el.textContent = pkg === 'web_mobile' ? el.dataset.priceBundle : el.dataset.priceWeb;
+        });
+        chooseLinks.forEach(function (el) {
+            el.href = subscribeBaseUrl + '?plan=' + el.dataset.planId + '&package=' + pkg;
         });
     }
 

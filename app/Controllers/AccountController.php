@@ -148,6 +148,7 @@ class AccountController extends BaseController
             }, $this->planModel->getAllPlan()),
             'annual_discount_percent' => \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT,
             'selected_plan' => $this->request->getGet('plan'),
+            'selected_package' => $this->request->getGet('package'),
             'feedback_title' => 'Account Subscription!',
             'page_title' => 'Get Started — Subscribe Your School',
             '_view' => 'web/school/subscribe'
