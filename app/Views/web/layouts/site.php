@@ -44,13 +44,15 @@
                     <li><a href="<?= site_url('about') ?>" class="<?= ($active_page ?? '') === 'about' ? 'active' : '' ?>">About</a></li>
                     <li><a href="<?= site_url('for-schools') ?>" class="<?= ($active_page ?? '') === 'for-schools' ? 'active' : '' ?>">School</a></li>
                     <li><a href="<?= site_url('contact') ?>" class="<?= ($active_page ?? '') === 'contact' ? 'active' : '' ?>">Contact</a></li>
+                    <li class="d-xl-none"><a href="<?= site_url('auth/login') ?>" class="navmenu-signin">Sign In</a></li>
+                    <li class="d-xl-none"><a href="<?= site_url('account/subscribe') ?>" class="navmenu-getstarted">Get Started Free</a></li>
                 </ul>
                 <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
             </nav>
 
             <div class="d-flex align-items-center">
-                <a href="<?= site_url('auth/login') ?>" class="d-none d-lg-inline-block me-3" style="font-weight:600;color:var(--heading-color);">Sign In</a>
-                <a class="btn-getstarted d-none d-lg-inline-block" href="<?= site_url('account/subscribe') ?>">Get Started Free</a>
+                <a href="<?= site_url('auth/login') ?>" class="d-none d-xl-inline-block me-3" style="font-weight:600;color:var(--heading-color);">Sign In</a>
+                <a class="btn-getstarted d-none d-xl-inline-block" href="<?= site_url('account/subscribe') ?>">Get Started Free</a>
             </div>
 
         </div>

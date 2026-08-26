@@ -434,6 +434,27 @@
   margin-top: 3px;
 }
 
+/* Sign In / Get Started links inside the mobile nav dropdown (hamburger menu) */
+#navmenu .navmenu-signin {
+  border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  margin-top: 10px;
+  padding-top: 20px;
+}
+
+#navmenu .navmenu-getstarted {
+  color: #fff;
+  background: var(--accent-color);
+  border-radius: 8px;
+  margin: 6px 20px 0;
+  padding: 12px 20px;
+  justify-content: center;
+}
+
+#navmenu .navmenu-getstarted:hover {
+  color: #fff;
+  background: color-mix(in srgb, var(--accent-color), black 12%);
+}
+
 /* Web App / Both Web & Mobile App pricing package switch */
 .package-toggle-wrap {
   display: inline-flex;
