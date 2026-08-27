@@ -165,6 +165,53 @@
     </div>
 </section>
 
+<section class="section light-background">
+    <div class="container section-title text-center" data-aos="fade-up">
+        <span class="badge-brand-pink">FAQ</span>
+        <h2 class="mt-3">Pricing questions</h2>
+    </div>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-9">
+                <div class="accordion" id="pricingFaq" data-aos="fade-up">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Can I try Navuli before paying?</button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#pricingFaq">
+                            <div class="accordion-body">We don't currently offer a free trial, but our team is happy to walk you through a live demo before you commit — <a href="<?= site_url('contact') ?>">get in touch</a> to arrange one.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">What happens if we grow past our plan's user limit?</button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                            <div class="accordion-body">You can upgrade to the next plan at any time from your account billing page — your data and setup carry over automatically.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">Is pricing the same for Primary, Secondary and TVET schools?</button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                            <div class="accordion-body">Yes — the same plans apply across Pre School, Kindergarten, Primary, Secondary and TVET institutions. <a href="<?= site_url('contact') ?>">Contact us</a> if your school needs a custom arrangement.</div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">How do we pay?</button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
+                            <div class="accordion-body">Billing is handled from your school's account settings after sign-up. <a href="<?= site_url('contact') ?>">Get in touch</a> if you'd like to discuss payment options for your school.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <script>
 (function () {
     var toggle = document.getElementById('packageSwitch');
