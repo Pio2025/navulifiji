@@ -212,6 +212,19 @@
     </div>
 </section>
 
+<section class="section">
+    <div class="container">
+        <div class="cta-band bg-gradient-brand text-center" data-aos="zoom-in">
+            <h2 class="text-white mb-2">Can't decide which plan is right for you?</h2>
+            <p class="mb-4" style="color:rgba(255,255,255,.85); max-width:600px; margin-left:auto; margin-right:auto;">Talk to our team — we'll help you match the right plan to your school's size and needs.</p>
+            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                <a href="<?= site_url('contact') ?>" class="btn-brand-pink">Book a Demo</a>
+                <a href="<?= site_url('contact') ?>" class="btn-outline-white">Connect with Expert</a>
+            </div>
+        </div>
+    </div>
+</section>
+
 <script>
 (function () {
     var toggle = document.getElementById('packageSwitch');

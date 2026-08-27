@@ -713,6 +713,26 @@
   }
 }
 
+.cta-band .btn-outline-white {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: #fff;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  font-size: 15px;
+  border: 2px solid rgba(255, 255, 255, .6);
+  transition: .3s;
+}
+
+.cta-band .btn-outline-white:hover {
+  background: #fff;
+  color: var(--accent-color);
+  border-color: #fff;
+}
+
 /* Footer logo sizing */
 .footer .footer-about .logo img {
   max-height: 46px;
