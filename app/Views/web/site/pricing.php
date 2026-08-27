@@ -91,6 +91,7 @@
                     ['bi-megaphone', 'Announcement Management'],
                     ['bi-calendar-week', 'Timetable'],
                     ['bi-person-plus', 'Student Admission'],
+                    ['bi-diagram-3', 'Student Enrolment'],
                     ['bi-chat-dots', 'Messaging System'],
                     ['bi-calendar2-check', 'Student Attendance'],
                     ['bi-journal-bookmark', 'Curriculum Management'],
