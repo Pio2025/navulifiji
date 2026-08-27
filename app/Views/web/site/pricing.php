@@ -127,6 +127,7 @@
                 ],
                 'Ultimate Modules' => [
                     ['bi-easel2', 'Digital Classroom'],
+                    ['bi-grid-1x2', 'Subject Dashboard'],
                     ['bi-journal-richtext', 'Lesson Management'],
                     ['bi-clipboard-check', 'Assessment Management'],
                     ['bi-clipboard-data', 'Student Assignment'],
