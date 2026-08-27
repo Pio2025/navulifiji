@@ -165,7 +165,7 @@
     </div>
 </section>
 
-<section class="section light-background">
+<section class="section">
     <div class="container section-title text-center" data-aos="fade-up">
         <span class="badge-brand-pink">FAQ</span>
         <h2 class="mt-3">Pricing questions</h2>
