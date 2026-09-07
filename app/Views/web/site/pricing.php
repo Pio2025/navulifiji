@@ -153,10 +153,10 @@
                 <div class="row gy-4">
                     <?php foreach ($modules as [$icon, $label]): ?>
                         <div class="col-lg-4 col-md-6">
-                            <div class="module-grid-item">
+                            <a href="<?= site_url('feature-tour/' . url_title($label, '-', true)) ?>" class="module-grid-item">
                                 <div class="module-icon"><i class="bi <?= $icon ?>"></i></div>
                                 <span class="module-label"><?= esc($label) ?></span>
-                            </div>
+                            </a>
                         </div>
                     <?php endforeach; ?>
                 </div>

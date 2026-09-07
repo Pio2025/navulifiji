@@ -13,6 +13,7 @@ $routes->get('about', 'Home::about');
 $routes->get('for-schools', 'Home::forSchools');
 $routes->get('contact', 'Home::contact');
 $routes->post('contact/send', 'Home::submitContact');
+$routes->get('feature-tour/(:segment)', 'Home::featureTour/$1');
 
 // Custom 404 handler — renders inside main layout when logged in
 $routes->set404Override('App\Controllers\ErrorController::show404');

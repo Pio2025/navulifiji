@@ -202,6 +202,16 @@
   display: flex;
   align-items: center;
   gap: 14px;
+  padding: 10px;
+  margin: -10px;
+  border-radius: 10px;
+  text-decoration: none;
+  transition: background-color .25s, transform .25s;
+}
+
+.module-grid-item:hover {
+  background-color: color-mix(in srgb, var(--accent-color-2) 8%, transparent);
+  transform: translateX(4px);
 }
 
 .module-icon {
@@ -215,12 +225,19 @@
   justify-content: center;
   color: var(--accent-color-2);
   font-size: 20px;
+  transition: background-color .25s, color .25s;
+}
+
+.module-grid-item:hover .module-icon {
+  background-color: var(--accent-color-2);
+  color: #fff;
 }
 
 .module-label {
   font-weight: 600;
   color: var(--heading-color);
   font-size: 15px;
+  transition: color .25s;
 }
 
 /* Hero */
