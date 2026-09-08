@@ -18,9 +18,10 @@
             $icons = [
                 'Pre School'      => 'bi-flower1',
                 'Kindergarten'    => 'bi-stars',
-                'Primary'         => 'bi-mortarboard',
+                'Primary'         => 'bi-book-fill',
                 'Seconday'        => 'bi-building',
                 'TVET'            => 'bi-tools',
+                'Tertiary'     => 'bi-mortarboard',
             ];
             ?>
             <?php foreach ($schoolCategories as $i => $cat): ?>
