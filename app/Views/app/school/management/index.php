@@ -76,6 +76,13 @@
 						<!--end::Menu-->
 						<!--end::Export-->
 						
+						<!--begin::Manage subscriptions-->
+						<a href="<?= base_url('school/subscription') ?>" class="btn btn-light-primary me-3">
+							<i class="ki-duotone ki-dollar fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+							Manage Subscriptions
+						</a>
+						<!--end::Manage subscriptions-->
+
 						<!--begin::Add user-->
 						<a href="<?= base_url('school/add') ?>" class="btn btn-primary">
 							<i class="ki-duotone ki-plus fs-2"></i>

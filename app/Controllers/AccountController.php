@@ -470,7 +470,10 @@ class AccountController extends BaseController
                         //add user role
                         $userRoleData = [
                             'user_id_fk' =>  $addUser,
-                            'role_id_fk' => 2
+                            'role_id_fk' => 2,
+                            'created_date' => date('Y-m-d H:i:s'),
+                            'updated_date' => date('Y-m-d H:i:s'),
+                            'user_role_status' => 'Active'
                         ];
                         
                         $addUserRole = $this->userRoleModel->addUserRole($userRoleData);

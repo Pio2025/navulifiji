@@ -727,7 +727,17 @@ abstract class BaseController extends Controller
             $emailMessage = view($data['view'], $viewData);
     
             $emailService->setMessage($emailMessage);
-    
+
+            if (!empty($data['attachments']) && is_array($data['attachments'])) {
+                foreach ($data['attachments'] as $attachment) {
+                    if (!empty($attachment['content'])) {
+                        $emailService->attach($attachment['content'], '', $attachment['filename'] ?? 'attachment', $attachment['mime'] ?? 'application/octet-stream');
+                    } elseif (!empty($attachment['path'])) {
+                        $emailService->attach($attachment['path'], '', $attachment['filename'] ?? null);
+                    }
+                }
+            }
+
             $result = $emailService->send();
     
             if (!$result) {

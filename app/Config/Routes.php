@@ -100,6 +100,15 @@ $routes->get('school/edit/(:num)', 'SchoolController::edit/$1');
 $routes->post('school/edit/(:num)', 'SchoolController::edit/$1');
 $routes->post('school/delete/(:num)', 'SchoolController::delete/$1');
 
+$routes->get('school/subscription', 'SchoolController::subscription');
+$routes->match(['GET', 'POST'], 'school/subscription/getListing', 'SchoolController::getSubscriptionListing');
+$routes->get('school/subscription/view/(:num)', 'SchoolController::subscriptionView/$1');
+$routes->get('school/subscription/edit/(:num)', 'SchoolController::subscriptionEdit/$1');
+$routes->post('school/subscription/edit/(:num)', 'SchoolController::subscriptionEdit/$1');
+$routes->get('school/subscription/process/(:num)', 'SchoolController::subscriptionProcess/$1');
+$routes->post('school/subscription/process/(:num)', 'SchoolController::subscriptionProcess/$1');
+$routes->post('school/subscription/delete/(:num)', 'SchoolController::subscriptionDelete/$1');
+
 //$routes->post('school/getSchoolListing', 'SchoolController::getSchoolListing');
 // ✅ FIX: Allow both GET and POST
 $routes->match(['GET', 'POST'], 'school/getSchoolListing', 'SchoolController::getSchoolListing');

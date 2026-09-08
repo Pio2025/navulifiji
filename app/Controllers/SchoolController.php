@@ -2312,6 +2312,764 @@ class SchoolController extends BaseController
 
 
     /**
+     * Subscription management — list page (Navuli admin processes subscriptions here)
+     */
+    public function subscription()
+    {
+        $this->session->set('prevUrl', $this->session->get('url'));
+        $this->session->set('url', 'school/subscription');
+
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+
+        $this->setPageData('Subscription Management', 'School', 'Subscriptions');
+
+        if (!$this->require_access('_school_listing')) {
+            $data['_view'] = 'app/auth/access_control';
+        } else {
+            $data['_view'] = 'app/school/subscription/index';
+        }
+
+        return view('app/layouts/main', $data);
+    }
+
+    /**
+     * Server-side DataTables AJAX handler for the subscription listing
+     */
+    public function getSubscriptionListing()
+    {
+        $request = service('request');
+
+        try {
+            $draw = (int) ($request->getPost('draw') ?? 1);
+            $start = (int) ($request->getPost('start') ?? 0);
+            $length = (int) ($request->getPost('length') ?? 10);
+
+            $searchData = $request->getPost('search');
+            $searchValue = is_array($searchData) ? ($searchData['value'] ?? '') : '';
+
+            $orderData = $request->getPost('order');
+            $orderColumnIndex = is_array($orderData) && isset($orderData[0]['column'])
+                ? (int) $orderData[0]['column']
+                : 0;
+            $orderDir = is_array($orderData) && isset($orderData[0]['dir'])
+                ? $orderData[0]['dir']
+                : 'asc';
+
+            $columns = [
+                'school.sch_name',
+                'plans.plan_name',
+                'subscription.subscription_start_date',
+                'subscription.subscription_end_date',
+                'subscription.subscription_status',
+                null // Actions column
+            ];
+            $orderColumn = $columns[$orderColumnIndex] ?? 'subscription.subscription_id';
+            if ($orderColumn === null || $orderColumnIndex === 5) {
+                $orderColumn = 'subscription.subscription_id';
+            }
+            $orderDir = strtoupper($orderDir) === 'DESC' ? 'DESC' : 'ASC';
+
+            $builder = $this->db->table('subscription');
+            $builder->select('subscription.*, school.sch_name, school.sch_logo, plans.plan_name');
+            $builder->join('school', 'school.sch_id = subscription.sch_id_fk', 'left');
+            $builder->join('plans', 'plans.plan_id = subscription.plan_id_fk', 'left');
+
+            if (!empty($searchValue)) {
+                $builder->groupStart()
+                    ->like('school.sch_name', $searchValue)
+                    ->orLike('plans.plan_name', $searchValue)
+                    ->orLike('subscription.subscription_status', $searchValue)
+                    ->groupEnd();
+            }
+
+            $recordsFiltered = $builder->countAllResults(false);
+
+            $builder->orderBy($orderColumn, $orderDir);
+
+            if ($length != -1) {
+                $builder->limit($length, $start);
+            }
+
+            $subscriptions = $builder->get()->getResultArray();
+
+            $recordsTotal = $this->db->table('subscription')->countAllResults();
+
+            $data = [];
+            foreach ($subscriptions as $sub) {
+                $data[] = [
+                    $this->formatSubscriptionSchoolName($sub),
+                    esc($sub['plan_name'] ?? 'N/A'),
+                    !empty($sub['subscription_start_date']) ? date('d M Y', strtotime($sub['subscription_start_date'])) : 'N/A',
+                    !empty($sub['subscription_end_date']) ? date('d M Y', strtotime($sub['subscription_end_date'])) : 'N/A',
+                    $this->formatSubscriptionStatus($sub['subscription_status'] ?? ''),
+                    $this->createSubscriptionActionButtons($sub['subscription_id'], $sub['subscription_status'] ?? '')
+                ];
+            }
+
+            return $this->response->setJSON([
+                'draw' => $draw,
+                'recordsTotal' => $recordsTotal,
+                'recordsFiltered' => $recordsFiltered,
+                'data' => $data
+            ]);
+
+        } catch (\Exception $e) {
+            log_message('error', 'Subscription listing error: ' . $e->getMessage());
+            log_message('error', 'Stack trace: ' . $e->getTraceAsString());
+
+            return $this->response->setJSON([
+                'draw' => (int) ($request->getPost('draw') ?? 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'An error occurred: ' . $e->getMessage()
+            ])->setStatusCode(500);
+        }
+    }
+
+    /**
+     * Format school name + logo cell for the subscription listing
+     */
+    private function formatSubscriptionSchoolName($sub)
+    {
+        $fullName = trim($sub['sch_name'] ?? 'Unknown School');
+        $logo = $sub['sch_logo'] ?? '';
+        $photoUrl = base_url('uploads/school/logo/' . $logo);
+        $initials = $fullName ? strtoupper(substr($fullName, 0, 1)) : '?';
+        $schId = $sub['sch_id_fk'] ?? '';
+
+        return '
+        <div class="d-flex align-items-center">
+            <div class="symbol symbol-circle symbol-45px overflow-hidden me-3">
+                <a href="' . base_url('school/detail/' . $schId) . '">
+                    ' . ($logo
+                        ? '<div class="symbol-label"><img src="' . $photoUrl . '" alt="' . esc($fullName) . '" class="w-100" /></div>'
+                        : '<div class="symbol-label fs-3 bg-light-primary text-primary">' . $initials . '</div>'
+                    ) . '
+                </a>
+            </div>
+            <div class="d-flex flex-column">
+                <a href="' . base_url('school/detail/' . $schId) . '" class="text-gray-800 text-hover-primary fw-bold">
+                    ' . esc($fullName) . '
+                </a>
+            </div>
+        </div>';
+    }
+
+    /**
+     * Format subscription status badge
+     */
+    private function formatSubscriptionStatus($status)
+    {
+        switch ($status) {
+            case 'Active':
+                return '<span class="badge badge-light-success">Active</span>';
+            case 'Pending Payment':
+                return '<span class="badge badge-light-warning">Pending Payment</span>';
+            case 'Pending Verification':
+                return '<span class="badge badge-light-info">Pending Verification</span>';
+            case 'Expired':
+                return '<span class="badge badge-light-danger">Expired</span>';
+            default:
+                return '<span class="badge badge-light-secondary">' . esc($status ?: 'Unknown') . '</span>';
+        }
+    }
+
+    /**
+     * Build the action-menu dropdown for a subscription row.
+     * The "Process" link is only shown while the subscription still needs
+     * admin action — never for Active or Expired subscriptions.
+     */
+    private function createSubscriptionActionButtons($subId, $status)
+    {
+        $showProcess = !in_array($status, ['Active', 'Expired'], true);
+
+        $processItem = '';
+        if ($showProcess) {
+            $processItem = '
+                <div class="menu-item px-3">
+                    <a href="' . base_url('school/subscription/process/' . $subId) . '" class="menu-link px-3">
+                        <i class="ki-duotone ki-verify fs-5 me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        Process
+                    </a>
+                </div>';
+        }
+
+        return '
+        <div class="d-flex justify-content-end flex-shrink-0">
+            <button class="btn btn-icon btn-bg-light btn-light-primary btn-sm me-1" data-kt-menu-trigger="click" title="Quick Action" data-kt-menu-placement="bottom-end">
+                <i class="ki-duotone ki-down fs-2">
+                    <span class="path1"></span>
+                    <span class="path2"></span>
+                    <span class="path3"></span>
+                </i>
+            </button>
+
+            <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4" data-kt-menu="true">
+                <div class="menu-item px-3">
+                    <a href="' . base_url('school/subscription/view/' . $subId) . '" class="menu-link px-3">
+                        <i class="ki-duotone ki-eye fs-5 me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                        </i>
+                        View
+                    </a>
+                </div>
+
+                <div class="menu-item px-3">
+                    <a href="' . base_url('school/subscription/edit/' . $subId) . '" class="menu-link px-3">
+                        <i class="ki-duotone ki-pencil fs-5 me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        Edit
+                    </a>
+                </div>' . $processItem . '
+
+                <div class="separator my-2"></div>
+
+                <div class="menu-item px-3">
+                    <a href="#" class="menu-link px-3 text-danger" data-kt-subscription-table-filter="delete_row" data-sub-id="' . $subId . '">
+                        <i class="ki-duotone ki-trash fs-5 me-2">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                            <span class="path3"></span>
+                            <span class="path4"></span>
+                            <span class="path5"></span>
+                        </i>
+                        Delete
+                    </a>
+                </div>
+            </div>
+        </div>';
+    }
+
+    /**
+     * Load a single subscription with its related school + plan data
+     */
+    private function getSubscriptionWithRelations($id)
+    {
+        return $this->db->table('subscription')
+            ->select('subscription.*, school.sch_name, school.sch_email, school.sch_phone, school.sch_address, school.sch_logo, plans.plan_name, plans.plan_desc, plans.plan_monthly_cost, plans.plan_monthly_cost_web_n_mobile')
+            ->join('school', 'school.sch_id = subscription.sch_id_fk', 'left')
+            ->join('plans', 'plans.plan_id = subscription.plan_id_fk', 'left')
+            ->where('subscription.subscription_id', $id)
+            ->get()
+            ->getRowArray();
+    }
+
+    /**
+     * Read-only subscription detail page
+     */
+    public function subscriptionView($id)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+        if (!$this->require_access('_school_listing')) {
+            $data['_view'] = 'app/auth/access_control';
+            return view('app/layouts/main', $data);
+        }
+
+        $subscription = $this->getSubscriptionWithRelations((int) $id);
+        if (!$subscription) {
+            return redirect()->to('school/subscription')->with('error', 'Subscription not found.');
+        }
+
+        $this->setPageData('View Subscription', 'School', 'Subscriptions');
+
+        $data['subscription'] = $subscription;
+        $data['_view'] = 'app/school/subscription/view';
+
+        return view('app/layouts/main', $data);
+    }
+
+    /**
+     * Edit a subscription's data — available regardless of status.
+     * Does not change subscription_status and does not send any email.
+     */
+    public function subscriptionEdit($id)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+        if (!$this->require_access('_school_listing')) {
+            $data['_view'] = 'app/auth/access_control';
+            return view('app/layouts/main', $data);
+        }
+
+        $subscription = $this->getSubscriptionWithRelations((int) $id);
+        if (!$subscription) {
+            return redirect()->to('school/subscription')->with('error', 'Subscription not found.');
+        }
+
+        if ($this->request->getMethod() === 'POST') {
+            $validationRules = [
+                'plan_id_fk' => 'required|integer',
+                'subscription_start_date' => 'required|valid_date',
+                'subscription_end_date' => 'required|valid_date',
+                'subscription_term' => 'required|integer|greater_than[0]',
+                'billing_cycle' => 'required|in_list[monthly,annual,trial]',
+                'package_type' => 'required|in_list[web,web_mobile]',
+                'payment_mode' => 'required',
+                'amount_paid' => 'permit_empty|decimal',
+                'discount_percent' => 'permit_empty|decimal',
+                'subscription_status' => 'required',
+            ];
+
+            if (!$this->validate($validationRules)) {
+                return redirect()->to('school/subscription/edit/' . $id)
+                    ->with('error', 'Please correct the errors below.')
+                    ->withInput();
+            }
+
+            $updateData = [
+                'plan_id_fk' => (int) $this->request->getPost('plan_id_fk'),
+                'subscription_start_date' => $this->request->getPost('subscription_start_date'),
+                'subscription_end_date' => $this->request->getPost('subscription_end_date'),
+                'subscription_term' => (int) $this->request->getPost('subscription_term'),
+                'billing_cycle' => $this->request->getPost('billing_cycle'),
+                'package_type' => $this->request->getPost('package_type'),
+                'payment_mode' => $this->request->getPost('payment_mode'),
+                'amount_paid' => (float) $this->request->getPost('amount_paid'),
+                'discount_percent' => (float) ($this->request->getPost('discount_percent') ?: 0),
+                'subscription_status' => $this->request->getPost('subscription_status'),
+            ];
+
+            $updated = $this->subscriptionModel->updateSubscription((int) $id, $updateData);
+
+            if (!$updated) {
+                return redirect()->to('school/subscription/edit/' . $id)
+                    ->with('error', 'Failed to update subscription.')
+                    ->withInput();
+            }
+
+            return redirect()->to('school/subscription')->with('success', 'Subscription updated successfully.');
+        }
+
+        $this->setPageData('Edit Subscription', 'School', 'Subscriptions');
+
+        $data['subscription'] = $subscription;
+        $data['plans'] = $this->planModel->getAllPlan();
+        $data['_view'] = 'app/school/subscription/edit';
+
+        return view('app/layouts/main', $data);
+    }
+
+    /**
+     * Process a subscription that still needs admin action.
+     * - Pending Verification: admin reviews/edits the data and clicks Verify,
+     *   which moves it to Pending Payment and emails the school an invoice PDF.
+     * - Pending Payment: admin confirms payment has been received and
+     *   activates the subscription.
+     * Active / Expired subscriptions are not processable (see createSubscriptionActionButtons).
+     */
+    public function subscriptionProcess($id)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+        if (!$this->require_access('_school_listing')) {
+            $data['_view'] = 'app/auth/access_control';
+            return view('app/layouts/main', $data);
+        }
+
+        $subscription = $this->getSubscriptionWithRelations((int) $id);
+        if (!$subscription) {
+            return redirect()->to('school/subscription')->with('error', 'Subscription not found.');
+        }
+
+        $status = $subscription['subscription_status'] ?? '';
+        if (in_array($status, ['Active', 'Expired'], true)) {
+            return redirect()->to('school/subscription')->with('error', 'This subscription is ' . $status . ' and does not require processing.');
+        }
+
+        if ($this->request->getMethod() === 'POST') {
+            $action = $this->request->getPost('process_action');
+
+            if ($status === 'Pending Verification' && $action === 'verify') {
+                return $this->processVerifySubscription((int) $id);
+            }
+
+            if ($status === 'Pending Payment' && $action === 'activate') {
+                return $this->processActivateSubscription((int) $id);
+            }
+
+            return redirect()->to('school/subscription/process/' . $id)->with('error', 'Invalid action for the current subscription status.');
+        }
+
+        $this->setPageData('Process Subscription', 'School', 'Subscriptions');
+
+        $data['subscription'] = $subscription;
+        $data['plans'] = $this->planModel->getAllPlan();
+        $data['_view'] = 'app/school/subscription/process';
+
+        return view('app/layouts/main', $data);
+    }
+
+    /**
+     * Pending Verification -> Pending Payment: save the (possibly edited) data,
+     * flip the status, and email the school a PDF invoice.
+     */
+    private function processVerifySubscription(int $id)
+    {
+        $validationRules = [
+            'plan_id_fk' => 'required|integer',
+            'subscription_start_date' => 'required|valid_date',
+            'subscription_end_date' => 'required|valid_date',
+            'subscription_term' => 'required|integer|greater_than[0]',
+            'billing_cycle' => 'required|in_list[monthly,annual,trial]',
+            'package_type' => 'required|in_list[web,web_mobile]',
+            'payment_mode' => 'required',
+            'amount_paid' => 'permit_empty|decimal',
+            'discount_percent' => 'permit_empty|decimal',
+        ];
+
+        if (!$this->validate($validationRules)) {
+            return redirect()->to('school/subscription/process/' . $id)
+                ->with('error', 'Please correct the errors below.')
+                ->withInput();
+        }
+
+        $updateData = [
+            'plan_id_fk' => (int) $this->request->getPost('plan_id_fk'),
+            'subscription_start_date' => $this->request->getPost('subscription_start_date'),
+            'subscription_end_date' => $this->request->getPost('subscription_end_date'),
+            'subscription_term' => (int) $this->request->getPost('subscription_term'),
+            'billing_cycle' => $this->request->getPost('billing_cycle'),
+            'package_type' => $this->request->getPost('package_type'),
+            'payment_mode' => $this->request->getPost('payment_mode'),
+            'amount_paid' => (float) $this->request->getPost('amount_paid'),
+            'discount_percent' => (float) ($this->request->getPost('discount_percent') ?: 0),
+            'subscription_status' => 'Pending Payment',
+        ];
+
+        $updated = $this->subscriptionModel->updateSubscription($id, $updateData);
+
+        if (!$updated) {
+            return redirect()->to('school/subscription/process/' . $id)
+                ->with('error', 'Failed to update subscription.')
+                ->withInput();
+        }
+
+        $fresh = $this->getSubscriptionWithRelations($id);
+        $emailSent = $this->sendVerificationInvoiceEmail($fresh);
+
+        $message = 'Subscription verified — status set to Pending Payment.';
+        if ($emailSent) {
+            $message .= ' A notification email with the invoice has been sent to the school.';
+        } else {
+            $message .= ' However, the notification email could not be sent — please check the email logs.';
+        }
+
+        return redirect()->to('school/subscription')->with($emailSent ? 'success' : 'error', $message);
+    }
+
+    /**
+     * Pending Payment -> Active: admin confirms payment has been received.
+     */
+    private function processActivateSubscription(int $id)
+    {
+        $updated = $this->subscriptionModel->updateSubscription($id, ['subscription_status' => 'Active']);
+
+        if (!$updated) {
+            return redirect()->to('school/subscription/process/' . $id)->with('error', 'Failed to activate subscription.');
+        }
+
+        return redirect()->to('school/subscription')->with('success', 'Subscription has been activated.');
+    }
+
+    /**
+     * Delete a subscription record — AJAX endpoint
+     */
+    public function subscriptionDelete($id)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Unauthorized.'])->setStatusCode(401);
+        }
+
+        $subscription = $this->subscriptionModel->find((int) $id);
+        if (!$subscription) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Subscription not found.']);
+        }
+
+        $deleted = $this->subscriptionModel->deleteSubscription((int) $id);
+
+        if (!$deleted) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Failed to delete subscription. Please try again.']);
+        }
+
+        return $this->response->setJSON([
+            'success'   => true,
+            'message'   => 'Subscription has been deleted successfully.',
+            'csrf_hash' => csrf_hash(),
+        ]);
+    }
+
+    /**
+     * Send the "verified, payment pending" notification email with a PDF
+     * invoice attached, to the school email captured during subscription.
+     */
+    private function sendVerificationInvoiceEmail(array $subscription): bool
+    {
+        $toEmail = $subscription['sch_email'] ?? null;
+        if (empty($toEmail)) {
+            log_message('error', '[SchoolController::sendVerificationInvoiceEmail] No school email on subscription ' . ($subscription['subscription_id'] ?? '?'));
+            return false;
+        }
+
+        $invoiceNumber = 'INV-' . str_pad((string) $subscription['subscription_id'], 6, '0', STR_PAD_LEFT);
+        $pdfContent = $this->generateSubscriptionInvoicePdf($subscription, $invoiceNumber);
+
+        $emailData = [
+            'to' => $toEmail,
+            'subject' => 'Navuli Fiji — Subscription Verified, Payment Pending (' . $invoiceNumber . ')',
+            'view' => 'email/subscription_verification_notification',
+            'viewData' => [
+                'schoolName' => $subscription['sch_name'] ?? 'Your School',
+                'planName' => $subscription['plan_name'] ?? 'N/A',
+                'invoiceNumber' => $invoiceNumber,
+                'amount' => $subscription['amount_paid'] ?? 0,
+            ],
+            'attachments' => [
+                [
+                    'content' => $pdfContent,
+                    'filename' => $invoiceNumber . '.pdf',
+                    'mime' => 'application/pdf',
+                ],
+            ],
+        ];
+
+        return $this->sendEmail($emailData);
+    }
+
+    /**
+     * Payment account details shown on the invoice. Kept in one place so
+     * they're easy to swap out for the school's real payment details.
+     */
+    private function getPaymentAccountPlaceholders(): array
+    {
+        return [
+            'Bank Account' => [
+                'Bank Name'      => '[Bank Name — to be provided]',
+                'Account Name'   => '[Account Name — to be provided]',
+                'Account Number' => '[Account Number — to be provided]',
+            ],
+            'Mpaisa Account' => [
+                'Account Number' => '[Mpaisa Number — to be provided]',
+            ],
+            'MyCash Account' => [
+                'Account Number' => '[MyCash Number — to be provided]',
+            ],
+        ];
+    }
+
+    /**
+     * Build the subscription invoice PDF (TCPDF, portrait A4) and return the
+     * raw PDF bytes, following the same TCPDF conventions used by the
+     * admission report (AdmissionController::report).
+     */
+    private function generateSubscriptionInvoicePdf(array $subscription, string $invoiceNumber): string
+    {
+        require_once ROOTPATH . 'vendor/tecnickcom/tcpdf/tcpdf.php';
+
+        set_error_handler(static function (int $errno, string $errstr): bool {
+            return str_contains($errstr, 'iCCP')
+                || str_contains($errstr, 'gd-png')
+                || str_contains($errstr, 'libpng warning');
+        }, E_WARNING);
+
+        $pdf = new \TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+        $pdf->SetCreator('Navuli Fiji');
+        $pdf->SetAuthor('Navuli Fiji School Management System');
+        $pdf->SetTitle('Invoice ' . $invoiceNumber);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetMargins(15, 15, 15);
+        $pdf->SetAutoPageBreak(true, 20);
+        $pdf->AddPage();
+
+        $sx = 15;
+        $cw = 180;
+
+        // ── Header: Navuli logo, brand block (left) + INVOICE title (right) ──
+        $y = 15;
+        $navuliLogo = FCPATH . 'icon.png';
+        if (file_exists($navuliLogo)) {
+            $pdf->Image($navuliLogo, $sx, $y, 20, 20, '', '', 'T', false, 300);
+        }
+
+        $pdf->SetXY($sx + 24, $y);
+        $pdf->SetFont('helvetica', 'B', 15);
+        $pdf->SetTextColor(26, 86, 219);
+        $pdf->Cell(90, 7, 'NAVULI FIJI', 0, 1, 'L');
+
+        $pdf->SetXY($sx + 24, $y + 7.5);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->SetTextColor(100, 100, 100);
+        $pdf->Cell(90, 4, 'School Management System', 0, 1, 'L');
+
+        $pdf->SetXY($sx + 24, $y + 12);
+        $pdf->Cell(90, 4, 'info@navulifiji.com  |  +679 9896700', 0, 1, 'L');
+
+        $pdf->SetXY($sx, $y);
+        $pdf->SetFont('helvetica', 'B', 18);
+        $pdf->SetTextColor(26, 86, 219);
+        $pdf->Cell($cw, 8, 'INVOICE', 0, 1, 'R');
+
+        $pdf->SetXY($sx, $y + 9);
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->SetTextColor(80, 80, 80);
+        $pdf->Cell($cw, 5, $invoiceNumber, 0, 1, 'R');
+
+        $pdf->SetXY($sx, $y + 14);
+        $pdf->Cell($cw, 5, 'Date: ' . date('d M Y'), 0, 1, 'R');
+
+        $y += 24;
+        $pdf->SetLineStyle(['width' => 0.7, 'color' => [26, 86, 219]]);
+        $pdf->Line($sx, $y, $sx + $cw, $y);
+        $y += 6;
+        $pdf->SetY($y);
+
+        // ── Bill To / Subscription info ────────────────────────────────
+        $pdf->SetFont('helvetica', 'B', 9.5);
+        $pdf->SetTextColor(55, 65, 81);
+        $pdf->SetX($sx);
+        $pdf->Cell($cw / 2, 5, 'BILL TO', 0, 0, 'L');
+        $pdf->Cell($cw / 2, 5, 'SUBSCRIPTION DETAILS', 0, 1, 'L');
+
+        $billTo = array_values(array_filter([
+            $subscription['sch_name'] ?? '',
+            $subscription['sch_address'] ?? '',
+            $subscription['sch_email'] ?? '',
+            $subscription['sch_phone'] ?? '',
+        ], fn ($v) => !empty($v)));
+
+        $subInfo = [
+            'Plan: ' . ($subscription['plan_name'] ?? 'N/A'),
+            'Status: ' . ($subscription['subscription_status'] ?? 'N/A'),
+            'Billing Cycle: ' . ucfirst($subscription['billing_cycle'] ?? 'N/A'),
+            'Payment Mode: ' . ($subscription['payment_mode'] ?? 'N/A'),
+        ];
+
+        $pdf->SetFont('helvetica', '', 8.5);
+        $pdf->SetTextColor(40, 40, 40);
+        foreach (range(0, max(count($billTo), count($subInfo)) - 1) as $i) {
+            $pdf->SetX($sx);
+            $pdf->Cell($cw / 2, 5, $billTo[$i] ?? '', 0, 0, 'L');
+            $pdf->Cell($cw / 2, 5, $subInfo[$i] ?? '', 0, 1, 'L');
+        }
+
+        $pdf->Ln(4);
+
+        // ── Line-item table ───────────────────────────────────────────
+        $col = [90, 30, 30, 30];
+        $headers = ['Description', 'Term', 'Cycle', 'Amount'];
+        $aligns = ['L', 'C', 'C', 'R'];
+
+        $pdf->SetX($sx);
+        $pdf->SetFillColor(248, 250, 252);
+        $pdf->SetDrawColor(226, 232, 240);
+        $pdf->SetLineStyle(['width' => 0.3, 'color' => [226, 232, 240]]);
+        $pdf->SetFont('helvetica', 'B', 8.5);
+        $pdf->SetTextColor(50, 50, 50);
+        foreach ($headers as $k => $h) {
+            $pdf->Cell($col[$k], 7, $h, 'TLBR', 0, $aligns[$k], true);
+        }
+        $pdf->Ln();
+
+        $pdf->SetX($sx);
+        $pdf->SetFont('helvetica', '', 8.5);
+        $pdf->SetTextColor(40, 40, 40);
+        $amount = number_format((float) ($subscription['amount_paid'] ?? 0), 2);
+        $cells = [
+            $subscription['plan_name'] ?? 'Subscription Plan',
+            ($subscription['subscription_term'] ?? 1) . ' mo',
+            ucfirst($subscription['billing_cycle'] ?? 'monthly'),
+            'FJD ' . $amount,
+        ];
+        foreach ($cells as $k => $val) {
+            $pdf->Cell($col[$k], 7, $val, 'TLBR', 0, $aligns[$k]);
+        }
+        $pdf->Ln();
+
+        if (!empty($subscription['discount_percent']) && (float) $subscription['discount_percent'] > 0) {
+            $pdf->SetX($sx);
+            $pdf->Cell($col[0] + $col[1] + $col[2], 6, 'Discount Applied', 'TLBR', 0, 'R');
+            $pdf->Cell($col[3], 6, '-' . number_format((float) $subscription['discount_percent'], 1) . '%', 'TLBR', 0, 'R');
+            $pdf->Ln();
+        }
+
+        $pdf->SetFont('helvetica', 'B', 9);
+        $pdf->SetX($sx);
+        $pdf->SetFillColor(219, 234, 254);
+        $pdf->SetTextColor(26, 86, 219);
+        $pdf->Cell($col[0] + $col[1] + $col[2], 7, 'TOTAL DUE', 'TLBR', 0, 'R', true);
+        $pdf->Cell($col[3], 7, 'FJD ' . $amount, 'TLBR', 0, 'R', true);
+        $pdf->Ln(10);
+
+        // ── Verification notice ──────────────────────────────────────
+        $pdf->SetX($sx);
+        $pdf->SetFillColor(255, 251, 235);
+        $pdf->SetDrawColor(252, 211, 77);
+        $pdf->SetLineStyle(['width' => 0.3, 'color' => [252, 211, 77]]);
+        $pdf->SetFont('helvetica', 'B', 8.5);
+        $pdf->SetTextColor(146, 64, 14);
+        $pdf->MultiCell($cw, 10, 'Your subscription request has been verified and is now Pending Payment. Please complete payment using one of the methods below to activate your account.', 'TLBR', 'L', true, 1, $sx);
+        $pdf->Ln(4);
+
+        // ── Payment methods ────────────────────────────────────────────
+        $pdf->SetX($sx);
+        $pdf->SetFont('helvetica', 'B', 10);
+        $pdf->SetTextColor(26, 86, 219);
+        $pdf->Cell($cw, 6, 'PAYMENT METHODS', 0, 1, 'L');
+
+        $pdf->SetFont('helvetica', '', 8.5);
+        foreach ($this->getPaymentAccountPlaceholders() as $label => $details) {
+            if ($pdf->GetY() > 250) {
+                $pdf->AddPage();
+            }
+            $pdf->SetX($sx);
+            $pdf->SetFillColor(248, 250, 252);
+            $pdf->SetDrawColor(226, 232, 240);
+            $pdf->SetFont('helvetica', 'B', 9);
+            $pdf->SetTextColor(55, 65, 81);
+            $pdf->Cell($cw, 6, $label, 'TLBR', 1, 'L', true);
+
+            $pdf->SetFont('helvetica', '', 8.5);
+            $pdf->SetTextColor(40, 40, 40);
+            foreach ($details as $key => $val) {
+                $pdf->SetX($sx);
+                $pdf->Cell($cw, 5.5, $key . ': ' . $val, 'LR', 1, 'L');
+            }
+            $pdf->SetX($sx);
+            $pdf->Cell($cw, 0, '', 'T');
+            $pdf->Ln(3);
+        }
+
+        // ── Footer ────────────────────────────────────────────────────
+        $pdf->Ln(3);
+        $pdf->SetLineStyle(['width' => 0.2, 'color' => [226, 232, 240]]);
+        $pdf->Line($sx, $pdf->GetY(), $sx + $cw, $pdf->GetY());
+        $pdf->Ln(3);
+        $pdf->SetFont('helvetica', 'I', 7);
+        $pdf->SetTextColor(160, 160, 160);
+        $pdf->SetX($sx);
+        $pdf->Cell($cw, 5, 'Generated by Navuli Fiji School Management System on ' . date('d M Y \a\t H:i'), 0, 0, 'C');
+
+        $pdfContent = $pdf->Output('', 'S');
+        restore_error_handler();
+
+        return $pdfContent;
+    }
+
+    /**
      * View school details
      *
      * @param int $schID

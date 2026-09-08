@@ -142,6 +142,10 @@
                         <span class="text-muted fw-semibold fs-7 mt-1"><?= count($sa_schools_list) ?> schools on the platform</span>
                     </h3>
                     <div class="card-toolbar">
+                        <a href="<?= base_url('school/subscription') ?>" class="btn btn-sm btn-light-primary fw-bold me-2">
+                            <i class="ki-duotone ki-dollar fs-5 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                            Subscriptions
+                        </a>
                         <a href="<?= base_url('school') ?>" class="btn btn-sm btn-light-primary fw-bold">
                             <i class="ki-duotone ki-eye fs-5 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                             View All
