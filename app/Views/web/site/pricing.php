@@ -44,26 +44,42 @@
                         <?php endif; ?>
                         <ul>
                             <?php if ($plan['plan_name'] === 'Standard'): ?>
-                                <li><i class="bi bi-check2"></i> Core admissions &amp; enrolment</li>
-                                <li><i class="bi bi-check2"></i> Attendance &amp; classroom basics</li>
-                                <li class="feature-disabled"><i class="bi bi-x-circle"></i> Wall &amp; chat communication</li>
-                                <li><i class="bi bi-check2"></i> Limited user accounts</li>
+                                <li><i class="bi bi-check2"></i> 21 Standard Modules</li>
+                                <li class="feature-disabled"><i class="bi bi-check2"></i> 15 Premium Modules</li>
+                                <li class="feature-disabled"><i class="bi bi-x-circle"></i> 18 Ultimate Modules</li>
+                                <li><i class="bi bi-check2"></i> Unlimited Users</li>
+                                <li><i class="bi bi-check2"></i> Online Training</li>
+                                <li><i class="bi bi-check2"></i> Automatic Updates</li>
+                                <li><i class="bi bi-check2"></i> Email &amp; Phone Support</li>
+                                <li><i class="bi bi-check2"></i> Onboarding &amp; Configuration</li>
                             <?php elseif ($plan['plan_name'] === 'Premium'): ?>
-                                <li><i class="bi bi-check2"></i> Everything in Standard</li>
-                                <li><i class="bi bi-check2"></i> Up to 500 user accounts</li>
-                                <li><i class="bi bi-check2"></i> Exams, report cards &amp; timetables</li>
-                                <li><i class="bi bi-check2"></i> Conduct &amp; discipline management</li>
-                                <li><i class="bi bi-check2"></i> Two-factor authentication</li>
+                                <li><i class="bi bi-check2"></i> 21 Standard Modules</li>
+                                <li><i class="bi bi-check2"></i> 15 Premium Modules</li>
+                                <li class="feature-disabled"><i class="bi bi-x-circle"></i> 18 Ultimate Modules</li>
+                                <li><i class="bi bi-check2"></i> Unlimited Users</li>
+                                <li><i class="bi bi-check2"></i> Online Training</li>
+                                <li><i class="bi bi-check2"></i> Automatic Updates</li>
+                                <li><i class="bi bi-check2"></i> Email &amp; Phone Support</li>
+                                <li><i class="bi bi-check2"></i> Onboarding &amp; Configuration</li>
                             <?php elseif ($plan['plan_name'] === 'Ultimate'): ?>
-                                <li><i class="bi bi-check2"></i> Everything in Premium</li>
-                                <li><i class="bi bi-check2"></i> Unlimited user accounts</li>
-                                <li><i class="bi bi-check2"></i> Full feature access, all modules</li>
-                                <li><i class="bi bi-check2"></i> Priority support</li>
+                                <li><i class="bi bi-check2"></i> 21 Standard Modules</li>
+                                <li><i class="bi bi-check2"></i> 15 Premium Modules</li>
+                                <li><i class="bi bi-check2"></i> 18 Ultimate Modules</li>
+                                <li><i class="bi bi-check2"></i> Unlimited Users</li>
+                                <li><i class="bi bi-check2"></i> Online Training</li>
+                                <li><i class="bi bi-check2"></i> Automatic Updates</li>
+                                <li><i class="bi bi-check2"></i> Email &amp; Phone Support</li>
+                                <li><i class="bi bi-check2"></i> Onboarding &amp; Configuration</li>
                             <?php else: ?>
-                                <li><i class="bi bi-check2"></i> Everything in Ultimate</li>
-                                <li><i class="bi bi-check2"></i> Multi-school / district licensing</li>
-                                <li><i class="bi bi-check2"></i> Dedicated onboarding &amp; account manager</li>
-                                <li><i class="bi bi-check2"></i> Custom integrations, built to order</li>
+                                <li><i class="bi bi-check2"></i> 21 Standard Modules</li>
+                                <li><i class="bi bi-check2"></i> 15 Premium Modules</li>
+                                <li><i class="bi bi-check2"></i> 18 Ultimate Modules</li>
+                                <li><i class="bi bi-check2"></i> Unlimited Users</li>
+                                <li><i class="bi bi-check2"></i> Online Training</li>
+                                <li><i class="bi bi-check2"></i> Automatic Updates</li>
+                                <li><i class="bi bi-check2"></i> Email &amp; Phone Support</li>
+                                <li><i class="bi bi-check2"></i> Onboarding &amp; Configuration</li>
+                                <li><i class="bi bi-check2"></i> Product Source Code</li>
                             <?php endif; ?>
                         </ul>
                         <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center mt-auto">Contact Us</a>
