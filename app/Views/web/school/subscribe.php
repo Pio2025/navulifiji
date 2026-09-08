@@ -147,7 +147,7 @@
                             <label class="form-label mb-2 required">School category</label>
                             <div class="row gy-3 mb-4" id="schCategoryGroup">
                                 <?php foreach (($categories ?? []) as $cat): ?>
-                                    <?php $catId = $cat['sch_cat_id']; $catLabel = $cat['sch_cat_initial']; $catIcon = $cat['sch_cat_icon'] ?: 'bi-mortarboard-fill'; ?>
+                                    <?php $catId = $cat['sch_cat_id']; $catLabel = $cat['sch_cat_initial']; $catIcon = $cat['sch_cat_icon'] ?? 'bi-mortarboard-fill'; $catIcon = $catIcon ?: 'bi-mortarboard-fill'; ?>
                                     <div class="col-6 col-md-4">
                                         <input type="radio" class="radio-card-input" name="sch_category" id="sch_category_<?= $catId ?>" required
                                                value="<?= $catId ?>" <?= (isset($old['sch_category']) && $old['sch_category'] == $catId) ? 'checked' : '' ?>>
