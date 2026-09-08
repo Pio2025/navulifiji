@@ -45,7 +45,7 @@
                         <ul>
                             <?php if ($plan['plan_name'] === 'Standard'): ?>
                                 <li><i class="bi bi-check2"></i> 21 Standard Modules</li>
-                                <li class="feature-disabled"><i class="bi bi-check2"></i> 15 Premium Modules</li>
+                                <li class="feature-disabled"><i class="bi bi-x-circle"></i> 15 Premium Modules</li>
                                 <li class="feature-disabled"><i class="bi bi-x-circle"></i> 18 Ultimate Modules</li>
                                 <li><i class="bi bi-check2"></i> Unlimited Users</li>
                                 <li><i class="bi bi-check2"></i> Online Training</li>
