@@ -1148,6 +1148,29 @@ label.required::after {
   font-size: 30px;
 }
 
+/* Why Navuli */
+.why-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.why-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--default-color);
+  font-weight: 500;
+}
+
+.why-list li i {
+  color: var(--accent-color);
+  font-size: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
 /* Mobile app promo section */
 .mobile-app-section {
   background: var(--accent-color);

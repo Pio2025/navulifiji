@@ -97,6 +97,28 @@
     </div>
 </section>
 
+<!-- Why Navuli -->
+<section id="why-navuli" class="section light-background">
+    <div class="container">
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6" data-aos="fade-right">
+                <span class="badge-brand-pink">Why Navuli</span>
+                <h2 class="mt-3">Built for how Fiji schools actually run</h2>
+                <p class="lead mt-3">One secure system your whole school can trust — not a patchwork of spreadsheets, paper registers and group chats.</p>
+                <p>Navuli was built in Fiji, for Fiji schools — from pre-school to TVET — so the workflows, terms structure and pricing already fit the way you operate, without expensive customisation or a steep learning curve for staff, parents and students.</p>
+                <ul class="why-list mt-4">
+                    <li><i class="bi bi-check-circle-fill"></i> All your data in one secure, always-backed-up place</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Simple enough for every teacher and parent to use from day one</li>
+                    <li><i class="bi bi-check-circle-fill"></i> Local FJD pricing and support, with no long-term lock-in</li>
+                </ul>
+            </div>
+            <div class="col-lg-6" data-aos="fade-left" data-aos-delay="100">
+                <img src="<?= base_url('web/assets/img/why-navuli-illustration.svg') ?>" alt="Why choose Navuli" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Feature highlights -->
 <section id="features" class="section">
     <div class="container section-title text-center" data-aos="fade-up">
