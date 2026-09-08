@@ -30,6 +30,22 @@ $isPayment = $status === 'Pending Payment';
 
 	    <?= $this->include('templates/flash_messages') ?>
 
+		<?php if (session('validation')?->getErrors()): ?>
+			<div class="alert alert-danger d-flex align-items-start p-5 mb-6">
+				<i class="ki-duotone ki-information-5 fs-2hx text-danger me-4 flex-shrink-0 mt-1">
+					<span class="path1"></span><span class="path2"></span><span class="path3"></span>
+				</i>
+				<div>
+					<div class="fw-bold mb-2">Please fix the following:</div>
+					<ul class="mb-0 ps-4">
+						<?php foreach (session('validation')->getErrors() as $err): ?>
+							<li class="fs-7"><?= esc($err) ?></li>
+						<?php endforeach; ?>
+					</ul>
+				</div>
+			</div>
+		<?php endif; ?>
+
 		<?php if ($isVerification): ?>
 			<div class="alert alert-info d-flex align-items-center mb-6">
 				<i class="ki-duotone ki-information-5 fs-2hx text-info me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>

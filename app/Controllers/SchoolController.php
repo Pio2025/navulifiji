@@ -2734,6 +2734,7 @@ class SchoolController extends BaseController
         if (!$this->validate($validationRules)) {
             return redirect()->to('school/subscription/process/' . $id)
                 ->with('error', 'Please correct the errors below.')
+                ->with('validation', $this->validator)
                 ->withInput();
         }
 
