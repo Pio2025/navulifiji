@@ -1,6 +1,6 @@
 <section class="page-title dark-background bg-gradient-brand" style="padding:150px 0 70px;">
     <div class="container text-center" data-aos="fade-up">
-        <a href="<?= site_url('pricing') ?>" style="color:rgba(255,255,255,.85); text-decoration:none; font-size:14px;"><i class="bi bi-arrow-left"></i> Back to Pricing</a>
+        <a href="<?= site_url('feature') ?>" style="color:rgba(255,255,255,.85); text-decoration:none; font-size:14px;"><i class="bi bi-arrow-left"></i> Back to Features</a>
         <div class="mt-3">
             <span class="badge-brand-pink"><?= esc($tour['tier']) ?></span>
         </div>
@@ -47,7 +47,7 @@
         <div class="row gy-4">
             <?php foreach ($related as $otherSlug => $otherTour): ?>
                 <div class="col-lg-4 col-md-6">
-                    <a href="<?= site_url('feature-tour/' . $otherSlug) ?>" class="module-grid-item">
+                    <a href="<?= site_url('feature/' . $otherSlug) ?>" class="module-grid-item">
                         <div class="module-icon"><i class="bi <?= esc($otherTour['icon']) ?>"></i></div>
                         <span class="module-label"><?= esc($otherTour['label']) ?></span>
                     </a>

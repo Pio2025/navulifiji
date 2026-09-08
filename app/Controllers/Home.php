@@ -20,14 +20,20 @@ class Home extends BaseController
         return view('web/layouts/site', $data);
     }
 
-    public function product(): string
+    public function feature(): string
     {
+        $tiers = [];
+        foreach ($this->moduleTours() as $slug => $tour) {
+            $tiers[$tour['tier']][$slug] = $tour;
+        }
+
         $data = [
-            '_view'       => 'web/site/product',
-            'active_page' => 'product',
-            'page_title'  => 'Product & Features',
+            '_view'       => 'web/site/feature',
+            'active_page' => 'feature',
+            'page_title'  => 'Features',
+            'tiers'       => $tiers,
         ];
-        $this->session->set('active_page', 'product');
+        $this->session->set('active_page', 'feature');
 
         return view('web/layouts/site', $data);
     }
@@ -64,12 +70,12 @@ class Home extends BaseController
 
         $data = [
             '_view'       => 'web/site/feature_tour',
-            'active_page' => 'pricing',
+            'active_page' => 'feature',
             'page_title'  => $tour['label'],
             'tour'        => $tour,
             'related'     => array_slice($related, 0, 6, true),
         ];
-        $this->session->set('active_page', 'pricing');
+        $this->session->set('active_page', 'feature');
 
         return view('web/layouts/site', $data);
     }

@@ -38,7 +38,7 @@
             <nav id="navmenu" class="navmenu">
                 <ul>
                     <li><a href="<?= site_url('/') ?>" class="<?= ($active_page ?? '') === 'home' ? 'active' : '' ?>">Home</a></li>
-                    <li><a href="<?= site_url('product') ?>" class="<?= ($active_page ?? '') === 'product' ? 'active' : '' ?>">Product</a></li>
+                    <li><a href="<?= site_url('feature') ?>" class="<?= ($active_page ?? '') === 'feature' ? 'active' : '' ?>">Feature</a></li>
                     <li><a href="<?= site_url('pricing') ?>" class="<?= ($active_page ?? '') === 'pricing' ? 'active' : '' ?>">Pricing</a></li>
                     <li><a href="<?= site_url('resource-center') ?>" class="<?= ($active_page ?? '') === 'resources' ? 'active' : '' ?>">Resources</a></li>
                     <li><a href="<?= site_url('about') ?>" class="<?= ($active_page ?? '') === 'about' ? 'active' : '' ?>">About</a></li>
@@ -81,7 +81,7 @@
                 <div class="col-lg-2 col-md-6 footer-links">
                     <h4>Product</h4>
                     <ul>
-                        <li><a href="<?= site_url('product') ?>">Features</a></li>
+                        <li><a href="<?= site_url('feature') ?>">Features</a></li>
                         <li><a href="<?= site_url('pricing') ?>">Pricing</a></li>
                         <li><a href="<?= site_url('for-schools') ?>">For Schools</a></li>
                         <li><a href="<?= site_url('account/subscribe') ?>">Get Started</a></li>

@@ -8,7 +8,7 @@
                 <p class="lead mt-3">Navuli brings admissions, attendance, exams, timetables, conduct and communication into a single system — so principals, teachers, parents and students in Fiji always know what's happening.</p>
                 <div class="d-flex flex-wrap gap-3 mt-4">
                     <a href="<?= site_url('account/subscribe') ?>" class="btn-brand-pink">Get Started Free <i class="bi bi-arrow-right"></i></a>
-                    <a href="<?= site_url('product') ?>" class="btn-brand-outline" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.5);">See all features</a>
+                    <a href="<?= site_url('feature') ?>" class="btn-brand-outline" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.5);">See all features</a>
                 </div>
 
                 <div class="hero-stats">
@@ -117,7 +117,7 @@
         </div>
 
         <div class="text-center mt-5" data-aos="fade-up">
-            <a href="<?= site_url('product') ?>" class="btn-brand">Explore every feature <i class="bi bi-arrow-right"></i></a>
+            <a href="<?= site_url('feature') ?>" class="btn-brand">Explore every feature <i class="bi bi-arrow-right"></i></a>
         </div>
     </div>
 </section>
