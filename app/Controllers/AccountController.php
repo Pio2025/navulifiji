@@ -150,6 +150,7 @@ class AccountController extends BaseController
             'categories' => $this->schoolCategoryModel->getAllSchoolCategory(),
             'selected_plan' => $this->request->getGet('plan'),
             'selected_package' => $this->request->getGet('package'),
+            'selected_tier' => $this->request->getGet('tier'),
             'feedback_title' => 'Account Subscription!',
             'page_title' => 'Get Started — Subscribe Your School',
             '_view' => 'web/school/subscribe'
@@ -169,6 +170,7 @@ class AccountController extends BaseController
             
             // Define validation rules
             $validationRules = [
+                'subscription_tier' => 'required|in_list[free,paid]',
                 'account_type' => 'required|in_list[' . implode(',', $planIds) . ']',
                 'billing_cycle' => 'required|in_list[monthly,annual]',
                 'package_type' => 'required|in_list[web,web_mobile]',
@@ -200,6 +202,10 @@ class AccountController extends BaseController
             
             // Custom error messages (keep your existing ones)
             $validationMessages = [
+                'subscription_tier' => [
+                    'required' => 'Please select Free Tier or Paid Tier',
+                    'in_list' => 'Please select a valid subscription tier'
+                ],
                 'account_type' => [
                     'required' => 'Please select an account type',
                     'in_list' => 'Please select a valid account type'
@@ -315,10 +321,12 @@ class AccountController extends BaseController
             } else {
                 // Validation passed - process the data
 
+                $isTrial = $this->request->getPost('subscription_tier') === 'free';
+
                 // Custom-quote plans (no fixed monthly cost) can't be self-service
                 // subscribed to — direct the applicant to contact sales instead.
-                $selectedPlan = $this->planModel->getPlan($this->request->getPost('account_type'));
-                if ($selectedPlan && $selectedPlan['plan_monthly_cost'] === null) {
+                $selectedPlan = $this->planModel->getPlan($isTrial ? 1 : $this->request->getPost('account_type'));
+                if (!$isTrial && $selectedPlan && $selectedPlan['plan_monthly_cost'] === null) {
                     session()->setFlashdata('error', 'The ' . esc($selectedPlan['plan_name']) . ' plan is custom-priced. Please <a href="' . site_url('contact') . '">contact our sales team</a> for a quote instead of submitting this form.');
 
                     if ($province) {
@@ -361,33 +369,40 @@ class AccountController extends BaseController
                     $success .= 'Successfully registered school data.';
                     
                     //Navuli subscription data
-                    $accountType = $this->request->getPost('account_type');
+                    // A Free Tier trial always runs on the Standard plan, web-only,
+                    // for a fixed 30 days, regardless of what was posted for the
+                    // (hidden, in that mode) paid-tier controls.
+                    $accountType = $isTrial ? 1 : $this->request->getPost('account_type');
                     $planData = $this->planModel->getPlan($accountType);
 
-                    $packageType = $this->request->getPost('package_type');
+                    $packageType = $isTrial ? 'web' : $this->request->getPost('package_type');
                     if (!in_array($packageType, ['web', 'web_mobile'], true)) {
                         $packageType = 'web';
                     }
 
-                    $monthlyCost = $this->planModel->getMonthlyCost($planData, $packageType) ?? 0.0;
-                    $isFreePlan = empty($planData) || $monthlyCost <= 0;
+                    $monthlyCost = $isTrial ? 0.0 : ($this->planModel->getMonthlyCost($planData, $packageType) ?? 0.0);
+                    $isFreePlan = $isTrial || empty($planData) || $monthlyCost <= 0;
 
-                    // The Free plan is always a 1-month trial, regardless of the
-                    // billing cycle tab that was active when the form was submitted.
-                    $billingCycle = $isFreePlan ? 'monthly' : $this->request->getPost('billing_cycle');
-                    if (!in_array($billingCycle, ['monthly', 'annual'], true)) {
+                    // The Free Trial always runs for 30 days on the 'trial' billing
+                    // cycle; any other free plan still falls back to a 1-month cycle.
+                    $billingCycle = $isTrial ? 'trial' : ($isFreePlan ? 'monthly' : $this->request->getPost('billing_cycle'));
+                    if (!in_array($billingCycle, ['monthly', 'annual', 'trial'], true)) {
                         $billingCycle = 'monthly';
                     }
 
                     $subscriptionMonths = ($billingCycle === 'annual') ? 12 : 1;
                     $discountPercent = ($billingCycle === 'annual' && !$isFreePlan) ? \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT : 0;
-                    $amountPaid = round($monthlyCost * $subscriptionMonths * (1 - $discountPercent / 100), 2);
+                    $amountPaid = $isTrial ? 0.0 : round($monthlyCost * $subscriptionMonths * (1 - $discountPercent / 100), 2);
+
+                    $subscriptionEndDate = $isTrial
+                        ? date('Y-m-d', strtotime('+30 days'))
+                        : $this->calculateSubscriptionEnd($subscriptionMonths);
 
                     $subData = [
                         'plan_id_fk' => $accountType,
                         'sch_id_fk' => $addSchool,
                         'subscription_start_date' => date('Y-m-d'),
-                        'subscription_end_date' => $this->calculateSubscriptionEnd($subscriptionMonths),
+                        'subscription_end_date' => $subscriptionEndDate,
                         'subscription_term' => $subscriptionMonths,
                         'billing_cycle' => $billingCycle,
                         'package_type' => $packageType,

@@ -7,7 +7,7 @@
                 <h1 class="mt-3">Run your <span>whole school</span> from one platform</h1>
                 <p class="lead mt-3">Navuli brings admissions, attendance, exams, timetables, conduct and communication into a single system — so principals, teachers, parents and students in Fiji always know what's happening.</p>
                 <div class="d-flex flex-wrap gap-3 mt-4">
-                    <a href="<?= site_url('account/subscribe') ?>" class="btn-brand-pink">Get Started Free <i class="bi bi-arrow-right"></i></a>
+                    <a href="<?= site_url('account/subscribe') ?>?tier=free" class="btn-brand-pink">Get Started Free <i class="bi bi-arrow-right"></i></a>
                     <a href="<?= site_url('feature') ?>" class="btn-brand-outline" style="background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.5);">See all features</a>
                 </div>
 
@@ -238,7 +238,7 @@
                     <p class="mb-lg-0" style="color:rgba(255,255,255,.85);">Join schools across Fiji moving off paper and spreadsheets, onto Navuli.</p>
                 </div>
                 <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                    <a href="<?= site_url('account/subscribe') ?>" class="btn-brand-pink">Get Started Free</a>
+                    <a href="<?= site_url('account/subscribe') ?>?tier=free" class="btn-brand-pink">Get Started Free</a>
                 </div>
             </div>
         </div>

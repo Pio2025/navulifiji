@@ -49,8 +49,43 @@
 
                             <!-- Account Plan -->
                             <h4 class="subscribe-section-title">Account Plan</h4>
-                            <p class="text-muted mb-1">Select the plan that best fits your school's needs and size. <a href="<?= site_url('pricing') ?>" target="_blank">See full plan comparison</a>.</p>
+                            <p class="text-muted mb-1">Try Navuli free, or pick the paid plan that fits your school's needs and size. <a href="<?= site_url('pricing') ?>" target="_blank">See full plan comparison</a>.</p>
                             <p class="required-note mb-3"><span class="required-note-star">*</span> Required</p>
+
+                            <?php
+                                $selectedTier = old('subscription_tier');
+                                if ($selectedTier === null) {
+                                    $selectedTier = (!empty($selected_tier) && $selected_tier === 'free') ? 'free' : 'paid';
+                                }
+                            ?>
+                            <div class="text-center mb-4">
+                                <ul class="nav tier-tabs" id="tierTabs">
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link <?= $selectedTier === 'free' ? 'active' : '' ?>" data-tier="free">
+                                            <i class="bi bi-gift-fill me-1"></i> Free Tier
+                                        </button>
+                                    </li>
+                                    <li class="nav-item">
+                                        <button type="button" class="nav-link <?= $selectedTier !== 'free' ? 'active' : '' ?>" data-tier="paid">
+                                            <i class="bi bi-credit-card-fill me-1"></i> Paid Tier
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                            <input type="hidden" name="subscription_tier" id="subscription_tier_input" value="<?= esc($selectedTier) ?>">
+
+                            <!-- Free Tier -->
+                            <div id="freeTierSection" class="<?= $selectedTier === 'free' ? '' : 'd-none' ?>">
+                                <div class="free-trial-card text-center mb-4">
+                                    <div class="free-trial-icon mb-3"><i class="bi bi-rocket-takeoff-fill"></i></div>
+                                    <h3 class="mb-2">30-Day Free Trial</h3>
+                                    <p class="text-muted mb-1" style="max-width:520px; margin-left:auto; margin-right:auto;">Full access to all Standard plan modules and features, on the web app, free for 30 days — no payment required to get started.</p>
+                                    <p class="small text-muted mb-0">After 30 days you'll be asked to choose a paid plan to keep your school's account active. You can switch plans at any time.</p>
+                                </div>
+                            </div>
+
+                            <!-- Paid Tier -->
+                            <div id="paidTierSection" class="<?= $selectedTier === 'free' ? 'd-none' : '' ?>">
 
                             <?php
                                 $packageType = old('package_type');
@@ -90,7 +125,9 @@
                                     <?php
                                         $isChecked = isset($old['account_type'])
                                             ? ($old['account_type'] == $plan['plan_id'])
-                                            : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0);
+                                            : ($selectedTier === 'free'
+                                                ? $i === 0
+                                                : (!empty($selected_plan) ? ($selected_plan == $plan['plan_id']) : $i === 0));
                                         $isCustomQuote = $plan['plan_monthly_cost'] === null;
                                         $monthlyCostWeb = $isCustomQuote ? 0.0 : (float) $plan['plan_monthly_cost'];
                                         $monthlyCostBundle = $isCustomQuote ? 0.0 : (float) ($plan['plan_monthly_cost_web_n_mobile'] ?? $plan['plan_monthly_cost']);
@@ -138,6 +175,9 @@
                                 <i class="bi bi-info-circle-fill fs-4"></i>
                                 <div id="billingCycleInfoText">Billed monthly. Switch to Annual and save <?= (int) $annual_discount_percent ?>%.</div>
                             </div>
+
+                            </div>
+                            <!-- /Paid Tier -->
 
                             <hr class="my-5">
 
@@ -502,6 +542,22 @@
         $('input[name="account_type"]').change(updateBillingUI);
 
         updateBillingUI();
+
+        $('#tierTabs .nav-link').click(function () {
+            var tier = $(this).data('tier');
+            $('#tierTabs .nav-link').removeClass('active');
+            $(this).addClass('active');
+            $('#subscription_tier_input').val(tier);
+
+            if (tier === 'free') {
+                $('#freeTierSection').removeClass('d-none');
+                $('#paidTierSection').addClass('d-none');
+                $('#accountTypeGroup .radio-card-input').first().prop('checked', true).trigger('change');
+            } else {
+                $('#freeTierSection').addClass('d-none');
+                $('#paidTierSection').removeClass('d-none');
+            }
+        });
 
         // ================= Real-time client-side validation =================
         // Mirrors the backend rules in AccountController::subscribe(). Note:

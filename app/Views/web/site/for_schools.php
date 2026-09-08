@@ -95,7 +95,7 @@
                     <p class="mb-lg-0" style="color:rgba(255,255,255,.85);">Free to start. Priced in FJD. No lock-in contracts.</p>
                 </div>
                 <div class="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                    <a href="<?= site_url('account/subscribe') ?>" class="btn-brand-pink">Get Started Free</a>
+                    <a href="<?= site_url('account/subscribe') ?>?tier=free" class="btn-brand-pink">Get Started Free</a>
                 </div>
             </div>
         </div>

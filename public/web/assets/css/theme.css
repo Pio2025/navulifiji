@@ -1082,3 +1082,59 @@ label.required::after {
   background: #fff;
   color: var(--accent-color-2);
 }
+
+/* Free Tier / Paid Tier toggle on the subscribe page */
+.tier-tabs {
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+  display: inline-flex;
+  gap: 6px;
+  background: color-mix(in srgb, var(--default-color), transparent 94%);
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 14px;
+}
+
+.tier-tabs .nav-item {
+  display: flex;
+}
+
+.tier-tabs .nav-link {
+  border: none;
+  background: transparent;
+  color: var(--default-color);
+  border-radius: 10px;
+  padding: 12px 32px;
+  font-weight: 700;
+  font-size: 15px;
+  transition: .2s;
+}
+
+.tier-tabs .nav-link:hover:not(.active) {
+  background: color-mix(in srgb, var(--default-color), transparent 85%);
+}
+
+.tier-tabs .nav-link.active {
+  background: var(--accent-color);
+  color: #fff;
+  box-shadow: 0 3px 10px color-mix(in srgb, var(--accent-color), transparent 65%);
+}
+
+.free-trial-card {
+  padding: 40px 30px;
+  border-radius: 16px;
+  border: 2px dashed color-mix(in srgb, var(--accent-color), transparent 60%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--accent-color), transparent 95%), color-mix(in srgb, var(--accent-color-2), transparent 96%));
+}
+
+.free-trial-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #fff;
+  font-size: 30px;
+}
