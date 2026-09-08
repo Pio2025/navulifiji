@@ -46,7 +46,7 @@
                             <?php if ($plan['plan_name'] === 'Standard'): ?>
                                 <li><i class="bi bi-check2"></i> Core admissions &amp; enrolment</li>
                                 <li><i class="bi bi-check2"></i> Attendance &amp; classroom basics</li>
-                                <li><i class="bi bi-check2"></i> Wall &amp; chat communication</li>
+                                <li class="feature-disabled"><i class="bi bi-x-circle"></i> Wall &amp; chat communication</li>
                                 <li><i class="bi bi-check2"></i> Limited user accounts</li>
                             <?php elseif ($plan['plan_name'] === 'Premium'): ?>
                                 <li><i class="bi bi-check2"></i> Everything in Standard</li>

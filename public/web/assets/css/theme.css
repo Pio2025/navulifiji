@@ -570,6 +570,15 @@
   margin-top: 3px;
 }
 
+.pricing-card ul li.feature-disabled {
+  color: color-mix(in srgb, var(--default-color), transparent 55%);
+  text-decoration: line-through;
+}
+
+.pricing-card ul li.feature-disabled i {
+  color: color-mix(in srgb, var(--default-color), transparent 55%);
+}
+
 /* Sign In / Get Started links inside the mobile nav dropdown (hamburger menu) */
 #navmenu .navmenu-signin {
   border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);

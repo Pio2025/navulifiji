@@ -10,7 +10,7 @@
 <section class="section">
     <div class="container section-title text-center" data-aos="fade-up">
         <span class="badge-brand-pink">Every Level Of Education</span>
-        <h2 class="mt-3">One platform, from Pre School to TVET</h2>
+        <h2 class="mt-3">One platform, from Pre School to Tertiary</h2>
     </div>
     <div class="container">
         <div class="row gy-4 justify-content-center">
