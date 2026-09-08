@@ -7,7 +7,7 @@ class SchoolCategoryModel extends Model
 {
     protected $table = 'sch_category';
     protected $primaryKey = 'sch_cat_id';
-    protected $allowedFields = ['sch_cat_id', 'sch_cat_initial', 'sch_cat_name'];
+    protected $allowedFields = ['sch_cat_id', 'sch_cat_initial', 'sch_cat_name', 'sch_cat_icon'];
     protected $useTimestamps = false;
     protected $returnType = 'array';
 

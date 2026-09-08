@@ -106,6 +106,7 @@ class SchoolCategoryController extends BaseController
         $rules = [
             'sch_cat_initial'     => 'required|max_length[60]',
             'sch_cat_name'        => 'required|max_length[300]',
+            'sch_cat_icon'        => 'permit_empty|max_length[60]',
             'num_of_term_in_year' => 'required|integer|greater_than[0]|less_than[13]',
             'label_for_term'      => 'required|max_length[60]',
         ];
@@ -126,6 +127,7 @@ class SchoolCategoryController extends BaseController
         $catId = $this->schoolCategoryModel->addSchoolCategory([
             'sch_cat_initial' => trim($this->request->getPost('sch_cat_initial')),
             'sch_cat_name'    => trim($this->request->getPost('sch_cat_name')),
+            'sch_cat_icon'    => trim($this->request->getPost('sch_cat_icon')) ?: null,
         ]);
 
         $configId = $this->schoolCategoryConfigModel->insert([
@@ -197,6 +199,7 @@ class SchoolCategoryController extends BaseController
         $rules = [
             'sch_cat_initial'     => 'required|max_length[60]',
             'sch_cat_name'        => 'required|max_length[300]',
+            'sch_cat_icon'        => 'permit_empty|max_length[60]',
             'num_of_term_in_year' => 'required|integer|greater_than[0]|less_than[13]',
             'label_for_term'      => 'required|max_length[60]',
         ];
@@ -217,6 +220,7 @@ class SchoolCategoryController extends BaseController
         $this->schoolCategoryModel->updateSchoolCategory($id, [
             'sch_cat_initial' => trim($this->request->getPost('sch_cat_initial')),
             'sch_cat_name'    => trim($this->request->getPost('sch_cat_name')),
+            'sch_cat_icon'    => trim($this->request->getPost('sch_cat_icon')) ?: null,
         ]);
 
         $existingConfig = $this->schoolCategoryConfigModel->getByCategoryId($id);

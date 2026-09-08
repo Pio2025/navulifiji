@@ -71,6 +71,17 @@
                                 <div class="invalid-feedback"><?= session('validation')->getError('sch_cat_name') ?></div>
                             <?php endif; ?>
                         </div>
+                        <div class="col-lg-4">
+                            <label class="form-label fw-semibold">Icon</label>
+                            <input type="text" name="sch_cat_icon"
+                                class="form-control <?= session('validation')?->hasError('sch_cat_icon') ? 'is-invalid' : '' ?>"
+                                placeholder="e.g. bi-mortarboard-fill"
+                                value="<?= esc(old('sch_cat_icon')) ?>" />
+                            <div class="form-text text-muted">Bootstrap Icons class name shown on the public subscribe page (see <a href="https://icons.getbootstrap.com" target="_blank" rel="noopener">icons.getbootstrap.com</a>) — leave blank for a default icon</div>
+                            <?php if (session('validation')?->hasError('sch_cat_icon')): ?>
+                                <div class="invalid-feedback"><?= session('validation')->getError('sch_cat_icon') ?></div>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 </div>
             </div>

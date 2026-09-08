@@ -31,6 +31,7 @@ $hasOld   = !empty($oldInput);
 
 $valInitial = $hasOld ? ($oldInput['sch_cat_initial'] ?? '') : ($category['sch_cat_initial'] ?? '');
 $valName    = $hasOld ? ($oldInput['sch_cat_name']    ?? '') : ($category['sch_cat_name']    ?? '');
+$valIcon    = $hasOld ? ($oldInput['sch_cat_icon']    ?? '') : ($category['sch_cat_icon']    ?? '');
 $valNumTerm = $hasOld ? ($oldInput['num_of_term_in_year'] ?? '') : count($terms ?? []);
 $valLabel   = $hasOld ? ($oldInput['label_for_term']      ?? '') : ($config['label_for_term'] ?? 'Term');
 
@@ -107,6 +108,17 @@ if ($hasOld && !empty($oldInput['num_of_term_in_year'])) {
                                 value="<?= esc($valName) ?>" />
                             <?php if (session('validation')?->hasError('sch_cat_name')): ?>
                                 <div class="invalid-feedback"><?= session('validation')->getError('sch_cat_name') ?></div>
+                            <?php endif; ?>
+                        </div>
+                        <div class="col-lg-4">
+                            <label class="form-label fw-semibold">Icon</label>
+                            <input type="text" name="sch_cat_icon"
+                                class="form-control <?= session('validation')?->hasError('sch_cat_icon') ? 'is-invalid' : '' ?>"
+                                placeholder="e.g. bi-mortarboard-fill"
+                                value="<?= esc($valIcon) ?>" />
+                            <div class="form-text text-muted">Bootstrap Icons class name shown on the public subscribe page (see <a href="https://icons.getbootstrap.com" target="_blank" rel="noopener">icons.getbootstrap.com</a>) — leave blank for a default icon</div>
+                            <?php if (session('validation')?->hasError('sch_cat_icon')): ?>
+                                <div class="invalid-feedback"><?= session('validation')->getError('sch_cat_icon') ?></div>
                             <?php endif; ?>
                         </div>
                     </div>

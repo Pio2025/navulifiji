@@ -147,6 +147,7 @@ class AccountController extends BaseController
                 return $plan;
             }, $this->planModel->getAllPlan()),
             'annual_discount_percent' => \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT,
+            'categories' => $this->schoolCategoryModel->getAllSchoolCategory(),
             'selected_plan' => $this->request->getGet('plan'),
             'selected_package' => $this->request->getGet('package'),
             'feedback_title' => 'Account Subscription!',
@@ -155,6 +156,7 @@ class AccountController extends BaseController
         ];
 
         $planIds = array_column($data['plans'], 'plan_id');
+        $catIds = array_column($data['categories'], 'sch_cat_id');
         
         // Check if form is submitted
         if (!empty($this->request->getPost())) {
@@ -170,7 +172,7 @@ class AccountController extends BaseController
                 'account_type' => 'required|in_list[' . implode(',', $planIds) . ']',
                 'billing_cycle' => 'required|in_list[monthly,annual]',
                 'package_type' => 'required|in_list[web,web_mobile]',
-                'sch_category' => 'required|in_list[1,2,3,4,5]',
+                'sch_category' => 'required|in_list[' . implode(',', $catIds) . ']',
                 'account_name' => 'required|min_length[3]|max_length[100]',
                 'province' => 'required',
                 'province2' => 'required',
