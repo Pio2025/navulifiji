@@ -6,6 +6,50 @@
     </div>
 </section>
 
+<section class="section">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <h2>The complete school management platform for Fiji</h2>
+            <p class="text-muted" style="max-width:700px; margin:0 auto;">Navuli has every module your school will ever need to run day-to-day academic and administrative work efficiently.</p>
+        </div>
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6" data-aos="fade-right">
+                <p>Navuli is a school management platform built for schools across Fiji's Central, Western, Northern and Eastern divisions. It gives every person in your school community — administrators, teachers, non-teaching staff, students and parents — their own login and dashboard, tailored to what they need to see and do.</p>
+                <p>The modules below cover student admission and enrolment, timetables, attendance, examinations and gradebooks, right through to fees, transport, the school library and staff records. Navuli also keeps everyone talking — through the School Wall, messaging, notice boards and announcements — so parents and staff stay in the loop without extra phone calls or paperwork.</p>
+                <p class="mb-0">Scroll down to see every module available across the Standard, Premium and Ultimate plans.</p>
+            </div>
+            <div class="col-lg-6" data-aos="fade-left">
+                <div class="feature-mockup-wrap">
+                    <div class="feature-mockup">
+                        <div class="feature-mockup-bar">
+                            <span class="feature-mockup-dot"></span>
+                            <span class="feature-mockup-dot"></span>
+                            <span class="feature-mockup-dot"></span>
+                        </div>
+                        <div class="feature-mockup-body">
+                            <div class="feature-mockup-sidebar">
+                                <span></span><span></span><span></span><span></span><span></span>
+                            </div>
+                            <div class="feature-mockup-main">
+                                <div class="bar accent"></div>
+                                <div class="bar" style="width:90%"></div>
+                                <div class="bar" style="width:75%"></div>
+                                <div class="feature-mockup-row-cards">
+                                    <div></div><div></div><div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="feature-float-icon" style="top:-16px; left:8%; color:var(--accent-color);"><i class="bi bi-calendar-week"></i></div>
+                    <div class="feature-float-icon" style="top:22%; right:-16px; color:var(--accent-color-2);"><i class="bi bi-people"></i></div>
+                    <div class="feature-float-icon" style="bottom:14%; left:-16px; color:var(--accent-color-2);"><i class="bi bi-bus-front"></i></div>
+                    <div class="feature-float-icon" style="bottom:-16px; right:12%; color:var(--accent-color);"><i class="bi bi-mortarboard"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <?php $tierIndex = 0; ?>
 <?php foreach ($tiers as $tierName => $modules): ?>
     <section class="section <?= $tierIndex % 2 === 1 ? 'light-background' : '' ?>">

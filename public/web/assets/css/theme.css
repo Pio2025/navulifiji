@@ -240,6 +240,99 @@
   transition: color .25s;
 }
 
+/* Feature page intro — mock dashboard illustration */
+.feature-mockup-wrap {
+  position: relative;
+  padding: 30px;
+}
+
+.feature-mockup {
+  background: var(--surface-color);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 92%);
+  box-shadow: 0 30px 60px rgba(18, 38, 58, .12);
+}
+
+.feature-mockup-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--heading-color), transparent 95%);
+  border-bottom: 1px solid color-mix(in srgb, var(--default-color), transparent 92%);
+}
+
+.feature-mockup-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--default-color), transparent 60%);
+}
+
+.feature-mockup-body {
+  display: flex;
+  gap: 16px;
+  padding: 24px 20px;
+}
+
+.feature-mockup-sidebar {
+  flex: 0 0 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-mockup-sidebar span {
+  height: 10px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--accent-color), transparent 85%);
+}
+
+.feature-mockup-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.feature-mockup-main .bar {
+  height: 10px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--default-color), transparent 88%);
+}
+
+.feature-mockup-main .bar.accent {
+  background: var(--accent-color-2);
+  width: 40%;
+}
+
+.feature-mockup-row-cards {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.feature-mockup-row-cards div {
+  flex: 1;
+  height: 60px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-color), transparent 92%);
+}
+
+.feature-float-icon {
+  position: absolute;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  background: var(--surface-color, #fff);
+  box-shadow: 0 10px 25px rgba(18, 38, 58, .15);
+}
+
 /* Hero */
 .hero-section {
   position: relative;
