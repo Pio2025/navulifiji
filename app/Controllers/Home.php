@@ -12,7 +12,7 @@ class Home extends BaseController
             '_view'        => 'web/site/home',
             'active_page'  => 'home',
             'page_title'   => 'School Management System for Fiji',
-            'plans'        => $this->planModel->getAllPlan(),
+            'plans'        => $this->planModel->getSelectablePlans(),
         ];
 
         $this->session->set('active_page', 'home');
@@ -44,7 +44,7 @@ class Home extends BaseController
             '_view'       => 'web/site/pricing',
             'active_page' => 'pricing',
             'page_title'  => 'Pricing',
-            'plans'       => $this->planModel->getAllPlan(),
+            'plans'       => $this->planModel->getSelectablePlans(),
         ];
         $this->session->set('active_page', 'pricing');
 

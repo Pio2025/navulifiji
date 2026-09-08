@@ -145,7 +145,7 @@ class AccountController extends BaseController
                 $plan['plan_annual_cost'] = $this->planModel->getAnnualCost($plan, 'web');
                 $plan['plan_annual_cost_web_n_mobile'] = $this->planModel->getAnnualCost($plan, 'web_mobile');
                 return $plan;
-            }, $this->planModel->getAllPlan()),
+            }, $this->planModel->getSelectablePlans()),
             'annual_discount_percent' => \App\Models\PlanModel::ANNUAL_DISCOUNT_PERCENT,
             'categories' => $this->schoolCategoryModel->getAllSchoolCategory(),
             'selected_plan' => $this->request->getGet('plan'),
@@ -325,7 +325,7 @@ class AccountController extends BaseController
 
                 // Custom-quote plans (no fixed monthly cost) can't be self-service
                 // subscribed to — direct the applicant to contact sales instead.
-                $selectedPlan = $this->planModel->getPlan($isTrial ? 1 : $this->request->getPost('account_type'));
+                $selectedPlan = $this->planModel->getPlan($isTrial ? 5 : $this->request->getPost('account_type'));
                 if (!$isTrial && $selectedPlan && $selectedPlan['plan_monthly_cost'] === null) {
                     session()->setFlashdata('error', 'The ' . esc($selectedPlan['plan_name']) . ' plan is custom-priced. Please <a href="' . site_url('contact') . '">contact our sales team</a> for a quote instead of submitting this form.');
 
@@ -369,10 +369,10 @@ class AccountController extends BaseController
                     $success .= 'Successfully registered school data.';
                     
                     //Navuli subscription data
-                    // A Free Tier trial always runs on the Standard plan, web-only,
-                    // for a fixed 30 days, regardless of what was posted for the
-                    // (hidden, in that mode) paid-tier controls.
-                    $accountType = $isTrial ? 1 : $this->request->getPost('account_type');
+                    // A Free Tier trial always runs on the dedicated Trial plan
+                    // (plans.plan_id = 5), web-only, for a fixed 30 days, regardless
+                    // of what was posted for the (hidden, in that mode) paid-tier controls.
+                    $accountType = $isTrial ? 5 : $this->request->getPost('account_type');
                     $planData = $this->planModel->getPlan($accountType);
 
                     $packageType = $isTrial ? 'web' : $this->request->getPost('package_type');
@@ -503,14 +503,18 @@ class AccountController extends BaseController
                             $success .= ' <font color="red">Fail to log user activity.</font>';
                         }
                         
-                        // Prepare email data
-                        $emailData = [
-                            'name' => $this->request->getPost('fname').' '.$this->request->getPost('lname'),
-                            'email' => $this->request->getPost('my_email'),
-                            'code' => md5($time.$addUser)
-                        ];
-                        
-                        $emailSent = $this->sendSubscriptionEmail($emailData);
+                        // Send the new admin their login credentials and activation link
+                        $emailSent = $this->sendEmail([
+                            'to' => $this->request->getPost('my_email'),
+                            'subject' => 'Your Navuli Fiji Login Details',
+                            'view' => 'email/user_activation_notification',
+                            'viewData' => [
+                                'name' => $this->request->getPost('fname').' '.$this->request->getPost('lname'),
+                                'email' => $this->request->getPost('my_email'),
+                                'password' => $plainPassword,
+                                'code' => md5($time.$addUser),
+                            ],
+                        ]);
                         
                         $addSchoolMessage = $success;
                         $message = $emailSent 
@@ -623,71 +627,5 @@ class AccountController extends BaseController
     }*/
     
     
-    /**
-     * Send Beautiful HTML Email Notification using the template
-     */
-    private function sendSubscriptionEmail($emailData)
-    {
-        try {
-            //$email = Services::email();
-            
-            $email = \Config\Services::email();
-            
-            // Use the default config from Config/Email.php
-            $config = [
-                'protocol'    => 'smtp',
-                'SMTPHost'    => 'mail.navulifiji.com',
-                'SMTPUser'    => 'noreply@navulifiji.com',
-                'SMTPPass'    => 'N0r3pp!@25',
-                'SMTPPort'    => 587, // Use 587 with tls (not 465 with ssl)
-                'SMTPCrypto'  => 'tls', // Changed from ssl to tls
-                'mailType'    => 'html',
-                'charset'     => 'utf-8',
-                'wordWrap'    => true,
-                'SMTPTimeout' => 30,
-                'newline'     => "\r\n",
-                'CRLF'        => "\r\n"
-            ];
-            
-            $email->initialize($config);
-            
-            $email->setFrom('noreply@navulifiji.com', 'Navuli Fiji');
-            $email->setTo($emailData['email']);
-            $email->setSubject('Activate User Account');
-            
-            // Add reply-to
-            $email->setReplyTo('support@navulifiji.com', 'Navuli Fiji Support');
-            
-            // Set important headers
-            $email->setHeader('Precedence', 'bulk');
-            $email->setHeader('X-Priority', '3');
-            $email->setHeader('X-Mailer', 'Navuli Fiji Mailer');
-            $email->setHeader('List-Unsubscribe', '<mailto:unsubscribe@navulifiji.com>');
-            
-            // Prepare data for the view
-            $viewData = [
-                'name' => $emailData['name'],
-                'code' => $emailData['code'],
-            ];
-            
-            
-            // Render the email template
-            $emailMessage = view('email/user_activation_notification', $viewData);
-            
-            $email->setMessage($emailMessage);
-            
-            if ($email->send()) {
-                log_message('info', 'Subscription email sent successfully to: ' . $emailData['email']);
-                return true;
-            } else {
-                log_message('error', 'Failed to send subscription email: ' . $email->printDebugger(['headers']));
-                return false;
-            }
-        } catch (\Exception $e) {
-            log_message('error', 'Email sending error: ' . $e->getMessage());
-            return false;
-        }
-    }
-   
 
 }

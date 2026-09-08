@@ -59,7 +59,18 @@ class PlanModel extends Model
         return $this->orderBy('plan_id', 'ASC')
                    ->findAll();
     }
-    
+
+    /**
+     * Plans a visitor can pick on the public pricing/subscribe pages. Excludes
+     * the Trial plan, which is only ever auto-assigned by the Free Tier flow.
+     */
+    public function getSelectablePlans()
+    {
+        return $this->where('plan_name !=', 'Trial')
+                   ->orderBy('plan_id', 'ASC')
+                   ->findAll();
+    }
+
 
     /**
      * Add new Plan

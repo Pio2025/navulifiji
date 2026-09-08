@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Aug 25, 2026 at 06:48 PM
+-- Generation Time: Sep 07, 2026 at 09:28 PM
 -- Server version: 8.0.46-37
 -- PHP Version: 8.4.24
 
@@ -266,7 +266,8 @@ INSERT INTO `announcement_reads` (`ar_id`, `user_id`, `announcement_id`, `read_a
 (10, 1, 2, '2026-07-20 14:18:27'),
 (11, 1, 3, '2026-07-20 14:18:27'),
 (12, 1, 4, '2026-07-20 14:18:27'),
-(13, 1, 5, '2026-07-20 14:18:27');
+(13, 1, 5, '2026-07-20 14:18:27'),
+(14, 75, 5, '2026-08-26 18:38:05');
 
 -- --------------------------------------------------------
 
@@ -787,7 +788,7 @@ INSERT INTO `chat_participants` (`id`, `conversation_id`, `user_id`, `joined_at`
 (48, 24, 51, '2026-06-22 16:07:50', NULL),
 (49, 25, 63, '2026-06-22 16:08:08', '2026-06-22 16:08:08'),
 (50, 25, 60, '2026-06-22 16:08:08', NULL),
-(51, 26, 75, '2026-07-14 23:49:26', '2026-07-17 12:25:50'),
+(51, 26, 75, '2026-07-14 23:49:26', '2026-08-26 18:50:22'),
 (52, 26, 84, '2026-07-14 23:49:26', NULL),
 (53, 27, 75, '2026-07-15 16:26:02', '2026-07-15 16:26:02'),
 (54, 27, 105, '2026-07-15 16:26:02', NULL),
@@ -1544,6 +1545,26 @@ INSERT INTO `conduct_types` (`type_id`, `type_name`, `category`, `is_positive`, 
 (62, 'Inappropriate Internet Use', 'Technology', 0, -15, 'Major'),
 (63, 'Accessing Prohibited Websites', 'Technology', 0, -10, 'Major'),
 (64, 'Sharing Passwords/Account Misuse', 'Technology', 0, -10, 'Major');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `contact_message`
+--
+
+CREATE TABLE `contact_message` (
+  `id` int UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `school_name` varchar(255) DEFAULT NULL,
+  `subject` varchar(255) DEFAULT NULL,
+  `message` text NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'new',
+  `date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -3108,7 +3129,11 @@ INSERT INTO `migrations` (`id`, `version`, `class`, `group`, `namespace`, `time`
 (82, '2026-07-21-000002', 'App\\Database\\Migrations\\BackfillIsAParentFlag', 'default', 'App', 1784578578, 25),
 (83, '2026-07-21-000003', 'App\\Database\\Migrations\\CreateLessonAssignmentReadsTables', 'default', 'App', 1784597568, 26),
 (84, '2026-07-24-000001', 'App\\Database\\Migrations\\AddDiscussionPostingStatusToUsers', 'default', 'App', 1784864546, 27),
-(85, '2026-07-24-000002', 'App\\Database\\Migrations\\AddDiscussionModerationPermissions', 'default', 'App', 1784864546, 27);
+(85, '2026-07-24-000002', 'App\\Database\\Migrations\\AddDiscussionModerationPermissions', 'default', 'App', 1784864546, 27),
+(86, '2026-08-25-000001', 'App\\Database\\Migrations\\CreateContactMessagesTable', 'default', 'App', 1787717001, 28),
+(87, '2026-08-26-000001', 'App\\Database\\Migrations\\AddBillingCycleToSubscription', 'default', 'App', 1787717001, 28),
+(88, '2026-08-27-000001', 'App\\Database\\Migrations\\AddWebMobileCostToPlans', 'default', 'App', 1787718157, 29),
+(89, '2026-08-27-000002', 'App\\Database\\Migrations\\AddPackageTypeToSubscription', 'default', 'App', 1787718157, 29);
 
 -- --------------------------------------------------------
 
@@ -3469,7 +3494,8 @@ INSERT INTO `plans` (`plan_id`, `plan_name`, `plan_desc`, `plan_monthly_cost`, `
 (1, 'Standard', 'Start using Navuli with access to essential features. This plan is ideal for individuals or small school who are just getting started. You\'ll get limited access to core tools, allowing you to explore Navuli’s basic functionality at no cost.', 200, 300),
 (2, 'Premium', 'Perfect for growing school. Manage up to 500 users and unlock Navuli\'s essential features. Designed for organizations that are expanding, the Standard plan offers enhanced functionality, better collaboration tools, and access to core integrations to help you manage users and operations more efficiently.', 300, 400),
 (3, 'Ultimate', 'Unlimited users. Full power. Everything Navuli has to offer. Built for large organizations and mission-critical operations, the Enterprise plan gives you complete access to all Navuli features, premium support, and unlimited scalability. It’s the best choice for teams that need full control, customization, and performance.', 400, 500),
-(4, 'Enterprise', 'Tailored for large institutions with unique operational needs. Get a fully customized Navuli experience built around your specific requirements — from user limits and feature sets to integrations and deployment. Includes dedicated onboarding, priority support, and a solution designed in partnership with our team to fit your organization exactly. Contact us for a custom quote.', NULL, NULL);
+(4, 'Enterprise', 'Tailored for large institutions with unique operational needs. Get a fully customized Navuli experience built around your specific requirements — from user limits and feature sets to integrations and deployment. Includes dedicated onboarding, priority support, and a solution designed in partnership with our team to fit your organization exactly. Contact us for a custom quote.', NULL, NULL),
+(5, 'Trial', 'Full access to all Standard plan modules and features, on the web app, free for 30 days — no payment required to get started.', 0, 0);
 
 -- --------------------------------------------------------
 
@@ -4121,7 +4147,8 @@ INSERT INTO `school` (`sch_id`, `sch_cat_id_fk`, `district_id_fk`, `sch_name`, `
 (26, 4, 46, 'Nasinu Secondary School 6', '6 Miles, Tacirua', 9896700, 'piobaleicoqe92@gmail.com', NULL, NULL, NULL, 'Enter to learn', '', '', '', NULL, 'Step 1 Configured'),
 (29, 4, 193, 'Rotuma High School', 'Rotuma island', 9987678, 'pio@baleicoqe.com', NULL, '177.081499', '-12.519626', 'Enter to learn', 'logo_29_883917.jpg', '#0080ff', '#ff0000', NULL, 'Active'),
 (30, 4, 114, 'William Cross College', 'Vula Street, Nasinu', 2148885, 'uwatevakaloloma1987@gmail.com', NULL, NULL, NULL, 'Go Forth To Learn', 'logo_30_699279.jpg', '#000000', '#000000', NULL, 'Active'),
-(31, 4, 160, 'Sacred Heart College', 'Queen Elizabeth Dr, Suva', 7510087, 'shc@connect.com.fj', NULL, NULL, NULL, '', 'logo_31_765092.jpg', '#000000', '#000000', NULL, 'Active');
+(31, 4, 160, 'Sacred Heart College', 'Queen Elizabeth Dr, Suva', 7510087, 'shc@connect.com.fj', NULL, NULL, NULL, '', 'logo_31_765092.jpg', '#000000', '#000000', NULL, 'Active'),
+(32, 5, 169, 'Nadave School', 'Nadave, Tailevu', 1234567, 'pio@baleicoqe.com', '$2y$10$MfZaNwTv/Dc20irk56SSyuvJxaZplc68CAk9CRY8gHUBvFyAk4f9S', NULL, NULL, 'Enter to learn', '', '#005B96', '#EE2A7B', '2026-09-08 15:20:15', 'Step 1 Configured');
 
 -- --------------------------------------------------------
 
@@ -4150,8 +4177,6 @@ CREATE TABLE `school_announcement` (
 --
 
 INSERT INTO `school_announcement` (`announcement_id`, `sch_id_fk`, `posted_by`, `title`, `content`, `priority`, `attachment`, `attachment_type`, `attachment_name`, `expires_at`, `announcement_status`, `created_at`, `updated_at`) VALUES
-(2, 31, 1, 'Term 2 Final Examination Schedule — Year 9 to Year 13', 'All students are hereby notified of the upcoming Term 2 Final Examinations:\n\nYear 9 & 10 Examinations: Monday 28 July – Friday 1 August 2026\nYear 11 & 12 Examinations: Monday 28 July – Friday 1 August 2026\nYear 13 Mock Examinations: Monday 4 August – Friday 8 August 2026\n\nKey Reminders:\n• Students must arrive at least 15 minutes before each examination.\n• School uniform is compulsory — no exceptions.\n• Mobile phones and electronic devices are strictly prohibited in the examination hall.\n• Students who miss an examination without a valid medical certificate will receive a zero mark.\n\nA detailed timetable has been posted on each classroom door. Please consult your class teacher for any queries.', 'Important', NULL, NULL, NULL, '2026-08-08 23:59:59', 'Active', '2026-07-14 08:00:00', '2026-07-22 11:18:14'),
-(4, 31, 1, 'Congratulations — National Mathematics Olympiad Winners 2026', 'It is with immense pride that we announce our students\' outstanding achievements at the 2026 National Mathematics Olympiad held in Suva last week.\n\nGold Medal: Mere Tuivaga (Year 13A)\nSilver Medal: Jone Nailatikau (Year 12B)\nBronze Medal: Ana Cakobau (Year 13A)\n\nOur team placed 2nd overall out of 47 schools nationwide — the best result in our school\'s history.\n\nA special assembly to celebrate their success will be held on Friday, 18 July at 10:00 AM. All students and staff are encouraged to attend.\n\nWell done and vinaka vakalevu!', 'Info', NULL, NULL, NULL, '2026-08-16 23:59:59', 'Active', '2026-07-11 11:00:00', '2026-07-11 11:00:00'),
 (5, 31, 1, 'Revised Canteen Operating Hours — Effective 21 July 2026', 'Please be advised that the school canteen will be operating under revised hours effective Monday, 21 July 2026:\n\nBreakfast Service: 7:00 AM – 7:45 AM\nRecess: 10:00 AM – 10:30 AM\nLunch: 12:30 PM – 1:15 PM\n\nThe canteen will NO LONGER be open during class time. Students are reminded that leaving class to purchase food during teaching hours is not permitted.\n\nA revised menu with improved healthy meal options has been introduced in line with the Ministry of Education\'s Healthy Schools Initiative. Menus are displayed at the canteen window.\n\nFor catering enquiries please contact the school office.', 'Info', NULL, NULL, NULL, NULL, 'Active', '2026-07-10 14:00:00', '2026-07-10 14:00:00');
 
 -- --------------------------------------------------------
@@ -4251,7 +4276,8 @@ INSERT INTO `sch_category` (`sch_cat_id`, `sch_cat_initial`, `sch_cat_name`) VAL
 (2, 'Kindergarten', 'Kindergarten'),
 (3, 'Primary', 'Primary School'),
 (4, 'Seconday', 'Secondary School'),
-(5, 'TVET', 'Technical and Vocational Education and Training');
+(5, 'TVET', 'Technical and Vocational Education and Training'),
+(6, 'Tertiary', 'Tertiary');
 
 -- --------------------------------------------------------
 
@@ -6261,11 +6287,12 @@ CREATE TABLE `subscription` (
 --
 
 INSERT INTO `subscription` (`subscription_id`, `plan_id_fk`, `sch_id_fk`, `subscription_start_date`, `subscription_end_date`, `subscription_time`, `subscription_term`, `billing_cycle`, `package_type`, `discount_percent`, `amount_paid`, `payment_mode`, `subscription_status`) VALUES
-(1, 1, 12, '2025-12-08', '2026-01-31', NULL, 12, 'annual', 'web', 0.00, NULL, 'Cash', 'Active'),
-(6, 3, 26, '2026-02-19', '2029-02-19', NULL, 36, 'annual', 'web', 0.00, NULL, 'Cash', 'Pending Payment'),
-(9, 1, 29, '2026-05-13', '2026-06-13', NULL, 12, 'annual', 'web', 0.00, NULL, 'Cash', 'Active'),
-(10, 3, 30, '2026-06-06', '2029-06-06', NULL, 36, 'annual', 'web', 0.00, NULL, '', 'Pending Verification'),
-(11, 1, 31, '2026-07-15', '2027-07-15', NULL, 12, 'annual', 'web', 0.00, NULL, '', 'Pending Verification');
+(1, 1, 12, '2025-12-08', '2026-01-31', NULL, 12, 'monthly', 'web', 0.00, NULL, 'Cash', 'Active'),
+(6, 3, 26, '2026-02-19', '2029-02-19', NULL, 36, 'monthly', 'web', 0.00, NULL, 'Cash', 'Pending Payment'),
+(9, 1, 29, '2026-05-13', '2026-06-13', NULL, 12, 'monthly', 'web', 0.00, NULL, 'Cash', 'Active'),
+(10, 3, 30, '2026-06-06', '2029-06-06', NULL, 36, 'monthly', 'web', 0.00, NULL, '', 'Pending Verification'),
+(11, 1, 31, '2026-07-15', '2027-07-15', NULL, 12, 'monthly', 'web', 0.00, NULL, '', 'Pending Verification'),
+(12, 1, 32, '2026-09-08', '2026-10-08', NULL, 1, '', 'web', 0.00, 0.00, '', 'Active');
 
 -- --------------------------------------------------------
 
@@ -6841,7 +6868,7 @@ INSERT INTO `users` (`user_id`, `district_id_fk`, `password`, `username`, `fname
 (11, 50, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Pio', 'Baleicoqe', '', 'Male', '2026-01-30', '6 Miles', 'piobaleicoqe2@gmail.com', NULL, 1234567, '2026-01-14', 1768363922, 'Offline', '', '1778626718_73cc384e833c05112504.png', 0, NULL, 0, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 1, 'Active'),
 (12, 16, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '', 'Sam', 'White', '', 'Male', '2026-02-02', 'sgsfgsdgdsggd', 'info@baleicoqe.com', NULL, 1234567, '2026-02-02', 1769998699, 'Offline', NULL, '1769998699_c2f5e3c9d0452d1e685c.jpg', 0, NULL, 0, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 1, 'Active'),
 (14, 130, '$2y$10$SpAGtSzYl.ILorqp5cYZoey5X2JWka2q0FV34T8Nw.gUkCbfDC.pS', '', 'Daniel', 'Carter', 'Junior', 'Male', '2026-02-03', '6 Miles\r\nVeivauceva 2', 'piobaleicoqe49@gmail.com', NULL, 9896700, '2026-02-03', 1770084104, 'Offline', 'c920491520eb2f1b7d34183f0e2b9f09', '1770235198_2d1110dd204994b25d1a.jpg', 0, NULL, 0, NULL, NULL, NULL, 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 1, 'Active'),
-(18, 192, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '5555', 'Mary', 'Lou', '', 'Female', '2026-02-03', '6 Miles\r\nTacirua', 'pio@baleicoqe.com', NULL, 1234567, '2026-02-03', 1770093072, 'Offline', 'de1fe291be6bb18f4135b82929838a6f', '1770093072_e7acbdf94d841d01518c.png', 0, '2026-05-12 00:00:00', 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 1, 'Active'),
+(18, 192, '$2y$10$93eKtPyN0kYpE5BFnr3XhOCBP9ujIccBqNBD.YfhgPdai5JaMZyqK', '5555', 'Mary', 'Lou', '', 'Female', '2026-02-03', '6 Miles\r\nTacirua', 'pio2@baleicoqe.com', NULL, 1234567, '2026-02-03', 1770093072, 'Offline', 'de1fe291be6bb18f4135b82929838a6f', '1770093072_e7acbdf94d841d01518c.png', 0, '2026-05-12 00:00:00', 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 1, 'Active'),
 (20, 42, '', '', 'Peni', 'Ravai', '', 'Male', '2006-02-09', NULL, '', NULL, NULL, '2026-03-02', 1772407401, 'Offline', '7b888e80c4d02f02079dbefaf1d5978e', '', 0, NULL, 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active'),
 (27, 78, '', '', 'Benjamin', 'Dada', '', 'Male', '2005-03-22', 'Gau Island', '', NULL, NULL, '2026-03-02', 1772420518, 'Offline', 'a8bc49bcfb65fad01b730cbc2bf5d9ec', '1780356115_82ef291cdf64d51ef752.jpg', 0, NULL, 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active'),
 (28, 28, '', '', 'Mary', 'Low', '', 'Male', '1987-03-02', 'Bua', '', NULL, 1234567, '2026-03-02', 1772420990, 'Offline', '0c0c34d8a3362fcffc6222812f92d07d', '', 0, NULL, 0, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active'),
@@ -6933,7 +6960,8 @@ INSERT INTO `users` (`user_id`, `district_id_fk`, `password`, `username`, `fname
 (114, NULL, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2607993883', 'Josh', 'Young', '', 'Male', '2009-12-01', NULL, '', 'jyoung@yahoo.com', NULL, '2026-07-15', 1784092334, 'Offline', '1ef1d5bb3c71c07310a9a53d2f09b7cc', '1785735727_c76a12171beac089915c.png', 0, '2026-07-16 00:00:00', NULL, '4f07e1b63801a3ad52d5d006d4ff9e0a6f12b7f682be512d1d04754b2129498a', '2026-07-17 21:28:05', 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, 1112599, 0, 'Active'),
 (115, NULL, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2607306945', 'Senivalati', 'Kuki', '', 'Female', NULL, NULL, '', NULL, NULL, '2026-07-17', 1784241085, 'Offline', 'a295600e13defbfaa16ec208776e76c0', '', 1, NULL, NULL, NULL, NULL, 'Pending Activation', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active'),
 (116, NULL, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2607691389', 'James', 'Kartik', '', 'Male', NULL, NULL, '', NULL, NULL, '2026-07-18', 1784313054, 'Offline', '49cdeab6278bc429170fa834dd501904', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active'),
-(117, NULL, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2607207926', 'Peter', 'Tosh', '', 'Male', NULL, NULL, '', NULL, NULL, '2026-07-18', 1784317336, 'Offline', 'd2d77aa00ad879094c1a1aa2bcbc3021', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active');
+(117, NULL, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2607207926', 'Peter', 'Tosh', '', 'Male', NULL, NULL, '', NULL, NULL, '2026-07-18', 1784317336, 'Offline', 'd2d77aa00ad879094c1a1aa2bcbc3021', '', 0, NULL, NULL, NULL, NULL, 'Active', 'Active', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active'),
+(118, 31, '$2y$10$MfZaNwTv/Dc20irk56SSyuvJxaZplc68CAk9CRY8gHUBvFyAk4f9S', '', 'Sam', 'White', '', 'Male', '1984-02-08', 'Lewa street, Laqere', 'pio@baleicoqe.com', NULL, 8769087, '2026-09-08', 1788837615, 'Offline', '89c467836c6e52af4db2bba6988927a2', '', 0, NULL, NULL, NULL, NULL, NULL, 'Pending Email Confirmation', NULL, NULL, 0, NULL, NULL, 0, NULL, NULL, NULL, 0, 'Active');
 
 -- --------------------------------------------------------
 
@@ -8711,15 +8739,18 @@ INSERT INTO `user_log` (`user_log_id`, `user_id_fk`, `ip_aadress`, `user_agent`,
 (1741, 75, '27.123.137.104', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Certificate of Enrollment Generated', 'Certificate of Enrollment generated for Anaseini Leba', '2026-08-03', 1785742972, '<i class=\"ki-duotone ki-document\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'info', 'Activity', 'Read'),
 (1742, 1, '27.123.137.104', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20', 'Desktop', 'View Role Listing', 'User view role listing.', '2026-08-03', 1785743193, '<i class=\"ki-duotone ki-eye\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning', 'Activity', 'Read'),
 (1743, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-04', 1785794542, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
-(1744, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-04', 1785815565, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Unread'),
+(1744, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-04', 1785815565, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
 (1745, 1, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-04', 1785816173, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
 (1746, 1, '27.123.138.73', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-25', 1787612511, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
-(1747, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-25', 1787630880, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Unread'),
+(1747, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-25', 1787630880, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
 (1748, 1, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-26', 1787689058, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
-(1749, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-26', 1787690738, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Unread'),
+(1749, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-26', 1787690738, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
 (1750, 1, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-26', 1787698348, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Unread'),
 (1751, 1, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20', 'Desktop', 'User Logout', 'Successfully logged out from Navuli Fiji.', '2026-08-26', 1787700570, '<i class=\"ki-duotone ki-entrance-right\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'danger', 'Activity', 'Unread'),
-(1752, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-26', 1787700588, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Unread');
+(1752, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-26', 1787700588, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
+(1753, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20', 'Desktop', 'User Login', 'Successfully login to Navuli Fiji.', '2026-08-27', 1787791052, '<i class=\"ki-duotone ki-entrance-left\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'primary', 'Activity', 'Read'),
+(1754, 75, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20', 'Desktop', 'View User Listing', 'User view user listing.', '2026-08-27', 1787791603, '<i class=\"ki-duotone ki-user\"><span class=\"path1\"></span><span class=\"path2\"></span><span class=\"path3\"></span></i>', 'warning', 'Activity', 'Unread'),
+(1755, 118, '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 'Desktop', 'Register School Account', 'Successfully registered school information.', '2026-09-08', 1788837615, '<i class=\"ki-duotone ki-copy-success\"><span class=\"path1\"></span><span class=\"path2\"></span></i>', 'success', 'Activity', 'Unread');
 
 -- --------------------------------------------------------
 
@@ -8943,7 +8974,8 @@ INSERT INTO `user_password` (`user_pass_id`, `user_id_fk`, `password`, `date_cre
 (19, 45, '$2y$10$a9UJNgUtjYk57LCNTl6KDueXsUmOUW9WgQavhu8j5hoCzTZIwYrc6', '2026-06-02', 1780342192, 'Active'),
 (20, 63, '$2y$10$1OGxlYprz9aXz1olzIM37eym32NOIo51WRMA.z5gGAAbKqBM9uAZm', '2026-06-06', 1780725345, 'Active'),
 (21, 75, '$2y$10$r9nJ29NtR/tLqac9oDeKAeNIyTqxAX16vHFkQH1mlus78/pAc6/We', '2026-07-15', 1784068144, 'Active'),
-(22, 114, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2026-07-17', 1784235925, 'Active');
+(22, 114, '$2y$10$fw4aFr1tN6mrPLJ7c3tXMuDDjx.ZuX392ms0IT97cZgkdhgZ.NVru', '2026-07-17', 1784235925, 'Active'),
+(23, 118, '$2y$10$MfZaNwTv/Dc20irk56SSyuvJxaZplc68CAk9CRY8gHUBvFyAk4f9S', '2026-09-08', 1788837615, 'Active');
 
 -- --------------------------------------------------------
 
@@ -9063,7 +9095,8 @@ INSERT INTO `user_role` (`user_role_id`, `user_id_fk`, `role_id_fk`, `created_da
 (129, 115, 6, '2026-07-17 10:31:25', '2026-07-17 10:31:25', 'Active'),
 (130, 116, 3, '2026-07-18 06:30:54', '2026-07-18 06:30:54', 'Active'),
 (131, 117, 3, '2026-07-18 07:42:16', '2026-07-18 07:42:16', 'Active'),
-(132, 114, 7, NULL, '2026-08-03 17:42:07', 'Active');
+(132, 114, 7, NULL, '2026-08-03 17:42:07', 'Active'),
+(133, 118, 2, NULL, NULL, '');
 
 -- --------------------------------------------------------
 
@@ -9244,12 +9277,12 @@ INSERT INTO `user_session` (`session_id`, `user_id_fk`, `session_token`, `ip_add
 (149, 75, '8a2367e5d8fb0fb57b636f8b36e2e8f59db6079e0a9184caf8e695073b0d1f4f', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-16', 1784145867, 1784145867, 'Signed Out'),
 (150, 75, 'c61e04b72fea12718ee6c61563f0eb7c923841202574acf3f8bb28caa24a0fa2', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-16', 1784149036, 1784149036, 'Signed Out'),
 (151, 1, '52ca9014bd2a6f93c76f493fa4fbc5650da07546441a0ce142f3e083cd265141', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-16', 1784152064, 1784152064, 'Active'),
-(152, 75, 'caed2debf340153ec7b9565edcad8fe2499e561976dd2caeb63a6730b3fa0dfd', '27.123.137.189', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-16', 1784153885, 1784153885, 'Active'),
+(152, 75, 'caed2debf340153ec7b9565edcad8fe2499e561976dd2caeb63a6730b3fa0dfd', '27.123.137.189', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36 Edg/147.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-16', 1784153885, 1784153885, 'Expired'),
 (153, 75, '93ac72282530d650927661431bcad953aaee6954d06db7b8dc9dd12889f4e615', '45.117.242.248', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-16', 1784153961, 1784153961, 'Signed Out'),
 (154, 75, 'd6362060c49cb59d24a1270377d525158cbfdca9fdf18b3bd61af133b7d41dd0', '45.117.242.248', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-16', 1784156716, 1784156716, 'Signed Out'),
 (155, 114, '370d24c56099cdaa4e909dd1d14efd8b5e95868606789ff102687edbdfd02223', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-16', 1784165576, 1784165576, 'Signed Out'),
 (156, 75, '10da505032cb174de55cd7774d8a156db4b4ec5dfd01b468df0e0d7548172749', '45.117.242.248', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-16', 1784171661, 1784171661, 'Signed Out'),
-(157, 75, '1eff1598f2c965c10448633e5fda0b34a0efccb3525b6b89b27e3b1320c8ec7d', '45.117.242.248', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-16', 1784172944, 1784172944, 'Active'),
+(157, 75, '1eff1598f2c965c10448633e5fda0b34a0efccb3525b6b89b27e3b1320c8ec7d', '45.117.242.248', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-16', 1784172944, 1784172944, 'Expired'),
 (158, 114, 'b1e04a8a3acd221532fa89662418754914ca9da6aa9afa053760b3047546a60b', '27.123.136.178', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-16', 1784182003, 1784182003, 'Active'),
 (159, 1, 'd249f485e3502d1a773bf8c8ef3fe513b6c83c91a48733e01e6d1a2102a6d5a8', '27.123.136.178', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-16', 1784183184, 1784183184, 'Active'),
 (160, 75, '253622a1fd6b2a7e75724640cdc1a3d632cbb3f634e94964d50e312206a73629', '45.117.243.236', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-17', 1784229409, 1784229409, 'Signed Out'),
@@ -9265,7 +9298,7 @@ INSERT INTO `user_session` (`session_id`, `user_id_fk`, `session_token`, `ip_add
 (170, 75, '474adc3916fc7b5755e68c1efe23ef246331c609c5e6a80c607138dec0b2b1cb', '45.117.243.236', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-17', 1784257250, 1784257250, 'Signed Out');
 INSERT INTO `user_session` (`session_id`, `user_id_fk`, `session_token`, `ip_address`, `user_agent`, `device_type`, `device_os`, `browser`, `country`, `city`, `login_date`, `login_time`, `last_active`, `session_status`) VALUES
 (171, 1, 'a52f101682776ed970ad7d66984df020b049d5a74b91028be8e4e0f94272c90d', '45.117.243.236', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-17', 1784257323, 1784257323, 'Signed Out'),
-(172, 75, 'c6007bfb37a58dc520459aeeda0e56cc416212ffa522a01eb80e11048daa6657', '45.117.243.236', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-17', 1784260634, 1784260634, 'Active'),
+(172, 75, 'c6007bfb37a58dc520459aeeda0e56cc416212ffa522a01eb80e11048daa6657', '45.117.243.236', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-17', 1784260634, 1784260634, 'Expired'),
 (173, 114, '25b8bf382d72f28b7ea2a8f1ad3b93876eefa3a3274ef03fdb9a418e11e01b1c', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-17', 1784264734, 1784264734, 'Active'),
 (174, 115, 'd80896d9b7a009d98c444ce6f83c86fa440ca187c8e7e34a8a9d2e84d6a2b189', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-18', 1784310471, 1784310471, 'Signed Out'),
 (175, 75, 'e73973df58fcfffd289d9c00458f18b76b4edbb7ea685de5cbf07472ad914425', '27.123.136.47', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-18', 1784310500, 1784310500, 'Signed Out'),
@@ -9297,19 +9330,19 @@ INSERT INTO `user_session` (`session_id`, `user_id_fk`, `session_token`, `ip_add
 (201, 114, '4450d0867fa9079b635267a14c95696925b0898638d9ab75b993df7fd555183b', '27.123.137.52', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-21', 1784586397, 1784586397, 'Signed Out'),
 (202, 116, '9ef9682b138e3fe3a58c78e2400cd8898d52a32e3ae8106d36ee5defa251ac54', '27.123.137.52', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-21', 1784587826, 1784587826, 'Signed Out'),
 (203, 114, '02636d5b9b530450152d1cb6c34494c60b2139f5233a8d56689b26ae0c73e079', '27.123.137.52', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-21', 1784588426, 1784588426, 'Signed Out'),
-(204, 75, '6a971faa343c4736796ba7e87d910de0f28043c1cedfc6f46a4cb5210f20df3d', '27.123.137.52', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-21', 1784595875, 1784595875, 'Active'),
+(204, 75, '6a971faa343c4736796ba7e87d910de0f28043c1cedfc6f46a4cb5210f20df3d', '27.123.137.52', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-21', 1784595875, 1784595875, 'Expired'),
 (205, 114, 'efdfccf0b5e6d1597547fb1bfa233ec80273b8f7f743e8bb256ebacb179256e8', '27.123.137.52', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-21', 1784598628, 1784598628, 'Active'),
 (206, 1, 'ec4f94f22623407c7ca1dad62a5c093e192e1e32d77af759ddd2815baa912f54', '45.117.243.231', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-22', 1784662337, 1784662337, 'Active'),
-(207, 75, '6974f3e20d091e2b7ff790d44b84b5f31a7bc590050cf3a64e9c8f634bc4fd2f', '45.117.243.231', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-22', 1784680280, 1784680280, 'Active'),
+(207, 75, '6974f3e20d091e2b7ff790d44b84b5f31a7bc590050cf3a64e9c8f634bc4fd2f', '45.117.243.231', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-22', 1784680280, 1784680280, 'Expired'),
 (208, 114, 'e21a9bc8725a776dc158020812e5d452f342f937b8c77a4f6d811b9fc33076ab', '27.123.137.144', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-22', 1784698235, 1784698235, 'Active'),
 (209, 1, '899357b01bf698f47caa95638cd890b9265ae192e535dc6532d7cf926bb27fce', '45.117.243.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-23', 1784749969, 1784749969, 'Active'),
 (210, 114, '2ad8f711585957c1e18608d7a8f37f71488657a41655c447b60491faef83889a', '45.117.243.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-23', 1784757881, 1784757881, 'Signed Out'),
-(211, 75, '38e7ffa76a707d0e7aa92daf5356880431f9a8d33bbec25d5a825c635af478eb', '45.117.243.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-23', 1784763291, 1784763291, 'Active'),
+(211, 75, '38e7ffa76a707d0e7aa92daf5356880431f9a8d33bbec25d5a825c635af478eb', '45.117.243.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-23', 1784763291, 1784763291, 'Expired'),
 (212, 114, '91a8e80154e740e9720935c10f04af388ddf165946fdd37fd87deaacdd59587d', '45.117.243.239', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-23', 1784763300, 1784763300, 'Active'),
 (213, 63, 'c2715425a0fcd8ffd76534caa425037f7d138b51902a0126fcd8eed4848a0f02', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-24', 1784836610, 1784836610, 'Signed Out'),
 (214, 48, '49eef2bd1f8d3c802a88a22bc906f196de9bd09ea01649ec95728bc5d6888350', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-24', 1784836639, 1784836639, 'Signed Out'),
 (215, 37, '1dd54d0de2b0127b1922da6c08416a0ba88c30b3db7e2687bcab71140c5b8f03', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-24', 1784836714, 1784836714, 'Signed Out'),
-(216, 75, 'ff9215c00e8080c6c297a6dc8aff7d3d0f1e28553e8ef717e11a6a57e937377f', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-24', 1784836762, 1784836762, 'Active'),
+(216, 75, 'ff9215c00e8080c6c297a6dc8aff7d3d0f1e28553e8ef717e11a6a57e937377f', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:152.0) Gecko/20100101 Firefox/152.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-07-24', 1784836762, 1784836762, 'Expired'),
 (217, 37, 'b5001470ee34c3f90e1869d822e50e841925086ad30cdf6d35fb6d1996c013ca', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36 Edg/150.0.0.0', 'Desktop', 'Windows', 'Edge', 'Fiji', 'Suva', '2026-07-24', 1784840596, 1784840596, 'Active'),
 (218, 1, 'ab8ccc3e5f5a5e7ca589bde1b3eebbb72f17cad6ddc47b88427eac57b8f08066', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-24', 1784846283, 1784846283, 'Active'),
 (219, 1, 'cb0496dcec636acc36c983cb7d8741b44c471893958748ae0bc0982412d0fc54', '45.117.242.234', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-07-24', 1784848620, 1784848620, 'Active'),
@@ -9337,7 +9370,8 @@ INSERT INTO `user_session` (`session_id`, `user_id_fk`, `session_token`, `ip_add
 (241, 1, 'c78a264ec0403ebaf4b43ce09711090b413711feec963731c9b470f45057421b', '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-08-26', 1787689059, 1787689059, 'Active'),
 (242, 75, '6d290a066639f1e1db62b2d37129486509d7ca3b67e7f2dc19daff8ab2c76b52', '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36', 'Desktop', 'Windows', 'Chrome', 'Fiji', 'Suva', '2026-08-26', 1787690738, 1787690738, 'Active'),
 (243, 1, '7b464178c3b65df18c69cdd0de85ce9e532f321d417ad537833067a18cdee2aa', '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:153.0) Gecko/20100101 Firefox/153.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-08-26', 1787698349, 1787698349, 'Signed Out'),
-(244, 75, '2e3a92d8d48fd13ee1ef001146f7249ace4e269bf7954aabcf1816599d7fb0de', '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-08-26', 1787700588, 1787700588, 'Active');
+(244, 75, '2e3a92d8d48fd13ee1ef001146f7249ace4e269bf7954aabcf1816599d7fb0de', '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-08-26', 1787700588, 1787700588, 'Active'),
+(245, 75, 'a51d3d4ab300eef68136544a04e229e497e9b16b3670fdfe269bac7b5bdc71a6', '103.1.182.214', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:154.0) Gecko/20100101 Firefox/154.0', 'Desktop', 'Windows', 'Firefox', 'Fiji', 'Suva', '2026-08-27', 1787791053, 1787791053, 'Active');
 
 -- --------------------------------------------------------
 
@@ -9831,6 +9865,13 @@ ALTER TABLE `conduct_notifications`
 ALTER TABLE `conduct_types`
   ADD PRIMARY KEY (`type_id`),
   ADD KEY `category` (`category`);
+
+--
+-- Indexes for table `contact_message`
+--
+ALTER TABLE `contact_message`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_status` (`status`);
 
 --
 -- Indexes for table `department`
@@ -10707,7 +10748,7 @@ ALTER TABLE `admission_teaching_subject`
 -- AUTO_INCREMENT for table `announcement_reads`
 --
 ALTER TABLE `announcement_reads`
-  MODIFY `ar_id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
+  MODIFY `ar_id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `assignment_plagiarism`
@@ -10894,6 +10935,12 @@ ALTER TABLE `conduct_notifications`
 --
 ALTER TABLE `conduct_types`
   MODIFY `type_id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+
+--
+-- AUTO_INCREMENT for table `contact_message`
+--
+ALTER TABLE `contact_message`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `department`
@@ -11181,7 +11228,7 @@ ALTER TABLE `level`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
 
 --
 -- AUTO_INCREMENT for table `modules`
@@ -11229,7 +11276,7 @@ ALTER TABLE `permission`
 -- AUTO_INCREMENT for table `plans`
 --
 ALTER TABLE `plans`
-  MODIFY `plan_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `plan_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `province`
@@ -11283,7 +11330,7 @@ ALTER TABLE `role_permission`
 -- AUTO_INCREMENT for table `school`
 --
 ALTER TABLE `school`
-  MODIFY `sch_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+  MODIFY `sch_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
 
 --
 -- AUTO_INCREMENT for table `school_announcement`
@@ -11313,7 +11360,7 @@ ALTER TABLE `school_event`
 -- AUTO_INCREMENT for table `sch_category`
 --
 ALTER TABLE `sch_category`
-  MODIFY `sch_cat_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `sch_cat_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `sch_cat_term_entry`
@@ -11463,7 +11510,7 @@ ALTER TABLE `subject_feedback`
 -- AUTO_INCREMENT for table `subscription`
 --
 ALTER TABLE `subscription`
-  MODIFY `subscription_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `subscription_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `term_exam_def`
@@ -11523,13 +11570,13 @@ ALTER TABLE `timetable_template_slot`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=118;
+  MODIFY `user_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
 
 --
 -- AUTO_INCREMENT for table `user_log`
 --
 ALTER TABLE `user_log`
-  MODIFY `user_log_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1753;
+  MODIFY `user_log_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1756;
 
 --
 -- AUTO_INCREMENT for table `user_medical`
@@ -11553,19 +11600,19 @@ ALTER TABLE `user_notification`
 -- AUTO_INCREMENT for table `user_password`
 --
 ALTER TABLE `user_password`
-  MODIFY `user_pass_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
+  MODIFY `user_pass_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
 
 --
 -- AUTO_INCREMENT for table `user_role`
 --
 ALTER TABLE `user_role`
-  MODIFY `user_role_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=133;
+  MODIFY `user_role_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=134;
 
 --
 -- AUTO_INCREMENT for table `user_session`
 --
 ALTER TABLE `user_session`
-  MODIFY `session_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=245;
+  MODIFY `session_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=246;
 
 --
 -- AUTO_INCREMENT for table `wall_comment`
