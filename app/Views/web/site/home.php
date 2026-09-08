@@ -239,8 +239,11 @@
             <div class="col-6 col-lg" data-aos="zoom-in" data-aos-delay="250">
                 <div class="value-card"><div class="icon"><i class="bi bi-building"></i></div><h3 class="h6 mb-0">Secondary School</h3></div>
             </div>
-            <div class="col-12 col-lg" data-aos="zoom-in" data-aos-delay="300">
+            <div class="col-6 col-lg" data-aos="zoom-in" data-aos-delay="300">
                 <div class="value-card"><div class="icon"><i class="bi bi-tools"></i></div><h3 class="h6 mb-0">TVET</h3></div>
+            </div>
+            <div class="col-6 col-lg" data-aos="zoom-in" data-aos-delay="350">
+                <div class="value-card"><div class="icon"><i class="bi bi-bank"></i></div><h3 class="h6 mb-0">Tertiary</h3></div>
             </div>
         </div>
     </div>
