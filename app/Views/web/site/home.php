@@ -29,30 +29,65 @@
 
             <div class="col-lg-6 mt-5 mt-lg-0" data-aos="fade-left" data-aos-delay="100">
                 <div class="hero-visual">
-                    <img src="<?= base_url('web/assets/img/logo-white-small.png') ?>" alt="Navuli" style="max-width:220px; display:block; margin:0 auto 20px;">
-                    <div class="row g-3 text-white">
-                        <div class="col-6">
-                            <div class="p-3" style="background:rgba(255,255,255,.08); border-radius:12px;">
-                                <i class="bi bi-people fs-3"></i>
-                                <p class="mb-0 mt-2 small">Admissions &amp; Enrolment</p>
+                    <div class="device-mockup-wrap">
+                        <div class="laptop-mockup">
+                            <div class="laptop-screen-frame">
+                                <div class="laptop-notch"></div>
+                                <div class="laptop-screen">
+                                    <div class="dash-topbar">
+                                        <span class="dash-topbar-logo">Navuli</span>
+                                        <span class="dash-topbar-dot"></span>
+                                    </div>
+                                    <div class="dash-body">
+                                        <div class="dash-sidebar">
+                                            <span class="dash-side-icon active"><i class="bi bi-grid-1x2-fill"></i></span>
+                                            <span class="dash-side-icon"><i class="bi bi-people-fill"></i></span>
+                                            <span class="dash-side-icon"><i class="bi bi-calendar2-check-fill"></i></span>
+                                            <span class="dash-side-icon"><i class="bi bi-journal-check"></i></span>
+                                            <span class="dash-side-icon"><i class="bi bi-chat-dots-fill"></i></span>
+                                        </div>
+                                        <div class="dash-main">
+                                            <div class="dash-welcome">
+                                                <span>Good Morning, Admin</span>
+                                                <small>Here's your school overview</small>
+                                            </div>
+                                            <div class="dash-kpis">
+                                                <div class="dash-kpi tint-1">
+                                                    <strong>842</strong>
+                                                    <span>Students</span>
+                                                </div>
+                                                <div class="dash-kpi tint-2">
+                                                    <strong>56</strong>
+                                                    <span>Teachers</span>
+                                                </div>
+                                                <div class="dash-kpi tint-3">
+                                                    <strong>96%</strong>
+                                                    <span>Attendance</span>
+                                                </div>
+                                            </div>
+                                            <div class="dash-chart">
+                                                <span style="height:40%"></span>
+                                                <span style="height:65%"></span>
+                                                <span style="height:50%"></span>
+                                                <span style="height:80%"></span>
+                                                <span style="height:60%"></span>
+                                                <span style="height:90%"></span>
+                                                <span style="height:70%"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
+                            <div class="laptop-base"></div>
                         </div>
-                        <div class="col-6">
-                            <div class="p-3" style="background:rgba(255,255,255,.08); border-radius:12px;">
-                                <i class="bi bi-calendar-check fs-3"></i>
-                                <p class="mb-0 mt-2 small">Attendance Tracking</p>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-3" style="background:rgba(255,255,255,.08); border-radius:12px;">
-                                <i class="bi bi-journal-check fs-3"></i>
-                                <p class="mb-0 mt-2 small">Exams &amp; Report Cards</p>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-3" style="background:rgba(255,255,255,.08); border-radius:12px;">
-                                <i class="bi bi-chat-dots fs-3"></i>
-                                <p class="mb-0 mt-2 small">Chat &amp; Wall</p>
+
+                        <div class="phone-mockup-mini">
+                            <div class="phone-mini-screen">
+                                <div class="phone-mini-status"><span>9:41</span><span><i class="bi bi-reception-4"></i></span></div>
+                                <div class="phone-mini-title">Attendance</div>
+                                <div class="phone-mini-donut"><span>96%</span></div>
+                                <div class="phone-mini-row"><span>Present</span><span>812</span></div>
+                                <div class="phone-mini-row"><span>Absent</span><span>30</span></div>
                             </div>
                         </div>
                     </div>
