@@ -189,44 +189,50 @@
     </div>
 </section>
 
-<?php if (!empty($plans)): ?>
-<!-- Pricing teaser -->
-<section id="pricing-teaser" class="section light-background">
-    <div class="container section-title text-center" data-aos="fade-up">
-        <span class="badge-brand-pink">Simple Fiji Pricing</span>
-        <h2 class="mt-3">Plans that grow with your school</h2>
-    </div>
+<!-- Mobile App promo -->
+<section id="mobile-app" class="section mobile-app-section">
     <div class="container">
-        <div class="row gy-4 justify-content-center">
-            <?php foreach ($plans as $i => $plan): ?>
-                <?php $isCustomQuote = $plan['plan_monthly_cost'] === null; ?>
-                <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="<?= 100 + ($i * 50) ?>">
-                    <div class="pricing-card <?= $plan['plan_name'] === 'Ultimate' ? 'featured' : '' ?>">
-                        <?php if ($plan['plan_name'] === 'Ultimate'): ?><span class="plan-badge">Most Popular</span><?php endif; ?>
-                        <h3><?= esc($plan['plan_name']) ?></h3>
-                        <?php if ($isCustomQuote): ?>
-                            <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center mt-3 mb-2">Contact Sales</a>
-                            <a href="<?= site_url('contact') ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Talk to Sales</a>
-                        <?php else: ?>
-                            <div class="price">
-                                <?= $plan['plan_monthly_cost'] > 0 ? 'FJD $' . number_format($plan['plan_monthly_cost']) : 'Free' ?>
-                                <?php if ($plan['plan_monthly_cost'] > 0): ?><span>/ month</span><?php endif; ?>
+        <div class="row align-items-center gy-5">
+            <div class="col-lg-6 order-2 order-lg-1" data-aos="fade-right">
+                <div class="phone-mockup-wrap">
+                    <div class="phone-frame phone-frame-back">
+                        <div class="phone-screen">
+                            <div class="phone-status-bar"><span>9:41</span><span>Attendance</span></div>
+                            <div class="phone-app-title">Batch Attendance</div>
+                            <div class="phone-donut"><span>96%</span></div>
+                            <div class="phone-stats-row"><span>This Week</span><span>98%</span></div>
+                            <div class="phone-stats-row"><span>This Month</span><span>96%</span></div>
+                            <div class="phone-stats-row"><span>This Term</span><span>97%</span></div>
+                        </div>
+                    </div>
+                    <div class="phone-frame phone-frame-front">
+                        <div class="phone-screen">
+                            <div class="phone-status-bar"><span>9:41</span><span>Dashboard</span></div>
+                            <div class="phone-app-title">Dashboard</div>
+                            <div class="phone-menu-list">
+                                <div class="phone-menu-item"><span class="phone-menu-icon tint-1"><i class="bi bi-calendar2-check"></i></span>Attendance</div>
+                                <div class="phone-menu-item"><span class="phone-menu-icon tint-2"><i class="bi bi-clock-history"></i></span>Timetable</div>
+                                <div class="phone-menu-item"><span class="phone-menu-icon tint-1"><i class="bi bi-journal-richtext"></i></span>Assignments</div>
+                                <div class="phone-menu-item"><span class="phone-menu-icon tint-2"><i class="bi bi-calendar-event"></i></span>Events</div>
+                                <div class="phone-menu-item"><span class="phone-menu-icon tint-1"><i class="bi bi-megaphone"></i></span>Announcements</div>
+                                <div class="phone-menu-item"><span class="phone-menu-icon tint-2"><i class="bi bi-chat-dots"></i></span>Wall &amp; Chat</div>
                             </div>
-                            <?php if ($plan['plan_monthly_cost'] > 0): ?><div class="price-note">VAT inclusive</div><?php endif; ?>
-                            <a href="<?= site_url('account/subscribe') ?>?plan=<?= (int) $plan['plan_id'] ?>" class="btn-brand-outline-pink w-100 justify-content-center mb-3">Choose <?= esc($plan['plan_name']) ?></a>
-                        <?php endif; ?>
-                        <p class="desc"><?= esc($plan['plan_desc']) ?></p>
-                        <a href="<?= site_url('contact') ?>" class="btn-brand w-100 justify-content-center mt-auto">Contact Us</a>
+                        </div>
                     </div>
                 </div>
-            <?php endforeach; ?>
-        </div>
-        <div class="text-center mt-5">
-            <a href="<?= site_url('pricing') ?>">See full plan comparison <i class="bi bi-arrow-right"></i></a>
+            </div>
+
+            <div class="col-lg-6 order-1 order-lg-2" data-aos="fade-left">
+                <span class="section-eyebrow">Navuli Mobile App</span>
+                <h2 class="mt-3">Your school's daily operations, right in your pocket</h2>
+                <p class="lead mt-3">iOS &amp; Android apps for parents, teachers and students</p>
+                <p>Stay connected wherever you are — attendance, timetables, assignments, events, announcements and the school Wall, all synced live with your Navuli account.</p>
+                <p>No separate setup needed: every school on Navuli gets the mobile app included, ready for parents, teachers and students to download and sign in with their existing account.</p>
+                <a href="<?= site_url('feature') ?>" class="btn-white-solid mt-3">Explore App Features <i class="bi bi-arrow-right"></i></a>
+            </div>
         </div>
     </div>
 </section>
-<?php endif; ?>
 
 <!-- CTA -->
 <section class="section">
