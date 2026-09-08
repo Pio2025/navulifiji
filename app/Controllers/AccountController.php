@@ -170,7 +170,7 @@ class AccountController extends BaseController
                 'account_type' => 'required|in_list[' . implode(',', $planIds) . ']',
                 'billing_cycle' => 'required|in_list[monthly,annual]',
                 'package_type' => 'required|in_list[web,web_mobile]',
-                'sch_category' => 'required|in_list[1,2,3,4]',
+                'sch_category' => 'required|in_list[1,2,3,4,5]',
                 'account_name' => 'required|min_length[3]|max_length[100]',
                 'province' => 'required',
                 'province2' => 'required',
