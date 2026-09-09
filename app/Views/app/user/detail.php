@@ -128,6 +128,16 @@
 				<!--begin::Actions-->
 				<div class="card">
 					<div class="card-body">
+						<?php if ($canEditUser): ?>
+						<a href="<?= base_url('user/idcard/' . $user['user_id']) ?>" class="btn btn-light-primary w-100 mb-3">
+							<i class="ki-duotone ki-printer fs-2 me-1">
+                             <span class="path1"></span>
+                             <span class="path2"></span>
+                             <span class="path3"></span>
+                            </i>
+							Generate User ID Card
+						</a>
+						<?php endif; ?>
 						<a href="<?= base_url('user/medical/' . $user['user_id']) ?>" class="btn btn-primary w-100 mb-3">
 							<i class="ki-duotone ki-eye fs-2">
                              <span class="path1"></span>

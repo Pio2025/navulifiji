@@ -277,6 +277,14 @@ $routes->post('user/signOutAllSessions/(:num)', 'UserController::signOutAllSessi
 $routes->get('user/getUserLogs/(:num)',      'UserController::getUserLogs/$1');
 $routes->get('user/downloadUserLogs/(:num)', 'UserController::downloadUserLogs/$1');
 
+// ============================================================================
+// ID CARD Routes
+// ============================================================================
+$routes->get( 'user/idcard/(:num)',      'IdCardController::generate/$1');
+$routes->post('user/idcard/(:num)/save', 'IdCardController::save/$1');
+$routes->get( 'user/idcard/(:num)/pdf',  'IdCardController::pdf/$1');
+$routes->get( 'idcard/verify/(:any)',    'IdCardController::verify/$1');
+
 $routes->get( 'user/notification',               'UserController::notification');
 $routes->get( 'user/getNotifications',           'UserController::getNotifications');
 $routes->post('user/markNotificationsRead',      'UserController::markNotificationsRead');

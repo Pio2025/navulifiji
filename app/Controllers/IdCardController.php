@@ -1,0 +1,295 @@
+<?php
+
+namespace App\Controllers;
+
+use App\Libraries\ApiJwt;
+
+class IdCardController extends BaseController
+{
+    /** QR verification link stays scannable for the life of a physical card. */
+    private const QR_TTL_SECONDS = 315360000; // ~10 years
+
+    private const ADMISSION_ROLE_CATS = [2, 3, 4, 5]; // School Admin, Teacher, Student, Support Staff
+
+    public function generate($userId)
+    {
+        if (!$this->isLoggedIn()) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+
+        $this->setPageData('Generate ID Card', 'User', 'User Listing');
+
+        if ($this->require_access('_edit_user') !== true) {
+            return view('app/layouts/main', ['_view' => 'app/auth/access_control']);
+        }
+
+        $user = $this->userModel->findUserFull($userId);
+        if (!$user) {
+            return redirect()->to('user')->with('error', 'User not found.');
+        }
+
+        $role      = $this->userRoleModel->findActiveUserRole($userId);
+        $roleCatId = (int) ($role['role_cat_id'] ?? 0);
+
+        $school = $this->currentSchoolFor((int) $userId, $roleCatId);
+
+        $data = [
+            '_view'     => 'app/user/idcard_generate',
+            'userID'    => $userId,
+            'user'      => $user,
+            'role'      => $role,
+            'school'    => $school,
+        ];
+
+        return view('app/layouts/main', $data);
+    }
+
+    public function save($userId)
+    {
+        if (!$this->isLoggedIn()) {
+            return $this->response->setStatusCode(401)->setJSON(['success' => false, 'message' => 'Please login to continue.']);
+        }
+        if ($this->require_access('_edit_user') !== true) {
+            return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to do this.']);
+        }
+
+        $user = $this->userModel->find($userId);
+        if (!$user) {
+            return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'User not found.']);
+        }
+
+        $useExisting = $this->request->getPost('use_existing') === '1';
+        $photoName   = $user['profile_photo'] ?? null;
+
+        if (!$useExisting) {
+            $dataUrl = (string) $this->request->getPost('photo_data');
+            if (!preg_match('/^data:image\/(png|jpe?g);base64,/', $dataUrl, $m)) {
+                return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'No valid photo was captured.']);
+            }
+
+            $raw = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1), true);
+            if ($raw === false || strlen($raw) > (4 * 1024 * 1024)) {
+                return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'Invalid photo data.']);
+            }
+
+            $uploadPath = FCPATH . 'uploads/profilePhoto';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            $ext        = strtolower($m[1]) === 'png' ? 'png' : 'jpg';
+            $oldPhoto   = $user['profile_photo'] ?? null;
+            $photoName  = bin2hex(random_bytes(16)) . '.' . $ext;
+            file_put_contents($uploadPath . '/' . $photoName, $raw);
+
+            $this->userModel->updateUser($userId, ['profile_photo' => $photoName]);
+
+            if ($oldPhoto && $oldPhoto !== $photoName && file_exists($uploadPath . '/' . $oldPhoto)) {
+                @unlink($uploadPath . '/' . $oldPhoto);
+            }
+        }
+
+        if (!$photoName) {
+            return $this->response->setStatusCode(400)->setJSON(['success' => false, 'message' => 'A photo is required to generate the ID card.']);
+        }
+
+        return $this->response->setJSON(['success' => true, 'redirect' => site_url('user/idcard/' . $userId . '/pdf')]);
+    }
+
+    public function pdf($userId)
+    {
+        if (!$this->isLoggedIn() || $this->require_access('_edit_user') !== true) {
+            return redirect()->to('auth/login')->with('error', 'Please login to continue.');
+        }
+
+        $user = $this->userModel->findUserFull($userId);
+        if (!$user) {
+            return redirect()->to('user')->with('error', 'User not found.');
+        }
+        if (empty($user['profile_photo'])) {
+            return redirect()->to('user/idcard/' . $userId)->with('error', 'Please add a photo before generating the ID card.');
+        }
+
+        $role      = $this->userRoleModel->findActiveUserRole($userId);
+        $roleCatId = (int) ($role['role_cat_id'] ?? 0);
+        $roleCat   = $role['role_cat_name'] ?? 'Member';
+        $school    = $this->currentSchoolFor((int) $userId, $roleCatId);
+
+        $token     = ApiJwt::encode(['purpose' => 'id_card_verify', 'userId' => (int) $userId], self::QR_TTL_SECONDS);
+        $verifyUrl = site_url('idcard/verify/' . $token);
+
+        require_once ROOTPATH . 'vendor/tecnickcom/tcpdf/tcpdf.php';
+
+        // CR80 card size (mm), landscape, two pages: front then back.
+        $pdf = new \TCPDF('L', 'mm', [54, 86], true, 'UTF-8', false);
+        $pdf->SetMargins(0, 0, 0);
+        $pdf->SetAutoPageBreak(false, 0);
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        $pdf->SetCreator('Navuli');
+        $pdf->SetTitle('ID Card - ' . trim($user['fname'] . ' ' . $user['lname']));
+
+        $primary   = $this->hexToRgb($school['sch_primary_color']   ?? '#12263a');
+        $secondary = $this->hexToRgb($school['sch_secondary_color'] ?? '#EE2A7B');
+
+        $this->renderFront($pdf, $user, $school, $roleCat, $primary, $secondary);
+        $this->renderBack($pdf, $verifyUrl, $primary);
+
+        return $pdf->Output('id-card-' . $userId . '.pdf', 'I');
+    }
+
+    /**
+     * Public — reached by scanning the QR code on the back of a printed card.
+     * Deliberately unauthenticated so anyone holding the card can verify it.
+     */
+    public function verify(string $token)
+    {
+        $claims = ApiJwt::decode($token);
+        $valid  = false;
+        $info   = null;
+
+        if (is_array($claims) && ($claims['purpose'] ?? '') === 'id_card_verify') {
+            $targetId = (int) ($claims['userId'] ?? 0);
+            $user     = $targetId ? $this->userModel->find($targetId) : null;
+
+            if ($user) {
+                $role     = $this->userRoleModel->findActiveUserRole($targetId);
+                $roleCat  = $role['role_cat_name'] ?? 'Member';
+                $isActive = ($user['user_status'] ?? '') === 'Active';
+
+                // A student whose account is no longer active is shown as an alumnus.
+                if (!$isActive && strcasecmp($roleCat, 'Student') === 0) {
+                    $roleCat = 'Alumni';
+                }
+
+                $valid = true;
+                $info  = [
+                    'name'        => trim($user['fname'] . ' ' . $user['lname']),
+                    'designation' => $roleCat,
+                    'status'      => $isActive ? 'Active' : 'Inactive',
+                    'photo'       => !empty($user['profile_photo']) ? base_url('uploads/profilePhoto/' . $user['profile_photo']) : null,
+                ];
+            }
+        }
+
+        return view('app/user/idcard_verify', ['valid' => $valid, 'info' => $info]);
+    }
+
+    private function currentSchoolFor(int $userId, int $roleCatId): ?array
+    {
+        if (!in_array($roleCatId, self::ADMISSION_ROLE_CATS, true)) {
+            return null;
+        }
+
+        $rows = $roleCatId === 4
+            ? $this->admissionModel->getAdmissionWithEnrolment($userId)
+            : $this->admissionModel->getAdmissionWithSchool($userId);
+
+        return $rows[0] ?? null;
+    }
+
+    private function renderFront(\TCPDF $pdf, array $user, ?array $school, string $roleCat, array $primary, array $secondary): void
+    {
+        $pdf->AddPage();
+
+        $pdf->SetFillColor(...$primary);
+        $pdf->Rect(0, 0, 86, 54, 'F');
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->Rect(0, 13, 86, 41, 'F');
+        $pdf->SetFillColor(...$secondary);
+        $pdf->Rect(0, 13, 86, 1, 'F');
+
+        $logoPath  = FCPATH . 'uploads/school/logo/' . ($school['sch_logo'] ?? '');
+        $hasLogo   = !empty($school['sch_logo']) && file_exists($logoPath);
+        $headerX   = 4;
+        if ($hasLogo) {
+            $pdf->Image($logoPath, 3, 2.5, 8, 8, '', '', 'T', false, 300, '', false, false, 0, 'CM');
+            $headerX = 13;
+        }
+
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetXY($headerX, 3);
+        $pdf->SetFont('helvetica', 'B', 8);
+        $pdf->Cell(86 - $headerX - 3, 4.5, strtoupper($school['sch_name'] ?? 'Navuli'), 0, 1);
+        $pdf->SetXY($headerX, 7.5);
+        $pdf->SetFont('helvetica', '', 5);
+        $pdf->Cell(86 - $headerX - 3, 4, 'IDENTITY CARD', 0, 1);
+
+        $photoPath = FCPATH . 'uploads/profilePhoto/' . $user['profile_photo'];
+        if (file_exists($photoPath)) {
+            $pdf->Rect(4, 17, 20, 24, 'D');
+            $pdf->Image($photoPath, 4, 17, 20, 24, '', '', '', false, 300, '', false, false, 0, 'CM');
+        }
+
+        $x = 27;
+        $pdf->SetTextColor(20, 20, 20);
+        $pdf->SetXY($x, 17.5);
+        $pdf->SetFont('helvetica', 'B', 9.5);
+        $pdf->MultiCell(56, 5, trim($user['fname'] . ' ' . $user['lname']), 0, 'L');
+
+        $pdf->SetTextColor(...$secondary);
+        $pdf->SetXY($x, 23);
+        $pdf->SetFont('helvetica', 'B', 6.5);
+        $pdf->Cell(56, 4, strtoupper($roleCat), 0, 1);
+
+        $pdf->SetTextColor(90, 90, 90);
+        $rows = [
+            ['DOB',     !empty($user['dob']) ? date('d M Y', strtotime($user['dob'])) : '—'],
+            ['Address', !empty($user['address']) ? trim(preg_replace('/\s+/', ' ', $user['address'])) : '—'],
+        ];
+        $ry = 29;
+        foreach ($rows as [$label, $val]) {
+            $pdf->SetXY($x, $ry);
+            $pdf->SetFont('helvetica', 'B', 5.5);
+            $pdf->Cell(15, 4, $label . ':', 0, 0);
+            $pdf->SetFont('helvetica', '', 5.5);
+            $pdf->SetXY($x + 15, $ry);
+            $pdf->MultiCell(41, 3.5, $val, 0, 'L');
+            $ry = max($ry + 5, $pdf->GetY() + 0.5);
+        }
+    }
+
+    private function renderBack(\TCPDF $pdf, string $verifyUrl, array $primary): void
+    {
+        $pdf->AddPage();
+        $pdf->SetFillColor(...$primary);
+        $pdf->Rect(0, 0, 86, 54, 'F');
+
+        $qrSize = 24;
+        $qrX    = 6;
+        $qrY    = 9;
+        $pdf->SetFillColor(255, 255, 255);
+        $pdf->RoundedRect($qrX - 2, $qrY - 2, $qrSize + 4, $qrSize + 4, 1.5, '1111', 'F');
+        $pdf->write2DBarcode($verifyUrl, 'QRCODE,H', $qrX, $qrY, $qrSize, $qrSize, [], 'N');
+
+        $tx = $qrX + $qrSize + 8;
+        $navuliLogo = FCPATH . 'icon.png';
+        if (file_exists($navuliLogo)) {
+            $pdf->Image($navuliLogo, $tx, 7, 9, 9, '', '', 'T', false, 300);
+        }
+
+        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetXY($tx, 18);
+        $pdf->SetFont('helvetica', 'B', 7);
+        $pdf->Cell(40, 4, 'Navuli Fiji', 0, 1);
+
+        $pdf->SetXY($tx, 22.5);
+        $pdf->SetFont('helvetica', '', 5);
+        $pdf->MultiCell(42, 3.3, "School Management Information System\nwww.navulifiji.com\ninfo@navulifiji.com\n+679 989 6700", 0, 'L');
+
+        $pdf->SetXY(4, 47);
+        $pdf->SetFont('helvetica', 'I', 4.5);
+        $pdf->SetTextColor(215, 215, 215);
+        $pdf->Cell(78, 4, 'Scan the QR code to verify this card is genuine and see the holder\'s current status.', 0, 1, 'C');
+    }
+
+    private function hexToRgb(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) !== 6 || !ctype_xdigit($hex)) {
+            return [18, 38, 58];
+        }
+
+        return [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];
+    }
+}
