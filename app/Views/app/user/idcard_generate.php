@@ -1,23 +1,40 @@
 <style>
-.idcard-preview-wrap { display:flex; justify-content:center; padding: 10px 0; }
-.idcard-preview {
-    width: 320px; aspect-ratio: 86 / 54; border-radius: 14px; overflow: hidden;
-    position: relative; box-shadow: 0 8px 24px rgba(0,0,0,.18);
+.idcard-preview-wrap { display:flex; justify-content:center; padding: 10px 0; perspective: 1400px; }
+.idcard-flip { width:320px; aspect-ratio: 86 / 54; position:relative; }
+.idcard-flip-inner {
+    width:100%; height:100%; position:relative; transform-style: preserve-3d;
+    transition: transform .6s cubic-bezier(.4,.2,.2,1);
+}
+.idcard-flip.flipped .idcard-flip-inner { transform: rotateY(180deg); }
+.idcard-face {
+    position:absolute; inset:0; border-radius:14px; overflow:hidden; backface-visibility:hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,.18);
     background: <?= esc($school['sch_primary_color'] ?? '#12263a') ?>;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color:#fff;
 }
-.idcard-preview .ic-header { padding: 8px 10px 6px; display:flex; align-items:center; gap:8px; }
-.idcard-preview .ic-header img { width:26px; height:26px; border-radius:4px; object-fit:cover; background:#fff; }
-.idcard-preview .ic-header .ic-sch-name { font-size:11px; font-weight:700; line-height:1.2; }
-.idcard-preview .ic-header .ic-sub { font-size:8px; opacity:.85; letter-spacing:.5px; }
-.idcard-preview .ic-accent { height:3px; background: <?= esc($school['sch_secondary_color'] ?? '#EE2A7B') ?>; }
-.idcard-preview .ic-body { background:#fff; color:#1a1a1a; padding:10px; display:flex; gap:10px; height: calc(100% - 44px); }
-.idcard-preview .ic-photo { width:64px; height:78px; border-radius:6px; object-fit:cover; background:#eef1f5; border:1px solid #dfe3ea; flex-shrink:0; }
-.idcard-preview .ic-name { font-size:13px; font-weight:700; line-height:1.2; }
-.idcard-preview .ic-role { font-size:9px; font-weight:700; color: <?= esc($school['sch_secondary_color'] ?? '#EE2A7B') ?>; margin:2px 0 6px; }
-.idcard-preview .ic-field { font-size:9px; color:#5a5a5a; margin-bottom:3px; }
-.idcard-preview .ic-field b { color:#1a1a1a; font-weight:600; }
+.idcard-back { transform: rotateY(180deg); display:flex; flex-direction:column; padding:14px 12px; }
+
+.idcard-front .ic-header { padding: 8px 10px 6px; display:flex; align-items:center; gap:8px; }
+.idcard-front .ic-header img { width:26px; height:26px; border-radius:4px; object-fit:cover; background:#fff; }
+.idcard-front .ic-header .ic-sch-name { font-size:11px; font-weight:700; line-height:1.2; }
+.idcard-front .ic-header .ic-sub { font-size:8px; opacity:.85; letter-spacing:.5px; }
+.idcard-front .ic-accent { height:3px; background: <?= esc($school['sch_secondary_color'] ?? '#EE2A7B') ?>; }
+.idcard-front .ic-body { background:#fff; color:#1a1a1a; padding:10px; display:flex; gap:10px; height: calc(100% - 44px); }
+.idcard-front .ic-photo { width:60px; height:74px; border-radius:6px; object-fit:cover; background:#eef1f5; border:1px solid #dfe3ea; flex-shrink:0; }
+.idcard-front .ic-name { font-size:12.5px; font-weight:700; line-height:1.2; }
+.idcard-front .ic-role { font-size:8.5px; font-weight:700; color: <?= esc($school['sch_secondary_color'] ?? '#EE2A7B') ?>; margin:2px 0 5px; }
+.idcard-front .ic-field { font-size:8px; color:#5a5a5a; margin-bottom:2px; line-height:1.3; }
+.idcard-front .ic-field b { color:#1a1a1a; font-weight:600; }
+
+.idcard-back .ic-back-top { display:flex; gap:10px; align-items:flex-start; }
+.idcard-back .ic-qr-box { width:64px; height:64px; background:#fff; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.idcard-back .ic-qr-box svg { width:44px; height:44px; }
+.idcard-back .ic-back-brand { display:flex; gap:6px; align-items:flex-start; }
+.idcard-back .ic-back-brand img { width:22px; height:22px; border-radius:4px; background:#fff; object-fit:contain; flex-shrink:0; }
+.idcard-back .ic-back-name { font-size:10.5px; font-weight:700; }
+.idcard-back .ic-back-contact { font-size:7px; opacity:.9; line-height:1.55; margin-top:2px; }
+.idcard-back .ic-back-footer { font-size:6.3px; opacity:.75; font-style:italic; text-align:center; margin-top:auto; line-height:1.4; }
 
 .photo-choice-card { border:1px solid #e4e6ef; border-radius:8px; padding:14px; cursor:pointer; transition:.15s; }
 .photo-choice-card.active { border-color: var(--bs-primary); background: #f1faff; }
@@ -66,30 +83,74 @@
 					<div class="card-header"><h3 class="card-title">Card Preview</h3></div>
 					<div class="card-body">
 						<div class="idcard-preview-wrap">
-							<div class="idcard-preview">
-								<div class="ic-header">
-									<?php if (!empty($school['sch_logo'])): ?>
-										<img src="<?= base_url('uploads/school/logo/' . $school['sch_logo']) ?>" alt="">
-									<?php endif; ?>
-									<div>
-										<div class="ic-sch-name"><?= esc(strtoupper($school['sch_name'] ?? 'Navuli')) ?></div>
-										<div class="ic-sub">IDENTITY CARD</div>
+							<div class="idcard-flip" id="idcard_flip">
+								<div class="idcard-flip-inner">
+									<div class="idcard-face idcard-front">
+										<div class="ic-header">
+											<?php if (!empty($school['sch_logo'])): ?>
+												<img src="<?= base_url('uploads/school/logo/' . $school['sch_logo']) ?>" alt="">
+											<?php endif; ?>
+											<div>
+												<div class="ic-sch-name"><?= esc(strtoupper($school['sch_name'] ?? 'Navuli')) ?></div>
+												<div class="ic-sub">IDENTITY CARD</div>
+											</div>
+										</div>
+										<div class="ic-accent"></div>
+										<div class="ic-body">
+											<img id="idcard_preview_photo" class="ic-photo"
+												 src="<?= !empty($user['profile_photo']) ? base_url('uploads/profilePhoto/' . $user['profile_photo']) : base_url('uploads/profilePhoto/default_male.jpg') ?>" alt="">
+											<div>
+												<div class="ic-name"><?= esc($user['fname'] . ' ' . $user['lname']) ?></div>
+												<div class="ic-role"><?= esc(strtoupper($role['role_cat_name'] ?? 'MEMBER')) ?></div>
+												<div class="ic-field">DOB: <b><?= !empty($user['dob']) ? esc(date('d M Y', strtotime($user['dob']))) : '—' ?></b></div>
+												<div class="ic-field">Address: <b><?= !empty($user['address']) ? esc($user['address']) : '—' ?></b></div>
+												<div class="ic-field">District: <b><?= !empty($user['district_name']) ? esc($user['district_name']) : '—' ?></b></div>
+												<div class="ic-field">Province: <b><?= !empty($user['province_name']) ? esc($user['province_name']) : '—' ?></b></div>
+											</div>
+										</div>
 									</div>
-								</div>
-								<div class="ic-accent"></div>
-								<div class="ic-body">
-									<img id="idcard_preview_photo" class="ic-photo"
-										 src="<?= !empty($user['profile_photo']) ? base_url('uploads/profilePhoto/' . $user['profile_photo']) : base_url('uploads/profilePhoto/default_male.jpg') ?>" alt="">
-									<div>
-										<div class="ic-name"><?= esc($user['fname'] . ' ' . $user['lname']) ?></div>
-										<div class="ic-role"><?= esc(strtoupper($role['role_cat_name'] ?? 'MEMBER')) ?></div>
-										<div class="ic-field">DOB: <b><?= !empty($user['dob']) ? esc(date('d M Y', strtotime($user['dob']))) : '—' ?></b></div>
-										<div class="ic-field">Address: <b><?= !empty($user['address']) ? esc($user['address']) : '—' ?></b></div>
+									<div class="idcard-face idcard-back">
+										<div class="ic-back-top">
+											<div class="ic-qr-box">
+												<svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" fill="#12263a">
+													<rect x="0" y="0" width="9" height="9"/><rect x="2" y="2" width="5" height="5" fill="#fff"/><rect x="3.5" y="3.5" width="2" height="2"/>
+													<rect x="20" y="0" width="9" height="9"/><rect x="22" y="2" width="5" height="5" fill="#fff"/><rect x="23.5" y="3.5" width="2" height="2"/>
+													<rect x="0" y="20" width="9" height="9"/><rect x="2" y="22" width="5" height="5" fill="#fff"/><rect x="3.5" y="23.5" width="2" height="2"/>
+													<rect x="12" y="0" width="2" height="2"/><rect x="16" y="0" width="2" height="2"/><rect x="12" y="4" width="2" height="2"/>
+													<rect x="12" y="12" width="5" height="5"/><rect x="20" y="12" width="2" height="2"/><rect x="24" y="12" width="2" height="2"/>
+													<rect x="12" y="16" width="2" height="2"/><rect x="16" y="16" width="2" height="2"/><rect x="20" y="16" width="2" height="2"/>
+													<rect x="12" y="20" width="2" height="2"/><rect x="16" y="24" width="2" height="2"/><rect x="20" y="24" width="2" height="2"/>
+													<rect x="24" y="20" width="5" height="5"/><rect x="0" y="12" width="2" height="2"/><rect x="4" y="16" width="2" height="2"/>
+												</svg>
+											</div>
+											<div class="ic-back-brand">
+												<img src="<?= base_url('icon.png') ?>" alt="">
+												<div>
+													<div class="ic-back-name">Navuli Fiji</div>
+													<div class="ic-back-contact">
+														School Management Information System<br>
+														www.navulifiji.com<br>
+														info@navulifiji.com<br>
+														+679 989 6700
+													</div>
+												</div>
+											</div>
+										</div>
+										<div class="ic-back-footer">
+											This card is a property and issued by the Navuli School Management Information System.
+											Scan the QR code to verify this card is genuine and see the holder's current status.
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-						<p class="text-muted fs-8 text-center mb-0">The back of the card carries a QR code linked to Navuli's verification page, plus Navuli's contact details.</p>
+						<div class="text-center mt-2">
+							<button type="button" class="btn btn-sm btn-light-primary" id="idcard_flip_btn">
+								<i class="ki-duotone ki-arrows-circle fs-4 me-1"><span class="path1"></span><span class="path2"></span></i>
+								<span id="idcard_flip_btn_label">Flip to Back</span>
+							</button>
+						</div>
+						<p class="text-muted fs-8 text-center mb-0 mt-2">The QR code on the back links to Navuli's verification page and shows the holder's live status.</p>
 					</div>
 				</div>
 			</div>
@@ -161,4 +222,16 @@
         csrfName: "<?= csrf_token() ?>",
         csrfHash: "<?= csrf_hash() ?>"
     });
+
+    (function () {
+        var flip = document.getElementById("idcard_flip");
+        var btn = document.getElementById("idcard_flip_btn");
+        var label = document.getElementById("idcard_flip_btn_label");
+        if (!flip || !btn) return;
+
+        btn.addEventListener("click", function () {
+            var showingBack = flip.classList.toggle("flipped");
+            label.textContent = showingBack ? "Flip to Front" : "Flip to Back";
+        });
+    })();
 </script>

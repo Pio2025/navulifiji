@@ -135,7 +135,10 @@ class IdCardController extends BaseController
         $this->renderFront($pdf, $user, $school, $roleCat, $primary, $secondary);
         $this->renderBack($pdf, $verifyUrl, $primary);
 
-        return $pdf->Output('id-card-' . $userId . '.pdf', 'I');
+        // TCPDF sends its own headers and echoes the PDF directly; exit before
+        // CodeIgniter's response cycle can overwrite them with text/html.
+        $pdf->Output('id-card-' . $userId . '.pdf', 'I');
+        exit;
     }
 
     /**
@@ -234,18 +237,20 @@ class IdCardController extends BaseController
 
         $pdf->SetTextColor(90, 90, 90);
         $rows = [
-            ['DOB',     !empty($user['dob']) ? date('d M Y', strtotime($user['dob'])) : '—'],
-            ['Address', !empty($user['address']) ? trim(preg_replace('/\s+/', ' ', $user['address'])) : '—'],
+            ['DOB',      !empty($user['dob']) ? date('d M Y', strtotime($user['dob'])) : '—'],
+            ['Address',  !empty($user['address']) ? trim(preg_replace('/\s+/', ' ', $user['address'])) : '—'],
+            ['District', !empty($user['district_name']) ? $user['district_name'] : '—'],
+            ['Province', !empty($user['province_name']) ? $user['province_name'] : '—'],
         ];
-        $ry = 29;
+        $ry = 28;
         foreach ($rows as [$label, $val]) {
             $pdf->SetXY($x, $ry);
             $pdf->SetFont('helvetica', 'B', 5.5);
-            $pdf->Cell(15, 4, $label . ':', 0, 0);
+            $pdf->Cell(14, 3.6, $label . ':', 0, 0);
             $pdf->SetFont('helvetica', '', 5.5);
-            $pdf->SetXY($x + 15, $ry);
-            $pdf->MultiCell(41, 3.5, $val, 0, 'L');
-            $ry = max($ry + 5, $pdf->GetY() + 0.5);
+            $pdf->SetXY($x + 14, $ry);
+            $pdf->MultiCell(42, 3.2, $val, 0, 'L');
+            $ry = max($ry + 4.3, $pdf->GetY() + 0.3);
         }
     }
 
@@ -277,10 +282,16 @@ class IdCardController extends BaseController
         $pdf->SetFont('helvetica', '', 5);
         $pdf->MultiCell(42, 3.3, "School Management Information System\nwww.navulifiji.com\ninfo@navulifiji.com\n+679 989 6700", 0, 'L');
 
-        $pdf->SetXY(4, 47);
-        $pdf->SetFont('helvetica', 'I', 4.5);
+        $pdf->SetXY(4, 39);
+        $pdf->SetFont('helvetica', 'I', 4.3);
         $pdf->SetTextColor(215, 215, 215);
-        $pdf->Cell(78, 4, 'Scan the QR code to verify this card is genuine and see the holder\'s current status.', 0, 1, 'C');
+        $pdf->MultiCell(
+            78,
+            3.2,
+            "This card is a property and issued by the Navuli School Management Information System.\nScan the QR code to verify this card is genuine and see the holder's current status.",
+            0,
+            'C'
+        );
     }
 
     private function hexToRgb(string $hex): array
