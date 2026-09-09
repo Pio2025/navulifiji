@@ -32,9 +32,9 @@
 .idcard-front .ic-field b { color:#1a1a1a; font-weight:600; }
 
 .idcard-back .ic-back-top { display:flex; gap:10px; align-items:flex-start; }
-.idcard-back .ic-qr-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; width:64px; }
-.idcard-back .ic-qr-box { width:64px; height:64px; background:#fff; border:1px solid #dfe3ea; border-radius:8px; display:flex; align-items:center; justify-content:center; }
-.idcard-back .ic-qr-box svg { width:44px; height:44px; }
+.idcard-back .ic-qr-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; width:75px; }
+.idcard-back .ic-qr-box { width:75px; height:75px; background:#fff; border:1px solid #dfe3ea; border-radius:8px; display:flex; align-items:center; justify-content:center; }
+.idcard-back .ic-qr-box svg { width:52px; height:52px; }
 .idcard-back .ic-qr-caption { font-size:5.6px; opacity:.65; font-style:italic; text-align:center; line-height:1.35; margin-top:3px; }
 .idcard-back .ic-back-brand { display:flex; flex-direction:column; gap:2px; }
 .idcard-back .ic-back-brand img { width:auto; height:20px; object-fit:contain; }

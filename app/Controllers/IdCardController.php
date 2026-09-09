@@ -305,9 +305,9 @@ class IdCardController extends BaseController
         $pdf->SetFillColor(...$primary);
         $pdf->Rect(0, 0, 86, 1.2, 'F');
 
-        $qrSize = 24;
-        $qrX    = 6;
-        $qrY    = 9;
+        $qrSize = 28;
+        $qrX    = 5;
+        $qrY    = 8;
         $pdf->SetLineWidth(0.2);
         $pdf->SetDrawColor(200, 200, 200);
         $pdf->Rect($qrX - 1, $qrY - 1, $qrSize + 2, $qrSize + 2, 'D');
