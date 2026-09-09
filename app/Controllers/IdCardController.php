@@ -330,13 +330,13 @@ class IdCardController extends BaseController
         $pdf->SetFont('helvetica', '', 5);
         $pdf->MultiCell(42, 3.3, "School Management Information System\nwww.navulifiji.com\ninfo@navulifiji.com\n+679 989 6700", 0, 'L');
 
-        $pdf->SetXY(4, 39);
+        $pdf->SetXY(4, 47);
         $pdf->SetFont('helvetica', 'I', 4.3);
         $pdf->SetTextColor(130, 130, 130);
         $pdf->MultiCell(
             78,
             3.2,
-            "This card is a property and issued by the Navuli School Management Information System.\nScan the QR code to verify this card is genuine and see the holder's current status.",
+            "Scan the QR code to verify this card is genuine and see the holder's current status.\nThis card is a property and issued by the Navuli School Management Information System.",
             0,
             'C'
         );

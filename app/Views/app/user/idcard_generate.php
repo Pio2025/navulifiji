@@ -141,8 +141,8 @@
 											</div>
 										</div>
 										<div class="ic-back-footer">
-											This card is a property and issued by the Navuli School Management Information System.
 											Scan the QR code to verify this card is genuine and see the holder's current status.
+											This card is a property and issued by the Navuli School Management Information System.
 										</div>
 									</div>
 								</div>
