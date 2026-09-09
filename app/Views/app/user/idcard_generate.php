@@ -32,8 +32,10 @@
 .idcard-front .ic-field b { color:#1a1a1a; font-weight:600; }
 
 .idcard-back .ic-back-top { display:flex; gap:10px; align-items:flex-start; }
-.idcard-back .ic-qr-box { width:64px; height:64px; background:#fff; border:1px solid #dfe3ea; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.idcard-back .ic-qr-col { display:flex; flex-direction:column; align-items:center; flex-shrink:0; width:64px; }
+.idcard-back .ic-qr-box { width:64px; height:64px; background:#fff; border:1px solid #dfe3ea; border-radius:8px; display:flex; align-items:center; justify-content:center; }
 .idcard-back .ic-qr-box svg { width:44px; height:44px; }
+.idcard-back .ic-qr-caption { font-size:5.6px; opacity:.65; font-style:italic; text-align:center; line-height:1.35; margin-top:3px; }
 .idcard-back .ic-back-brand { display:flex; flex-direction:column; gap:2px; }
 .idcard-back .ic-back-brand img { width:auto; height:20px; object-fit:contain; }
 .idcard-back .ic-back-contact { font-size:7px; opacity:.8; line-height:1.55; margin-top:4px; }
@@ -118,17 +120,20 @@
 									</div>
 									<div class="idcard-face idcard-back">
 										<div class="ic-back-top">
-											<div class="ic-qr-box">
-												<svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" fill="#000">
-													<rect x="0" y="0" width="9" height="9"/><rect x="2" y="2" width="5" height="5" fill="#fff"/><rect x="3.5" y="3.5" width="2" height="2"/>
-													<rect x="20" y="0" width="9" height="9"/><rect x="22" y="2" width="5" height="5" fill="#fff"/><rect x="23.5" y="3.5" width="2" height="2"/>
-													<rect x="0" y="20" width="9" height="9"/><rect x="2" y="22" width="5" height="5" fill="#fff"/><rect x="3.5" y="23.5" width="2" height="2"/>
-													<rect x="12" y="0" width="2" height="2"/><rect x="16" y="0" width="2" height="2"/><rect x="12" y="4" width="2" height="2"/>
-													<rect x="12" y="12" width="5" height="5"/><rect x="20" y="12" width="2" height="2"/><rect x="24" y="12" width="2" height="2"/>
-													<rect x="12" y="16" width="2" height="2"/><rect x="16" y="16" width="2" height="2"/><rect x="20" y="16" width="2" height="2"/>
-													<rect x="12" y="20" width="2" height="2"/><rect x="16" y="24" width="2" height="2"/><rect x="20" y="24" width="2" height="2"/>
-													<rect x="24" y="20" width="5" height="5"/><rect x="0" y="12" width="2" height="2"/><rect x="4" y="16" width="2" height="2"/>
-												</svg>
+											<div class="ic-qr-col">
+												<div class="ic-qr-box">
+													<svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" fill="#000">
+														<rect x="0" y="0" width="9" height="9"/><rect x="2" y="2" width="5" height="5" fill="#fff"/><rect x="3.5" y="3.5" width="2" height="2"/>
+														<rect x="20" y="0" width="9" height="9"/><rect x="22" y="2" width="5" height="5" fill="#fff"/><rect x="23.5" y="3.5" width="2" height="2"/>
+														<rect x="0" y="20" width="9" height="9"/><rect x="2" y="22" width="5" height="5" fill="#fff"/><rect x="3.5" y="23.5" width="2" height="2"/>
+														<rect x="12" y="0" width="2" height="2"/><rect x="16" y="0" width="2" height="2"/><rect x="12" y="4" width="2" height="2"/>
+														<rect x="12" y="12" width="5" height="5"/><rect x="20" y="12" width="2" height="2"/><rect x="24" y="12" width="2" height="2"/>
+														<rect x="12" y="16" width="2" height="2"/><rect x="16" y="16" width="2" height="2"/><rect x="20" y="16" width="2" height="2"/>
+														<rect x="12" y="20" width="2" height="2"/><rect x="16" y="24" width="2" height="2"/><rect x="20" y="24" width="2" height="2"/>
+														<rect x="24" y="20" width="5" height="5"/><rect x="0" y="12" width="2" height="2"/><rect x="4" y="16" width="2" height="2"/>
+													</svg>
+												</div>
+												<div class="ic-qr-caption">Scan the QR code to verify this card is genuine and see the holder's current status.</div>
 											</div>
 											<div class="ic-back-brand">
 												<img src="<?= base_url('web/assets/img/logo.png') ?>" alt="Navuli">
@@ -141,7 +146,6 @@
 											</div>
 										</div>
 										<div class="ic-back-footer">
-											Scan the QR code to verify this card is genuine and see the holder's current status.
 											This card is a property and issued by the Navuli School Management Information System.
 										</div>
 									</div>
