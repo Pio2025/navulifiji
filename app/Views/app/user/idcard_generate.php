@@ -9,11 +9,15 @@
 .idcard-face {
     position:absolute; inset:0; border-radius:14px; overflow:hidden; backface-visibility:hidden;
     box-shadow: 0 8px 24px rgba(0,0,0,.18);
-    background: <?= esc($school['sch_primary_color'] ?? '#12263a') ?>;
+    background: <?= esc($school['sch_primary_color'] ?? '#005B96') ?>;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     color:#fff;
 }
-.idcard-back { transform: rotateY(180deg); display:flex; flex-direction:column; padding:14px 12px; }
+.idcard-back {
+    transform: rotateY(180deg); display:flex; flex-direction:column; padding:14px 12px;
+    background:#fff; color:#1a1a1a;
+    border-top: 3px solid <?= esc($school['sch_primary_color'] ?? '#005B96') ?>;
+}
 
 .idcard-front .ic-header { padding: 8px 10px 6px; display:flex; align-items:center; gap:8px; }
 .idcard-front .ic-header img { width:26px; height:26px; border-radius:4px; object-fit:cover; background:#fff; }
@@ -21,26 +25,25 @@
 .idcard-front .ic-header .ic-sub { font-size:8px; opacity:.85; letter-spacing:.5px; }
 .idcard-front .ic-accent { height:3px; background: <?= esc($school['sch_secondary_color'] ?? '#EE2A7B') ?>; }
 .idcard-front .ic-body { background:#fff; color:#1a1a1a; padding:10px; display:flex; gap:10px; height: calc(100% - 44px); }
-.idcard-front .ic-photo { width:60px; height:74px; border-radius:6px; object-fit:cover; background:#eef1f5; border:1px solid #dfe3ea; flex-shrink:0; }
+.idcard-front .ic-photo { width:60px; height:72px; border-radius:0; object-fit:cover; background:#eef1f5; border:1px solid #c8c8c8; flex-shrink:0; }
 .idcard-front .ic-name { font-size:12.5px; font-weight:700; line-height:1.2; }
 .idcard-front .ic-role { font-size:8.5px; font-weight:700; color: <?= esc($school['sch_secondary_color'] ?? '#EE2A7B') ?>; margin:2px 0 5px; }
 .idcard-front .ic-field { font-size:8px; color:#5a5a5a; margin-bottom:2px; line-height:1.3; }
 .idcard-front .ic-field b { color:#1a1a1a; font-weight:600; }
 
 .idcard-back .ic-back-top { display:flex; gap:10px; align-items:flex-start; }
-.idcard-back .ic-qr-box { width:64px; height:64px; background:#fff; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.idcard-back .ic-qr-box { width:64px; height:64px; background:#fff; border:1px solid #dfe3ea; border-radius:8px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
 .idcard-back .ic-qr-box svg { width:44px; height:44px; }
-.idcard-back .ic-back-brand { display:flex; gap:6px; align-items:flex-start; }
-.idcard-back .ic-back-brand img { width:22px; height:22px; border-radius:4px; background:#fff; object-fit:contain; flex-shrink:0; }
-.idcard-back .ic-back-name { font-size:10.5px; font-weight:700; }
-.idcard-back .ic-back-contact { font-size:7px; opacity:.9; line-height:1.55; margin-top:2px; }
-.idcard-back .ic-back-footer { font-size:6.3px; opacity:.75; font-style:italic; text-align:center; margin-top:auto; line-height:1.4; }
+.idcard-back .ic-back-brand { display:flex; flex-direction:column; gap:2px; }
+.idcard-back .ic-back-brand img { width:auto; height:20px; object-fit:contain; }
+.idcard-back .ic-back-contact { font-size:7px; opacity:.8; line-height:1.55; margin-top:4px; }
+.idcard-back .ic-back-footer { font-size:6.3px; opacity:.65; font-style:italic; text-align:center; margin-top:auto; line-height:1.4; }
 
 .photo-choice-card { border:1px solid #e4e6ef; border-radius:8px; padding:14px; cursor:pointer; transition:.15s; }
 .photo-choice-card.active { border-color: var(--bs-primary); background: #f1faff; }
 .photo-choice-card input[type="radio"] { margin-right:8px; }
 #idcard_video, #idcard_canvas { width:100%; max-width:280px; border-radius:8px; background:#000; }
-#idcard_captured_preview { width:120px; height:150px; object-fit:cover; border-radius:8px; border:1px solid #e4e6ef; }
+#idcard_captured_preview { width:120px; height:144px; object-fit:cover; border-radius:8px; border:1px solid #e4e6ef; }
 </style>
 
 <!--begin::Toolbar-->
@@ -67,12 +70,16 @@
 
 		<?= $this->include('templates/flash_messages') ?>
 
-		<?php if (empty($user['dob']) || empty($user['address'])): ?>
-		<div class="alert alert-warning d-flex align-items-center mb-5">
+		<?php if (!empty($missingFields)): ?>
+		<div class="alert alert-danger d-flex align-items-center mb-5">
 			<i class="ki-duotone ki-information-5 fs-2 me-3"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
 			<div>
-				Date of birth and/or address are missing from this profile. The card will show "—" for those fields.
-				<a href="<?= base_url('user/detail/' . $userID) ?>">Edit the profile</a> first if you'd like them included.
+				<div class="fw-bold mb-1">This profile is missing information required on the ID card:</div>
+				<?= esc(implode(', ', $missingFields)) ?>.
+				Please complete these fields on the profile before an ID card can be generated.
+				<div class="mt-2">
+					<a href="<?= base_url('user/detail/' . $userID) ?>" class="btn btn-sm btn-danger">Edit Profile</a>
+				</div>
 			</div>
 		</div>
 		<?php endif; ?>
@@ -112,7 +119,7 @@
 									<div class="idcard-face idcard-back">
 										<div class="ic-back-top">
 											<div class="ic-qr-box">
-												<svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" fill="#12263a">
+												<svg viewBox="0 0 29 29" xmlns="http://www.w3.org/2000/svg" fill="#000">
 													<rect x="0" y="0" width="9" height="9"/><rect x="2" y="2" width="5" height="5" fill="#fff"/><rect x="3.5" y="3.5" width="2" height="2"/>
 													<rect x="20" y="0" width="9" height="9"/><rect x="22" y="2" width="5" height="5" fill="#fff"/><rect x="23.5" y="3.5" width="2" height="2"/>
 													<rect x="0" y="20" width="9" height="9"/><rect x="2" y="22" width="5" height="5" fill="#fff"/><rect x="3.5" y="23.5" width="2" height="2"/>
@@ -124,15 +131,12 @@
 												</svg>
 											</div>
 											<div class="ic-back-brand">
-												<img src="<?= base_url('icon.png') ?>" alt="">
-												<div>
-													<div class="ic-back-name">Navuli Fiji</div>
-													<div class="ic-back-contact">
-														School Management Information System<br>
-														www.navulifiji.com<br>
-														info@navulifiji.com<br>
-														+679 989 6700
-													</div>
+												<img src="<?= base_url('web/assets/img/logo.png') ?>" alt="Navuli">
+												<div class="ic-back-contact">
+													School Management Information System<br>
+													www.navulifiji.com<br>
+													info@navulifiji.com<br>
+													+679 989 6700
 												</div>
 											</div>
 										</div>
@@ -159,6 +163,13 @@
 				<div class="card">
 					<div class="card-header"><h3 class="card-title">Photo</h3></div>
 					<div class="card-body">
+						<?php if (!empty($missingFields)): ?>
+						<div class="text-center text-muted py-10">
+							<i class="ki-duotone ki-lock fs-3x text-muted mb-3"><span class="path1"></span><span class="path2"></span></i>
+							<p class="mb-3">Generating an ID card is disabled until the missing profile fields above are completed.</p>
+							<a href="<?= base_url('user/detail/' . $userID) ?>" class="btn btn-primary">Edit Profile</a>
+						</div>
+						<?php else: ?>
 						<form id="kt_idcard_form">
 							<?php if (!empty($user['profile_photo'])): ?>
 							<label class="photo-choice-card d-flex align-items-center mb-3 active" id="idcard_choice_existing">
@@ -207,6 +218,7 @@
 							</button>
 							<a href="<?= base_url('user/detail/' . $userID) ?>" class="btn btn-light ms-2">Cancel</a>
 						</form>
+						<?php endif; ?>
 					</div>
 				</div>
 			</div>

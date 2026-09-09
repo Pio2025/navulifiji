@@ -11,6 +11,14 @@ class IdCardController extends BaseController
 
     private const ADMISSION_ROLE_CATS = [2, 3, 4, 5]; // School Admin, Teacher, Student, Support Staff
 
+    /** Fields the card prints that can't be captured on this page — must already be on the profile. */
+    private const REQUIRED_PROFILE_FIELDS = [
+        'dob'           => 'Date of Birth',
+        'address'       => 'Address',
+        'district_name' => 'District',
+        'province_name' => 'Province',
+    ];
+
     public function generate($userId)
     {
         if (!$this->isLoggedIn()) {
@@ -34,14 +42,27 @@ class IdCardController extends BaseController
         $school = $this->currentSchoolFor((int) $userId, $roleCatId);
 
         $data = [
-            '_view'     => 'app/user/idcard_generate',
-            'userID'    => $userId,
-            'user'      => $user,
-            'role'      => $role,
-            'school'    => $school,
+            '_view'         => 'app/user/idcard_generate',
+            'userID'        => $userId,
+            'user'          => $user,
+            'role'          => $role,
+            'school'        => $school,
+            'missingFields' => $this->missingRequiredFields($user),
         ];
 
         return view('app/layouts/main', $data);
+    }
+
+    private function missingRequiredFields(array $user): array
+    {
+        $missing = [];
+        foreach (self::REQUIRED_PROFILE_FIELDS as $field => $label) {
+            if (empty($user[$field])) {
+                $missing[] = $label;
+            }
+        }
+
+        return $missing;
     }
 
     public function save($userId)
@@ -53,9 +74,17 @@ class IdCardController extends BaseController
             return $this->response->setStatusCode(403)->setJSON(['success' => false, 'message' => 'You do not have permission to do this.']);
         }
 
-        $user = $this->userModel->find($userId);
+        $user = $this->userModel->findUserFull($userId);
         if (!$user) {
             return $this->response->setStatusCode(404)->setJSON(['success' => false, 'message' => 'User not found.']);
+        }
+
+        $missing = $this->missingRequiredFields($user);
+        if (!empty($missing)) {
+            return $this->response->setStatusCode(400)->setJSON([
+                'success' => false,
+                'message' => 'Please complete the following on the profile first: ' . implode(', ', $missing) . '.',
+            ]);
         }
 
         $useExisting = $this->request->getPost('use_existing') === '1';
@@ -110,6 +139,12 @@ class IdCardController extends BaseController
             return redirect()->to('user/idcard/' . $userId)->with('error', 'Please add a photo before generating the ID card.');
         }
 
+        $missing = $this->missingRequiredFields($user);
+        if (!empty($missing)) {
+            return redirect()->to('user/idcard/' . $userId)
+                ->with('error', 'Please complete the following on the profile first: ' . implode(', ', $missing) . '.');
+        }
+
         $role      = $this->userRoleModel->findActiveUserRole($userId);
         $roleCatId = (int) ($role['role_cat_id'] ?? 0);
         $roleCat   = $role['role_cat_name'] ?? 'Member';
@@ -129,7 +164,7 @@ class IdCardController extends BaseController
         $pdf->SetCreator('Navuli');
         $pdf->SetTitle('ID Card - ' . trim($user['fname'] . ' ' . $user['lname']));
 
-        $primary   = $this->hexToRgb($school['sch_primary_color']   ?? '#12263a');
+        $primary   = $this->hexToRgb($school['sch_primary_color']   ?? '#005B96');
         $secondary = $this->hexToRgb($school['sch_secondary_color'] ?? '#EE2A7B');
 
         $this->renderFront($pdf, $user, $school, $roleCat, $primary, $secondary);
@@ -220,8 +255,16 @@ class IdCardController extends BaseController
 
         $photoPath = FCPATH . 'uploads/profilePhoto/' . $user['profile_photo'];
         if (file_exists($photoPath)) {
-            $pdf->Rect(4, 17, 20, 24, 'D');
-            $pdf->Image($photoPath, 4, 17, 20, 24, '', '', '', false, 300, '', false, false, 0, 'CM');
+            $photoBoxW = 20;
+            $photoBoxH = 24;
+            $cropped   = $this->coverCropTemp($photoPath, $photoBoxW / $photoBoxH);
+            $pdf->Image($cropped ?? $photoPath, 4, 17, $photoBoxW, $photoBoxH, '', '', '', false, 300, '', false, false, 0, $cropped ? false : 'CM');
+            $pdf->SetLineWidth(0.3);
+            $pdf->SetDrawColor(200, 200, 200);
+            $pdf->Rect(4, 17, $photoBoxW, $photoBoxH, 'D');
+            if ($cropped) {
+                @unlink($cropped);
+            }
         }
 
         $x = 27;
@@ -257,34 +300,39 @@ class IdCardController extends BaseController
     private function renderBack(\TCPDF $pdf, string $verifyUrl, array $primary): void
     {
         $pdf->AddPage();
-        $pdf->SetFillColor(...$primary);
+        $pdf->SetFillColor(255, 255, 255);
         $pdf->Rect(0, 0, 86, 54, 'F');
+        $pdf->SetFillColor(...$primary);
+        $pdf->Rect(0, 0, 86, 1.2, 'F');
 
         $qrSize = 24;
         $qrX    = 6;
         $qrY    = 9;
-        $pdf->SetFillColor(255, 255, 255);
-        $pdf->RoundedRect($qrX - 2, $qrY - 2, $qrSize + 4, $qrSize + 4, 1.5, '1111', 'F');
-        $pdf->write2DBarcode($verifyUrl, 'QRCODE,H', $qrX, $qrY, $qrSize, $qrSize, [], 'N');
+        $pdf->SetLineWidth(0.2);
+        $pdf->SetDrawColor(200, 200, 200);
+        $pdf->Rect($qrX - 1, $qrY - 1, $qrSize + 2, $qrSize + 2, 'D');
+        $pdf->write2DBarcode($verifyUrl, 'QRCODE,H', $qrX, $qrY, $qrSize, $qrSize, [
+            'border'   => false,
+            'vpadding' => 0,
+            'hpadding' => 0,
+            'fgcolor'  => [0, 0, 0],
+            'bgcolor'  => false,
+        ], 'N');
 
         $tx = $qrX + $qrSize + 8;
-        $navuliLogo = FCPATH . 'icon.png';
+        $navuliLogo = FCPATH . 'web/assets/img/logo.png';
         if (file_exists($navuliLogo)) {
-            $pdf->Image($navuliLogo, $tx, 7, 9, 9, '', '', 'T', false, 300);
+            $pdf->Image($navuliLogo, $tx, 8, 32, 0, '', '', 'T', false, 300);
         }
 
-        $pdf->SetTextColor(255, 255, 255);
+        $pdf->SetTextColor(60, 60, 60);
         $pdf->SetXY($tx, 18);
-        $pdf->SetFont('helvetica', 'B', 7);
-        $pdf->Cell(40, 4, 'Navuli Fiji', 0, 1);
-
-        $pdf->SetXY($tx, 22.5);
         $pdf->SetFont('helvetica', '', 5);
         $pdf->MultiCell(42, 3.3, "School Management Information System\nwww.navulifiji.com\ninfo@navulifiji.com\n+679 989 6700", 0, 'L');
 
         $pdf->SetXY(4, 39);
         $pdf->SetFont('helvetica', 'I', 4.3);
-        $pdf->SetTextColor(215, 215, 215);
+        $pdf->SetTextColor(130, 130, 130);
         $pdf->MultiCell(
             78,
             3.2,
@@ -294,11 +342,62 @@ class IdCardController extends BaseController
         );
     }
 
+    /**
+     * Center-crops $srcPath to the given width:height ratio (cover, not contain)
+     * and writes the result to a temp JPEG. Returns null on failure.
+     */
+    private function coverCropTemp(string $srcPath, float $targetRatioWH): ?string
+    {
+        $info = @getimagesize($srcPath);
+        if (!$info) {
+            return null;
+        }
+
+        [$srcW, $srcH] = $info;
+        if ($srcW < 1 || $srcH < 1) {
+            return null;
+        }
+
+        $srcRatio = $srcW / $srcH;
+        if ($srcRatio > $targetRatioWH) {
+            $cropH = $srcH;
+            $cropW = (int) round($srcH * $targetRatioWH);
+        } else {
+            $cropW = $srcW;
+            $cropH = (int) round($srcW / $targetRatioWH);
+        }
+        $cropX = (int) (($srcW - $cropW) / 2);
+        $cropY = (int) (($srcH - $cropH) / 2);
+
+        $srcImg = match ($info['mime']) {
+            'image/png'  => @imagecreatefrompng($srcPath),
+            'image/jpeg' => @imagecreatefromjpeg($srcPath),
+            'image/gif'  => @imagecreatefromgif($srcPath),
+            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($srcPath) : null,
+            default      => null,
+        };
+        if (!$srcImg) {
+            return null;
+        }
+
+        $dst = imagecreatetruecolor($cropW, $cropH);
+        $white = imagecolorallocate($dst, 255, 255, 255);
+        imagefill($dst, 0, 0, $white);
+        imagecopy($dst, $srcImg, 0, 0, $cropX, $cropY, $cropW, $cropH);
+        imagedestroy($srcImg);
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'idcard_') . '.jpg';
+        imagejpeg($dst, $tmpPath, 90);
+        imagedestroy($dst);
+
+        return $tmpPath;
+    }
+
     private function hexToRgb(string $hex): array
     {
         $hex = ltrim($hex, '#');
         if (strlen($hex) !== 6 || !ctype_xdigit($hex)) {
-            return [18, 38, 58];
+            return [0, 91, 150];
         }
 
         return [hexdec(substr($hex, 0, 2)), hexdec(substr($hex, 2, 2)), hexdec(substr($hex, 4, 2))];

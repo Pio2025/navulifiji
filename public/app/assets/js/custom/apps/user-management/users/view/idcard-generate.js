@@ -56,8 +56,8 @@ var KTIdCardGenerate = (function () {
         var w = video.videoWidth || 480;
         var h = video.videoHeight || 600;
 
-        // Crop to a portrait 3:4 box centered in the video frame.
-        var targetRatio = 3 / 4;
+        // Crop to the ID card's photo-box ratio (20mm x 24mm) centered in the video frame.
+        var targetRatio = 20 / 24;
         var srcW = w, srcH = h, srcX = 0, srcY = 0;
         if (w / h > targetRatio) {
             srcW = h * targetRatio;
@@ -67,8 +67,8 @@ var KTIdCardGenerate = (function () {
             srcY = (h - srcH) / 2;
         }
 
-        canvas.width = 360;
-        canvas.height = 480;
+        canvas.width = 300;
+        canvas.height = 360;
         var ctx = canvas.getContext("2d");
         ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, canvas.width, canvas.height);
 
@@ -114,11 +114,11 @@ var KTIdCardGenerate = (function () {
             var img = new Image();
             img.onload = function () {
                 var canvas = $id("idcard_canvas");
-                canvas.width = 360;
-                canvas.height = 480;
+                canvas.width = 300;
+                canvas.height = 360;
                 var ctx = canvas.getContext("2d");
 
-                var targetRatio = 3 / 4;
+                var targetRatio = 20 / 24;
                 var w = img.width, h = img.height;
                 var srcW = w, srcH = h, srcX = 0, srcY = 0;
                 if (w / h > targetRatio) {
