@@ -2,12 +2,13 @@
 
 namespace App\Controllers;
 
-use App\Libraries\ApiJwt;
-
 class IdCardController extends BaseController
 {
     /** QR verification link stays scannable for the life of a physical card. */
     private const QR_TTL_SECONDS = 315360000; // ~10 years
+
+    /** Signature length for the compact verify token — short enough to keep the QR pattern coarse. */
+    private const VERIFY_TOKEN_SIG_BYTES = 9;
 
     private const ADMISSION_ROLE_CATS = [2, 3, 4, 5]; // School Admin, Teacher, Student, Support Staff
 
@@ -150,7 +151,7 @@ class IdCardController extends BaseController
         $roleCat   = $role['role_cat_name'] ?? 'Member';
         $school    = $this->currentSchoolFor((int) $userId, $roleCatId);
 
-        $token     = ApiJwt::encode(['purpose' => 'id_card_verify', 'userId' => (int) $userId], self::QR_TTL_SECONDS);
+        $token     = $this->makeVerifyToken((int) $userId, self::QR_TTL_SECONDS);
         $verifyUrl = site_url('idcard/verify/' . $token);
 
         require_once ROOTPATH . 'vendor/tecnickcom/tcpdf/tcpdf.php';
@@ -182,13 +183,12 @@ class IdCardController extends BaseController
      */
     public function verify(string $token)
     {
-        $claims = ApiJwt::decode($token);
-        $valid  = false;
-        $info   = null;
+        $targetId = $this->parseVerifyToken($token);
+        $valid    = false;
+        $info     = null;
 
-        if (is_array($claims) && ($claims['purpose'] ?? '') === 'id_card_verify') {
-            $targetId = (int) ($claims['userId'] ?? 0);
-            $user     = $targetId ? $this->userModel->find($targetId) : null;
+        if ($targetId) {
+            $user = $this->userModel->find($targetId);
 
             if ($user) {
                 $role     = $this->userRoleModel->findActiveUserRole($targetId);
@@ -311,7 +311,9 @@ class IdCardController extends BaseController
         $pdf->SetLineWidth(0.2);
         $pdf->SetDrawColor(200, 200, 200);
         $pdf->Rect($qrX - 1, $qrY - 1, $qrSize + 2, $qrSize + 2, 'D');
-        $pdf->write2DBarcode($verifyUrl, 'QRCODE,H', $qrX, $qrY, $qrSize, $qrSize, [
+        // 'M' (not 'H') keeps the QR at a lower version for this URL length, so modules
+        // stay large/scannable in the fixed box; still 15% error-correction headroom.
+        $pdf->write2DBarcode($verifyUrl, 'QRCODE,M', $qrX, $qrY, $qrSize, $qrSize, [
             'border'   => false,
             'vpadding' => 0,
             'hpadding' => 0,
@@ -390,6 +392,48 @@ class IdCardController extends BaseController
         imagedestroy($dst);
 
         return $tmpPath;
+    }
+
+    /**
+     * Compact, self-contained verify token (userId + expiry + truncated HMAC, base36/base64url)
+     * — deliberately much shorter than a full JWT so the QR code stays at a low version,
+     * i.e. fewer/bigger modules, since QR module count is driven by payload length.
+     */
+    private function makeVerifyToken(int $userId, int $ttlSeconds): string
+    {
+        $exp = time() + $ttlSeconds;
+
+        return base_convert((string) $userId, 10, 36) . '.' . base_convert((string) $exp, 10, 36) . '.' . $this->verifyTokenSig($userId, $exp);
+    }
+
+    /** Returns the verified userId, or null if the token is malformed/tampered/expired. */
+    private function parseVerifyToken(string $token): ?int
+    {
+        $parts = explode('.', $token);
+        if (count($parts) !== 3) {
+            return null;
+        }
+
+        [$uidPart, $expPart, $sig] = $parts;
+        $userId = (int) base_convert($uidPart, 36, 10);
+        $exp    = (int) base_convert($expPart, 36, 10);
+
+        if ($userId <= 0 || $exp <= 0 || time() >= $exp) {
+            return null;
+        }
+        if (!hash_equals($this->verifyTokenSig($userId, $exp), $sig)) {
+            return null;
+        }
+
+        return $userId;
+    }
+
+    private function verifyTokenSig(int $userId, int $exp): string
+    {
+        $secret = env('MOBILE_JWT_SECRET', 'navuli-mobile-secret-change-me-in-production');
+        $hash   = hash_hmac('sha256', "$userId.$exp", $secret, true);
+
+        return rtrim(strtr(base64_encode(substr($hash, 0, self::VERIFY_TOKEN_SIG_BYTES)), '+/', '-_'), '=');
     }
 
     private function hexToRgb(string $hex): array
