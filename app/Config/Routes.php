@@ -487,6 +487,33 @@ $routes->post('library/issue/lost/(:num)',    'LibraryController::markLost/$1');
 $routes->get( 'library/my',                   'LibraryController::my');
 
 // ============================================================================
+// HOSTEL Routes
+// ============================================================================
+$routes->get( 'hostel',                       'HostelController::index');
+$routes->get( 'hostel/add',                   'HostelController::add');
+$routes->post('hostel/store',                 'HostelController::store');
+$routes->get( 'hostel/edit/(:num)',           'HostelController::edit/$1');
+$routes->post('hostel/update/(:num)',         'HostelController::update/$1');
+$routes->post('hostel/remove/(:num)',         'HostelController::delete/$1');
+$routes->get( 'hostel/detail/(:num)',         'HostelController::detail/$1');
+
+$routes->get( 'hostel/room/add/(:num)',       'HostelRoomController::add/$1');
+$routes->post('hostel/room/store/(:num)',     'HostelRoomController::store/$1');
+$routes->get( 'hostel/room/edit/(:num)',      'HostelRoomController::edit/$1');
+$routes->post('hostel/room/update/(:num)',    'HostelRoomController::update/$1');
+$routes->post('hostel/room/remove/(:num)',    'HostelRoomController::delete/$1');
+
+$routes->get( 'hostel/allocation',                    'HostelAllocationController::index');
+$routes->post('hostel/allocation/store',              'HostelAllocationController::store');
+$routes->post('hostel/allocation/vacate/(:num)',      'HostelAllocationController::vacate/$1');
+$routes->get( 'hostel/allocation/detail/(:num)',      'HostelAllocationController::detail/$1');
+$routes->post('hostel/allocation/visitor/store/(:num)', 'HostelAllocationController::storeVisitor/$1');
+$routes->post('hostel/allocation/leave/store/(:num)',   'HostelAllocationController::storeLeave/$1');
+$routes->post('hostel/allocation/leave/decide/(:num)',  'HostelAllocationController::decideLeave/$1');
+
+$routes->get( 'hostel/my',                    'HostelAllocationController::my');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');

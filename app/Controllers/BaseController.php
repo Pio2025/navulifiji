@@ -75,6 +75,11 @@ use App\Models\TransportTripModel;
 use App\Models\LibraryCategoryModel;
 use App\Models\LibraryBookModel;
 use App\Models\LibraryBookIssueModel;
+use App\Models\HostelModel;
+use App\Models\HostelRoomModel;
+use App\Models\HostelAllocationModel;
+use App\Models\HostelVisitorLogModel;
+use App\Models\HostelLeaveModel;
 
 
 
@@ -172,6 +177,11 @@ abstract class BaseController extends Controller
     protected $libraryCategoryModel;
     protected $libraryBookModel;
     protected $libraryBookIssueModel;
+    protected $hostelModel;
+    protected $hostelRoomModel;
+    protected $hostelAllocationModel;
+    protected $hostelVisitorLogModel;
+    protected $hostelLeaveModel;
 
 
     /**
@@ -327,6 +337,16 @@ abstract class BaseController extends Controller
         $this->libraryBookModel->ensureTables();
         $this->libraryBookIssueModel            = new LibraryBookIssueModel();
         $this->libraryBookIssueModel->ensureTables();
+        $this->hostelModel                     = new HostelModel();
+        $this->hostelModel->ensureTables();
+        $this->hostelRoomModel                 = new HostelRoomModel();
+        $this->hostelRoomModel->ensureTables();
+        $this->hostelAllocationModel           = new HostelAllocationModel();
+        $this->hostelAllocationModel->ensureTables();
+        $this->hostelVisitorLogModel           = new HostelVisitorLogModel();
+        $this->hostelVisitorLogModel->ensureTables();
+        $this->hostelLeaveModel                = new HostelLeaveModel();
+        $this->hostelLeaveModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING
