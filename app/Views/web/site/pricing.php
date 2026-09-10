@@ -170,15 +170,15 @@
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Can I try Navuli before paying?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#pricingFaq">
-                            <div class="accordion-body">We don't currently offer a free trial, but our team is happy to walk you through a live demo before you commit — <a href="<?= site_url('contact') ?>">get in touch</a> to arrange one.</div>
+                            <div class="accordion-body">Yes — every school starts with a 30-day free trial, no payment required. You get full access to all Standard plan modules and features on the web app so you can see how it fits your school before choosing a paid plan. <a href="<?= site_url('account/subscribe') ?>">Start your free trial</a> to get going.</div>
                         </div>
                     </div>
                     <div class="accordion-item">
                         <h2 class="accordion-header">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">What happens if we grow past our plan's user limit?</button>
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">If users are unlimited on every plan, what actually changes between tiers?</button>
                         </h2>
                         <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#pricingFaq">
-                            <div class="accordion-body">You can upgrade to the next plan at any time from your account billing page — your data and setup carry over automatically.</div>
+                            <div class="accordion-body">Every plan — including your free trial — lets you add unlimited staff, students and parents. What changes between tiers is which modules you unlock, from core admin and attendance on Standard up to Digital Classroom and advanced tools on Ultimate. You can upgrade to the next plan at any time from your account billing page — your data and setup carry over automatically.</div>
                         </div>
                     </div>
                     <div class="accordion-item">
