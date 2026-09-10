@@ -1288,7 +1288,34 @@ class UserController extends BaseController
             $roleCatId     = (int) ($viewedRole['role_cat_id'] ?? 0);
             $showAdmission = in_array($roleCatId, [2, 3, 4, 5]); // School Admin, Teacher, Student, Support Staff
             $isStudent     = $roleCatId === 4;
-            
+
+            // A parent viewing their child's page needs the child's school to be
+            // on the Ultimate plan. Scoped to actual linked parents only, so staff
+            // browsing student profiles on a lower-tier school are never blocked.
+            $sessionUserID = (int) $this->session->get('userID');
+            if ($isStudent && $sessionUserID !== (int) $userId) {
+                $viewerIsLinkedParent = false;
+                foreach ($this->parentStudentModel->getParentsOf((int) $userId) as $parentLink) {
+                    if ((int) $parentLink['user_id'] === $sessionUserID) {
+                        $viewerIsLinkedParent = true;
+                        break;
+                    }
+                }
+
+                if ($viewerIsLinkedParent) {
+                    $childAdmission = $this->admissionModel->getAdmissionByUser($userId);
+                    $childSchoolId  = $childAdmission[0]['sch_id_fk'] ?? null;
+                    $planRank       = $childSchoolId ? $this->subscriptionModel->getActivePlanRank($childSchoolId) : 0;
+
+                    if ($planRank < \App\Models\PlanModel::RANK_ULTIMATE) {
+                        $data['upgradeMessage'] = "Viewing your child's full profile is an Ultimate plan feature. Ask your child's school to upgrade their Navuli plan to unlock it.";
+                        $data['_view']          = 'app/auth/plan_upgrade_required';
+
+                        return view('app/layouts/main', $data);
+                    }
+                }
+            }
+
             $admissions = [];
             if ($showAdmission) {
                 if ($isStudent) {

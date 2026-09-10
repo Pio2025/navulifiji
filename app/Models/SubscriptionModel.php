@@ -93,13 +93,26 @@ class SubscriptionModel extends Model
                 plans.plan_id,
                 plans.plan_name,
                 plans.plan_desc,
-                plans.plan_monthly_cost
+                plans.plan_monthly_cost,
+                plans.plan_rank
             ')
             ->join('plans', 'plans.plan_id = subscription.plan_id_fk', 'left')
             ->where('subscription.sch_id_fk', $school_id)
             ->whereIn('subscription.subscription_status', ['Active', 'Pending Payment'])
             ->orderBy('subscription.subscription_id', 'DESC')
             ->first();
+    }
+
+    /**
+     * Plan rank (see PlanModel::RANK_*) of a school's current subscription,
+     * or 0 if the school has no active/pending subscription — which fails
+     * every rank-gated check by design rather than defaulting to open access.
+     */
+    public function getActivePlanRank($school_id): int
+    {
+        $subscription = $this->hasActiveSubscription($school_id);
+
+        return (int) ($subscription['plan_rank'] ?? 0);
     }
 
 }

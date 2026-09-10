@@ -7,7 +7,7 @@ class PlanModel extends Model
 {
     protected $table = 'plans';
     protected $primaryKey = 'plan_id';
-    protected $allowedFields = ['plan_name','plan_desc','plan_monthly_cost','plan_monthly_cost_web_n_mobile'];
+    protected $allowedFields = ['plan_name','plan_desc','plan_monthly_cost','plan_monthly_cost_web_n_mobile','plan_rank'];
     protected $useTimestamps = false;
     protected $returnType = 'array';
 
@@ -15,6 +15,17 @@ class PlanModel extends Model
      * Discount applied when a paid plan is billed annually instead of monthly.
      */
     public const ANNUAL_DISCOUNT_PERCENT = 5.0;
+
+    /**
+     * Plan ranks. Plans are strictly cumulative (each tier includes everything
+     * below it), so gating a feature is a single integer comparison against
+     * plans.plan_rank rather than a per-plan feature list. Trial mirrors
+     * Standard access and shares its rank.
+     */
+    public const RANK_STANDARD   = 1;
+    public const RANK_PREMIUM    = 2;
+    public const RANK_ULTIMATE   = 3;
+    public const RANK_ENTERPRISE = 4;
 
     /**
      * Monthly cost for a plan under the given package type. Custom-quote
