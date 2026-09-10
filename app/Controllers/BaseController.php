@@ -83,6 +83,8 @@ use App\Models\HostelLeaveModel;
 use App\Models\TaskModel;
 use App\Models\TaskChecklistItemModel;
 use App\Models\TaskCommentModel;
+use App\Models\DocManagerFileModel;
+use App\Models\DocManagerShareModel;
 
 
 
@@ -188,6 +190,8 @@ abstract class BaseController extends Controller
     protected $taskModel;
     protected $taskChecklistItemModel;
     protected $taskCommentModel;
+    protected $docManagerFileModel;
+    protected $docManagerShareModel;
 
 
     /**
@@ -359,6 +363,10 @@ abstract class BaseController extends Controller
         $this->taskChecklistItemModel->ensureTables();
         $this->taskCommentModel                = new TaskCommentModel();
         $this->taskCommentModel->ensureTables();
+        $this->docManagerFileModel             = new DocManagerFileModel();
+        $this->docManagerFileModel->ensureTables();
+        $this->docManagerShareModel            = new DocManagerShareModel();
+        $this->docManagerShareModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

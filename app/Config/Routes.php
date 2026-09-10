@@ -533,6 +533,26 @@ $routes->post('task/comment/store/(:num)',       'TaskController::storeComment/$
 $routes->get( 'task/all',                        'TaskController::all');
 
 // ============================================================================
+// DOC MANAGER Routes
+// ============================================================================
+$routes->get( 'doc-manager',                        'DocManagerController::index');
+$routes->post('doc-manager/upload',                 'DocManagerController::upload');
+$routes->post('doc-manager/remove/(:num)',           'DocManagerController::delete/$1');
+$routes->get( 'doc-manager/view/(:segment)/(:num)',  'DocManagerController::viewFile/$1/$2');
+$routes->get( 'doc-manager/download/(:segment)/(:num)', 'DocManagerController::download/$1/$2');
+
+$routes->get( 'doc-manager/shared',                  'DocManagerController::sharedWithMe');
+$routes->get( 'doc-manager/shares/(:segment)/(:num)', 'DocManagerController::shareList/$1/$2');
+$routes->post('doc-manager/share/(:segment)/(:num)', 'DocManagerController::share/$1/$2');
+$routes->post('doc-manager/share/revoke/(:num)',     'DocManagerController::revokeShare/$1');
+$routes->get( 'doc-manager/shared-link/(:segment)',  'DocManagerController::sharedView/$1');
+$routes->get( 'doc-manager/shared-link/(:segment)/view', 'DocManagerController::sharedStream/$1');
+$routes->get( 'doc-manager/shared-link/(:segment)/download', 'DocManagerController::sharedDownload/$1');
+
+$routes->get( 'doc-manager/lookup',                  'DocManagerController::lookup');
+$routes->get( 'doc-manager/lookup/(:num)',           'DocManagerController::lookupUser/$1');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');
