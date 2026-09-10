@@ -69,6 +69,9 @@ use App\Models\TimetableModel;
 use App\Models\TimetableEntryModel;
 use App\Models\TimetableTemplateModel;
 use App\Models\TimetableTemplateSlotModel;
+use App\Models\TransportAllocationModel;
+use App\Models\TransportHouseholdMemberModel;
+use App\Models\TransportTripModel;
 
 
 
@@ -160,6 +163,9 @@ abstract class BaseController extends Controller
     protected $timetableEntryModel;
     protected $timetableTemplateModel;
     protected $timetableTemplateSlotModel;
+    protected $transportAllocationModel;
+    protected $transportHouseholdMemberModel;
+    protected $transportTripModel;
 
 
     /**
@@ -303,6 +309,12 @@ abstract class BaseController extends Controller
         $this->timetableTemplateModel       = new TimetableTemplateModel();
         $this->timetableTemplateModel->ensureTables();
         $this->timetableTemplateSlotModel   = new TimetableTemplateSlotModel();
+        $this->transportAllocationModel        = new TransportAllocationModel();
+        $this->transportAllocationModel->ensureTables();
+        $this->transportHouseholdMemberModel   = new TransportHouseholdMemberModel();
+        $this->transportHouseholdMemberModel->ensureTables();
+        $this->transportTripModel              = new TransportTripModel();
+        $this->transportTripModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

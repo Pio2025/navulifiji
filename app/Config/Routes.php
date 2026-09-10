@@ -447,6 +447,21 @@ $routes->post('conduct/appeal/(:num)/process',   'ConductController::processAppe
 $routes->get( 'conduct/appeal/file/(:num)',      'ConductController::viewAppealFile/$1');
 
 // ============================================================================
+// TRANSPORTATION Routes
+// ============================================================================
+$routes->get( 'transportation',                     'TransportationController::index');
+$routes->get( 'transportation/my',                  'TransportationController::my');
+$routes->get( 'transportation/my/form',             'TransportationController::myForm');
+$routes->post('transportation/my/store',            'TransportationController::myStore');
+$routes->get( 'transportation/add',                 'TransportationController::add');
+$routes->post('transportation/store',                'TransportationController::store');
+$routes->get( 'transportation/edit/(:num)',          'TransportationController::edit/$1');
+$routes->post('transportation/update/(:num)',        'TransportationController::update/$1');
+$routes->post('transportation/remove/(:num)',        'TransportationController::delete/$1');
+$routes->get( 'transportation/detail/(:num)',        'TransportationController::detail/$1');
+$routes->get( 'transportation/form/(:num)',          'TransportationController::generateForm/$1');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');
