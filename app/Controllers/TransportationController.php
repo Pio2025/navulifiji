@@ -85,6 +85,10 @@ class TransportationController extends BaseController
             $studentId = (int) $this->request->getPost('student_id');
             $year      = (int) ($this->request->getPost('academic_year') ?: date('Y'));
 
+            if ($studentId <= 0) {
+                return $this->response->setJSON(['success' => false, 'message' => 'Please select a student.']);
+            }
+
             $existing = $this->transportAllocationModel->getByStudentAndYear($studentId, $year);
             if ($existing) {
                 return $this->response->setJSON([
@@ -114,6 +118,8 @@ class TransportationController extends BaseController
                 'redirect' => base_url('transportation/detail/' . $allocationId),
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         } catch (\Exception $e) {
             log_message('error', '[TransportationController::store] ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'An error occurred.']);
@@ -201,6 +207,8 @@ class TransportationController extends BaseController
                 'redirect' => base_url('transportation/detail/' . $allocationId),
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         } catch (\Exception $e) {
             log_message('error', '[TransportationController::update] ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'An error occurred.']);
@@ -670,6 +678,8 @@ class TransportationController extends BaseController
                 'redirect' => base_url('transportation/my'),
             ]);
 
+        } catch (\InvalidArgumentException $e) {
+            return $this->response->setJSON(['success' => false, 'message' => $e->getMessage()]);
         } catch (\Exception $e) {
             log_message('error', '[TransportationController::myStore] ' . $e->getMessage());
             return $this->response->setJSON(['success' => false, 'message' => 'An error occurred.']);
@@ -726,6 +736,60 @@ class TransportationController extends BaseController
      */
     private function saveAllocation(?int $allocationId, int $studentId, int $year, ?int $submittedBy = null): int
     {
+        if ($studentId <= 0) {
+            throw new \InvalidArgumentException('Please select a student.');
+        }
+        if ($year < 2000 || $year > 2100) {
+            throw new \InvalidArgumentException('Please provide a valid academic year.');
+        }
+
+        $members = $this->request->getPost('household') ?? [];
+        $members = is_array($members) ? $members : [];
+
+        $trips = [];
+        foreach (['To School', 'To Home'] as $direction) {
+            $directionTrips = $this->request->getPost('trips_' . ($direction === 'To School' ? 'to_school' : 'to_home')) ?? [];
+            if (!is_array($directionTrips)) {
+                continue;
+            }
+            foreach (array_values($directionTrips) as $order => $trip) {
+                $trip['direction']  = $direction;
+                $trip['trip_order'] = $order + 1;
+                $trips[]            = $trip;
+            }
+        }
+
+        $hasHousehold = false;
+        foreach ($members as $member) {
+            if (!empty($member['member_name'])) {
+                $hasHousehold = true;
+                break;
+            }
+        }
+        if (!$hasHousehold) {
+            throw new \InvalidArgumentException('Please provide at least one household member.');
+        }
+
+        $hasTrip = false;
+        foreach ($trips as $trip) {
+            if (!empty($trip['boarding_point'])) {
+                $hasTrip = true;
+                break;
+            }
+        }
+        if (!$hasTrip) {
+            throw new \InvalidArgumentException('Please provide at least one trip boarding point.');
+        }
+
+        // Total fare is derived server-side from the individual trip fares
+        // rather than trusting the posted total, so it can never be blank
+        // or inconsistent with the entered legs.
+        $fareSums = ['To School' => 0.0, 'To Home' => 0.0];
+        foreach ($trips as $trip) {
+            $fare = ($trip['fare'] ?? '') !== '' ? (float) $trip['fare'] : 0.0;
+            $fareSums[$trip['direction']] += $fare;
+        }
+
         $now = date('Y-m-d H:i:s');
 
         $payload = [
@@ -735,9 +799,9 @@ class TransportationController extends BaseController
             'receiving_social_welfare'     => $this->request->getPost('receiving_social_welfare') ? 1 : 0,
             'social_welfare_number'        => $this->request->getPost('social_welfare_number') ?: null,
             'to_school_final_destination'  => $this->request->getPost('to_school_final_destination') ?: null,
-            'to_school_total_fare'         => $this->request->getPost('to_school_total_fare') !== '' ? $this->request->getPost('to_school_total_fare') : null,
+            'to_school_total_fare'         => $fareSums['To School'] > 0 ? round($fareSums['To School'], 2) : null,
             'to_home_final_destination'    => $this->request->getPost('to_home_final_destination') ?: null,
-            'to_home_total_fare'           => $this->request->getPost('to_home_total_fare') !== '' ? $this->request->getPost('to_home_total_fare') : null,
+            'to_home_total_fare'           => $fareSums['To Home'] > 0 ? round($fareSums['To Home'], 2) : null,
             'application_status'           => 'Submitted',
             'updated_at'                   => $now,
         ];
@@ -753,21 +817,7 @@ class TransportationController extends BaseController
             $allocationId = (int) $this->transportAllocationModel->insert($payload);
         }
 
-        $members = $this->request->getPost('household') ?? [];
-        $this->transportHouseholdMemberModel->replaceForAllocation($allocationId, is_array($members) ? $members : []);
-
-        $trips = [];
-        foreach (['To School', 'To Home'] as $direction) {
-            $directionTrips = $this->request->getPost('trips_' . ($direction === 'To School' ? 'to_school' : 'to_home')) ?? [];
-            if (!is_array($directionTrips)) {
-                continue;
-            }
-            foreach (array_values($directionTrips) as $order => $trip) {
-                $trip['direction']  = $direction;
-                $trip['trip_order'] = $order + 1;
-                $trips[]            = $trip;
-            }
-        }
+        $this->transportHouseholdMemberModel->replaceForAllocation($allocationId, $members);
         $this->transportTripModel->replaceForAllocation($allocationId, $trips);
 
         return $allocationId;

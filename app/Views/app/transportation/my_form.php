@@ -150,7 +150,7 @@ $allTrips  = $trips;
                                            value="<?= esc($trip['boarding_point'] ?? '') ?>" />
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="trips_<?= $dirKey ?>[<?= $i ?>][fare]"
+                                    <input type="number" step="0.01" min="0" class="form-control form-control-sm trip-fare-input" data-dir="<?= $dirKey ?>" name="trips_<?= $dirKey ?>[<?= $i ?>][fare]"
                                            value="<?= esc($trip['fare'] ?? '') ?>" />
                                 </td>
                                 <td>
@@ -174,8 +174,9 @@ $allTrips  = $trips;
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold fs-7">Total Fare</label>
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="<?= $dir['fareKey'] ?>"
+                        <input type="number" step="0.01" min="0" class="form-control form-control-sm bg-light total-fare-input" data-dir="<?= $dirKey ?>" name="<?= $dir['fareKey'] ?>" readonly
                                value="<?= esc($allocation[$dir['fareKey']] ?? '') ?>" />
+                        <div class="form-text fs-8">Automatically calculated from the 3 trip fares above.</div>
                     </div>
                 </div>
                 <?php endforeach; ?>
@@ -208,6 +209,22 @@ $allTrips  = $trips;
 
 $('#receiving_social_welfare').on('change', function() {
     $('#social_welfare_number_wrap').toggle(this.checked);
+});
+
+// ── Total fare auto-calculation ────────────────────────────────────
+function recalcTotalFare(dirKey) {
+    let total = 0;
+    document.querySelectorAll('.trip-fare-input[data-dir="' + dirKey + '"]').forEach(function(input) {
+        const val = parseFloat(input.value);
+        if (!isNaN(val)) { total += val; }
+    });
+    const target = document.querySelector('.total-fare-input[data-dir="' + dirKey + '"]');
+    if (target) { target.value = total > 0 ? total.toFixed(2) : ''; }
+}
+
+document.querySelectorAll('.trip-fare-input').forEach(function(input) {
+    input.addEventListener('input', function() { recalcTotalFare(this.dataset.dir); });
+    recalcTotalFare(input.dataset.dir);
 });
 
 // ── Household member rows ────────────────────────────────────────
