@@ -80,6 +80,9 @@ use App\Models\HostelRoomModel;
 use App\Models\HostelAllocationModel;
 use App\Models\HostelVisitorLogModel;
 use App\Models\HostelLeaveModel;
+use App\Models\TaskModel;
+use App\Models\TaskChecklistItemModel;
+use App\Models\TaskCommentModel;
 
 
 
@@ -182,6 +185,9 @@ abstract class BaseController extends Controller
     protected $hostelAllocationModel;
     protected $hostelVisitorLogModel;
     protected $hostelLeaveModel;
+    protected $taskModel;
+    protected $taskChecklistItemModel;
+    protected $taskCommentModel;
 
 
     /**
@@ -347,6 +353,12 @@ abstract class BaseController extends Controller
         $this->hostelVisitorLogModel->ensureTables();
         $this->hostelLeaveModel                = new HostelLeaveModel();
         $this->hostelLeaveModel->ensureTables();
+        $this->taskModel                       = new TaskModel();
+        $this->taskModel->ensureTables();
+        $this->taskChecklistItemModel          = new TaskChecklistItemModel();
+        $this->taskChecklistItemModel->ensureTables();
+        $this->taskCommentModel                = new TaskCommentModel();
+        $this->taskCommentModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

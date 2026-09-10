@@ -514,6 +514,25 @@ $routes->post('hostel/allocation/leave/decide/(:num)',  'HostelAllocationControl
 $routes->get( 'hostel/my',                    'HostelAllocationController::my');
 
 // ============================================================================
+// TASK Routes
+// ============================================================================
+$routes->get( 'task',                            'TaskController::index');
+$routes->post('task/store',                      'TaskController::store');
+$routes->get( 'task/edit/(:num)',                'TaskController::edit/$1');
+$routes->post('task/update/(:num)',              'TaskController::update/$1');
+$routes->post('task/remove/(:num)',              'TaskController::delete/$1');
+$routes->post('task/status/(:num)',              'TaskController::updateStatus/$1');
+$routes->get( 'task/detail/(:num)',              'TaskController::detail/$1');
+
+$routes->post('task/checklist/store/(:num)',     'TaskController::storeChecklistItem/$1');
+$routes->post('task/checklist/toggle/(:num)',    'TaskController::toggleChecklistItem/$1');
+$routes->post('task/checklist/remove/(:num)',    'TaskController::deleteChecklistItem/$1');
+
+$routes->post('task/comment/store/(:num)',       'TaskController::storeComment/$1');
+
+$routes->get( 'task/all',                        'TaskController::all');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');

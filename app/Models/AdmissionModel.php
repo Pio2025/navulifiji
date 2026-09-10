@@ -389,6 +389,40 @@ class AdmissionModel extends Model
     }
 
     /**
+     * Active staff only (every role_category except Student=4 and
+     * Parent=6) for a school, optionally filtered by a name search. Used by
+     * the Task "Assign To" picker — selects `users.user_id` rather than
+     * `admission_id` since task assignment is a staff-to-staff action, not
+     * a transaction against a student/boarder record.
+     */
+    public function getActiveStaffBySchool(int $schId, ?string $search = null): array
+    {
+        $db      = \Config\Database::connect();
+        $builder = $db->table('admission')
+            ->select('
+                users.user_id, users.fname, users.lname, users.oname, users.profile_photo,
+                role.role_name, role_category.role_cat_id, role_category.role_cat_name
+            ')
+            ->join('users',         'users.user_id             = admission.user_id_fk',   'inner')
+            ->join('user_role',     'user_role.user_id_fk      = users.user_id',          'inner')
+            ->join('role',          'role.role_id              = user_role.role_id_fk',   'inner')
+            ->join('role_category', 'role_category.role_cat_id = role.role_cat_id_fk',    'inner')
+            ->where('admission.sch_id_fk', $schId)
+            ->where('admission.admission_status', 'Active')
+            ->where('user_role.user_role_status', 'Active')
+            ->whereNotIn('role_category.role_cat_id', [4, 6]);
+
+        if ($search !== null && $search !== '') {
+            $builder->groupStart()
+                ->like('users.fname', $search)
+                ->orLike('users.lname', $search)
+                ->groupEnd();
+        }
+
+        return $builder->orderBy('users.fname', 'ASC')->get()->getResultArray();
+    }
+
+    /**
      * All admissions belonging to the given child user IDs (unpaginated — small result set).
      */
     public function getChildAdmissions(array $childUserIds): array
