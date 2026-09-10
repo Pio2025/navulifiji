@@ -12,12 +12,24 @@ $jsDocs = array_map(function ($d) {
         'source_label'   => $d['source_label'],
         'owner_user_id'  => $d['owner_user_id'],
         'owner_name'     => $d['owner_name'],
+        'owner_sch_name' => $d['owner_sch_name'] ?? '',
         'icon'           => $d['icon'],
         'color'          => $d['color'],
         'created_at'     => (string) $d['created_at'],
         'is_external'    => !empty($d['is_external']),
     ];
 }, $documents);
+
+$jsUsers = array_map(function ($u) {
+    return [
+        'user_id'       => (int) $u['user_id'],
+        'name'          => trim($u['fname'] . ' ' . $u['lname']),
+        'profile_photo' => $u['profile_photo'] ?? '',
+        'initials'      => strtoupper(substr($u['fname'], 0, 1) . substr($u['lname'], 0, 1)),
+        'role_name'     => $u['role_name'],
+        'sch_name'      => $u['sch_name'] ?? '',
+    ];
+}, $users);
 ?>
 
 <!--begin::Toolbar-->
@@ -80,6 +92,7 @@ $jsDocs = array_map(function ($d) {
                         <th class="ps-4">File</th>
                         <th>Source</th>
                         <th>Owner</th>
+                        <th>School</th>
                         <th>Date</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
@@ -106,36 +119,16 @@ $jsDocs = array_map(function ($d) {
         </div>
         <?php else: ?>
         <div class="table-responsive">
-            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+            <table id="docmgr_lookup_users_dt" class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 w-100">
                 <thead>
                     <tr class="fw-bold text-muted fs-7 bg-light">
                         <th class="ps-4">Name</th>
                         <th>Role</th>
+                        <th>School</th>
                         <th class="text-end pe-4">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                <?php foreach ($users as $u): ?>
-                <tr>
-                    <td class="ps-4">
-                        <div class="symbol symbol-30px symbol-circle me-3 d-inline-block align-middle">
-                            <?php if (!empty($u['profile_photo'])): ?>
-                            <img src="<?= base_url('uploads/profilePhoto/' . esc($u['profile_photo'])) ?>" alt="" />
-                            <?php else: ?>
-                            <span class="symbol-label bg-light-primary text-primary fw-bold">
-                                <?= strtoupper(substr($u['fname'], 0, 1) . substr($u['lname'], 0, 1)) ?>
-                            </span>
-                            <?php endif; ?>
-                        </div>
-                        <span class="fw-semibold text-gray-900"><?= esc(trim($u['fname'] . ' ' . $u['lname'])) ?></span>
-                    </td>
-                    <td><?= esc($u['role_name']) ?></td>
-                    <td class="text-end pe-4">
-                        <a href="<?= base_url('doc-manager/lookup/' . (int) $u['user_id']) ?>" class="btn btn-sm btn-light-primary">View Documents</a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
         <?php endif; ?>
@@ -145,7 +138,7 @@ $jsDocs = array_map(function ($d) {
 </div>
 </div>
 
-<?php if ($search !== '' && !empty($documents)): ?>
+<?php if (!empty($users) || ($search !== '' && !empty($documents))): ?>
 <style>
 .dataTables_wrapper .dataTables_filter { display: none; }
 .dataTables_wrapper .dataTables_info { padding-top: 1rem; font-size: 0.925rem; color: #7e8299; }
@@ -160,9 +153,11 @@ $jsDocs = array_map(function ($d) {
 "use strict";
 
 var docmgrLookupDocs      = <?= json_encode($jsDocs, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+var docmgrLookupUsers      = <?= json_encode($jsUsers, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 var DOCMGR_LOOKUP_VIEW     = '<?= base_url('doc-manager/view/') ?>';
 var DOCMGR_LOOKUP_DOWNLOAD = '<?= base_url('doc-manager/download/') ?>';
 var DOCMGR_LOOKUP_USER     = '<?= base_url('doc-manager/lookup/') ?>';
+var DOCMGR_LOOKUP_PHOTO    = '<?= base_url('uploads/profilePhoto/') ?>';
 
 function docmgrLookupEsc(s) {
     var div = document.createElement('div');
@@ -195,18 +190,51 @@ function docmgrLookupActionsCell(doc) {
     return html;
 }
 
+function docmgrLookupUserNameCell(u) {
+    var html = '<div class="symbol symbol-30px symbol-circle me-3 d-inline-block align-middle">';
+    if (u.profile_photo) {
+        html += '<img src="' + DOCMGR_LOOKUP_PHOTO + encodeURIComponent(u.profile_photo) + '" alt="" />';
+    } else {
+        html += '<span class="symbol-label bg-light-primary text-primary fw-bold">' + docmgrLookupEsc(u.initials) + '</span>';
+    }
+    html += '</div><span class="fw-semibold text-gray-900">' + docmgrLookupEsc(u.name) + '</span>';
+    return html;
+}
+
+function docmgrLookupUserActionsCell(u) {
+    return '<a href="' + DOCMGR_LOOKUP_USER + u.user_id + '" class="btn btn-sm btn-light-primary">View Documents</a>';
+}
+
+<?php if ($search !== '' && !empty($documents)): ?>
 $('#docmgr_lookup_dt').DataTable({
     data: docmgrLookupDocs,
     pageLength: 10,
-    order: [[3, 'desc']],
+    order: [[4, 'desc']],
     columns: [
         { data: null, render: function (d) { return docmgrLookupNameCell(d); } },
         { data: 'source_label', render: function (v) { return '<span class="badge badge-light-secondary">' + docmgrLookupEsc(v) + '</span>'; } },
         { data: null, render: function (d) { return docmgrLookupOwnerCell(d); } },
+        { data: 'owner_sch_name', render: function (v) { return v ? docmgrLookupEsc(v) : '<span class="text-muted">—</span>'; } },
         { data: 'created_at', render: function (v) { return docmgrLookupEsc((v || '').substring(0, 16)); } },
         { data: null, className: 'text-end', orderable: false, render: function (d) { return docmgrLookupActionsCell(d); } },
     ],
     language: { emptyTable: 'No documents matched.' },
 });
+<?php endif; ?>
+
+<?php if (!empty($users)): ?>
+$('#docmgr_lookup_users_dt').DataTable({
+    data: docmgrLookupUsers,
+    pageLength: 10,
+    order: [[0, 'asc']],
+    columns: [
+        { data: 'name', render: function (v, type, u) { return docmgrLookupUserNameCell(u); } },
+        { data: 'role_name', render: function (v) { return docmgrLookupEsc(v); } },
+        { data: 'sch_name', render: function (v) { return v ? docmgrLookupEsc(v) : '<span class="text-muted">—</span>'; } },
+        { data: null, className: 'text-end', orderable: false, render: function (u) { return docmgrLookupUserActionsCell(u); } },
+    ],
+    language: { emptyTable: 'No users found.' },
+});
+<?php endif; ?>
 </script>
 <?php endif; ?>

@@ -309,10 +309,24 @@ class DocManagerAggregator
     /**
      * Documents across all sources whose file/label name matches $search,
      * scoped to users belonging to school $schId. Each row has the same
-     * shape as getDocumentsForUser() plus owner_user_id/owner_name, so
-     * results can link straight to view/download or to the owner's full
-     * document list. Capped at 200 rows, newest first. $schId of null
-     * searches across every school (Super Admin isn't tied to one).
+     * shape as getDocumentsForUser() plus owner_user_id/owner_name/
+     * owner_sch_id/owner_sch_name, so results can link straight to
+     * view/download or to the owner's full document list, and the admin
+     * lookup UI can show which school the record actually belongs to.
+     * Capped at 200 rows, newest first. $schId of null searches across
+     * every school (Super Admin isn't tied to one).
+     *
+     * The school shown per row is the one the record was created under,
+     * not the owner's current school — a student or teacher can change
+     * schools later, so "current school" would misattribute old files.
+     * Sources that store their own sch_id_fk (personal uploads, wall
+     * posts) or hang off a classroom (video/lesson_file/assignment_file/
+     * discussion/assignment submissions — classrooms don't move between
+     * schools) resolve this exactly. Conduct/attendance files resolve it
+     * via the specific admission row the record was filed against.
+     * References and medical files have no such record in the schema, so
+     * they fall back to the owner's most recent admission as a best
+     * effort.
      */
     public function searchDocumentsBySchool(?int $schId, string $search): array
     {
@@ -322,33 +336,44 @@ class DocManagerAggregator
 
         // When $schId is null, drop the school filter entirely instead of
         // binding it, and search across every school.
-        $schoolParams = $schId !== null ? [$schId] : [];
-        $inSchool     = $schId !== null
+        $schoolParams   = $schId !== null ? [$schId] : [];
+        $inSchool       = $schId !== null
             ? "IN (SELECT user_id_fk FROM admission WHERE sch_id_fk = ? AND admission_status = 'Active')"
             : "IN (SELECT user_id_fk FROM admission WHERE admission_status = 'Active')";
-        $directSchool = $schId !== null ? 'ad.sch_id_fk = ? AND ' : '';
-        $classSchool  = $schId !== null ? 'sl.sch_id_fk = ? AND ' : '';
+        $directSchool   = $schId !== null ? 'ad.sch_id_fk = ? AND ' : '';
+        $classSchool    = $schId !== null ? 'sl.sch_id_fk = ? AND ' : '';
+        $personalSchool = $schId !== null ? 'dmf.sch_id_fk = ? AND ' : '';
+        $wallSchool     = $schId !== null ? 'wp.sch_id_fk = ? AND ' : '';
 
-        // ── personal uploads ────────────────────────────────────────────
+        // Best-effort school for sources with no historical school record
+        // of their own (reference, medical): the owner's most recent
+        // admission row, preferring an Active one.
+        $fallbackSchId   = "(SELECT a2.sch_id_fk FROM admission a2 WHERE a2.user_id_fk = %s ORDER BY (a2.admission_status = 'Active') DESC, a2.admission_id DESC LIMIT 1)";
+        $fallbackSchName = "(SELECT sc2.sch_name FROM admission a2 INNER JOIN school sc2 ON sc2.sch_id = a2.sch_id_fk WHERE a2.user_id_fk = %s ORDER BY (a2.admission_status = 'Active') DESC, a2.admission_id DESC LIMIT 1)";
+
+        // ── personal uploads (own sch_id_fk, stamped at upload time) ────
         $res = $db->query(
             "SELECT dmf.doc_id AS source_file_id, dmf.file_name, dmf.original_name, dmf.description AS label,
-                    dmf.created_at, dmf.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    dmf.created_at, dmf.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    dmf.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM doc_manager_file dmf
              INNER JOIN users u ON u.user_id = dmf.user_id_fk
-             WHERE dmf.user_id_fk {$inSchool}
-               AND (dmf.original_name LIKE ? OR dmf.file_name LIKE ? OR dmf.description LIKE ?)
+             LEFT JOIN school sc ON sc.sch_id = dmf.sch_id_fk
+             WHERE {$personalSchool}(dmf.original_name LIKE ? OR dmf.file_name LIKE ? OR dmf.description LIKE ?)
              ORDER BY dmf.doc_id DESC",
             array_merge($schoolParams, [$like, $like, $like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_PERSONAL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], $r['label'] ?: 'Personal', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_PERSONAL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], $r['label'] ?: 'Personal', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── generated references ────────────────────────────────────────
+        // ── generated references (no stored school — best-effort fallback) ──
         $res = $db->query(
             "SELECT gr.gen_ref_id AS source_file_id, gr.gen_ref_file_name AS file_name, rc.ref_cat_name AS label,
                     CONCAT(gr.gen_ref_date, ' ', gr.gen_ref_time) AS created_at, gr.user_id_fk AS owner_user_id,
-                    CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    " . sprintf($fallbackSchId, 'gr.user_id_fk') . " AS owner_sch_id,
+                    " . sprintf($fallbackSchName, 'gr.user_id_fk') . " AS owner_sch_name
              FROM generated_reference gr
              LEFT JOIN reference_category rc ON rc.ref_cat_id = gr.ref_cat_id_fk
              INNER JOIN users u ON u.user_id = gr.user_id_fk
@@ -359,65 +384,73 @@ class DocManagerAggregator
             array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_REFERENCE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Reference', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_REFERENCE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Reference', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── conduct appeal files ────────────────────────────────────────
+        // ── conduct appeal files (school of the admission the appeal was filed against) ──
         $res = $db->query(
             "SELECT caf.appeal_file_id AS source_file_id, caf.file_src AS file_name, ca.submitted_date AS created_at,
-                    ad.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    ad.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    ad.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM conduct_appeal_files caf
              INNER JOIN conduct_appeals ca ON ca.appeal_id = caf.appeal_id
              INNER JOIN admission ad ON ad.admission_id = ca.student_id
              INNER JOIN users u ON u.user_id = ad.user_id_fk
+             LEFT JOIN school sc ON sc.sch_id = ad.sch_id_fk
              WHERE {$directSchool}caf.file_src IS NOT NULL AND caf.file_src <> ''
                AND caf.file_src LIKE ?
              ORDER BY caf.appeal_file_id DESC",
             array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_APPEAL, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Conduct Appeal', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_APPEAL, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Conduct Appeal', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── conduct incident files ──────────────────────────────────────
+        // ── conduct incident files (school of the admission the incident was filed against) ──
         $res = $db->query(
             "SELECT cif.conduct_file_id AS source_file_id, cif.file_src AS file_name, ci.incident_date AS created_at,
-                    ad.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    ad.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    ad.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM conduct_incident_file cif
              INNER JOIN conduct_incidents ci ON ci.incident_id = cif.incident_id_fk
              INNER JOIN admission ad ON ad.admission_id = ci.student_id
              INNER JOIN users u ON u.user_id = ad.user_id_fk
+             LEFT JOIN school sc ON sc.sch_id = ad.sch_id_fk
              WHERE {$directSchool}cif.file_src IS NOT NULL AND cif.file_src <> ''
                AND cif.file_src LIKE ?
              ORDER BY cif.conduct_file_id DESC",
             array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_INCIDENT, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Conduct Incident', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_INCIDENT, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Conduct Incident', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── attendance files ─────────────────────────────────────────────
+        // ── attendance files (school of the admission attendance was recorded against) ──
         $res = $db->query(
             "SELECT saf.stud_att_file_id AS source_file_id, saf.stud_att_file_src AS file_name, sa.attendance_date AS created_at,
-                    ad.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    ad.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    ad.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM student_attendance_file saf
              INNER JOIN student_attendance sa ON sa.stud_att_id = saf.stud_att_id_fk
              INNER JOIN admission ad ON ad.admission_id = sa.admission_id_fk
              INNER JOIN users u ON u.user_id = ad.user_id_fk
+             LEFT JOIN school sc ON sc.sch_id = ad.sch_id_fk
              WHERE {$directSchool}saf.stud_att_file_src IS NOT NULL AND saf.stud_att_file_src <> ''
                AND saf.stud_att_file_src LIKE ?
              ORDER BY saf.stud_att_file_id DESC",
             array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_ATTENDANCE, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Attendance', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_ATTENDANCE, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Attendance', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── medical files ────────────────────────────────────────────────
+        // ── medical files (no stored school — best-effort fallback) ──────
         $res = $db->query(
             "SELECT umf.file_id AS source_file_id, umf.file_name AS file_name, umf.file_original_name AS original_name,
                     CONCAT(umf.file_date, ' ', umf.file_time) AS created_at, um.user_id_fk AS owner_user_id,
-                    CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    " . sprintf($fallbackSchId, 'um.user_id_fk') . " AS owner_sch_id,
+                    " . sprintf($fallbackSchName, 'um.user_id_fk') . " AS owner_sch_name
              FROM user_medical_files umf
              INNER JOIN user_medical um ON um.medical_id = umf.medical_id_fk
              INNER JOIN users u ON u.user_id = um.user_id_fk
@@ -428,38 +461,23 @@ class DocManagerAggregator
             array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_MEDICAL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Medical', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_MEDICAL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Medical', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── assignment submissions ──────────────────────────────────────
-        $res = $db->query(
-            "SELECT sub.submission_id AS source_file_id, sub.submission_file AS file_name, la.assignment_name AS label,
-                    sub.submitted_at AS created_at, sub.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
-             FROM assignment_submission sub
-             LEFT JOIN lesson_assignment la ON la.assignment_id = sub.assignment_id_fk
-             INNER JOIN users u ON u.user_id = sub.user_id_fk
-             WHERE sub.user_id_fk {$inSchool}
-               AND sub.submission_file IS NOT NULL AND sub.submission_file <> ''
-               AND (sub.submission_file LIKE ? OR la.assignment_name LIKE ?)
-             ORDER BY sub.submission_id DESC",
-            array_merge($schoolParams, [$like, $like])
-        )->getResultArray();
-        foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_SUBMISSION, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Assignment', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
-        }
-
-        // Class resources (video/lesson_file/assignment_file) belong to a
-        // school through the classroom hierarchy (classroom_subject ->
-        // classroom -> stream -> sch_level), not through the creator's own
-        // admission record — a teacher can create lesson content for a
-        // school without necessarily having an 'Active' admission row there,
-        // so scoping by admission here would silently drop their files.
+        // Class resources (video/lesson_file/assignment_file/discussion/
+        // assignment submissions) belong to a school through the classroom
+        // hierarchy (classroom_subject -> classroom -> stream -> sch_level),
+        // not through the creator's own admission record — a teacher or
+        // student can be part of a classroom without necessarily having an
+        // 'Active' admission row in that school right now, so scoping by
+        // admission here would silently drop or misattribute their files.
         // This mirrors DashboardStats::schoolAdminStats()'s join chain.
 
         // ── lesson videos ────────────────────────────────────────────────
         $res = $db->query(
             "SELECT lv.video_id AS source_file_id, lv.video_url AS file_name, lv.video_title AS label, cl.created_at AS created_at,
-                    cl.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    cl.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    sl.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM lesson_video lv
              INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
              INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
@@ -467,18 +485,20 @@ class DocManagerAggregator
              INNER JOIN stream s ON s.stream_id = c.stream_id_fk
              INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = cl.created_by
+             LEFT JOIN school sc ON sc.sch_id = sl.sch_id_fk
              WHERE {$classSchool}lv.video_title LIKE ?
              ORDER BY cl.created_at DESC",
             array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
         // ── lesson resource files ────────────────────────────────────────
         $res = $db->query(
             "SELECT lf.file_id AS source_file_id, lf.file_path AS file_name, lf.file_name AS original_name, lf.uploaded_at AS created_at,
-                    cl.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    cl.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    sl.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM lesson_file lf
              INNER JOIN classroom_lesson cl ON cl.lesson_id = lf.lesson_id_fk
              INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
@@ -486,18 +506,20 @@ class DocManagerAggregator
              INNER JOIN stream s ON s.stream_id = c.stream_id_fk
              INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = cl.created_by
+             LEFT JOIN school sc ON sc.sch_id = sl.sch_id_fk
              WHERE {$classSchool}lf.file_name LIKE ?
              ORDER BY lf.uploaded_at DESC",
             array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_LESSON_FILE, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Lesson File', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_LESSON_FILE, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Lesson File', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
         // ── assignment question files ────────────────────────────────────
         $res = $db->query(
             "SELECT laf.assign_file_id AS source_file_id, laf.file_src AS file_name, la.assignment_name AS label, la.created_at AS created_at,
-                    la.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    la.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    sl.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM lesson_assignment_file laf
              INNER JOIN lesson_assignment la ON la.assignment_id = laf.assignment_id_fk
              INNER JOIN classroom_subject cs ON cs.class_sub_id = la.class_sub_id_fk
@@ -505,43 +527,75 @@ class DocManagerAggregator
              INNER JOIN stream s ON s.stream_id = c.stream_id_fk
              INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = la.created_by
+             LEFT JOIN school sc ON sc.sch_id = sl.sch_id_fk
              WHERE {$classSchool}(laf.file_src LIKE ? OR la.assignment_name LIKE ?)
              ORDER BY la.created_at DESC",
             array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_ASSIGNMENT_FILE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ? ('Assignment: ' . $r['label']) : 'Assignment Question', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_ASSIGNMENT_FILE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ? ('Assignment: ' . $r['label']) : 'Assignment Question', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── classroom discussion photos ──────────────────────────────────
+        // ── classroom discussion photos (school of the lesson's classroom) ──
         $res = $db->query(
             "SELECT ldp.photo_id AS source_file_id, ldp.photo_path AS file_name, ld.created_at AS created_at,
-                    ld.author AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    ld.author AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    sl.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM lesson_discussion_photo ldp
              INNER JOIN lesson_discussion ld ON ld.lesson_discussion_id = ldp.ld_id_fk
+             INNER JOIN classroom_lesson cl ON cl.lesson_id = ld.lesson_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+             INNER JOIN classroom c ON c.class_id = cs.class_id_fk
+             INNER JOIN stream s ON s.stream_id = c.stream_id_fk
+             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = ld.author
-             WHERE ld.author {$inSchool} AND ld.message_status = 1 AND ldp.photo_path LIKE ?
+             LEFT JOIN school sc ON sc.sch_id = sl.sch_id_fk
+             WHERE {$classSchool}ld.message_status = 1 AND ldp.photo_path LIKE ?
              ORDER BY ldp.photo_id DESC",
             array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_DISCUSSION, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Discussion', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_DISCUSSION, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Discussion', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
-        // ── wall post media ──────────────────────────────────────────────
+        // ── assignment submissions (school of the assignment's classroom) ──
+        $res = $db->query(
+            "SELECT sub.submission_id AS source_file_id, sub.submission_file AS file_name, la.assignment_name AS label,
+                    sub.submitted_at AS created_at, sub.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    sl.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
+             FROM assignment_submission sub
+             INNER JOIN lesson_assignment la ON la.assignment_id = sub.assignment_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = la.class_sub_id_fk
+             INNER JOIN classroom c ON c.class_id = cs.class_id_fk
+             INNER JOIN stream s ON s.stream_id = c.stream_id_fk
+             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
+             INNER JOIN users u ON u.user_id = sub.user_id_fk
+             LEFT JOIN school sc ON sc.sch_id = sl.sch_id_fk
+             WHERE {$classSchool}sub.submission_file IS NOT NULL AND sub.submission_file <> ''
+               AND (sub.submission_file LIKE ? OR la.assignment_name LIKE ?)
+             ORDER BY sub.submission_id DESC",
+            array_merge($schoolParams, [$like, $like])
+        )->getResultArray();
+        foreach ($res as $r) {
+            $rows[] = $this->normalize(self::SOURCE_SUBMISSION, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Assignment', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
+        }
+
+        // ── wall post media (own sch_id_fk, stamped at post time) ───────
         $res = $db->query(
             "SELECT wm.wall_media_id AS source_file_id, wm.file_src AS file_name, wm.file_name AS original_name, wm.created_at AS created_at,
-                    wp.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
+                    wp.user_id_fk AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name,
+                    wp.sch_id_fk AS owner_sch_id, sc.sch_name AS owner_sch_name
              FROM wall_media wm
              INNER JOIN wall_post wp ON wp.wall_post_id = wm.wall_post_id_fk
              INNER JOIN users u ON u.user_id = wp.user_id_fk
-             WHERE wp.user_id_fk {$inSchool} AND wp.post_status = 'Active' AND wm.media_type <> 'video_url'
+             LEFT JOIN school sc ON sc.sch_id = wp.sch_id_fk
+             WHERE {$wallSchool}wp.post_status = 'Active' AND wm.media_type <> 'video_url'
                AND (wm.file_name LIKE ? OR wm.file_src LIKE ?)
              ORDER BY wm.wall_media_id DESC",
             array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
-            $rows[] = $this->normalize(self::SOURCE_WALL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Wall Post', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
+            $rows[] = $this->normalize(self::SOURCE_WALL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Wall Post', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name'], $r['owner_sch_id'] !== null ? (int) $r['owner_sch_id'] : null, $r['owner_sch_name']);
         }
 
         usort($rows, fn($a, $b) => strcmp((string) $b['created_at'], (string) $a['created_at']));
@@ -732,7 +786,7 @@ class DocManagerAggregator
         return $row !== null;
     }
 
-    private function normalize(string $sourceType, int $sourceFileId, ?string $fileName, ?string $originalName, string $label, ?string $createdAt, ?int $ownerUserId = null, ?string $ownerName = null): array
+    private function normalize(string $sourceType, int $sourceFileId, ?string $fileName, ?string $originalName, string $label, ?string $createdAt, ?int $ownerUserId = null, ?string $ownerName = null, ?int $ownerSchId = null, ?string $ownerSchName = null): array
     {
         $fileName     = (string) $fileName;
         $originalName = $originalName ?: $fileName;
@@ -753,6 +807,8 @@ class DocManagerAggregator
             'source_file_id' => $sourceFileId,
             'owner_user_id'  => $ownerUserId,
             'owner_name'     => $ownerName,
+            'owner_sch_id'   => $ownerSchId,
+            'owner_sch_name' => $ownerSchName,
             'file_name'      => $fileName,
             'original_name'  => $originalName,
             'label'          => $label,

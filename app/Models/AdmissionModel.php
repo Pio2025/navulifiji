@@ -435,12 +435,14 @@ class AdmissionModel extends Model
         $builder = $db->table('admission')
             ->select('
                 users.user_id, users.fname, users.lname, users.oname, users.profile_photo,
-                role.role_name, role_category.role_cat_id, role_category.role_cat_name
+                role.role_name, role_category.role_cat_id, role_category.role_cat_name,
+                admission.sch_id_fk, school.sch_name
             ')
             ->join('users',         'users.user_id             = admission.user_id_fk',   'inner')
             ->join('user_role',     'user_role.user_id_fk      = users.user_id',          'inner')
             ->join('role',          'role.role_id              = user_role.role_id_fk',   'inner')
             ->join('role_category', 'role_category.role_cat_id = role.role_cat_id_fk',    'inner')
+            ->join('school',        'school.sch_id             = admission.sch_id_fk',    'left')
             ->where('admission.admission_status', 'Active')
             ->where('user_role.user_role_status', 'Active');
 
