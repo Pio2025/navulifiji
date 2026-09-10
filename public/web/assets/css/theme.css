@@ -153,6 +153,32 @@
   max-height: 42px;
 }
 
+/* Mobile responsiveness fixes
+   - scrollbar-gutter keeps the layout viewport width constant so the
+     fixed-position header/logo doesn't shift when body's overflow
+     toggles to hidden while the mobile nav overlay is open.
+   - overflow-x:hidden is a safety net against any element (device
+     mockups, wide rows) bleeding past the viewport edge on narrow
+     screens, which otherwise hides content behind a horizontal scroll
+     the user never notices. */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.header .logo {
+  flex-shrink: 0;
+}
+
+@media (max-width: 1199px) {
+  .header .container-fluid {
+    flex-wrap: nowrap;
+  }
+}
+
 /* Icon boxes reused across feature/service sections */
 .icon-box {
   background: var(--surface-color);
@@ -877,6 +903,7 @@
   }
   .footer .social-links {
     justify-content: center;
+    flex-wrap: wrap;
   }
   .footer .footer-links ul {
     margin-bottom: 0;
@@ -1698,5 +1725,57 @@ label.required::after {
     width: 34px;
     height: 34px;
     font-size: 8px;
+  }
+}
+
+/* On small phones the laptop mockup's aspect-ratio box shrinks enough
+   that the sidebar's fixed-size icons need less height to fit than the
+   default sizing allows for, so scale the whole dashboard mock down
+   rather than let flexbox squeeze icons illegibly small. */
+@media (max-width: 480px) {
+  .device-mockup-wrap {
+    max-width: 300px;
+  }
+
+  .dash-sidebar {
+    width: 26px;
+    gap: 6px;
+    padding-top: 8px;
+  }
+
+  .dash-side-icon {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
+
+  .dash-main {
+    padding: 6px 8px;
+    gap: 4px;
+  }
+
+  .dash-kpi {
+    padding: 4px 3px;
+  }
+
+  .dash-kpi strong {
+    font-size: 10px;
+  }
+
+  .dash-kpi span {
+    font-size: 6px;
+  }
+
+  .dash-chart {
+    min-height: 26px;
+    padding: 6px 6px 4px;
+  }
+
+  .phone-mockup-mini {
+    width: 84px;
+  }
+
+  .phone-mini-screen {
+    min-height: 150px;
   }
 }

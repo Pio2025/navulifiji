@@ -43,6 +43,13 @@
                     <li><a href="<?= site_url('resource-center') ?>" class="<?= ($active_page ?? '') === 'resources' ? 'active' : '' ?>">Resources</a></li>
                     <li><a href="<?= site_url('about') ?>" class="<?= ($active_page ?? '') === 'about' ? 'active' : '' ?>">About</a></li>
                     <li><a href="<?= site_url('for-schools') ?>" class="<?= ($active_page ?? '') === 'for-schools' ? 'active' : '' ?>">School</a></li>
+                    <li class="dropdown <?= in_array($active_page ?? '', ['terms', 'privacy'], true) ? 'active' : '' ?>">
+                        <a href="#"><span>Legal</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
+                        <ul>
+                            <li><a href="<?= site_url('terms') ?>" class="<?= ($active_page ?? '') === 'terms' ? 'active' : '' ?>">Terms of Use</a></li>
+                            <li><a href="<?= site_url('privacy') ?>" class="<?= ($active_page ?? '') === 'privacy' ? 'active' : '' ?>">Privacy Policy</a></li>
+                        </ul>
+                    </li>
                     <li><a href="<?= site_url('contact') ?>" class="<?= ($active_page ?? '') === 'contact' ? 'active' : '' ?>">Contact</a></li>
                     <li class="d-xl-none"><a href="<?= site_url('auth/login') ?>" class="navmenu-signin">Sign In</a></li>
                     <li class="d-xl-none"><a href="<?= site_url('account/subscribe') ?>?tier=free" class="navmenu-getstarted">Get Started Free</a></li>
@@ -65,7 +72,7 @@
     <footer id="footer" class="footer dark-background">
         <div class="container footer-top">
             <div class="row gy-4">
-                <div class="col-lg-6 col-md-6 footer-about">
+                <div class="col-lg-4 col-md-6 footer-about">
                     <a href="<?= site_url('/') ?>" class="logo d-flex align-items-center">
                         <img src="<?= base_url('web/assets/img/logo-white-small.png') ?>" alt="Navuli">
                     </a>
@@ -95,6 +102,14 @@
                         <li><a href="<?= site_url('resource-center') ?>">Resources</a></li>
                         <li><a href="<?= site_url('contact') ?>">Contact</a></li>
                         <li><a href="<?= site_url('auth/login') ?>">Sign In</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-2 col-md-6 footer-links">
+                    <h4>Legal</h4>
+                    <ul>
+                        <li><a href="<?= site_url('terms') ?>">Terms of Use</a></li>
+                        <li><a href="<?= site_url('privacy') ?>">Privacy Policy</a></li>
                     </ul>
                 </div>
 
