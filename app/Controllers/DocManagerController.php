@@ -43,7 +43,8 @@ class DocManagerController extends BaseController
         if ($this->aggregator->isParentOfUser($userId, $ownerId)) {
             return true;
         }
-        if ($doc['source_type'] === DocManagerAggregator::SOURCE_VIDEO && $this->aggregator->canUserAccessVideo($userId, (int) $doc['source_file_id'])) {
+        if (in_array($doc['source_type'], DocManagerAggregator::CLASS_ACCESS_SOURCES, true)
+            && $this->aggregator->canUserAccessClassResource($doc['source_type'], $userId, (int) $doc['source_file_id'])) {
             return true;
         }
 

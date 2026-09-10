@@ -8,12 +8,14 @@ use App\Models\ParentStudentModel;
  * Cross-module personal-document aggregator for Doc Manager. Pulls a user's
  * files from personal uploads plus existing source tables (generated
  * references, conduct incident/appeal files, attendance files, medical
- * files, assignment submissions, and lesson videos) into one normalized
- * shape, and resolves a single source_type+source_file_id pair back to its
- * owner and physical location for view/download/share actions.
+ * files, assignment submissions, discussion photos, and wall post media)
+ * into one normalized shape, and resolves a single source_type+
+ * source_file_id pair back to its owner and physical location for
+ * view/download/share actions.
  *
- * `lesson_assignment_file` is deliberately excluded — it's shared class
- * material owned by a teacher's class, not a single user's personal document.
+ * Lesson videos, lesson resource files, and assignment question files use
+ * broad class-membership access instead of single ownership — see
+ * CLASS_ACCESS_SOURCES and canUserAccessClassResource().
  *
  * Session-agnostic by design (mirrors App\Libraries\DashboardStats):
  * ownership/ACL decisions belong to the controller, this class only
@@ -21,53 +23,77 @@ use App\Models\ParentStudentModel;
  */
 class DocManagerAggregator
 {
-    public const SOURCE_PERSONAL    = 'personal';
-    public const SOURCE_REFERENCE   = 'reference';
-    public const SOURCE_APPEAL      = 'conduct_appeal';
-    public const SOURCE_INCIDENT    = 'conduct_incident';
-    public const SOURCE_ATTENDANCE  = 'attendance';
-    public const SOURCE_MEDICAL     = 'medical';
-    public const SOURCE_SUBMISSION  = 'assignment_submission';
-    public const SOURCE_VIDEO       = 'video';
+    public const SOURCE_PERSONAL       = 'personal';
+    public const SOURCE_REFERENCE      = 'reference';
+    public const SOURCE_APPEAL         = 'conduct_appeal';
+    public const SOURCE_INCIDENT       = 'conduct_incident';
+    public const SOURCE_ATTENDANCE     = 'attendance';
+    public const SOURCE_MEDICAL        = 'medical';
+    public const SOURCE_SUBMISSION     = 'assignment_submission';
+    public const SOURCE_VIDEO          = 'video';
+    public const SOURCE_LESSON_FILE    = 'lesson_file';
+    public const SOURCE_ASSIGNMENT_FILE = 'assignment_file';
+    public const SOURCE_DISCUSSION     = 'discussion';
+    public const SOURCE_WALL           = 'wall';
+
+    /**
+     * Source types that use broad class-membership access (lesson creator,
+     * an active co-teacher, an active enrolled student, or a parent of one)
+     * rather than a single owner — see canUserAccessClassResource().
+     */
+    public const CLASS_ACCESS_SOURCES = [self::SOURCE_VIDEO, self::SOURCE_LESSON_FILE, self::SOURCE_ASSIGNMENT_FILE];
 
     private const FOLDERS = [
-        self::SOURCE_PERSONAL   => 'doc_manager',
-        self::SOURCE_REFERENCE  => 'reference',
-        self::SOURCE_APPEAL     => 'conduct_appeals',
-        self::SOURCE_INCIDENT   => 'conduct',
-        self::SOURCE_ATTENDANCE => 'attendance',
-        self::SOURCE_MEDICAL    => 'medical',
-        self::SOURCE_SUBMISSION => 'assignment_submissions',
-        self::SOURCE_VIDEO      => '',
+        self::SOURCE_PERSONAL        => 'doc_manager',
+        self::SOURCE_REFERENCE       => 'reference',
+        self::SOURCE_APPEAL          => 'conduct_appeals',
+        self::SOURCE_INCIDENT        => 'conduct',
+        self::SOURCE_ATTENDANCE      => 'attendance',
+        self::SOURCE_MEDICAL         => 'medical',
+        self::SOURCE_SUBMISSION      => 'assignment_submissions',
+        self::SOURCE_VIDEO           => '',
+        self::SOURCE_LESSON_FILE     => 'lesson_files',
+        self::SOURCE_ASSIGNMENT_FILE => 'assignments',
+        self::SOURCE_DISCUSSION      => 'lesson_discussion',
+        self::SOURCE_WALL            => 'wall',
     ];
 
     private const SOURCE_LABELS = [
-        self::SOURCE_PERSONAL   => 'Personal',
-        self::SOURCE_REFERENCE  => 'Reference',
-        self::SOURCE_APPEAL     => 'Conduct Appeal',
-        self::SOURCE_INCIDENT   => 'Conduct Incident',
-        self::SOURCE_ATTENDANCE => 'Attendance',
-        self::SOURCE_MEDICAL    => 'Medical',
-        self::SOURCE_SUBMISSION => 'Assignment',
-        self::SOURCE_VIDEO      => 'Lesson Video',
+        self::SOURCE_PERSONAL        => 'Personal',
+        self::SOURCE_REFERENCE       => 'Reference',
+        self::SOURCE_APPEAL          => 'Conduct Appeal',
+        self::SOURCE_INCIDENT        => 'Conduct Incident',
+        self::SOURCE_ATTENDANCE      => 'Attendance',
+        self::SOURCE_MEDICAL         => 'Medical',
+        self::SOURCE_SUBMISSION      => 'Assignment',
+        self::SOURCE_VIDEO           => 'Lesson Video',
+        self::SOURCE_LESSON_FILE     => 'Lesson File',
+        self::SOURCE_ASSIGNMENT_FILE => 'Assignment Question',
+        self::SOURCE_DISCUSSION      => 'Discussion',
+        self::SOURCE_WALL            => 'Wall Post',
     ];
 
     /**
-     * Shared WHERE fragment for "is $userId allowed to see videos on this
-     * lesson's class/subject" — lesson creator, an active subject teacher,
-     * an active enrolled student, or a parent of an active enrolled student.
-     * Takes the same placeholder ($userId) four times.
+     * Shared WHERE fragment for "is $userId allowed to see this class
+     * resource" — its creator (given by $creatorColumn, e.g. 'cl.created_by'
+     * or 'la.created_by'), an active subject teacher, an active enrolled
+     * student, or a parent of an active enrolled student. Requires aliases
+     * `cs` (classroom_subject) in scope; takes the same placeholder
+     * ($userId) four times.
      */
-    private const VIDEO_ACCESS_SQL = "(
-        cl.created_by = ?
-        OR EXISTS (SELECT 1 FROM classroom_subject_teacher cst WHERE cst.class_sub_id_fk = cs.class_sub_id AND cst.user_id_fk = ? AND cst.class_sub_teacher_status = 'Active')
-        OR EXISTS (SELECT 1 FROM classroom_student cstu WHERE cstu.class_id_fk = cs.class_id_fk AND cstu.user_id_fk = ? AND cstu.class_stud_status = 'Active')
-        OR EXISTS (
-            SELECT 1 FROM parent_student ps
-            INNER JOIN classroom_student cstu2 ON cstu2.class_id_fk = cs.class_id_fk AND cstu2.user_id_fk = ps.student_user_id_fk AND cstu2.class_stud_status = 'Active'
-            WHERE ps.parent_user_id_fk = ?
-        )
-    )";
+    private static function classAccessSql(string $creatorColumn): string
+    {
+        return "(
+            {$creatorColumn} = ?
+            OR EXISTS (SELECT 1 FROM classroom_subject_teacher cst WHERE cst.class_sub_id_fk = cs.class_sub_id AND cst.user_id_fk = ? AND cst.class_sub_teacher_status = 'Active')
+            OR EXISTS (SELECT 1 FROM classroom_student cstu WHERE cstu.class_id_fk = cs.class_id_fk AND cstu.user_id_fk = ? AND cstu.class_stud_status = 'Active')
+            OR EXISTS (
+                SELECT 1 FROM parent_student ps
+                INNER JOIN classroom_student cstu2 ON cstu2.class_id_fk = cs.class_id_fk AND cstu2.user_id_fk = ps.student_user_id_fk AND cstu2.class_stud_status = 'Active'
+                WHERE ps.parent_user_id_fk = ?
+            )
+        )";
+    }
 
     protected ParentStudentModel $parentStudentModel;
 
@@ -213,12 +239,66 @@ class DocManagerAggregator
              FROM lesson_video lv
              INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
              INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
-             WHERE cl.lesson_status = 'Published' AND " . self::VIDEO_ACCESS_SQL . "
+             WHERE cl.lesson_status = 'Published' AND " . self::classAccessSql('cl.created_by') . "
              ORDER BY cl.created_at DESC",
             [$userId, $userId, $userId, $userId]
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], $userId);
+        }
+
+        // ── lesson resource files (visible via teaching, enrolment, or parentage) ──
+        $res = $db->query(
+            "SELECT lf.file_id AS source_file_id, lf.file_path AS file_name, lf.file_name AS original_name, lf.uploaded_at AS created_at
+             FROM lesson_file lf
+             INNER JOIN classroom_lesson cl ON cl.lesson_id = lf.lesson_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+             WHERE cl.lesson_status = 'Published' AND " . self::classAccessSql('cl.created_by') . "
+             ORDER BY lf.uploaded_at DESC",
+            [$userId, $userId, $userId, $userId]
+        )->getResultArray();
+        foreach ($res as $r) {
+            $rows[] = $this->normalize(self::SOURCE_LESSON_FILE, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Lesson File', $r['created_at'], $userId);
+        }
+
+        // ── assignment question files (visible via teaching, enrolment, or parentage) ──
+        $res = $db->query(
+            "SELECT laf.assign_file_id AS source_file_id, laf.file_src AS file_name, la.assignment_name AS label, la.created_at AS created_at
+             FROM lesson_assignment_file laf
+             INNER JOIN lesson_assignment la ON la.assignment_id = laf.assignment_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = la.class_sub_id_fk
+             WHERE la.assignment_status = 'Published' AND " . self::classAccessSql('la.created_by') . "
+             ORDER BY la.created_at DESC",
+            [$userId, $userId, $userId, $userId]
+        )->getResultArray();
+        foreach ($res as $r) {
+            $rows[] = $this->normalize(self::SOURCE_ASSIGNMENT_FILE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ? ('Assignment: ' . $r['label']) : 'Assignment Question', $r['created_at'], $userId);
+        }
+
+        // ── classroom discussion photos I posted ────────────────────────
+        $res = $db->query(
+            "SELECT ldp.photo_id AS source_file_id, ldp.photo_path AS file_name, ld.created_at AS created_at
+             FROM lesson_discussion_photo ldp
+             INNER JOIN lesson_discussion ld ON ld.lesson_discussion_id = ldp.ld_id_fk
+             WHERE ld.author = ? AND ld.message_status = 1
+             ORDER BY ldp.photo_id DESC",
+            [$userId]
+        )->getResultArray();
+        foreach ($res as $r) {
+            $rows[] = $this->normalize(self::SOURCE_DISCUSSION, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Discussion', $r['created_at'], $userId);
+        }
+
+        // ── wall post media I posted ────────────────────────────────────
+        $res = $db->query(
+            "SELECT wm.wall_media_id AS source_file_id, wm.file_src AS file_name, wm.file_name AS original_name, wm.created_at AS created_at
+             FROM wall_media wm
+             INNER JOIN wall_post wp ON wp.wall_post_id = wm.wall_post_id_fk
+             WHERE wp.user_id_fk = ? AND wp.post_status = 'Active' AND wm.media_type <> 'video_url'
+             ORDER BY wm.wall_media_id DESC",
+            [$userId]
+        )->getResultArray();
+        foreach ($res as $r) {
+            $rows[] = $this->normalize(self::SOURCE_WALL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Wall Post', $r['created_at'], $userId);
         }
 
         usort($rows, fn($a, $b) => strcmp((string) $b['created_at'], (string) $a['created_at']));
@@ -318,31 +398,93 @@ class DocManagerAggregator
                 if (!$r || empty($r['file_name'])) return null;
                 return $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], (int) $r['owner_user_id']);
 
+            case self::SOURCE_LESSON_FILE:
+                $r = $db->query(
+                    "SELECT lf.file_id AS source_file_id, lf.file_path AS file_name, lf.file_name AS original_name,
+                            lf.uploaded_at AS created_at, cl.created_by AS owner_user_id
+                     FROM lesson_file lf
+                     INNER JOIN classroom_lesson cl ON cl.lesson_id = lf.lesson_id_fk
+                     WHERE lf.file_id = ?", [$sourceFileId]
+                )->getRowArray();
+                if (!$r || empty($r['file_name'])) return null;
+                return $this->normalize(self::SOURCE_LESSON_FILE, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Lesson File', $r['created_at'], (int) $r['owner_user_id']);
+
+            case self::SOURCE_ASSIGNMENT_FILE:
+                $r = $db->query(
+                    "SELECT laf.assign_file_id AS source_file_id, laf.file_src AS file_name, la.assignment_name AS label,
+                            la.created_at AS created_at, la.created_by AS owner_user_id
+                     FROM lesson_assignment_file laf
+                     INNER JOIN lesson_assignment la ON la.assignment_id = laf.assignment_id_fk
+                     WHERE laf.assign_file_id = ?", [$sourceFileId]
+                )->getRowArray();
+                if (!$r || empty($r['file_name'])) return null;
+                return $this->normalize(self::SOURCE_ASSIGNMENT_FILE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ? ('Assignment: ' . $r['label']) : 'Assignment Question', $r['created_at'], (int) $r['owner_user_id']);
+
+            case self::SOURCE_DISCUSSION:
+                $r = $db->query(
+                    "SELECT ldp.photo_id AS source_file_id, ldp.photo_path AS file_name, ld.created_at AS created_at, ld.author AS owner_user_id
+                     FROM lesson_discussion_photo ldp
+                     INNER JOIN lesson_discussion ld ON ld.lesson_discussion_id = ldp.ld_id_fk
+                     WHERE ldp.photo_id = ?", [$sourceFileId]
+                )->getRowArray();
+                if (!$r || empty($r['file_name'])) return null;
+                return $this->normalize(self::SOURCE_DISCUSSION, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Discussion', $r['created_at'], (int) $r['owner_user_id']);
+
+            case self::SOURCE_WALL:
+                $r = $db->query(
+                    "SELECT wm.wall_media_id AS source_file_id, wm.file_src AS file_name, wm.file_name AS original_name,
+                            wm.created_at AS created_at, wp.user_id_fk AS owner_user_id
+                     FROM wall_media wm
+                     INNER JOIN wall_post wp ON wp.wall_post_id = wm.wall_post_id_fk
+                     WHERE wm.wall_media_id = ?", [$sourceFileId]
+                )->getRowArray();
+                if (!$r || empty($r['file_name'])) return null;
+                return $this->normalize(self::SOURCE_WALL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Wall Post', $r['created_at'], (int) $r['owner_user_id']);
+
             default:
                 return null;
         }
     }
 
     /**
-     * Whether $userId (teacher who created the lesson, an active subject
+     * Whether $userId (a class resource's creator, an active subject
      * teacher, an active enrolled student, or a parent of one) may access
-     * the lesson video $videoId. Videos have many legitimate viewers, so
-     * unlike other sources this is checked directly rather than via a
-     * single owner_user_id comparison.
+     * the given class resource. These sources have many legitimate viewers,
+     * so unlike owner-based sources this is checked directly rather than
+     * via a single owner_user_id comparison. $sourceType must be one of
+     * CLASS_ACCESS_SOURCES.
      */
-    public function canUserAccessVideo(int $userId, int $videoId): bool
+    public function canUserAccessClassResource(string $sourceType, int $userId, int $resourceId): bool
     {
         $db = \Config\Database::connect();
 
-        $row = $db->query(
-            "SELECT 1
-             FROM lesson_video lv
-             INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
-             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
-             WHERE lv.video_id = ? AND " . self::VIDEO_ACCESS_SQL . "
-             LIMIT 1",
-            [$videoId, $userId, $userId, $userId, $userId]
-        )->getRowArray();
+        switch ($sourceType) {
+            case self::SOURCE_VIDEO:
+                $sql = "SELECT 1 FROM lesson_video lv
+                        INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
+                        INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+                        WHERE lv.video_id = ? AND " . self::classAccessSql('cl.created_by') . " LIMIT 1";
+                break;
+
+            case self::SOURCE_LESSON_FILE:
+                $sql = "SELECT 1 FROM lesson_file lf
+                        INNER JOIN classroom_lesson cl ON cl.lesson_id = lf.lesson_id_fk
+                        INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+                        WHERE lf.file_id = ? AND " . self::classAccessSql('cl.created_by') . " LIMIT 1";
+                break;
+
+            case self::SOURCE_ASSIGNMENT_FILE:
+                $sql = "SELECT 1 FROM lesson_assignment_file laf
+                        INNER JOIN lesson_assignment la ON la.assignment_id = laf.assignment_id_fk
+                        INNER JOIN classroom_subject cs ON cs.class_sub_id = la.class_sub_id_fk
+                        WHERE laf.assign_file_id = ? AND " . self::classAccessSql('la.created_by') . " LIMIT 1";
+                break;
+
+            default:
+                return false;
+        }
+
+        $row = $db->query($sql, [$resourceId, $userId, $userId, $userId, $userId])->getRowArray();
 
         return $row !== null;
     }
