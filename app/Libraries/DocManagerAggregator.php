@@ -6,11 +6,11 @@ use App\Models\ParentStudentModel;
 
 /**
  * Cross-module personal-document aggregator for Doc Manager. Pulls a user's
- * files from personal uploads plus five other existing source tables
- * (generated references, conduct incident/appeal files, attendance files,
- * medical files, and assignment submissions) into one normalized shape, and
- * resolves a single source_type+source_file_id pair back to its owner and
- * physical location for view/download/share actions.
+ * files from personal uploads plus existing source tables (generated
+ * references, conduct incident/appeal files, attendance files, medical
+ * files, assignment submissions, and lesson videos) into one normalized
+ * shape, and resolves a single source_type+source_file_id pair back to its
+ * owner and physical location for view/download/share actions.
  *
  * `lesson_assignment_file` is deliberately excluded — it's shared class
  * material owned by a teacher's class, not a single user's personal document.
@@ -28,6 +28,7 @@ class DocManagerAggregator
     public const SOURCE_ATTENDANCE  = 'attendance';
     public const SOURCE_MEDICAL     = 'medical';
     public const SOURCE_SUBMISSION  = 'assignment_submission';
+    public const SOURCE_VIDEO       = 'video';
 
     private const FOLDERS = [
         self::SOURCE_PERSONAL   => 'doc_manager',
@@ -37,6 +38,7 @@ class DocManagerAggregator
         self::SOURCE_ATTENDANCE => 'attendance',
         self::SOURCE_MEDICAL    => 'medical',
         self::SOURCE_SUBMISSION => 'assignment_submissions',
+        self::SOURCE_VIDEO      => '',
     ];
 
     private const SOURCE_LABELS = [
@@ -47,7 +49,25 @@ class DocManagerAggregator
         self::SOURCE_ATTENDANCE => 'Attendance',
         self::SOURCE_MEDICAL    => 'Medical',
         self::SOURCE_SUBMISSION => 'Assignment',
+        self::SOURCE_VIDEO      => 'Lesson Video',
     ];
+
+    /**
+     * Shared WHERE fragment for "is $userId allowed to see videos on this
+     * lesson's class/subject" — lesson creator, an active subject teacher,
+     * an active enrolled student, or a parent of an active enrolled student.
+     * Takes the same placeholder ($userId) four times.
+     */
+    private const VIDEO_ACCESS_SQL = "(
+        cl.created_by = ?
+        OR EXISTS (SELECT 1 FROM classroom_subject_teacher cst WHERE cst.class_sub_id_fk = cs.class_sub_id AND cst.user_id_fk = ? AND cst.class_sub_teacher_status = 'Active')
+        OR EXISTS (SELECT 1 FROM classroom_student cstu WHERE cstu.class_id_fk = cs.class_id_fk AND cstu.user_id_fk = ? AND cstu.class_stud_status = 'Active')
+        OR EXISTS (
+            SELECT 1 FROM parent_student ps
+            INNER JOIN classroom_student cstu2 ON cstu2.class_id_fk = cs.class_id_fk AND cstu2.user_id_fk = ps.student_user_id_fk AND cstu2.class_stud_status = 'Active'
+            WHERE ps.parent_user_id_fk = ?
+        )
+    )";
 
     protected ParentStudentModel $parentStudentModel;
 
@@ -187,6 +207,20 @@ class DocManagerAggregator
             $rows[] = $this->normalize(self::SOURCE_SUBMISSION, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Assignment', $r['created_at'], $userId);
         }
 
+        // ── lesson videos (visible via teaching, enrolment, or parentage) ──
+        $res = $db->query(
+            "SELECT lv.video_id AS source_file_id, lv.video_url AS file_name, lv.video_title AS label, cl.created_at AS created_at
+             FROM lesson_video lv
+             INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+             WHERE cl.lesson_status = 'Published' AND " . self::VIDEO_ACCESS_SQL . "
+             ORDER BY cl.created_at DESC",
+            [$userId, $userId, $userId, $userId]
+        )->getResultArray();
+        foreach ($res as $r) {
+            $rows[] = $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], $userId);
+        }
+
         usort($rows, fn($a, $b) => strcmp((string) $b['created_at'], (string) $a['created_at']));
 
         return $rows;
@@ -273,17 +307,61 @@ class DocManagerAggregator
                 if (!$r || empty($r['file_name'])) return null;
                 return $this->normalize(self::SOURCE_SUBMISSION, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Assignment', $r['created_at'], (int) $r['owner_user_id']);
 
+            case self::SOURCE_VIDEO:
+                $r = $db->query(
+                    "SELECT lv.video_id AS source_file_id, lv.video_url AS file_name, lv.video_title AS label,
+                            cl.created_at AS created_at, cl.created_by AS owner_user_id
+                     FROM lesson_video lv
+                     INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
+                     WHERE lv.video_id = ?", [$sourceFileId]
+                )->getRowArray();
+                if (!$r || empty($r['file_name'])) return null;
+                return $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], (int) $r['owner_user_id']);
+
             default:
                 return null;
         }
+    }
+
+    /**
+     * Whether $userId (teacher who created the lesson, an active subject
+     * teacher, an active enrolled student, or a parent of one) may access
+     * the lesson video $videoId. Videos have many legitimate viewers, so
+     * unlike other sources this is checked directly rather than via a
+     * single owner_user_id comparison.
+     */
+    public function canUserAccessVideo(int $userId, int $videoId): bool
+    {
+        $db = \Config\Database::connect();
+
+        $row = $db->query(
+            "SELECT 1
+             FROM lesson_video lv
+             INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+             WHERE lv.video_id = ? AND " . self::VIDEO_ACCESS_SQL . "
+             LIMIT 1",
+            [$videoId, $userId, $userId, $userId, $userId]
+        )->getRowArray();
+
+        return $row !== null;
     }
 
     private function normalize(string $sourceType, int $sourceFileId, ?string $fileName, ?string $originalName, string $label, ?string $createdAt, ?int $ownerUserId = null): array
     {
         $fileName     = (string) $fileName;
         $originalName = $originalName ?: $fileName;
-        $ext          = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-        [$category, $icon, $color] = $this->classify($ext);
+        $isVideo      = $sourceType === self::SOURCE_VIDEO;
+
+        if ($isVideo) {
+            $ext = null;
+            [$category, $icon, $color] = ['Video', 'ki-video', 'danger'];
+            $url = $fileName;
+        } else {
+            $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+            [$category, $icon, $color] = $this->classify($ext);
+            $url = base_url('uploads/' . $this->folderFor($sourceType) . '/' . $fileName);
+        }
 
         return [
             'source_type'    => $sourceType,
@@ -293,12 +371,13 @@ class DocManagerAggregator
             'original_name'  => $originalName,
             'label'          => $label,
             'source_label'   => $this->labelFor($sourceType),
-            'url'            => base_url('uploads/' . $this->folderFor($sourceType) . '/' . $fileName),
+            'url'            => $url,
             'created_at'     => $createdAt,
             'extension'      => $ext,
             'category'       => $category,
             'icon'           => $icon,
             'color'          => $color,
+            'is_external'    => $isVideo,
         ];
     }
 
@@ -317,7 +396,7 @@ class DocManagerAggregator
             in_array($ext, ['xls', 'xlsx', 'csv'], true) => ['Excel', 'ki-file-sheet', 'success'],
             in_array($ext, ['ppt', 'pptx'], true) => ['PowerPoint', 'ki-file-up', 'warning'],
             in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'], true) => ['Image', 'ki-picture', 'info'],
-            in_array($ext, ['zip', 'rar', '7z'], true) => ['Archive', 'ki-file-down', 'dark'],
+            in_array($ext, ['zip', 'rar', '7z'], true) => ['Other', 'ki-file-down', 'dark'],
             $ext === '' => ['Other', 'ki-file', 'secondary'],
             default => ['Other', 'ki-file', 'secondary'],
         };

@@ -43,6 +43,9 @@ class DocManagerController extends BaseController
         if ($this->aggregator->isParentOfUser($userId, $ownerId)) {
             return true;
         }
+        if ($doc['source_type'] === DocManagerAggregator::SOURCE_VIDEO && $this->aggregator->canUserAccessVideo($userId, (int) $doc['source_file_id'])) {
+            return true;
+        }
 
         return $this->docManagerShareModel
             ->where('source_type', $doc['source_type'])
@@ -59,6 +62,11 @@ class DocManagerController extends BaseController
 
     private function streamFile(array $doc, bool $forceDownload): void
     {
+        if (!empty($doc['is_external'])) {
+            header('Location: ' . $doc['url']);
+            exit;
+        }
+
         $path = FCPATH . 'uploads/' . $this->aggregator->folderFor($doc['source_type']) . '/' . $doc['file_name'];
         if (!file_exists($path)) {
             $data['_view'] = 'app/auth/access_control';

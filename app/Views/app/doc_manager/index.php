@@ -7,11 +7,32 @@ $viewingUser     = $viewingUser ?? null;
 $isLookup        = $viewingUser !== null;
 $sharedCount     = $sharedCount ?? 0;
 
-$grouped = [];
-foreach ($documents as $doc) {
-    $grouped[$doc['category']][] = $doc;
-}
-ksort($grouped);
+$categoryOrder = ['Image', 'PDF', 'Word', 'Excel', 'PowerPoint', 'Video', 'Other'];
+$categoryMeta  = [
+    'Image'      => ['color' => 'info'],
+    'PDF'        => ['color' => 'danger'],
+    'Word'       => ['color' => 'primary'],
+    'Excel'      => ['color' => 'success'],
+    'PowerPoint' => ['color' => 'warning'],
+    'Video'      => ['color' => 'danger'],
+    'Other'      => ['color' => 'secondary'],
+];
+
+$jsDocs = array_map(function ($d) use ($isLookup, $categoryOrder) {
+    return [
+        'source_type'    => $d['source_type'],
+        'source_file_id' => (int) $d['source_file_id'],
+        'name'           => $d['original_name'],
+        'label'          => ($d['label'] && $d['label'] !== $d['original_name']) ? $d['label'] : '',
+        'source_label'   => $d['source_label'],
+        'category'       => in_array($d['category'], $categoryOrder, true) ? $d['category'] : 'Other',
+        'icon'           => $d['icon'],
+        'color'          => $d['color'],
+        'created_at'     => (string) $d['created_at'],
+        'is_external'    => !empty($d['is_external']),
+        'can_delete'     => !$isLookup && $d['source_type'] === 'personal',
+    ];
+}, $documents);
 ?>
 
 <!--begin::Toolbar-->
@@ -79,86 +100,85 @@ ksort($grouped);
 </div>
 <?php else: ?>
 
-<div class="row g-4 mb-6">
-    <?php foreach ($grouped as $category => $docs): $first = $docs[0]; ?>
-    <div class="col-6 col-md-3 col-lg-2">
-        <div class="card card-flush h-100">
-            <div class="card-body text-center py-6">
-                <i class="ki-duotone <?= esc($first['icon']) ?> fs-3x text-<?= esc($first['color']) ?> mb-2">
-                    <span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span>
-                </i>
-                <div class="fw-bold text-gray-900"><?= esc($category) ?></div>
-                <div class="text-muted fs-8"><?= count($docs) ?> file<?= count($docs) === 1 ? '' : 's' ?></div>
+<!--begin::View toggle-->
+<div class="btn-group mb-6" role="group">
+    <button type="button" class="btn btn-primary" id="docmgr_btn_folder_view" onclick="docmgrSwitchView('folder')">
+        <i class="ki-duotone ki-folder fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
+        Folder View
+    </button>
+    <button type="button" class="btn btn-light" id="docmgr_btn_list_view" onclick="docmgrSwitchView('list')">
+        <i class="ki-duotone ki-row-horizontal fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
+        List View
+    </button>
+</div>
+<!--end::View toggle-->
+
+<!--begin::Folder view-->
+<div id="docmgr_folder_view">
+    <div id="docmgr_folder_grid" class="row g-4"></div>
+
+    <div id="docmgr_folder_contents" class="card d-none">
+        <div class="card-header border-0 pt-6">
+            <div class="card-title d-flex align-items-center">
+                <button type="button" class="btn btn-sm btn-icon btn-light me-3" onclick="docmgrCloseFolder()" title="Back to folders">
+                    <i class="ki-duotone ki-black-left fs-2"><span class="path1"></span><span class="path2"></span></i>
+                </button>
+                <h3 class="fw-bold text-gray-900 fs-5 mb-0" id="docmgr_folder_contents_title"></h3>
+            </div>
+        </div>
+        <div class="card-body pt-0">
+            <div class="table-responsive">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                    <thead>
+                        <tr class="fw-bold text-muted fs-7 bg-light">
+                            <th class="ps-4">File</th>
+                            <th>Source</th>
+                            <th>Date</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="docmgr_folder_contents_body"></tbody>
+                </table>
             </div>
         </div>
     </div>
-    <?php endforeach; ?>
 </div>
+<!--end::Folder view-->
 
-<?php foreach ($grouped as $category => $docs): $first = $docs[0]; ?>
-<div class="card mb-6">
-    <div class="card-header border-0 pt-6">
-        <div class="card-title">
-            <i class="ki-duotone <?= esc($first['icon']) ?> fs-2 text-<?= esc($first['color']) ?> me-2">
-                <span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span>
-            </i>
-            <h3 class="fw-bold text-gray-900 fs-5 mb-0"><?= esc($category) ?> (<?= count($docs) ?>)</h3>
-        </div>
-    </div>
-    <div class="card-body pt-0">
-        <div class="table-responsive">
-            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
-                <thead>
-                    <tr class="fw-bold text-muted fs-7 bg-light">
-                        <th class="ps-4">File</th>
-                        <th>Source</th>
-                        <th>Date</th>
-                        <th class="text-end pe-4">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($docs as $doc): ?>
-                <tr>
-                    <td class="ps-4">
-                        <a href="javascript:void(0)" onclick="docmgrPreview('<?= esc($doc['source_type']) ?>', <?= (int) $doc['source_file_id'] ?>)" class="fw-semibold text-gray-900 text-hover-primary">
-                            <?= esc($doc['original_name']) ?>
-                        </a>
-                        <?php if (!empty($doc['label']) && $doc['label'] !== $doc['original_name']): ?>
-                        <div class="text-muted fs-8"><?= esc($doc['label']) ?></div>
-                        <?php endif; ?>
-                    </td>
-                    <td><span class="badge badge-light-secondary"><?= esc($doc['source_label']) ?></span></td>
-                    <td class="text-muted fs-7"><?= esc(substr((string) $doc['created_at'], 0, 16)) ?></td>
-                    <td class="text-end pe-4">
-                        <div class="d-flex justify-content-end gap-1">
-                            <a href="<?= base_url('doc-manager/view/' . $doc['source_type'] . '/' . $doc['source_file_id']) ?>" target="_blank" class="btn btn-sm btn-icon btn-light-info" title="View">
-                                <i class="ki-duotone ki-eye fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-                            </a>
-                            <a href="<?= base_url('doc-manager/download/' . $doc['source_type'] . '/' . $doc['source_file_id']) ?>" class="btn btn-sm btn-icon btn-light-success" title="Download">
-                                <i class="ki-duotone ki-down fs-5"><span class="path1"></span><span class="path2"></span></i>
-                            </a>
-                            <button type="button" class="btn btn-sm btn-icon btn-light-dark" title="Print" onclick="docmgrPrint('<?= base_url('doc-manager/view/' . $doc['source_type'] . '/' . $doc['source_file_id']) ?>')">
-                                <i class="ki-duotone ki-printer fs-5"><span class="path1"></span><span class="path2"></span></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-icon btn-light-primary" title="Share"
-                                onclick="docmgrOpenShare('<?= esc($doc['source_type']) ?>', <?= (int) $doc['source_file_id'] ?>, '<?= esc(addslashes($doc['original_name'])) ?>')">
-                                <i class="ki-duotone ki-share fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
-                            </button>
-                            <?php if (!$isLookup && $doc['source_type'] === 'personal'): ?>
-                            <button type="button" class="btn btn-sm btn-icon btn-light-danger" title="Remove" onclick="docmgrDelete(<?= (int) $doc['source_file_id'] ?>)">
-                                <i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>
-                            </button>
-                            <?php endif; ?>
-                        </div>
-                    </td>
-                </tr>
+<!--begin::List view-->
+<div id="docmgr_list_view" class="d-none">
+    <div class="card">
+        <div class="card-body">
+            <ul class="nav nav-tabs nav-line-tabs mb-5" id="docmgr_list_tabs">
+                <?php foreach ($categoryOrder as $i => $cat): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?= $i === 0 ? 'active' : '' ?>" data-bs-toggle="tab" href="#tab_docmgr_<?= strtolower($cat) ?>"><?= esc($cat) ?></a>
+                </li>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
+            </ul>
+            <div class="tab-content">
+                <?php foreach ($categoryOrder as $i => $cat): ?>
+                <div class="tab-pane fade <?= $i === 0 ? 'show active' : '' ?>" id="tab_docmgr_<?= strtolower($cat) ?>">
+                    <div class="table-responsive">
+                        <table id="docmgr_dt_<?= strtolower($cat) ?>" class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 w-100">
+                            <thead>
+                                <tr class="fw-bold text-muted fs-7 bg-light">
+                                    <th class="ps-4">File</th>
+                                    <th>Source</th>
+                                    <th>Date</th>
+                                    <th class="text-end pe-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
         </div>
     </div>
 </div>
-<?php endforeach; ?>
+<!--end::List view-->
 
 <?php endif; ?>
 
@@ -269,8 +289,163 @@ $('#share_staff_select').select2({ placeholder: '— Select staff —', width: '
 var docmgrCurrentSource = null;
 var docmgrCurrentId     = null;
 
+var CATEGORY_ORDER   = <?= json_encode($categoryOrder, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+var CATEGORY_COLOR   = <?= json_encode(array_map(fn($c) => $c['color'], $categoryMeta), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+var docmgrDocuments   = <?= json_encode($jsDocs, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+var DOCMGR_VIEW_BASE     = '<?= base_url('doc-manager/view/') ?>';
+var DOCMGR_DOWNLOAD_BASE = '<?= base_url('doc-manager/download/') ?>';
+
+function docmgrEsc(s) {
+    var div = document.createElement('div');
+    div.textContent = (s === null || s === undefined) ? '' : String(s);
+    return div.innerHTML;
+}
+
+function docmgrFileIconHtml(doc) {
+    return '<i class="ki-duotone ' + doc.icon + ' fs-2x text-' + doc.color + '"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i>';
+}
+
+function docmgrNameCellHtml(doc) {
+    var html = '<div class="d-flex align-items-center">';
+    html += '<div class="me-3">' + docmgrFileIconHtml(doc) + '</div><div>';
+    html += '<a href="javascript:void(0)" class="fw-semibold text-gray-900 text-hover-primary docmgr-btn-preview" data-source-type="' + docmgrEsc(doc.source_type) + '" data-source-id="' + doc.source_file_id + '">' + docmgrEsc(doc.name) + '</a>';
+    if (doc.label) {
+        html += '<div class="text-muted fs-8">' + docmgrEsc(doc.label) + '</div>';
+    }
+    html += '</div></div>';
+    return html;
+}
+
+function docmgrActionsHtml(doc) {
+    var html = '<div class="d-flex justify-content-end gap-1">';
+    html += '<a href="' + DOCMGR_VIEW_BASE + doc.source_type + '/' + doc.source_file_id + '" target="_blank" class="btn btn-sm btn-icon btn-light-info" title="View"><i class="ki-duotone ki-eye fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i></a>';
+    if (!doc.is_external) {
+        html += '<a href="' + DOCMGR_DOWNLOAD_BASE + doc.source_type + '/' + doc.source_file_id + '" class="btn btn-sm btn-icon btn-light-success" title="Download"><i class="ki-duotone ki-down fs-5"><span class="path1"></span><span class="path2"></span></i></a>';
+        html += '<button type="button" class="btn btn-sm btn-icon btn-light-dark docmgr-btn-print" title="Print" data-source-type="' + docmgrEsc(doc.source_type) + '" data-source-id="' + doc.source_file_id + '"><i class="ki-duotone ki-printer fs-5"><span class="path1"></span><span class="path2"></span></i></button>';
+    }
+    html += '<button type="button" class="btn btn-sm btn-icon btn-light-primary docmgr-btn-share" title="Share" data-source-type="' + docmgrEsc(doc.source_type) + '" data-source-id="' + doc.source_file_id + '" data-name="' + docmgrEsc(doc.name) + '"><i class="ki-duotone ki-share fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i></button>';
+    if (doc.can_delete) {
+        html += '<button type="button" class="btn btn-sm btn-icon btn-light-danger docmgr-btn-delete" title="Remove" data-source-id="' + doc.source_file_id + '"><i class="ki-duotone ki-trash fs-5"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span><span class="path5"></span></i></button>';
+    }
+    html += '</div>';
+    return html;
+}
+
+$(document).on('click', '.docmgr-btn-preview', function () {
+    docmgrPreview($(this).data('source-type'), $(this).data('source-id'));
+});
+$(document).on('click', '.docmgr-btn-print', function () {
+    docmgrPrint(DOCMGR_VIEW_BASE + $(this).data('source-type') + '/' + $(this).data('source-id'));
+});
+$(document).on('click', '.docmgr-btn-share', function () {
+    docmgrOpenShare($(this).data('source-type'), $(this).data('source-id'), $(this).data('name'));
+});
+$(document).on('click', '.docmgr-btn-delete', function () {
+    docmgrDelete($(this).data('source-id'));
+});
+
+// ── Folder view ──────────────────────────────────────────────────────
+function docmgrRenderFolders() {
+    var counts = {};
+    CATEGORY_ORDER.forEach(function (c) { counts[c] = 0; });
+    docmgrDocuments.forEach(function (d) { counts[d.category] = (counts[d.category] || 0) + 1; });
+
+    var html = '';
+    CATEGORY_ORDER.forEach(function (cat) {
+        var color = CATEGORY_COLOR[cat] || 'secondary';
+        html += '<div class="col-6 col-md-3 col-lg-2">';
+        html += '<div class="card card-flush h-100 cursor-pointer docmgr-folder-tile" data-cat="' + cat + '">';
+        html += '<div class="card-body text-center py-8">';
+        html += '<i class="ki-duotone ki-folder fs-5x text-' + color + ' mb-3"><span class="path1"></span><span class="path2"></span></i>';
+        html += '<div class="fw-bold text-gray-900 fs-5">' + docmgrEsc(cat) + '</div>';
+        html += '<div class="text-muted fs-8">' + counts[cat] + ' file' + (counts[cat] === 1 ? '' : 's') + '</div>';
+        html += '</div></div></div>';
+    });
+    $('#docmgr_folder_grid').html(html);
+}
+
+$(document).on('click', '.docmgr-folder-tile', function () {
+    docmgrOpenFolder($(this).data('cat'));
+});
+
+function docmgrOpenFolder(cat) {
+    $('#docmgr_folder_grid').addClass('d-none');
+    $('#docmgr_folder_contents').removeClass('d-none');
+    $('#docmgr_folder_contents_title').text(cat);
+
+    var docs = docmgrDocuments.filter(function (d) { return d.category === cat; });
+    var body = '';
+    if (!docs.length) {
+        body = '<tr><td colspan="4" class="text-center text-muted py-8">No files in this folder.</td></tr>';
+    } else {
+        docs.forEach(function (d) {
+            body += '<tr>';
+            body += '<td class="ps-4">' + docmgrNameCellHtml(d) + '</td>';
+            body += '<td><span class="badge badge-light-secondary">' + docmgrEsc(d.source_label) + '</span></td>';
+            body += '<td class="text-muted fs-7">' + docmgrEsc(d.created_at.substring(0, 16)) + '</td>';
+            body += '<td class="text-end pe-4">' + docmgrActionsHtml(d) + '</td>';
+            body += '</tr>';
+        });
+    }
+    $('#docmgr_folder_contents_body').html(body);
+}
+
+function docmgrCloseFolder() {
+    $('#docmgr_folder_contents').addClass('d-none');
+    $('#docmgr_folder_grid').removeClass('d-none');
+}
+
+// ── List view (tabbed DataTables) ───────────────────────────────────
+var docmgrDtInited     = {};
+var docmgrListViewOpen = false;
+
+function docmgrInitListTab(cat) {
+    if (docmgrDtInited[cat]) return;
+    docmgrDtInited[cat] = true;
+
+    var docs = docmgrDocuments.filter(function (d) { return d.category === cat; });
+
+    $('#docmgr_dt_' + cat.toLowerCase()).DataTable({
+        data: docs,
+        pageLength: 10,
+        order: [[2, 'desc']],
+        columns: [
+            { data: null, render: function (d) { return docmgrNameCellHtml(d); } },
+            { data: 'source_label', render: function (v) { return '<span class="badge badge-light-secondary">' + docmgrEsc(v) + '</span>'; } },
+            { data: 'created_at', render: function (v) { return docmgrEsc((v || '').substring(0, 16)); } },
+            { data: null, className: 'text-end', orderable: false, render: function (d) { return docmgrActionsHtml(d); } },
+        ],
+        language: { emptyTable: 'No documents in this category.' },
+    });
+}
+
+function docmgrSwitchView(mode) {
+    if (mode === 'folder') {
+        $('#docmgr_folder_view').removeClass('d-none');
+        $('#docmgr_list_view').addClass('d-none');
+        $('#docmgr_btn_folder_view').addClass('btn-primary').removeClass('btn-light');
+        $('#docmgr_btn_list_view').addClass('btn-light').removeClass('btn-primary');
+    } else {
+        $('#docmgr_folder_view').addClass('d-none');
+        $('#docmgr_list_view').removeClass('d-none');
+        $('#docmgr_btn_list_view').addClass('btn-primary').removeClass('btn-light');
+        $('#docmgr_btn_folder_view').addClass('btn-light').removeClass('btn-primary');
+        if (!docmgrListViewOpen) {
+            docmgrListViewOpen = true;
+            docmgrInitListTab(CATEGORY_ORDER[0]);
+        }
+    }
+}
+
+$('#docmgr_list_tabs a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+    docmgrInitListTab($(e.target).text().trim());
+});
+
+docmgrRenderFolders();
+
+// ── Preview / print / delete / share ────────────────────────────────
 function docmgrPreview(sourceType, sourceId) {
-    window.open('<?= base_url('doc-manager/view/') ?>' + sourceType + '/' + sourceId, '_blank');
+    window.open(DOCMGR_VIEW_BASE + sourceType + '/' + sourceId, '_blank');
 }
 
 function docmgrPrint(url) {

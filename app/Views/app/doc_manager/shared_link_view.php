@@ -4,7 +4,8 @@ $token       = $token ?? '';
 $canDownload = $canDownload ?? false;
 $viewUrl     = base_url('doc-manager/shared-link/' . $token . '/view');
 $downloadUrl = base_url('doc-manager/shared-link/' . $token . '/download');
-$isPreviewable = in_array($doc['extension'] ?? '', ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'], true);
+$isExternal    = !empty($doc['is_external']);
+$isPreviewable = !$isExternal && in_array($doc['extension'] ?? '', ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'], true);
 ?>
 
 <div class="text-center mb-8">
@@ -19,6 +20,8 @@ $isPreviewable = in_array($doc['extension'] ?? '', ['pdf', 'jpg', 'jpeg', 'png',
 <div class="border rounded mb-6" style="height: 60vh; overflow: hidden;">
     <iframe src="<?= $viewUrl ?>" style="width:100%; height:100%; border:0;"></iframe>
 </div>
+<?php elseif ($isExternal): ?>
+<div class="alert alert-secondary text-center mb-6">This is a lesson video hosted externally — use View to watch it.</div>
 <?php else: ?>
 <div class="alert alert-secondary text-center mb-6">No inline preview available for this file type — use View or Download below.</div>
 <?php endif; ?>
@@ -28,11 +31,13 @@ $isPreviewable = in_array($doc['extension'] ?? '', ['pdf', 'jpg', 'jpeg', 'png',
         <i class="ki-duotone ki-eye fs-3 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
         View
     </a>
+    <?php if (!$isExternal): ?>
     <button type="button" class="btn btn-light-dark" onclick="printSharedDoc()">
         <i class="ki-duotone ki-printer fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
         Print
     </button>
-    <?php if ($canDownload): ?>
+    <?php endif; ?>
+    <?php if ($canDownload && !$isExternal): ?>
     <a href="<?= $downloadUrl ?>" class="btn btn-primary">
         <i class="ki-duotone ki-down fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
         Download
