@@ -440,14 +440,26 @@ class DocManagerAggregator
             $rows[] = $this->normalize(self::SOURCE_SUBMISSION, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Assignment', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
         }
 
-        // ── lesson videos (owner = lesson creator) ──────────────────────
+        // Class resources (video/lesson_file/assignment_file) belong to a
+        // school through the classroom hierarchy (classroom_subject ->
+        // classroom -> stream -> sch_level), not through the creator's own
+        // admission record — a teacher can create lesson content for a
+        // school without necessarily having an 'Active' admission row there,
+        // so scoping by admission here would silently drop their files.
+        // This mirrors DashboardStats::schoolAdminStats()'s join chain.
+
+        // ── lesson videos ────────────────────────────────────────────────
         $res = $db->query(
             "SELECT lv.video_id AS source_file_id, lv.video_url AS file_name, lv.video_title AS label, cl.created_at AS created_at,
                     cl.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
              FROM lesson_video lv
              INNER JOIN classroom_lesson cl ON cl.lesson_id = lv.lesson_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+             INNER JOIN classroom c ON c.class_id = cs.class_id_fk
+             INNER JOIN stream s ON s.stream_id = c.stream_id_fk
+             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = cl.created_by
-             WHERE cl.created_by {$inSchool} AND lv.video_title LIKE ?
+             WHERE sl.sch_id_fk = ? AND lv.video_title LIKE ?
              ORDER BY cl.created_at DESC",
             [$schId, $like]
         )->getResultArray();
@@ -455,14 +467,18 @@ class DocManagerAggregator
             $rows[] = $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
         }
 
-        // ── lesson resource files (owner = lesson creator) ──────────────
+        // ── lesson resource files ────────────────────────────────────────
         $res = $db->query(
             "SELECT lf.file_id AS source_file_id, lf.file_path AS file_name, lf.file_name AS original_name, lf.uploaded_at AS created_at,
                     cl.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
              FROM lesson_file lf
              INNER JOIN classroom_lesson cl ON cl.lesson_id = lf.lesson_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = cl.class_sub_id_fk
+             INNER JOIN classroom c ON c.class_id = cs.class_id_fk
+             INNER JOIN stream s ON s.stream_id = c.stream_id_fk
+             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = cl.created_by
-             WHERE cl.created_by {$inSchool} AND lf.file_name LIKE ?
+             WHERE sl.sch_id_fk = ? AND lf.file_name LIKE ?
              ORDER BY lf.uploaded_at DESC",
             [$schId, $like]
         )->getResultArray();
@@ -470,14 +486,18 @@ class DocManagerAggregator
             $rows[] = $this->normalize(self::SOURCE_LESSON_FILE, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Lesson File', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
         }
 
-        // ── assignment question files (owner = assignment creator) ──────
+        // ── assignment question files ────────────────────────────────────
         $res = $db->query(
             "SELECT laf.assign_file_id AS source_file_id, laf.file_src AS file_name, la.assignment_name AS label, la.created_at AS created_at,
                     la.created_by AS owner_user_id, CONCAT(u.fname, ' ', u.lname) AS owner_name
              FROM lesson_assignment_file laf
              INNER JOIN lesson_assignment la ON la.assignment_id = laf.assignment_id_fk
+             INNER JOIN classroom_subject cs ON cs.class_sub_id = la.class_sub_id_fk
+             INNER JOIN classroom c ON c.class_id = cs.class_id_fk
+             INNER JOIN stream s ON s.stream_id = c.stream_id_fk
+             INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = la.created_by
-             WHERE la.created_by {$inSchool} AND (laf.file_src LIKE ? OR la.assignment_name LIKE ?)
+             WHERE sl.sch_id_fk = ? AND (laf.file_src LIKE ? OR la.assignment_name LIKE ?)
              ORDER BY la.created_at DESC",
             [$schId, $like, $like]
         )->getResultArray();
