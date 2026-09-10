@@ -430,9 +430,10 @@ class DocManagerController extends BaseController
         $schId  = (int) $this->session->get('schID');
         $search = $this->request->getGet('search') ?: null;
 
-        $data['users']  = $schId > 0 ? $this->admissionModel->getAllActiveBySchool($schId, $search) : [];
-        $data['search'] = $search;
-        $data['_view']  = 'app/doc_manager/lookup';
+        $data['users']     = $schId > 0 ? $this->admissionModel->getAllActiveBySchool($schId, $search) : [];
+        $data['documents'] = ($schId > 0 && $search) ? $this->aggregator->searchDocumentsBySchool($schId, $search) : [];
+        $data['search']    = $search;
+        $data['_view']     = 'app/doc_manager/lookup';
 
         return view('app/layouts/main', $data);
     }
