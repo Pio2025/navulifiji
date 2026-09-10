@@ -94,90 +94,65 @@
 
 <section class="section light-background">
     <div class="container section-title text-center" data-aos="fade-up">
-        <span class="badge-brand-pink">What's Included</span>
-        <h2 class="mt-3">Modules by plan</h2>
-        <p>Every plan builds on the one before it — see exactly what unlocks at each tier.</p>
+        <span class="badge-brand-pink">Why It's Worth It</span>
+        <h2 class="mt-3">Built to pay for itself</h2>
+        <p>Navuli isn't an added expense — it's the paperwork, printing and phone calls your staff no longer have to do. Here's how the numbers work out.</p>
     </div>
+
     <div class="container">
-        <?php
-            $moduleTiers = [
-                'Standard Modules' => [
-                    ['bi-speedometer2', 'Multiple Dashboards'],
-                    ['bi-clipboard', 'Notice Board'],
-                    ['bi-megaphone', 'Announcement Management'],
-                    ['bi-calendar-week', 'Timetable'],
-                    ['bi-person-plus', 'Student Admission'],
-                    ['bi-diagram-3', 'Student Enrolment'],
-                    ['bi-chat-dots', 'Messaging System'],
-                    ['bi-calendar2-check', 'Student Attendance'],
-                    ['bi-journal-bookmark', 'Curriculum Management'],
-                    ['bi-pencil-square', 'Examination'],
-                    ['bi-people', 'User Management'],
-                    ['bi-bar-chart', 'Report Center'],
-                    ['bi-person-badge', 'Admin / Teacher Login'],
-                    ['bi-person-check', 'Students / Parents Login'],
-                    ['bi-person-lines-fill', 'Student Information'],
-                    ['bi-file-earmark-text', 'Certificates & Reference Documents'],
-                    ['bi-clock-history', 'Sessions & Logs'],
-                    ['bi-award', 'Certificate Generator'],
-                    ['bi-person-vcard', 'ID Card Generator'],
-                    ['bi-calendar-event', 'School / Events Calendar'],
-                    ['bi-journal-text', 'Gradebook'],
-                ],
-                'Premium Modules' => [
-                    ['bi-bookshelf', 'Library'],
-                    ['bi-database', 'Data Management'],
-                    ['bi-envelope-at', 'Email Integration'],
-                    ['bi-bus-front', 'Transportation'],
-                    ['bi-box-arrow-in-down', 'Custom Import'],
-                    ['bi-grid-3x3-gap', 'School Wall'],
-                    ['bi-bar-chart-line', 'Poll'],
-                    ['bi-file-earmark-bar-graph', 'Custom Report'],
-                    ['bi-palette', 'Theme'],
-                    ['bi-briefcase', 'Placement'],
-                    ['bi-list-task', 'Task'],
-                    ['bi-shield-check', 'Discipline'],
-                    ['bi-box-arrow-up', 'Data Export'],
-                    ['bi-bell', 'Reminder'],
-                    ['bi-clipboard-plus', 'Enquiry & Registration'],
-                ],
-                'Ultimate Modules' => [
-                    ['bi-easel2', 'Digital Classroom'],
-                    ['bi-grid-1x2', 'Subject Dashboard'],
-                    ['bi-journal-richtext', 'Lesson Management'],
-                    ['bi-clipboard-check', 'Assessment Management'],
-                    ['bi-clipboard-data', 'Student Assignment'],
-                    ['bi-laptop', 'Online Assessment'],
-                    ['bi-calendar-check', 'Attendance Report'],
-                    ['bi-chat-left-text', 'Feedback'],
-                    ['bi-pencil-square', 'Internal Exam Management'],
-                    ['bi-journal-check', 'External Exam Management'],
-                    ['bi-graph-up', 'Report Cards'],
-                    ['bi-telephone', 'Audio Call'],
-                    ['bi-camera-video', 'Video Call'],
-                    ['bi-heart-pulse', 'Medical & Next of Kin'],
-                    ['bi-person-check', 'Parent-Child Linking'],
-                    ['bi-mortarboard', 'Alumni'],
-                    ['bi-folder2-open', 'Doc Manager'],
-                    ['bi-door-open', 'Gate Management'],
-                ],
-            ];
-        ?>
-        <?php foreach ($moduleTiers as $tierName => $modules): ?>
-            <div class="mb-5" data-aos="fade-up">
-                <h3 class="mb-4"><?= esc($tierName) ?> <span class="text-muted fs-6">(<?= count($modules) ?>)</span></h3>
-                <div class="row gy-4">
-                    <?php foreach ($modules as [$icon, $label]): ?>
-                        <div class="col-lg-4 col-md-6">
-                            <a href="<?= site_url('feature/' . url_title($label, '-', true)) ?>" class="module-grid-item">
-                                <div class="module-icon"><i class="bi <?= $icon ?>"></i></div>
-                                <span class="module-label"><?= esc($label) ?></span>
-                            </a>
-                        </div>
-                    <?php endforeach; ?>
+        <div class="row gy-4 justify-content-center text-center mb-5" data-aos="fade-up">
+            <div class="col-lg-4 col-md-4">
+                <div class="stats-item">
+                    <span><span class="purecounter" data-purecounter-start="0" data-purecounter-end="7" data-purecounter-duration="1">0</span>&lt;</span>
+                    <p>FJD per day to run your whole school's admin, records and communication on the Standard plan</p>
                 </div>
             </div>
-        <?php endforeach; ?>
+            <div class="col-lg-4 col-md-4">
+                <div class="stats-item">
+                    <span>$<span class="purecounter" data-purecounter-start="0" data-purecounter-end="0" data-purecounter-duration="1">0</span></span>
+                    <p>extra per teacher, student or parent you add — every plan includes unlimited users</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-4">
+                <div class="stats-item">
+                    <span>$<span class="purecounter" data-purecounter-start="0" data-purecounter-end="0" data-purecounter-duration="1">0</span></span>
+                    <p>setup fee — onboarding and configuration are included with every plan</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="row gy-4">
+            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="100">
+                <div class="icon-box">
+                    <div class="icon"><i class="bi bi-clock-history"></i></div>
+                    <h3>Hours Back Every Week</h3>
+                    <p>Attendance registers, report cards, admission files and timetables that used to take hours of manual work now take minutes — for every teacher and admin staff member.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="150">
+                <div class="icon-box">
+                    <div class="icon"><i class="bi bi-printer"></i></div>
+                    <h3>Less Paper, Less Cost</h3>
+                    <p>Cut spending on printed registers, ledger books, paper report cards, notice SMS credit and photocopying — most of it moves onto Navuli at no extra charge.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="200">
+                <div class="icon-box">
+                    <div class="icon"><i class="bi bi-graph-up-arrow"></i></div>
+                    <h3>Fewer Mistakes, Faster Turnaround</h3>
+                    <p>Automatic grade calculation, timetable conflict detection and digital records mean fewer errors and no re-doing lost or miscalculated paperwork.</p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6" data-aos="fade-up" data-aos-delay="250">
+                <div class="icon-box">
+                    <div class="icon"><i class="bi bi-heart"></i></div>
+                    <h3>Parents Who Stay Enrolled</h3>
+                    <p>Real-time visibility into attendance, results and school news builds the kind of trust that keeps parents choosing — and recommending — your school.</p>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-center text-muted mt-5 mb-0" data-aos="fade-up">Compare that to the cost of one missed enrolment, one reprinted batch of report cards, or a term of SMS credit for notices — for most schools, Navuli pays for itself well within the first month.</p>
     </div>
 </section>
 
