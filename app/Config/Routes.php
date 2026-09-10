@@ -462,6 +462,31 @@ $routes->get( 'transportation/detail/(:num)',        'TransportationController::
 $routes->get( 'transportation/form/(:num)',          'TransportationController::generateForm/$1');
 
 // ============================================================================
+// LIBRARY Routes
+// ============================================================================
+$routes->get( 'library',                      'LibraryController::index');
+$routes->get( 'library/add',                  'LibraryController::add');
+$routes->post('library/store',                'LibraryController::store');
+$routes->get( 'library/edit/(:num)',          'LibraryController::edit/$1');
+$routes->post('library/update/(:num)',        'LibraryController::update/$1');
+$routes->post('library/remove/(:num)',        'LibraryController::delete/$1');
+$routes->get( 'library/detail/(:num)',        'LibraryController::detail/$1');
+
+$routes->get( 'library/category',                'LibraryCategoryController::index');
+$routes->get( 'library/category/add',            'LibraryCategoryController::add');
+$routes->post('library/category/store',          'LibraryCategoryController::store');
+$routes->get( 'library/category/edit/(:num)',    'LibraryCategoryController::edit/$1');
+$routes->post('library/category/update/(:num)',  'LibraryCategoryController::update/$1');
+$routes->post('library/category/remove/(:num)',  'LibraryCategoryController::delete/$1');
+
+$routes->get( 'library/issue',                'LibraryController::issue');
+$routes->post('library/issue/store',          'LibraryController::storeIssue');
+$routes->post('library/issue/return/(:num)',  'LibraryController::returnBook/$1');
+$routes->post('library/issue/lost/(:num)',    'LibraryController::markLost/$1');
+
+$routes->get( 'library/my',                   'LibraryController::my');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');

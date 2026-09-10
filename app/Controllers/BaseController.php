@@ -72,6 +72,9 @@ use App\Models\TimetableTemplateSlotModel;
 use App\Models\TransportAllocationModel;
 use App\Models\TransportHouseholdMemberModel;
 use App\Models\TransportTripModel;
+use App\Models\LibraryCategoryModel;
+use App\Models\LibraryBookModel;
+use App\Models\LibraryBookIssueModel;
 
 
 
@@ -166,6 +169,9 @@ abstract class BaseController extends Controller
     protected $transportAllocationModel;
     protected $transportHouseholdMemberModel;
     protected $transportTripModel;
+    protected $libraryCategoryModel;
+    protected $libraryBookModel;
+    protected $libraryBookIssueModel;
 
 
     /**
@@ -315,6 +321,12 @@ abstract class BaseController extends Controller
         $this->transportHouseholdMemberModel->ensureTables();
         $this->transportTripModel              = new TransportTripModel();
         $this->transportTripModel->ensureTables();
+        $this->libraryCategoryModel            = new LibraryCategoryModel();
+        $this->libraryCategoryModel->ensureTables();
+        $this->libraryBookModel                = new LibraryBookModel();
+        $this->libraryBookModel->ensureTables();
+        $this->libraryBookIssueModel            = new LibraryBookIssueModel();
+        $this->libraryBookIssueModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

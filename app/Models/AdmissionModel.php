@@ -324,6 +324,38 @@ class AdmissionModel extends Model
     }
 
     /**
+     * Active school members (students AND staff — both live in `admission`)
+     * for a school, optionally filtered by a name search. Used by pickers
+     * like the Library "Issue Book" borrower select.
+     */
+    public function getActiveMembersBySchool(int $schId, ?string $search = null): array
+    {
+        $db      = \Config\Database::connect();
+        $builder = $db->table('admission')
+            ->select('
+                admission.admission_id,
+                users.fname, users.lname, users.oname, users.profile_photo,
+                role.role_name, role_category.role_cat_id, role_category.role_cat_name
+            ')
+            ->join('users',         'users.user_id             = admission.user_id_fk',   'inner')
+            ->join('user_role',     'user_role.user_id_fk      = users.user_id',          'inner')
+            ->join('role',          'role.role_id              = user_role.role_id_fk',   'inner')
+            ->join('role_category', 'role_category.role_cat_id = role.role_cat_id_fk',    'inner')
+            ->where('admission.sch_id_fk', $schId)
+            ->where('admission.admission_status', 'Active')
+            ->where('user_role.user_role_status', 'Active');
+
+        if ($search !== null && $search !== '') {
+            $builder->groupStart()
+                ->like('users.fname', $search)
+                ->orLike('users.lname', $search)
+                ->groupEnd();
+        }
+
+        return $builder->orderBy('users.fname', 'ASC')->get()->getResultArray();
+    }
+
+    /**
      * All admissions belonging to the given child user IDs (unpaginated — small result set).
      */
     public function getChildAdmissions(array $childUserIds): array
