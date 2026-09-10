@@ -41,10 +41,23 @@ License: For each use you must have a valid license purchased only from above li
 				padding-bottom: 18px;
 			}
 			.navuli-laptop-screen {
-				background: #ffffff;
-				border-radius: 10px 10px 0 0;
+				background: #1a1f2b;
+				border-radius: 14px;
 				overflow: hidden;
 				box-shadow: 0 20px 45px 0 rgba(0, 0, 0, 0.35);
+				aspect-ratio: 16 / 10;
+				padding: 10px;
+				display: flex;
+				flex-direction: column;
+			}
+			.navuli-laptop-inner {
+				background: #ffffff;
+				border-radius: 4px;
+				overflow: hidden;
+				flex: 1 1 auto;
+				min-height: 0;
+				display: flex;
+				flex-direction: column;
 			}
 			.navuli-mock-topbar {
 				display: flex;
@@ -53,6 +66,7 @@ License: For each use you must have a valid license purchased only from above li
 				padding: 8px 12px;
 				background: #f4f6fa;
 				border-bottom: 1px solid #e7ebf3;
+				flex-shrink: 0;
 			}
 			.navuli-mock-dot {
 				width: 7px;
@@ -61,10 +75,16 @@ License: For each use you must have a valid license purchased only from above li
 				display: inline-block;
 			}
 			.navuli-mock-body {
-				padding: 18px 18px 22px;
+				padding: 14px 16px;
+				flex: 1 1 auto;
+				min-height: 0;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
 			}
 			.navuli-mock-chart {
-				height: 70px;
+				height: 60px;
+				flex-shrink: 0;
 			}
 			.navuli-mock-chart span {
 				display: inline-block;
@@ -83,22 +103,39 @@ License: For each use you must have a valid license purchased only from above li
 				width: 60%;
 				margin: 0 auto;
 				background: linear-gradient(180deg, #b6bccb 0%, #949bad 100%);
-				border-radius: 0 0 8px 8px;
+				clip-path: polygon(6% 0, 94% 0, 100% 100%, 0% 100%);
 			}
 			.navuli-phone {
 				position: absolute;
-				right: 2%;
+				right: 0;
 				bottom: -8px;
-				width: 22%;
+				width: 21%;
+				aspect-ratio: 9 / 19.5;
 				background: #1a1f2b;
-				border-radius: 18px;
+				border-radius: 24px;
 				padding: 6px;
 				box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.4);
 			}
 			.navuli-phone-screen {
 				background: #ffffff;
-				border-radius: 12px;
-				padding: 12px 8px;
+				border-radius: 18px;
+				height: 100%;
+				padding: 16px 8px 8px;
+				position: relative;
+				overflow: hidden;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+			}
+			.navuli-phone-notch {
+				position: absolute;
+				top: 6px;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 34%;
+				height: 5px;
+				background: #1a1f2b;
+				border-radius: 4px;
 			}
 		</style>
 
@@ -162,9 +199,9 @@ License: For each use you must have a valid license purchased only from above li
 						<!--end::Languages-->
 						<!--begin::Links-->
 						<div class="d-flex fw-semibold text-primary fs-base gap-5">
-							<a href="pages/team.html" target="_blank">Terms</a>
-							<a href="pages/pricing/column.html" target="_blank">Privacy</a>
-							<a href="pages/contact.html" target="_blank">Contact Us</a>
+							<a href="<?php echo base_url('terms'); ?>" target="_blank">Terms</a>
+							<a href="<?php echo base_url('privacy'); ?>" target="_blank">Privacy</a>
+							<a href="https://navulifiji.com/contact" target="_blank">Contact Us</a>
 						</div>
 						<!--end::Links-->
 					</div>
@@ -184,46 +221,48 @@ License: For each use you must have a valid license purchased only from above li
 						<div class="navuli-device-mock d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20">
 							<div class="navuli-laptop">
 								<div class="navuli-laptop-screen">
-									<div class="navuli-mock-topbar">
-										<span class="navuli-mock-dot bg-danger"></span>
-										<span class="navuli-mock-dot bg-warning"></span>
-										<span class="navuli-mock-dot bg-success"></span>
-									</div>
-									<div class="navuli-mock-body">
-										<div class="d-flex align-items-center justify-content-between mb-3">
-											<div class="fw-bolder text-gray-800 fs-7">Navuli Dashboard</div>
-											<div class="symbol symbol-25px">
-												<div class="symbol-label bg-primary text-white fs-9 fw-bold">N</div>
-											</div>
+									<div class="navuli-laptop-inner">
+										<div class="navuli-mock-topbar">
+											<span class="navuli-mock-dot bg-danger"></span>
+											<span class="navuli-mock-dot bg-warning"></span>
+											<span class="navuli-mock-dot bg-success"></span>
 										</div>
-										<div class="row g-2 mb-3">
-											<div class="col-4">
-												<div class="bg-light-success rounded-2 text-center py-2">
-													<div class="fw-bolder fs-8 text-success">98%</div>
-													<div class="fs-9 text-muted">Attendance</div>
+										<div class="navuli-mock-body">
+											<div class="d-flex align-items-center justify-content-between mb-3">
+												<div class="fw-bolder text-gray-800 fs-7">Navuli Dashboard</div>
+												<div class="symbol symbol-25px">
+													<div class="symbol-label bg-primary text-white fs-9 fw-bold">N</div>
 												</div>
 											</div>
-											<div class="col-4">
-												<div class="bg-light-info rounded-2 text-center py-2">
-													<div class="fw-bolder fs-8 text-info">24</div>
-													<div class="fs-9 text-muted">Classes</div>
+											<div class="row g-2 mb-3">
+												<div class="col-4">
+													<div class="bg-light-success rounded-2 text-center py-2">
+														<div class="fw-bolder fs-8 text-success">98%</div>
+														<div class="fs-9 text-muted">Attendance</div>
+													</div>
+												</div>
+												<div class="col-4">
+													<div class="bg-light-info rounded-2 text-center py-2">
+														<div class="fw-bolder fs-8 text-info">24</div>
+														<div class="fs-9 text-muted">Classes</div>
+													</div>
+												</div>
+												<div class="col-4">
+													<div class="bg-light-warning rounded-2 text-center py-2">
+														<div class="fw-bolder fs-8 text-warning">312</div>
+														<div class="fs-9 text-muted">Students</div>
+													</div>
 												</div>
 											</div>
-											<div class="col-4">
-												<div class="bg-light-warning rounded-2 text-center py-2">
-													<div class="fw-bolder fs-8 text-warning">312</div>
-													<div class="fs-9 text-muted">Students</div>
-												</div>
+											<div class="bg-light-primary rounded-2 p-3 d-flex align-items-end gap-2 navuli-mock-chart">
+												<span style="height:35%"></span>
+												<span style="height:60%"></span>
+												<span style="height:45%"></span>
+												<span style="height:80%"></span>
+												<span style="height:55%"></span>
+												<span style="height:70%"></span>
+												<span style="height:40%"></span>
 											</div>
-										</div>
-										<div class="bg-light-primary rounded-2 p-3 d-flex align-items-end gap-2 navuli-mock-chart">
-											<span style="height:35%"></span>
-											<span style="height:60%"></span>
-											<span style="height:45%"></span>
-											<span style="height:80%"></span>
-											<span style="height:55%"></span>
-											<span style="height:70%"></span>
-											<span style="height:40%"></span>
 										</div>
 									</div>
 								</div>
@@ -233,6 +272,7 @@ License: For each use you must have a valid license purchased only from above li
 
 							<div class="navuli-phone">
 								<div class="navuli-phone-screen">
+									<div class="navuli-phone-notch"></div>
 									<div class="fw-bolder fs-9 text-gray-800 text-center mb-2">Navuli</div>
 									<div class="bg-light-primary text-primary rounded-2 fs-9 fw-semibold text-center py-1 mb-1">Timetable</div>
 									<div class="bg-light-success text-success rounded-2 fs-9 fw-semibold text-center py-1 mb-1">Attendance</div>

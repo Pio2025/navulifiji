@@ -198,6 +198,28 @@ class Home extends BaseController
         return view('web/layouts/site', $data);
     }
 
+    public function terms(): string
+    {
+        $data = [
+            '_view'       => 'web/site/terms',
+            'active_page' => 'terms',
+            'page_title'  => 'Terms of Use',
+        ];
+
+        return view('web/layouts/site', $data);
+    }
+
+    public function privacy(): string
+    {
+        $data = [
+            '_view'       => 'web/site/privacy',
+            'active_page' => 'privacy',
+            'page_title'  => 'Privacy Policy',
+        ];
+
+        return view('web/layouts/site', $data);
+    }
+
     /**
      * Handles the public contact form submission (BootstrapMade php-email-form
      * contract: response body must be the literal string "OK" on success, or a

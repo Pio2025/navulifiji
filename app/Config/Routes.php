@@ -13,6 +13,8 @@ $routes->get('about', 'Home::about');
 $routes->get('for-schools', 'Home::forSchools');
 $routes->get('contact', 'Home::contact');
 $routes->post('contact/send', 'Home::submitContact');
+$routes->get('terms', 'Home::terms');
+$routes->get('privacy', 'Home::privacy');
 $routes->get('feature/(:segment)', 'Home::featureTour/$1');
 
 // Custom 404 handler — renders inside main layout when logged in
