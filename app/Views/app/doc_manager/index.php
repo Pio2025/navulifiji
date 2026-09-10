@@ -125,10 +125,19 @@ $jsDocs = array_map(function ($d) use ($isLookup, $categoryOrder) {
                 </button>
                 <h3 class="fw-bold text-gray-900 fs-5 mb-0" id="docmgr_folder_contents_title"></h3>
             </div>
+            <div class="card-toolbar">
+                <div class="d-flex align-items-center position-relative my-1">
+                    <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
+                        <span class="path1"></span>
+                        <span class="path2"></span>
+                    </i>
+                    <input type="text" id="docmgr_folder_search" class="form-control form-control-solid w-250px ps-13" placeholder="Search files..." />
+                </div>
+            </div>
         </div>
         <div class="card-body pt-0">
             <div class="table-responsive">
-                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                <table id="docmgr_folder_contents_table" class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 w-100">
                     <thead>
                         <tr class="fw-bold text-muted fs-7 bg-light">
                             <th class="ps-4">File</th>
@@ -137,7 +146,7 @@ $jsDocs = array_map(function ($d) use ($isLookup, $categoryOrder) {
                             <th class="text-end pe-4">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="docmgr_folder_contents_body"></tbody>
+                    <tbody></tbody>
                 </table>
             </div>
         </div>
@@ -159,6 +168,13 @@ $jsDocs = array_map(function ($d) use ($isLookup, $categoryOrder) {
             <div class="tab-content">
                 <?php foreach ($categoryOrder as $i => $cat): ?>
                 <div class="tab-pane fade <?= $i === 0 ? 'show active' : '' ?>" id="tab_docmgr_<?= strtolower($cat) ?>">
+                    <div class="d-flex align-items-center position-relative mb-4">
+                        <i class="ki-duotone ki-magnifier fs-3 position-absolute ms-5">
+                            <span class="path1"></span>
+                            <span class="path2"></span>
+                        </i>
+                        <input type="text" id="docmgr_search_<?= strtolower($cat) ?>" class="form-control form-control-solid w-250px ps-13" placeholder="Search <?= esc($cat) ?>..." />
+                    </div>
                     <div class="table-responsive">
                         <table id="docmgr_dt_<?= strtolower($cat) ?>" class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 w-100">
                             <thead>
@@ -281,6 +297,49 @@ $jsDocs = array_map(function ($d) use ($isLookup, $categoryOrder) {
 </div>
 <!--end::Share modal-->
 
+<style>
+/* Hide default DataTables search - we're using custom search inputs */
+.dataTables_wrapper .dataTables_filter {
+    display: none;
+}
+
+.dataTables_wrapper .dataTables_info {
+    padding-top: 1rem;
+    font-size: 0.925rem;
+    color: #7e8299;
+}
+
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border-radius: 0.475rem;
+    border: 0;
+    background: transparent;
+    color: #7e8299;
+    font-weight: 500;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f9f9f9;
+    color: #009ef7;
+    border: 0;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #009ef7;
+    color: #fff;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+
 <script>
 "use strict";
 
@@ -368,27 +427,41 @@ $(document).on('click', '.docmgr-folder-tile', function () {
     docmgrOpenFolder($(this).data('cat'));
 });
 
+var docmgrFolderDt = null;
+
 function docmgrOpenFolder(cat) {
     $('#docmgr_folder_grid').addClass('d-none');
     $('#docmgr_folder_contents').removeClass('d-none');
     $('#docmgr_folder_contents_title').text(cat);
 
     var docs = docmgrDocuments.filter(function (d) { return d.category === cat; });
-    var body = '';
-    if (!docs.length) {
-        body = '<tr><td colspan="4" class="text-center text-muted py-8">No files in this folder.</td></tr>';
-    } else {
-        docs.forEach(function (d) {
-            body += '<tr>';
-            body += '<td class="ps-4">' + docmgrNameCellHtml(d) + '</td>';
-            body += '<td><span class="badge badge-light-secondary">' + docmgrEsc(d.source_label) + '</span></td>';
-            body += '<td class="text-muted fs-7">' + docmgrEsc(d.created_at.substring(0, 16)) + '</td>';
-            body += '<td class="text-end pe-4">' + docmgrActionsHtml(d) + '</td>';
-            body += '</tr>';
-        });
+
+    if (docmgrFolderDt) {
+        docmgrFolderDt.destroy();
+        docmgrFolderDt = null;
     }
-    $('#docmgr_folder_contents_body').html(body);
+
+    docmgrFolderDt = $('#docmgr_folder_contents_table').DataTable({
+        data: docs,
+        pageLength: 10,
+        order: [[2, 'desc']],
+        columns: [
+            { data: null, render: function (d) { return docmgrNameCellHtml(d); } },
+            { data: 'source_label', render: function (v) { return '<span class="badge badge-light-secondary">' + docmgrEsc(v) + '</span>'; } },
+            { data: 'created_at', render: function (v) { return docmgrEsc((v || '').substring(0, 16)); } },
+            { data: null, className: 'text-end', orderable: false, render: function (d) { return docmgrActionsHtml(d); } },
+        ],
+        language: { emptyTable: 'No files in this folder.' },
+    });
+
+    $('#docmgr_folder_search').val('');
 }
+
+$('#docmgr_folder_search').on('keyup', function () {
+    if (docmgrFolderDt) {
+        docmgrFolderDt.search(this.value).draw();
+    }
+});
 
 function docmgrCloseFolder() {
     $('#docmgr_folder_contents').addClass('d-none');
@@ -405,7 +478,7 @@ function docmgrInitListTab(cat) {
 
     var docs = docmgrDocuments.filter(function (d) { return d.category === cat; });
 
-    $('#docmgr_dt_' + cat.toLowerCase()).DataTable({
+    var dt = $('#docmgr_dt_' + cat.toLowerCase()).DataTable({
         data: docs,
         pageLength: 10,
         order: [[2, 'desc']],
@@ -416,6 +489,10 @@ function docmgrInitListTab(cat) {
             { data: null, className: 'text-end', orderable: false, render: function (d) { return docmgrActionsHtml(d); } },
         ],
         language: { emptyTable: 'No documents in this category.' },
+    });
+
+    $('#docmgr_search_' + cat.toLowerCase()).on('keyup', function () {
+        dt.search(this.value).draw();
     });
 }
 
