@@ -426,9 +426,10 @@ class AdmissionModel extends Model
      * Every active user (any role) for a school, optionally filtered by a
      * name search. Used by the Doc Manager admin lookup, where oversight
      * staff need to find and view any user's aggregated documents —
-     * student, parent, or staff alike.
+     * student, parent, or staff alike. $schId of null searches across every
+     * school (Super Admin isn't tied to one).
      */
-    public function getAllActiveBySchool(int $schId, ?string $search = null): array
+    public function getAllActiveBySchool(?int $schId, ?string $search = null): array
     {
         $db      = \Config\Database::connect();
         $builder = $db->table('admission')
@@ -440,9 +441,12 @@ class AdmissionModel extends Model
             ->join('user_role',     'user_role.user_id_fk      = users.user_id',          'inner')
             ->join('role',          'role.role_id              = user_role.role_id_fk',   'inner')
             ->join('role_category', 'role_category.role_cat_id = role.role_cat_id_fk',    'inner')
-            ->where('admission.sch_id_fk', $schId)
             ->where('admission.admission_status', 'Active')
             ->where('user_role.user_role_status', 'Active');
+
+        if ($schId !== null) {
+            $builder->where('admission.sch_id_fk', $schId);
+        }
 
         if ($search !== null && $search !== '') {
             $builder->groupStart()

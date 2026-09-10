@@ -430,8 +430,14 @@ class DocManagerController extends BaseController
         $schId  = (int) $this->session->get('schID');
         $search = $this->request->getGet('search') ?: null;
 
-        $data['users']     = $schId > 0 ? $this->admissionModel->getAllActiveBySchool($schId, $search) : [];
-        $data['documents'] = ($schId > 0 && $search) ? $this->aggregator->searchDocumentsBySchool($schId, $search) : [];
+        // Super Admin isn't tied to a single school (schID may be 0), so
+        // their lookups span every school; other oversight roles
+        // (_doc_manager_manage_others) stay scoped to their own.
+        $lookupSchId = $isSuperAdmin ? null : $schId;
+        $canLookup   = $isSuperAdmin || $schId > 0;
+
+        $data['users']     = $canLookup ? $this->admissionModel->getAllActiveBySchool($lookupSchId, $search) : [];
+        $data['documents'] = ($canLookup && $search) ? $this->aggregator->searchDocumentsBySchool($lookupSchId, $search) : [];
         $data['search']    = $search;
         $data['_view']     = 'app/doc_manager/lookup';
 

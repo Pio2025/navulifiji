@@ -311,15 +311,23 @@ class DocManagerAggregator
      * scoped to users belonging to school $schId. Each row has the same
      * shape as getDocumentsForUser() plus owner_user_id/owner_name, so
      * results can link straight to view/download or to the owner's full
-     * document list. Capped at 200 rows, newest first.
+     * document list. Capped at 200 rows, newest first. $schId of null
+     * searches across every school (Super Admin isn't tied to one).
      */
-    public function searchDocumentsBySchool(int $schId, string $search): array
+    public function searchDocumentsBySchool(?int $schId, string $search): array
     {
         $db   = \Config\Database::connect();
         $like = '%' . $search . '%';
         $rows = [];
 
-        $inSchool = "IN (SELECT user_id_fk FROM admission WHERE sch_id_fk = ? AND admission_status = 'Active')";
+        // When $schId is null, drop the school filter entirely instead of
+        // binding it, and search across every school.
+        $schoolParams = $schId !== null ? [$schId] : [];
+        $inSchool     = $schId !== null
+            ? "IN (SELECT user_id_fk FROM admission WHERE sch_id_fk = ? AND admission_status = 'Active')"
+            : "IN (SELECT user_id_fk FROM admission WHERE admission_status = 'Active')";
+        $directSchool = $schId !== null ? 'ad.sch_id_fk = ? AND ' : '';
+        $classSchool  = $schId !== null ? 'sl.sch_id_fk = ? AND ' : '';
 
         // ── personal uploads ────────────────────────────────────────────
         $res = $db->query(
@@ -330,7 +338,7 @@ class DocManagerAggregator
              WHERE dmf.user_id_fk {$inSchool}
                AND (dmf.original_name LIKE ? OR dmf.file_name LIKE ? OR dmf.description LIKE ?)
              ORDER BY dmf.doc_id DESC",
-            [$schId, $like, $like, $like]
+            array_merge($schoolParams, [$like, $like, $like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_PERSONAL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], $r['label'] ?: 'Personal', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -348,7 +356,7 @@ class DocManagerAggregator
                AND gr.gen_ref_file_name IS NOT NULL AND gr.gen_ref_file_name <> ''
                AND (gr.gen_ref_file_name LIKE ? OR rc.ref_cat_name LIKE ?)
              ORDER BY gr.gen_ref_id DESC",
-            [$schId, $like, $like]
+            array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_REFERENCE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Reference', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -362,10 +370,10 @@ class DocManagerAggregator
              INNER JOIN conduct_appeals ca ON ca.appeal_id = caf.appeal_id
              INNER JOIN admission ad ON ad.admission_id = ca.student_id
              INNER JOIN users u ON u.user_id = ad.user_id_fk
-             WHERE ad.sch_id_fk = ? AND caf.file_src IS NOT NULL AND caf.file_src <> ''
+             WHERE {$directSchool}caf.file_src IS NOT NULL AND caf.file_src <> ''
                AND caf.file_src LIKE ?
              ORDER BY caf.appeal_file_id DESC",
-            [$schId, $like]
+            array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_APPEAL, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Conduct Appeal', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -379,10 +387,10 @@ class DocManagerAggregator
              INNER JOIN conduct_incidents ci ON ci.incident_id = cif.incident_id_fk
              INNER JOIN admission ad ON ad.admission_id = ci.student_id
              INNER JOIN users u ON u.user_id = ad.user_id_fk
-             WHERE ad.sch_id_fk = ? AND cif.file_src IS NOT NULL AND cif.file_src <> ''
+             WHERE {$directSchool}cif.file_src IS NOT NULL AND cif.file_src <> ''
                AND cif.file_src LIKE ?
              ORDER BY cif.conduct_file_id DESC",
-            [$schId, $like]
+            array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_INCIDENT, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Conduct Incident', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -396,10 +404,10 @@ class DocManagerAggregator
              INNER JOIN student_attendance sa ON sa.stud_att_id = saf.stud_att_id_fk
              INNER JOIN admission ad ON ad.admission_id = sa.admission_id_fk
              INNER JOIN users u ON u.user_id = ad.user_id_fk
-             WHERE ad.sch_id_fk = ? AND saf.stud_att_file_src IS NOT NULL AND saf.stud_att_file_src <> ''
+             WHERE {$directSchool}saf.stud_att_file_src IS NOT NULL AND saf.stud_att_file_src <> ''
                AND saf.stud_att_file_src LIKE ?
              ORDER BY saf.stud_att_file_id DESC",
-            [$schId, $like]
+            array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_ATTENDANCE, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Attendance', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -417,7 +425,7 @@ class DocManagerAggregator
                AND umf.file_name IS NOT NULL AND umf.file_name <> ''
                AND (umf.file_original_name LIKE ? OR umf.file_name LIKE ?)
              ORDER BY umf.file_id DESC",
-            [$schId, $like, $like]
+            array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_MEDICAL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Medical', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -434,7 +442,7 @@ class DocManagerAggregator
                AND sub.submission_file IS NOT NULL AND sub.submission_file <> ''
                AND (sub.submission_file LIKE ? OR la.assignment_name LIKE ?)
              ORDER BY sub.submission_id DESC",
-            [$schId, $like, $like]
+            array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_SUBMISSION, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ?: 'Assignment', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -459,9 +467,9 @@ class DocManagerAggregator
              INNER JOIN stream s ON s.stream_id = c.stream_id_fk
              INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = cl.created_by
-             WHERE sl.sch_id_fk = ? AND lv.video_title LIKE ?
+             WHERE {$classSchool}lv.video_title LIKE ?
              ORDER BY cl.created_at DESC",
-            [$schId, $like]
+            array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_VIDEO, $r['source_file_id'], $r['file_name'], $r['label'] ?: 'Lesson Video', $r['label'] ?: 'Lesson Video', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -478,9 +486,9 @@ class DocManagerAggregator
              INNER JOIN stream s ON s.stream_id = c.stream_id_fk
              INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = cl.created_by
-             WHERE sl.sch_id_fk = ? AND lf.file_name LIKE ?
+             WHERE {$classSchool}lf.file_name LIKE ?
              ORDER BY lf.uploaded_at DESC",
-            [$schId, $like]
+            array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_LESSON_FILE, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Lesson File', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -497,9 +505,9 @@ class DocManagerAggregator
              INNER JOIN stream s ON s.stream_id = c.stream_id_fk
              INNER JOIN sch_level sl ON sl.sch_level_id = s.sch_level_id_fk
              INNER JOIN users u ON u.user_id = la.created_by
-             WHERE sl.sch_id_fk = ? AND (laf.file_src LIKE ? OR la.assignment_name LIKE ?)
+             WHERE {$classSchool}(laf.file_src LIKE ? OR la.assignment_name LIKE ?)
              ORDER BY la.created_at DESC",
-            [$schId, $like, $like]
+            array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_ASSIGNMENT_FILE, $r['source_file_id'], $r['file_name'], $r['file_name'], $r['label'] ? ('Assignment: ' . $r['label']) : 'Assignment Question', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -514,7 +522,7 @@ class DocManagerAggregator
              INNER JOIN users u ON u.user_id = ld.author
              WHERE ld.author {$inSchool} AND ld.message_status = 1 AND ldp.photo_path LIKE ?
              ORDER BY ldp.photo_id DESC",
-            [$schId, $like]
+            array_merge($schoolParams, [$like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_DISCUSSION, $r['source_file_id'], $r['file_name'], $r['file_name'], 'Discussion', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
@@ -530,7 +538,7 @@ class DocManagerAggregator
              WHERE wp.user_id_fk {$inSchool} AND wp.post_status = 'Active' AND wm.media_type <> 'video_url'
                AND (wm.file_name LIKE ? OR wm.file_src LIKE ?)
              ORDER BY wm.wall_media_id DESC",
-            [$schId, $like, $like]
+            array_merge($schoolParams, [$like, $like])
         )->getResultArray();
         foreach ($res as $r) {
             $rows[] = $this->normalize(self::SOURCE_WALL, $r['source_file_id'], $r['file_name'], $r['original_name'] ?: $r['file_name'], 'Wall Post', $r['created_at'], (int) $r['owner_user_id'], $r['owner_name']);
