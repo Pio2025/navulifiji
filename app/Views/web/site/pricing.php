@@ -170,7 +170,7 @@
                             <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Can I try Navuli before paying?</button>
                         </h2>
                         <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#pricingFaq">
-                            <div class="accordion-body">Yes — every school starts with a 30-day free trial, no payment required. You get full access to all Standard plan modules and features on the web app so you can see how it fits your school before choosing a paid plan. <a href="<?= site_url('account/subscribe') ?>">Start your free trial</a> to get going.</div>
+                            <div class="accordion-body">Yes — every school starts with a 30-day free trial, no payment required. You get full access to all Standard plan modules and features on the web app so you can see how it fits your school before choosing a paid plan. <a href="<?= site_url('account/subscribe') ?>?tier=free">Start your free trial</a> to get going.</div>
                         </div>
                     </div>
                     <div class="accordion-item">
