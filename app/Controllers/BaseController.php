@@ -85,6 +85,10 @@ use App\Models\TaskChecklistItemModel;
 use App\Models\TaskCommentModel;
 use App\Models\DocManagerFileModel;
 use App\Models\DocManagerShareModel;
+use App\Models\PollModel;
+use App\Models\PollOptionModel;
+use App\Models\PollAudienceModel;
+use App\Models\PollVoteModel;
 
 
 
@@ -192,6 +196,10 @@ abstract class BaseController extends Controller
     protected $taskCommentModel;
     protected $docManagerFileModel;
     protected $docManagerShareModel;
+    protected $pollModel;
+    protected $pollOptionModel;
+    protected $pollAudienceModel;
+    protected $pollVoteModel;
 
 
     /**
@@ -367,6 +375,14 @@ abstract class BaseController extends Controller
         $this->docManagerFileModel->ensureTables();
         $this->docManagerShareModel            = new DocManagerShareModel();
         $this->docManagerShareModel->ensureTables();
+        $this->pollModel                       = new PollModel();
+        $this->pollModel->ensureTables();
+        $this->pollOptionModel                 = new PollOptionModel();
+        $this->pollOptionModel->ensureTables();
+        $this->pollAudienceModel               = new PollAudienceModel();
+        $this->pollAudienceModel->ensureTables();
+        $this->pollVoteModel                   = new PollVoteModel();
+        $this->pollVoteModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

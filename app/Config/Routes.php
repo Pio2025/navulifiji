@@ -555,6 +555,16 @@ $routes->get( 'doc-manager/lookup',                  'DocManagerController::look
 $routes->get( 'doc-manager/lookup/(:num)',           'DocManagerController::lookupUser/$1');
 
 // ============================================================================
+// POLL Routes
+// ============================================================================
+$routes->get( 'poll',                       'PollController::index');
+$routes->post('poll/store',                 'PollController::store');
+$routes->get( 'poll/results/(:num)',        'PollController::results/$1');
+$routes->post('poll/vote/(:num)',           'PollController::vote/$1');
+$routes->post('poll/close/(:num)',          'PollController::close/$1');
+$routes->post('poll/remove/(:num)',         'PollController::delete/$1');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');
