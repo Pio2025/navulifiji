@@ -66,7 +66,7 @@
                 <p>Questions about this Privacy Policy, or requests relating to your data, can be directed to:</p>
                 <ul>
                     <li><strong>Email:</strong> <a href="mailto:info@navulifiji.com">info@navulifiji.com</a></li>
-                    <li><strong>Phone:</strong> <a href="tel:+6799896700">+679 989 6700</a></li>
+                    <li><strong>Phone:</strong> <a href="tel:+6799896700">+679 9896700</a></li>
                     <li><strong>Address:</strong> 6 Miles, Tacirua, Suva, Fiji Islands</li>
                 </ul>
                 <p><a href="<?= site_url('terms') ?>">Read our Terms of Use →</a></p>

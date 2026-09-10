@@ -908,6 +908,9 @@ body {
   .footer .footer-links ul {
     margin-bottom: 0;
   }
+  .footer .footer-links ul li {
+    justify-content: center;
+  }
 }
 
 /* Brand-wide hyperlink hover/active color. Kept at element-level specificity

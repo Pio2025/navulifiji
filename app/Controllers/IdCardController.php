@@ -330,7 +330,7 @@ class IdCardController extends BaseController
         $pdf->SetTextColor(60, 60, 60);
         $pdf->SetXY($tx, 18);
         $pdf->SetFont('helvetica', '', 5);
-        $pdf->MultiCell(42, 3.3, "School Management Information System\nwww.navulifiji.com\ninfo@navulifiji.com\n+679 989 6700", 0, 'L');
+        $pdf->MultiCell(42, 3.3, "School Management Information System\nwww.navulifiji.com\ninfo@navulifiji.com\n+679 9896700", 0, 'L');
 
         $pdf->SetXY($qrX - 1, $qrY + $qrSize + 2);
         $pdf->SetFont('helvetica', 'I', 3.6);

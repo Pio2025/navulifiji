@@ -141,7 +141,7 @@
 													School Management Information System<br>
 													www.navulifiji.com<br>
 													info@navulifiji.com<br>
-													+679 989 6700
+													+679 9896700
 												</div>
 											</div>
 										</div>

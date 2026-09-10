@@ -117,8 +117,8 @@
                     <h4>Get in Touch</h4>
                     <p><i class="bi bi-geo-alt"></i> 6 Miles, Tacirua, Suva, Fiji Islands</p>
                     <p><i class="bi bi-envelope"></i> <a href="mailto:info@navulifiji.com" style="color:inherit;">info@navulifiji.com</a></p>
-                    <p><i class="bi bi-telephone"></i> +679 000 0000</p>
-                    <p><i class="bi bi-whatsapp"></i> <a href="https://wa.me/6799896700" target="_blank" rel="noopener" style="color:inherit;">+679 989 6700</a></p>
+                    <p><i class="bi bi-telephone"></i> +679 9896700</p>
+                    <p><i class="bi bi-whatsapp"></i> <a href="https://wa.me/6799896700" target="_blank" rel="noopener" style="color:inherit;">+679 9896700</a></p>
                 </div>
             </div>
         </div>
