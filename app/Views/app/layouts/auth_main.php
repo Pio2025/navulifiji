@@ -34,7 +34,74 @@ License: For each use you must have a valid license purchased only from above li
 		<link href="<?php echo base_url(); ?>app/assets/plugins/global/plugins.bundle.css" rel="stylesheet" type="text/css" />
 		<link href="<?php echo base_url(); ?>app/assets/css/style.bundle.css" rel="stylesheet" type="text/css" />
 		<!--end::Global Stylesheets Bundle-->
-		
+
+		<style>
+			.navuli-device-mock {
+				position: relative;
+				padding-bottom: 18px;
+			}
+			.navuli-laptop-screen {
+				background: #ffffff;
+				border-radius: 10px 10px 0 0;
+				overflow: hidden;
+				box-shadow: 0 20px 45px 0 rgba(0, 0, 0, 0.35);
+			}
+			.navuli-mock-topbar {
+				display: flex;
+				align-items: center;
+				gap: 5px;
+				padding: 8px 12px;
+				background: #f4f6fa;
+				border-bottom: 1px solid #e7ebf3;
+			}
+			.navuli-mock-dot {
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				display: inline-block;
+			}
+			.navuli-mock-body {
+				padding: 18px 18px 22px;
+			}
+			.navuli-mock-chart {
+				height: 70px;
+			}
+			.navuli-mock-chart span {
+				display: inline-block;
+				width: 12%;
+				background: #009ef7;
+				border-radius: 4px 4px 0 0;
+				opacity: 0.85;
+			}
+			.navuli-laptop-hinge {
+				height: 8px;
+				background: linear-gradient(180deg, #dfe3ea 0%, #b6bccb 100%);
+				border-radius: 0 0 3px 3px;
+			}
+			.navuli-laptop-base {
+				height: 10px;
+				width: 60%;
+				margin: 0 auto;
+				background: linear-gradient(180deg, #b6bccb 0%, #949bad 100%);
+				border-radius: 0 0 8px 8px;
+			}
+			.navuli-phone {
+				position: absolute;
+				right: 2%;
+				bottom: -8px;
+				width: 22%;
+				background: #1a1f2b;
+				border-radius: 18px;
+				padding: 6px;
+				box-shadow: 0 12px 30px 0 rgba(0, 0, 0, 0.4);
+			}
+			.navuli-phone-screen {
+				background: #ffffff;
+				border-radius: 12px;
+				padding: 12px 8px;
+			}
+		</style>
+
         <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-7EX8DDTPFX"></script>
         <script>
@@ -114,17 +181,74 @@ License: For each use you must have a valid license purchased only from above li
 						</a>
 						<!--end::Logo-->
 						<!--begin::Image-->
-						<img class="d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20" src="<?php echo base_url(); ?>app/assets/media/misc/auth-screens.png" alt="" />
+						<div class="navuli-device-mock d-none d-lg-block mx-auto w-275px w-md-50 w-xl-500px mb-10 mb-lg-20">
+							<div class="navuli-laptop">
+								<div class="navuli-laptop-screen">
+									<div class="navuli-mock-topbar">
+										<span class="navuli-mock-dot bg-danger"></span>
+										<span class="navuli-mock-dot bg-warning"></span>
+										<span class="navuli-mock-dot bg-success"></span>
+									</div>
+									<div class="navuli-mock-body">
+										<div class="d-flex align-items-center justify-content-between mb-3">
+											<div class="fw-bolder text-gray-800 fs-7">Navuli Dashboard</div>
+											<div class="symbol symbol-25px">
+												<div class="symbol-label bg-primary text-white fs-9 fw-bold">N</div>
+											</div>
+										</div>
+										<div class="row g-2 mb-3">
+											<div class="col-4">
+												<div class="bg-light-success rounded-2 text-center py-2">
+													<div class="fw-bolder fs-8 text-success">98%</div>
+													<div class="fs-9 text-muted">Attendance</div>
+												</div>
+											</div>
+											<div class="col-4">
+												<div class="bg-light-info rounded-2 text-center py-2">
+													<div class="fw-bolder fs-8 text-info">24</div>
+													<div class="fs-9 text-muted">Classes</div>
+												</div>
+											</div>
+											<div class="col-4">
+												<div class="bg-light-warning rounded-2 text-center py-2">
+													<div class="fw-bolder fs-8 text-warning">312</div>
+													<div class="fs-9 text-muted">Students</div>
+												</div>
+											</div>
+										</div>
+										<div class="bg-light-primary rounded-2 p-3 d-flex align-items-end gap-2 navuli-mock-chart">
+											<span style="height:35%"></span>
+											<span style="height:60%"></span>
+											<span style="height:45%"></span>
+											<span style="height:80%"></span>
+											<span style="height:55%"></span>
+											<span style="height:70%"></span>
+											<span style="height:40%"></span>
+										</div>
+									</div>
+								</div>
+							</div>
+							<div class="navuli-laptop-hinge"></div>
+							<div class="navuli-laptop-base"></div>
+
+							<div class="navuli-phone">
+								<div class="navuli-phone-screen">
+									<div class="fw-bolder fs-9 text-gray-800 text-center mb-2">Navuli</div>
+									<div class="bg-light-primary text-primary rounded-2 fs-9 fw-semibold text-center py-1 mb-1">Timetable</div>
+									<div class="bg-light-success text-success rounded-2 fs-9 fw-semibold text-center py-1 mb-1">Attendance</div>
+									<div class="bg-light-warning text-warning rounded-2 fs-9 fw-semibold text-center py-1">Assessments</div>
+								</div>
+							</div>
+						</div>
 						<!--end::Image-->
 						<!--begin::Title-->
-						<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">Fast, Efficient and Productive</h1>
+						<h1 class="d-none d-lg-block text-white fs-2qx fw-bolder text-center mb-7">Run Your Whole School From One Place</h1>
 						<!--end::Title-->
 						<!--begin::Text-->
-						<div class="d-none d-lg-block text-white fs-base text-center">In this kind of post, 
-						<a href="#" class="opacity-75-hover text-warning fw-bold me-1">the blogger</a>introduces a person they’ve interviewed 
-						<br />and provides some background information about 
-						<a href="#" class="opacity-75-hover text-warning fw-bold me-1">the interviewee</a>and their 
-						<br />work following this is a transcript of the interview.</div>
+						<div class="d-none d-lg-block text-white fs-base text-center">Timetables, attendance, lesson planning, assessments
+						and parent communication — all in one platform built around
+						<span class="opacity-75-hover text-warning fw-bold">the Fiji National Curriculum</span>,
+						<br />accessible anytime from your desktop or your phone.</div>
 						<!--end::Text-->
 					</div>
 					<!--end::Content-->
