@@ -89,6 +89,11 @@ use App\Models\PollModel;
 use App\Models\PollOptionModel;
 use App\Models\PollAudienceModel;
 use App\Models\PollVoteModel;
+use App\Models\GateSettingModel;
+use App\Models\GateFormOptionModel;
+use App\Models\GateVisitorModel;
+use App\Models\GateEntryLogModel;
+use App\Models\GatePassModel;
 
 
 
@@ -200,6 +205,11 @@ abstract class BaseController extends Controller
     protected $pollOptionModel;
     protected $pollAudienceModel;
     protected $pollVoteModel;
+    protected $gateSettingModel;
+    protected $gateFormOptionModel;
+    protected $gateVisitorModel;
+    protected $gateEntryLogModel;
+    protected $gatePassModel;
 
 
     /**
@@ -383,6 +393,16 @@ abstract class BaseController extends Controller
         $this->pollAudienceModel->ensureTables();
         $this->pollVoteModel                   = new PollVoteModel();
         $this->pollVoteModel->ensureTables();
+        $this->gateSettingModel                = new GateSettingModel();
+        $this->gateSettingModel->ensureTables();
+        $this->gateFormOptionModel             = new GateFormOptionModel();
+        $this->gateFormOptionModel->ensureTables();
+        $this->gateVisitorModel                = new GateVisitorModel();
+        $this->gateVisitorModel->ensureTables();
+        $this->gateEntryLogModel               = new GateEntryLogModel();
+        $this->gateEntryLogModel->ensureTables();
+        $this->gatePassModel                   = new GatePassModel();
+        $this->gatePassModel->ensureTables();
 
         // ===================================================
         // ADD THIS SECTION FOR IP & DEVICE TRACKING

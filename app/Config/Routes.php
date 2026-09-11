@@ -565,6 +565,23 @@ $routes->post('poll/close/(:num)',          'PollController::close/$1');
 $routes->post('poll/remove/(:num)',         'PollController::delete/$1');
 
 // ============================================================================
+// GATE MANAGEMENT Routes
+// ============================================================================
+$routes->get( 'gate',                          'GateController::index');
+$routes->post('gate/visitor/store',            'GateController::visitorStore');
+$routes->post('gate/visitor/checkout/(:num)',  'GateController::visitorCheckout/$1');
+$routes->post('gate/entry/store',              'GateController::entryStore');
+$routes->get( 'gate/search-users',              'GateController::searchUsers');
+$routes->post('gate/pass/store',               'GateController::passStore');
+$routes->post('gate/pass/decide/(:num)',       'GateController::passDecide/$1');
+$routes->post('gate/pass/mark-used/(:num)',    'GateController::passMarkUsed/$1');
+$routes->post('gate/pass/cancel/(:num)',       'GateController::passCancel/$1');
+$routes->post('gate/settings/save',            'GateController::settingsSave');
+$routes->post('gate/form-option/store',        'GateController::formOptionStore');
+$routes->post('gate/form-option/remove/(:num)','GateController::formOptionDelete/$1');
+$routes->get( 'gate/reports',                   'GateController::reports');
+
+// ============================================================================
 // ADMISSION
 // ============================================================================
 $routes->get( 'admission',                    'AdmissionController::index');
@@ -1022,6 +1039,21 @@ $routes->group('api', ['filter' => 'cors'], static function ($routes) {
         $routes->post('chat/message/(:num)/forward','Api\ChatController::forwardMessage/$1');
         $routes->post('chat/block/(:num)',       'Api\ChatController::block/$1');
         $routes->get('chat/block-status/(:num)', 'Api\ChatController::blockStatus/$1');
+
+        $routes->get('gate/summary',                  'Api\GateController::summary');
+        $routes->get('gate/search-users',             'Api\GateController::searchUsers');
+        $routes->get('gate/visitors',                 'Api\GateController::visitors');
+        $routes->post('gate/visitor',                 'Api\GateController::createVisitor');
+        $routes->post('gate/visitor/(:num)/checkout', 'Api\GateController::checkoutVisitor/$1');
+        $routes->get('gate/entries',                  'Api\GateController::entries');
+        $routes->post('gate/entry',                   'Api\GateController::createEntry');
+        $routes->get('gate/passes',                   'Api\GateController::passes');
+        $routes->post('gate/pass',                    'Api\GateController::createPass');
+        $routes->post('gate/pass/(:num)/decide',      'Api\GateController::decidePass/$1');
+        $routes->post('gate/pass/(:num)/mark-used',   'Api\GateController::markPassUsed/$1');
+        $routes->post('gate/pass/(:num)/cancel',      'Api\GateController::cancelPass/$1');
+        $routes->get('gate/reports',                  'Api\GateController::reports');
+        $routes->get('gate/form-options',             'Api\GateController::formOptions');
     });
 });
 
