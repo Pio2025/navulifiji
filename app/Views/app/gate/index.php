@@ -670,6 +670,35 @@ if (gateSchoolSelect) {
     });
 }
 
+// ── Tab persistence (survive full-page reloads after an action) ─────────
+(function () {
+    var gateTabs = document.getElementById('gate_tabs');
+    if (!gateTabs) return;
+    var storageKey = 'gate_active_tab_' + GATE_SCH_ID;
+
+    function showTab(target) {
+        var tabEl = gateTabs.querySelector('a[data-bs-toggle="tab"][href="' + target + '"]');
+        if (tabEl) { new bootstrap.Tab(tabEl).show(); return true; }
+        return false;
+    }
+
+    gateTabs.querySelectorAll('a[data-bs-toggle="tab"]').forEach(function (el) {
+        el.addEventListener('shown.bs.tab', function (e) {
+            var href = e.target.getAttribute('href');
+            if (!href) return;
+            history.replaceState(null, '', window.location.pathname + window.location.search + href);
+            localStorage.setItem(storageKey, href);
+        });
+    });
+
+    // Restore after the rest of this script runs, so tab-specific
+    // 'shown.bs.tab' handlers (e.g. Reports) are already attached.
+    document.addEventListener('DOMContentLoaded', function () {
+        var target = window.location.hash || localStorage.getItem(storageKey);
+        if (target) { showTab(target); }
+    });
+})();
+
 // ── Typeahead helper ────────────────────────────────────────────────────
 function gateSetupTypeahead(searchInputId, resultsBoxId, hiddenInputId) {
     var input   = document.getElementById(searchInputId);
