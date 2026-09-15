@@ -576,8 +576,9 @@ abstract class BaseController extends Controller
     /**
      * Whether the current user may use an Import/Export action: requires both
      * the permission code AND the school's active plan meeting $minRank.
-     * Super Admin is exempt from the plan check (not tied to one school's
-     * subscription) but still needs the permission itself.
+     * Super Admin (role_id 1) and Admin (role_id 16, "Navuli Fiji Administrator")
+     * are platform-level roles, not tied to one school's subscription, so both
+     * are exempt from the plan check — but still need the permission itself.
      *
      * @param string   $permCode
      * @param int|null $minRank   defaults to PlanModel::RANK_PREMIUM
@@ -585,14 +586,15 @@ abstract class BaseController extends Controller
      */
     protected function canImportExport($permCode, $minRank = null, $schoolId = null)
     {
-        $minRank      = $minRank ?? \App\Models\PlanModel::RANK_PREMIUM;
-        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+        $minRank         = $minRank ?? \App\Models\PlanModel::RANK_PREMIUM;
+        $roleId          = (int) $this->session->get('roleID');
+        $isPlatformAdmin = in_array($roleId, [1, 16], true);
 
         if (!$this->grant_access($permCode)) {
             return false;
         }
 
-        if ($isSuperAdmin) {
+        if ($isPlatformAdmin) {
             return true;
         }
 
