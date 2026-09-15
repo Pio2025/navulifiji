@@ -13,14 +13,17 @@
                 <li class="breadcrumb-item text-muted">Admissions</li>
             </ul>
         </div>
-        <?php if ($canAdd): ?>
+        <?php if ($canAdd || $canExport): ?>
         <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php if ($canAdd): ?>
             <a href="<?= base_url('admission/add') ?>" class="btn btn-sm btn-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1">
                     <span class="path1"></span><span class="path2"></span>
                 </i>
                 Add Admission
             </a>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
     </div>
@@ -389,6 +392,20 @@ const admissionsTable = $('#admissions_table').DataTable({
         $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
     }
 });
+
+<?php if ($canExport): ?>
+KTExport.init(admissionsTable, {
+    filenamePrefix: 'admissions',
+    title: 'Admissions Report',
+    columns: [
+        { header: 'User', index: 0 },
+        { header: 'Role', index: 1 },
+        { header: 'School', index: 2 },
+        { header: 'Admission Date', index: 3 },
+        { header: 'Status', index: 4 },
+    ]
+});
+<?php endif; ?>
 
 // ── Search ────────────────────────────────────────────────────────
 $('#admission_search').on('keyup', function() {

@@ -13,11 +13,16 @@
                 <li class="breadcrumb-item text-muted">Exams</li>
             </ul>
         </div>
-        <?php if ($canAdd): ?>
-        <a href="<?= base_url('exam/add') ?>" class="btn btn-sm btn-primary">
-            <i class="ki-duotone ki-plus fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
-            Add Exam
-        </a>
+        <?php if ($canAdd || $canExport): ?>
+        <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php if ($canAdd): ?>
+            <a href="<?= base_url('exam/add') ?>" class="btn btn-sm btn-primary">
+                <i class="ki-duotone ki-plus fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
+                Add Exam
+            </a>
+            <?php endif; ?>
+        </div>
         <?php endif; ?>
     </div>
 </div>
@@ -65,7 +70,7 @@
             <!--end::Controls-->
 
             <div class="table-responsive">
-                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3" id="exam_table">
+                <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-3" id="exams_table">
                     <thead>
                         <tr class="fw-bold text-muted">
                             <th class="min-w-200px">Exam Name</th>
@@ -75,14 +80,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                    <?php if (empty($exams)): ?>
+                    <?php foreach ($exams as $exam): ?>
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-8">No exams found.</td>
-                        </tr>
-                    <?php else: foreach ($exams as $exam): ?>
-                        <tr data-name="<?= esc(strtolower($exam['exam_name'])) ?>"
-                            data-status="<?= esc($exam['exam_status']) ?>"
-                            data-level="<?= esc($exam['level_name'] ?? '') ?>">
                             <td>
                                 <a href="<?= base_url('exam/detail/' . $exam['exam_id']) ?>"
                                    class="text-gray-900 fw-bold text-hover-primary fs-6">
@@ -121,7 +120,7 @@
                                 <?php endif; ?>
                             </td>
                         </tr>
-                    <?php endforeach; endif; ?>
+                    <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -138,24 +137,68 @@
 </form>
 
 <script>
-// Filtering
-const rows = document.querySelectorAll('#exam_table tbody tr[data-name]');
+"use strict";
 
-function applyFilters() {
-    const q      = document.getElementById('exam_search').value.toLowerCase();
-    const status = document.getElementById('filter_status').value;
-    const level  = document.getElementById('filter_level').value;
-    rows.forEach(r => {
-        const matchQ      = !q      || r.dataset.name.includes(q);
-        const matchStatus = !status || r.dataset.status === status;
-        const matchLevel  = !level  || r.dataset.level === level;
-        r.style.display = (matchQ && matchStatus && matchLevel) ? '' : 'none';
-    });
-}
+// ── DataTable ─────────────────────────────────────────────────────
+const examsTable = $('#exams_table').DataTable({
+    pageLength:  15,
+    lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+    order:       [[0, 'asc']],
+    dom:
+        '<"row align-items-center mb-4"' +
+            '<"col-sm-6"l>' +
+            '<"col-sm-6 d-flex justify-content-end"p>' +
+        '>' +
+        't' +
+        '<"row align-items-center mt-4"' +
+            '<"col-sm-6 text-muted fs-7"i>' +
+            '<"col-sm-6 d-flex justify-content-end"p>' +
+        '>',
+    language: {
+        lengthMenu:  'Show _MENU_ exams',
+        info:        'Showing _START_ to _END_ of _TOTAL_ exams',
+        infoEmpty:   'No exams found',
+        emptyTable:  '<div class="text-center text-muted py-10">No exams found</div>',
+        paginate: {
+            previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+        }
+    },
+    columnDefs: [
+        { targets: 3, orderable: false }
+    ],
+    drawCallback: function() {
+        $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+        $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+    }
+});
 
-document.getElementById('exam_search').addEventListener('input', applyFilters);
-document.getElementById('filter_status').addEventListener('change', applyFilters);
-document.getElementById('filter_level').addEventListener('change', applyFilters);
+<?php if ($canExport): ?>
+KTExport.init(examsTable, {
+    filenamePrefix: 'exams',
+    title: 'Exams Report',
+    columns: [
+        { header: 'Exam Name', index: 0 },
+        { header: 'Level', index: 1 },
+        { header: 'Status', index: 2 },
+    ]
+});
+<?php endif; ?>
+
+// ── Search ────────────────────────────────────────────────────────
+$('#exam_search').on('keyup', function() {
+    examsTable.search($(this).val()).draw();
+});
+
+// ── Status filter ─────────────────────────────────────────────────
+$('#filter_status').on('change', function() {
+    examsTable.column(2).search($(this).val()).draw();
+});
+
+// ── Level filter ──────────────────────────────────────────────────
+$('#filter_level').on('change', function() {
+    examsTable.column(1).search($(this).val()).draw();
+});
 
 function confirmDelete(id, name) {
     Swal.fire({

@@ -11,11 +11,16 @@
                 <li class="breadcrumb-item text-muted">Categories</li>
             </ul>
         </div>
-        <?php if ($canManage): ?>
-        <a href="<?= base_url('subject/category/add') ?>" class="btn btn-primary btn-sm">
-            <i class="ki-duotone ki-plus fs-2"><span class="path1"></span><span class="path2"></span></i>
-            Add Category
-        </a>
+        <?php if ($canManage || $canExport): ?>
+        <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php if ($canManage): ?>
+            <a href="<?= base_url('subject/category/add') ?>" class="btn btn-primary btn-sm">
+                <i class="ki-duotone ki-plus fs-2"><span class="path1"></span><span class="path2"></span></i>
+                Add Category
+            </a>
+            <?php endif; ?>
+        </div>
         <?php endif; ?>
     </div>
 </div>
@@ -172,6 +177,17 @@ $flashError   = session('error');
             initDeleteHandlers();
         }
     });
+
+    <?php if ($canExport): ?>
+    KTExport.init(datatable, {
+        filenamePrefix: 'subject_categories',
+        title: 'Subject Categories Report',
+        columns: [
+            { header: 'Category Name', index: 0 },
+            { header: 'Status', index: 1 },
+        ]
+    });
+    <?php endif; ?>
 
     // ── Flash messages ───────────────────────────────────────────────────────
     <?php if ($flashSuccess): ?>

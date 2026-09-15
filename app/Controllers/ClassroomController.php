@@ -35,6 +35,7 @@ class ClassroomController extends BaseController
         $data['canAdd']       = ($this->require_access('_add_classroom')    === true || $isSuperAdmin);
         $data['canEdit']      = ($this->require_access('_edit_classroom')   === true || $isSuperAdmin);
         $data['canDelete']    = ($this->require_access('_remove_classroom') === true || $isSuperAdmin);
+        $data['canExport']    = $this->canImportExport('_export_classroom');
         $data['isSuperAdmin'] = $isSuperAdmin;
         $data['_view']        = 'app/classroom/index';
 

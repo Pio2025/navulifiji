@@ -2725,8 +2725,9 @@ class ReferenceController extends BaseController
         $this->setPageData('Reference Requests', 'User', 'Reference Requests');
 
         $data = [
-            'requests' => $requests,
-            '_view'    => 'app/reference/requests',
+            'requests'   => $requests,
+            'canExport'  => $this->canImportExport('_export_reference'),
+            '_view'      => 'app/reference/requests',
         ];
 
         return view('app/layouts/main', $data);

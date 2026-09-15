@@ -15,6 +15,9 @@
                 <i class="ki-duotone ki-setting-2 fs-2"><span class="path1"></span><span class="path2"></span></i> Setup Structure
             </a>
             <?php endif; ?>
+            <?php if ($canExport): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php endif; ?>
             <?php if ($canAdd): ?>
             <a href="<?= base_url('timetable/add') ?>" class="btn btn-primary btn-sm">
                 <i class="ki-duotone ki-plus fs-2"></i> Add Timetable
@@ -189,10 +192,72 @@ foreach ($timetables as $tt) {
 </div>
 
 <script>
-document.getElementById('tt-search')?.addEventListener('input', function () {
-    const q = this.value.toLowerCase();
-    document.querySelectorAll('#tt-table tbody tr').forEach(tr => {
-        tr.style.display = tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+"use strict";
+
+if ($('#tt-table').length) {
+    // ── DataTable ─────────────────────────────────────────────────────
+    const timetableTable = $('#tt-table').DataTable({
+        pageLength:  15,
+        lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+        order:       [[0, 'asc']],
+        dom:
+            '<"row align-items-center mb-4"' +
+                '<"col-sm-6"l>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>' +
+            't' +
+            '<"row align-items-center mt-4"' +
+                '<"col-sm-6 text-muted fs-7"i>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>',
+        language: {
+            lengthMenu:  'Show _MENU_ timetables',
+            info:        'Showing _START_ to _END_ of _TOTAL_ timetables',
+            infoEmpty:   'No timetables found',
+            emptyTable:  '<div class="text-center text-muted py-10">No timetables found</div>',
+            paginate: {
+                previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+                next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            }
+        },
+        columnDefs: [
+            { targets: <?= $isSuperAdmin ? 8 : 7 ?>, orderable: false }
+        ],
+        drawCallback: function() {
+            $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+            $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+        }
     });
-});
+
+    <?php if ($canExport): ?>
+    KTExport.init(timetableTable, {
+        filenamePrefix: 'timetables',
+        title: 'Timetables Report',
+        columns: [
+            { header: 'Stream', index: 0 },
+            <?php if ($isSuperAdmin): ?>
+            { header: 'School', index: 1 },
+            { header: 'Level', index: 2 },
+            { header: 'Year', index: 3 },
+            { header: 'Term', index: 4 },
+            { header: 'Template', index: 5 },
+            { header: 'Rotation Start', index: 6 },
+            { header: 'Status', index: 7 },
+            <?php else: ?>
+            { header: 'Level', index: 1 },
+            { header: 'Year', index: 2 },
+            { header: 'Term', index: 3 },
+            { header: 'Template', index: 4 },
+            { header: 'Rotation Start', index: 5 },
+            { header: 'Status', index: 6 },
+            <?php endif; ?>
+        ]
+    });
+    <?php endif; ?>
+
+    // ── Search ────────────────────────────────────────────────────────
+    $('#tt-search').on('keyup', function() {
+        timetableTable.search($(this).val()).draw();
+    });
+}
 </script>

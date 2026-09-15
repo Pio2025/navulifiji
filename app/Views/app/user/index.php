@@ -42,6 +42,18 @@
 				<div class="card-toolbar">
 					<!--begin::Toolbar-->
 					<div class="d-flex justify-content-end" data-kt-user-table-toolbar="base">
+						<?php if ($canImport ?? false): ?>
+						<!--begin::Import-->
+						<button type="button" class="btn btn-light-primary me-3" data-bs-toggle="modal" data-bs-target="#kt_user_import_modal">
+							<i class="ki-duotone ki-file-up fs-2">
+								<span class="path1"></span>
+								<span class="path2"></span>
+							</i>
+							Import
+						</button>
+						<!--end::Import-->
+						<?php endif; ?>
+						<?php if ($canExport ?? false): ?>
 						<!--begin::Export-->
 						<button type="button" class="btn btn-light-primary me-3" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
 							<i class="ki-duotone ki-exit-up fs-2">
@@ -75,7 +87,8 @@
 						</div>
 						<!--end::Menu-->
 						<!--end::Export-->
-						
+						<?php endif; ?>
+
 						<!--begin::Add user-->
 						<a href="<?= base_url('user/add') ?>" class="btn btn-primary">
 							<i class="ki-duotone ki-plus fs-2"></i>
@@ -116,6 +129,51 @@
 	</div>
 </div>
 <!--end::Content-->
+
+<!--begin::Import modal-->
+<div class="modal fade" id="kt_user_import_modal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered mw-600px">
+		<div class="modal-content">
+			<div class="modal-header border-0 pb-0">
+				<h5 class="fw-bold text-gray-800 mb-0">Import Users</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+			</div>
+			<div class="modal-body pt-4">
+				<form id="import_users_form">
+					<?= csrf_field() ?>
+					<div class="mb-5">
+						<label class="form-label required fw-semibold">CSV File</label>
+						<input type="file" name="csv_file" accept=".csv" class="form-control" required />
+						<div class="form-text">
+							Columns: first_name, last_name, other_name, email, phone, gender, dob, role, school, district, femis_id.
+							<a href="<?= base_url('assets/templates/user_import_template.csv') ?>" target="_blank">Download CSV template</a>.
+						</div>
+					</div>
+				</form>
+				<div id="import_users_results" class="d-none">
+					<div id="import_users_summary" class="fw-semibold mb-3"></div>
+					<div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+						<table class="table table-sm table-row-dashed">
+							<thead>
+								<tr class="text-start text-muted fw-bold fs-8 text-uppercase gs-0">
+									<th>Row</th>
+									<th>Email</th>
+									<th>Error</th>
+								</tr>
+							</thead>
+							<tbody id="import_users_error_rows"></tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div class="modal-footer border-0 pt-2">
+				<button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
+				<button type="button" id="btn_import_users" class="btn btn-primary">Import</button>
+			</div>
+		</div>
+	</div>
+</div>
+<!--end::Import modal-->
 
 <!--begin::Custom CSS-->
 <style>
@@ -808,12 +866,94 @@ var generatePDFContent = function(doc, enrichedData, logoImg) {
         });
     };
 
+    var handleImportUsers = function () {
+        var importBtn = document.getElementById('btn_import_users');
+        if (!importBtn) {
+            return;
+        }
+
+        importBtn.addEventListener('click', function () {
+            var form = document.getElementById('import_users_form');
+            var fileInput = form.querySelector('[name="csv_file"]');
+
+            if (!fileInput.files.length) {
+                Swal.fire({ title: 'Missing file', text: 'Please choose a CSV file to import.', icon: 'warning' });
+                return;
+            }
+
+            var formData = new FormData(form);
+            var resultsBox = document.getElementById('import_users_results');
+            var summaryBox = document.getElementById('import_users_summary');
+            var errorRows = document.getElementById('import_users_error_rows');
+
+            resultsBox.classList.add('d-none');
+            summaryBox.innerHTML = '';
+            errorRows.innerHTML = '';
+
+            importBtn.setAttribute('data-kt-indicator', 'on');
+            importBtn.disabled = true;
+
+            $.ajax({
+                url: '<?= base_url('user/import') ?>',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                success: function (response) {
+                    importBtn.removeAttribute('data-kt-indicator');
+                    importBtn.disabled = false;
+
+                    if (!response.success) {
+                        Swal.fire({ title: 'Error', text: response.message || 'Import failed.', icon: 'error' });
+                        return;
+                    }
+
+                    var created = response.created || 0;
+                    var errors = response.errors || [];
+
+                    resultsBox.classList.remove('d-none');
+                    summaryBox.textContent = created + ' user(s) created, ' + errors.length + ' error(s).';
+
+                    errors.forEach(function (err) {
+                        var tr = document.createElement('tr');
+                        tr.innerHTML = '<td>' + err.row + '</td><td>' + (err.email || '') + '</td><td>' + err.errors.join('; ') + '</td>';
+                        errorRows.appendChild(tr);
+                    });
+
+                    Swal.fire({
+                        title: errors.length ? 'Import finished with errors' : 'Import complete!',
+                        text: created + ' user(s) created, ' + errors.length + ' error(s).',
+                        icon: errors.length ? 'warning' : 'success',
+                        buttonsStyling: false,
+                        confirmButtonText: 'Ok!',
+                        customClass: {
+                            confirmButton: 'btn fw-bold btn-primary'
+                        }
+                    });
+
+                    if (created > 0) {
+                        datatable.ajax.reload(null, false);
+                    }
+
+                    form.reset();
+                },
+                error: function () {
+                    importBtn.removeAttribute('data-kt-indicator');
+                    importBtn.disabled = false;
+                    Swal.fire({ title: 'Error', text: 'An unexpected error occurred.', icon: 'error' });
+                }
+            });
+        });
+    };
+
     return {
         init: function () {
             initDatatable();
             handleSearchDatatable();
             handleDeleteRows();
             handleExportButtons();
+            handleImportUsers();
         }
     };
 }();

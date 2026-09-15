@@ -27,6 +27,7 @@ class ExamController extends BaseController
         $data['canAdd']       = $isSuperAdmin || $this->grant_access('_add_exam');
         $data['canEdit']      = $isSuperAdmin || $this->grant_access('_edit_exam');
         $data['canDelete']    = $isSuperAdmin || $this->grant_access('_delete_exam');
+        $data['canExport']    = $this->canImportExport('_export_exam');
         $data['isSuperAdmin'] = $isSuperAdmin;
         $data['_view']        = 'app/exam/index';
 

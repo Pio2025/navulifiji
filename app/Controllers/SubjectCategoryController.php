@@ -25,6 +25,7 @@ class SubjectCategoryController extends BaseController
         $data['active']    = $db->table('subject_category')->where('sub_cat_status', 1)->countAllResults();
         $data['inactive']  = $db->table('subject_category')->where('sub_cat_status', 0)->countAllResults();
         $data['canManage'] = $isSuperAdmin || $this->grant_access('_add_subject_category');
+        $data['canExport'] = $this->canImportExport('_export_subject_category');
         $data['_view']     = 'app/subject/category/index';
         return view('app/layouts/main', $data);
     }

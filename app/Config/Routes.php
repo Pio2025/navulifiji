@@ -264,6 +264,7 @@ $routes->get('message',                        'MessageController::index');
 $routes->get('message/(:num)',                 'MessageController::index/$1');
 
 $routes->post('user/store', 'UserController::store');
+$routes->post('user/import', 'UserController::import');
 $routes->post('user/update/(:num)', 'UserController::update/$1');
 $routes->post('user/delete/(:num)', 'UserController::delete/$1');
 

@@ -19,6 +19,11 @@
 				<li class="breadcrumb-item text-muted">Subscriptions</li>
 			</ul>
 		</div>
+		<?php if ($canExport): ?>
+		<div class="d-flex align-items-center gap-2">
+			<?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+		</div>
+		<?php endif; ?>
 	</div>
 </div>
 <!--end::Toolbar-->
@@ -169,6 +174,20 @@ var KTSubscriptionsList = function () {
         datatable.on('draw', function () {
             handleDeleteRows();
         });
+
+        <?php if ($canExport): ?>
+        KTExport.init(datatable, {
+            filenamePrefix: 'school_subscriptions',
+            title: 'School Subscriptions Report',
+            columns: [
+                { header: 'School', index: 0 },
+                { header: 'Plan', index: 1 },
+                { header: 'Start Date', index: 2 },
+                { header: 'Expiry Date', index: 3 },
+                { header: 'Status', index: 4 },
+            ]
+        });
+        <?php endif; ?>
     };
 
     var handleSearchDatatable = function () {

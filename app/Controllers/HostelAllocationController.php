@@ -28,6 +28,7 @@ class HostelAllocationController extends BaseController
         $data['rooms']     = $this->hostelRoomModel->getAvailableBySchool($schId);
         $data['boarders']  = $this->admissionModel->getActiveStudentsBySchool($schId);
         $data['canDetail'] = $isSuperAdmin || $this->grant_access('_hostel_allocation_detail');
+        $data['canExport'] = $this->canImportExport('_export_hostel');
         $data['_view']     = 'app/hostel/allocation/index';
 
         return view('app/layouts/main', $data);

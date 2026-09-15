@@ -43,7 +43,8 @@ class RoleController extends BaseController
         }
         
         $data = $this->loadCommonData($view);
-        
+        $data['canExport'] = $this->canImportExport('_export_role');
+
         //Add user log
         $userLogData = [
             'user_id_fk' => $this->session->get('userID'),

@@ -47,10 +47,12 @@ class SchoolController extends BaseController
         } else {
             $data['_view'] = 'app/school/management/index';
         }
-        
+
+        $data['canExport'] = $this->canImportExport('_export_school');
+
         return view('app/layouts/main', $data);
     }
-    
+
     public function email(){
         //echo 'hi!!!!!!';
         return view('email/email_template');
@@ -2328,6 +2330,7 @@ class SchoolController extends BaseController
         if (!$this->require_access('_school_listing')) {
             $data['_view'] = 'app/auth/access_control';
         } else {
+            $data['canExport'] = $this->canImportExport('_export_school_subscription');
             $data['_view'] = 'app/school/subscription/index';
         }
 

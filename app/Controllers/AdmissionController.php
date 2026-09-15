@@ -52,6 +52,7 @@ class AdmissionController extends BaseController
         $data['canAdd']            = !$noActiveAdmission && $this->require_access('_add_admission')    === true;
         $data['canEdit']           = !$noActiveAdmission && $this->require_access('_edit_admission')   === true;
         $data['canDelete']         = !$noActiveAdmission && $this->require_access('_remove_admission') === true;
+        $data['canExport']         = !$noActiveAdmission && $this->canImportExport('_export_admission');
         $data['isSuperAdmin']      = $isSuperAdmin;
         $data['_view']             = 'app/admission/index';
 

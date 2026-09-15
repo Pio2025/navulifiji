@@ -38,6 +38,7 @@ class EventController extends BaseController
             'canDetail'   => $isSuperAdmin || $this->grant_access('_event_detail'),
             'canCalendar' => $isSuperAdmin || $this->grant_access('_event_calendar'),
             'canReport'   => $isSuperAdmin || $this->grant_access('_event_report'),
+            'canExport'   => $this->canImportExport('_export_event'),
         ]);
         return view('app/layouts/main', $data);
     }

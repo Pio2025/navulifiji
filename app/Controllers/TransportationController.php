@@ -30,6 +30,7 @@ class TransportationController extends BaseController
         $data['canAdd']       = $isSuperAdmin || $this->grant_access('_add_transport');
         $data['canEdit']      = $isSuperAdmin || $this->grant_access('_edit_transport');
         $data['canDelete']    = $isSuperAdmin || $this->grant_access('_remove_transport');
+        $data['canExport']    = $this->canImportExport('_export_transportation');
         $data['_view']        = 'app/transportation/index';
 
         return view('app/layouts/main', $data);

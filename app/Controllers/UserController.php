@@ -39,14 +39,16 @@ class UserController extends BaseController
         $this->setPageData('View User Listing', 'User', 'User Listing');
         
         // Check permission
-        $accessCheck = $this->require_access('_user_listing');  
+        $accessCheck = $this->require_access('_user_listing');
         if ($accessCheck !== true) {
             $view = 'app/auth/access_control';
         } else {
             $view = 'app/user/index';
         }
-        
+
         $data['_view'] = $view;
+        $data['canExport'] = $this->canImportExport('_export_user');
+        $data['canImport'] = $this->canImportExport('_import_user');
         
         //Add user log
         $userLogData = [
@@ -1222,7 +1224,374 @@ class UserController extends BaseController
         }
     }
 
+    /**
+     * Bulk create users from an uploaded CSV file (create-only — a row whose
+     * email already exists, in the DB or earlier in the same file, is skipped
+     * and reported as an error, never updated). Student and Parent roles are
+     * rejected: those roles pull in the enrolment/admission side-pipeline that
+     * store() handles specially, which is out of scope for bulk import v1 —
+     * such rows are reported back asking the admin to use the single Add User
+     * form instead.
+     */
+    public function import()
+    {
+        helper('password');
 
+        if (!$this->isLoggedIn()) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Please login to continue.']);
+        }
+
+        if (!$this->canImportExport('_import_user')) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Import requires a Premium plan and import permission.']);
+        }
+
+        $file = $this->request->getFile('csv_file');
+        if (!$file || !$file->isValid() || strtolower($file->getExtension()) !== 'csv') {
+            return $this->response->setJSON(['success' => false, 'message' => 'Please upload a valid CSV file.']);
+        }
+
+        $currentUserRoleId = (int) $this->session->get('roleID');
+        $isSuperAdmin       = $currentUserRoleId === 1;
+        $currentUserRole    = $this->roleModel->find($currentUserRoleId);
+        $currentUserRank    = is_array($currentUserRole)
+            ? (int) ($currentUserRole['role_rank'] ?? 999)
+            : (int) ($currentUserRole->role_rank ?? 999);
+
+        // role_name (lowercase) => ['role_id' => int, 'role_rank' => int] — Student/Parent excluded (out of scope for bulk import)
+        $roleMap = [];
+        foreach ($this->roleModel->getAllRoles() as $r) {
+            $rName = is_array($r) ? $r['role_name'] : $r->role_name;
+            if (in_array($rName, ['Student', 'Parent'], true)) {
+                continue;
+            }
+            $roleMap[strtolower($rName)] = [
+                'role_id'   => is_array($r) ? (int) $r['role_id'] : (int) $r->role_id,
+                'role_rank' => is_array($r) ? (int) $r['role_rank'] : (int) $r->role_rank,
+                'role_name' => $rName,
+            ];
+        }
+
+        // sch_name (lowercase) => sch_id
+        $schoolMap = [];
+        foreach ($this->schoolModel->getAllSchool() as $s) {
+            $schoolMap[strtolower($s['sch_name'])] = (int) $s['sch_id'];
+        }
+
+        // district_name (lowercase) => district_id
+        $districtMap = [];
+        foreach ($this->districtModel->findAll() as $d) {
+            $districtMap[strtolower($d['district_name'])] = (int) $d['district_id'];
+        }
+
+        $handle = fopen($file->getTempName(), 'r');
+        if ($handle === false) {
+            return $this->response->setJSON(['success' => false, 'message' => 'Could not read the uploaded file.']);
+        }
+
+        $rawHeader = fgetcsv($handle);
+        if ($rawHeader === false) {
+            fclose($handle);
+            return $this->response->setJSON(['success' => false, 'message' => 'The CSV file is empty.']);
+        }
+        $header = array_map(fn($h) => strtolower(trim((string) $h)), $rawHeader);
+
+        $results     = ['created' => 0, 'errors' => []];
+        $seenEmails  = [];
+        $rowNum      = 1; // header is row 1
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $rowNum++;
+
+            // Skip fully blank lines
+            if (count($row) === 1 && trim((string) $row[0]) === '') {
+                continue;
+            }
+
+            $data = array_combine($header, array_pad($row, count($header), null));
+
+            $validated = $this->validateImportRow($data, $roleMap, $schoolMap, $districtMap, $seenEmails, $currentUserRank, $isSuperAdmin);
+
+            if (!empty($validated['errors'])) {
+                $results['errors'][] = [
+                    'row'    => $rowNum,
+                    'email'  => trim((string) ($data['email'] ?? '')),
+                    'errors' => $validated['errors'],
+                ];
+                continue;
+            }
+
+            $seenEmails[] = strtolower($validated['data']['email']);
+
+            $userId = $this->createUserFromImportRow($validated['data']);
+            if ($userId) {
+                $results['created']++;
+            } else {
+                $results['errors'][] = [
+                    'row'    => $rowNum,
+                    'email'  => $validated['data']['email'],
+                    'errors' => ['Failed to create user — please retry this row.'],
+                ];
+            }
+        }
+        fclose($handle);
+
+        $userLogData = [
+            'user_id_fk'  => $this->session->get('userID'),
+            'ip_aadress'  => $this->ipAddress,
+            'user_agent'  => $this->userAgent->getAgentString(),
+            'user_device' => $this->deviceInfo['device_type'],
+            'log_title'   => 'Import Users',
+            'log_desc'    => "Bulk user import: {$results['created']} created, " . count($results['errors']) . ' error(s).',
+            'log_date'    => date('Y-m-d'),
+            'log_time'    => time(),
+            'log_icon'    => '<i class="ki-duotone ki-file-up"><span class="path1"></span><span class="path2"></span></i>',
+            'log_theme'   => 'success',
+        ];
+        $this->userLogModel->insert($userLogData);
+
+        return $this->response->setJSON(['success' => true] + $results);
+    }
+
+    /**
+     * Validate one CSV import row. Returns ['errors' => string[], 'data' => array]
+     * — 'data' is only meaningful when 'errors' is empty, and holds fully
+     * resolved values (role_id/sch_id/district_id looked up, not raw names).
+     */
+    private function validateImportRow(array $data, array $roleMap, array $schoolMap, array $districtMap, array $seenEmails, int $currentUserRank, bool $isSuperAdmin): array
+    {
+        $errors = [];
+
+        $fname = trim((string) ($data['first_name'] ?? ''));
+        $lname = trim((string) ($data['last_name'] ?? ''));
+        $oname = trim((string) ($data['other_name'] ?? '')) ?: null;
+        $email = trim((string) ($data['email'] ?? ''));
+        $phone = trim((string) ($data['phone'] ?? '')) ?: null;
+        $gender = trim((string) ($data['gender'] ?? ''));
+        $dobRaw = trim((string) ($data['dob'] ?? ''));
+        $roleRaw = trim((string) ($data['role'] ?? ''));
+        $schoolRaw = trim((string) ($data['school'] ?? ''));
+        $districtRaw = trim((string) ($data['district'] ?? ''));
+        $femisRaw = trim((string) ($data['femis_id'] ?? ''));
+
+        if ($fname === '' || mb_strlen($fname) < 2 || mb_strlen($fname) > 100) {
+            $errors[] = 'first_name is required (2-100 characters).';
+        }
+        if ($lname === '' || mb_strlen($lname) < 2 || mb_strlen($lname) > 100) {
+            $errors[] = 'last_name is required (2-100 characters).';
+        }
+
+        if ($email === '') {
+            $errors[] = 'email is required for import (it is how the user receives their login credentials).';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'email is not a valid email address.';
+        } elseif (in_array(strtolower($email), $seenEmails, true)) {
+            $errors[] = 'Duplicate email within this file.';
+        } elseif ($this->userModel->where('email', $email)->countAllResults() > 0) {
+            $errors[] = 'A user with this email already exists.';
+        }
+
+        if ($phone !== null && !preg_match('/^\d{7}$/', $phone)) {
+            $errors[] = 'phone must be exactly 7 digits if provided.';
+        }
+
+        if (!in_array($gender, ['Male', 'Female', 'Other'], true)) {
+            $errors[] = 'gender must be one of Male, Female, Other.';
+        }
+
+        $dobFormatted = null;
+        if ($dobRaw !== '') {
+            $ts = strtotime($dobRaw);
+            if ($ts === false) {
+                $errors[] = 'dob is not a recognisable date.';
+            } else {
+                $dobFormatted = date('Y-m-d', $ts);
+            }
+        }
+
+        $roleInfo = null;
+        if ($roleRaw === '') {
+            $errors[] = 'role is required.';
+        } elseif (!isset($roleMap[strtolower($roleRaw)])) {
+            $errors[] = "Unknown role '{$roleRaw}', or Student/Parent (not supported by bulk import — use the Add User form instead).";
+        } else {
+            $roleInfo = $roleMap[strtolower($roleRaw)];
+            if (!$isSuperAdmin && $roleInfo['role_rank'] <= $currentUserRank) {
+                $errors[] = "You do not have permission to assign the '{$roleInfo['role_name']}' role.";
+            }
+        }
+
+        $schId = null;
+        if ($schoolRaw !== '') {
+            if (!isset($schoolMap[strtolower($schoolRaw)])) {
+                $errors[] = "Unknown school '{$schoolRaw}'.";
+            } else {
+                $schId = $schoolMap[strtolower($schoolRaw)];
+            }
+        }
+        if ($roleInfo && $roleInfo['role_name'] === 'Teacher' && $schId === null) {
+            $errors[] = 'school is required when role is Teacher.';
+        }
+
+        $districtId = null;
+        if ($districtRaw !== '') {
+            if (!isset($districtMap[strtolower($districtRaw)])) {
+                $errors[] = "Unknown district '{$districtRaw}'.";
+            } else {
+                $districtId = $districtMap[strtolower($districtRaw)];
+            }
+        }
+
+        $femisId = null;
+        if ($femisRaw !== '') {
+            if (!ctype_digit($femisRaw)) {
+                $errors[] = 'femis_id must be a whole number.';
+            } else {
+                $femisId = (int) $femisRaw;
+            }
+        }
+
+        if (!empty($errors)) {
+            return ['errors' => $errors, 'data' => []];
+        }
+
+        return [
+            'errors' => [],
+            'data' => [
+                'fname'          => $fname,
+                'lname'          => $lname,
+                'oname'          => $oname,
+                'email'          => $email,
+                'phone'          => $phone,
+                'gender'         => $gender,
+                'dob'            => $dobFormatted,
+                'district_id_fk' => $districtId,
+                'femis_id'       => $femisId,
+                'role_id'        => $roleInfo['role_id'],
+                'role_name'      => $roleInfo['role_name'],
+                'sch_id'         => $schId,
+            ],
+        ];
+    }
+
+    /**
+     * Create one user from an already-validated import row. Mirrors store()'s
+     * successful-creation sequence (password, insert, password history, role
+     * assignment, admission record, notification prefs, activation email) for
+     * the subset of roles bulk import supports (Student/Parent excluded, so
+     * no enrolment/classroom side effects to replicate here).
+     */
+    private function createUserFromImportRow(array $row)
+    {
+        $tempPassword = generateStrongPassword(10);
+        $password     = password_hash($tempPassword, PASSWORD_DEFAULT);
+
+        $userData = [
+            'password'        => $password,
+            'username'        => $this->generateImportUsername(),
+            'fname'           => $row['fname'],
+            'lname'           => $row['lname'],
+            'oname'           => $row['oname'],
+            'email'           => $row['email'],
+            'phone'           => $row['phone'],
+            'gender'          => $row['gender'],
+            'dob'             => $row['dob'],
+            'address'         => null,
+            'district_id_fk'  => $row['district_id_fk'],
+            'femis_id'        => $row['femis_id'],
+            'user_status'     => 'Active',
+            'is_a_parent'     => 0,
+            'created_date'    => date('Y-m-d'),
+            'created_time'    => time(),
+            'online_status'   => 'Offline',
+            'account_status'  => 'Active',
+        ];
+
+        $userId = $this->userModel->insert($userData);
+        if (!$userId) {
+            return false;
+        }
+
+        $code = md5(time() + $userId);
+        $this->userModel->update($userId, ['password_reset_code' => $code]);
+
+        $this->userPasswordModel->insert([
+            'user_id_fk'      => $userId,
+            'password'        => $password,
+            'date_created'    => date('Y-m-d'),
+            'time_created'    => time(),
+            'password_status' => 'Active',
+        ]);
+
+        $this->userRoleModel->insert([
+            'user_id_fk'        => $userId,
+            'role_id_fk'        => $row['role_id'],
+            'created_date'      => date('Y-m-d H:i:s'),
+            'updated_date'      => date('Y-m-d H:i:s'),
+            'user_role_status'  => 'Active',
+        ]);
+
+        $isSuperAdminRole = $row['role_name'] === 'Super Admin';
+        if (!$isSuperAdminRole && $row['sch_id'] !== null) {
+            $this->admissionModel->addAdmission([
+                'user_id_fk'       => $userId,
+                'sch_id_fk'        => $row['sch_id'],
+                'admission_date'   => date('Y-m-d'),
+                'admission_time'   => time(),
+                'admission_status' => 'Active',
+            ]);
+        }
+
+        $this->userNotificationModel->saveForUser($userId, [
+            'notif_dashboard'     => 1,
+            'notif_rbac'          => 1,
+            'notif_user'          => 1,
+            'notif_school'        => 1,
+            'notif_admission'     => 1,
+            'notif_enrolment'     => 1,
+            'notif_classroom'     => 1,
+            'notif_exam'          => 1,
+            'notif_conduct'       => 1,
+            'notif_timetable'     => 1,
+            'notif_event'         => 1,
+            'notif_communication' => 1,
+            'notif_security'      => 1,
+            'notif_medical'       => 1,
+            'notif_reference'     => 1,
+        ]);
+
+        try {
+            $this->sendEmail([
+                'name'    => $row['fname'] . ' ' . $row['lname'],
+                'email'   => $row['email'],
+                'code'    => $code,
+                'page'    => 'user_activation_notification',
+                'subject' => 'Activate User Account',
+                'role'    => $row['role_name'],
+            ]);
+        } catch (\Exception $e) {
+            log_message('error', 'Import activation email failed for ' . $row['email'] . ': ' . $e->getMessage());
+        }
+
+        return $userId;
+    }
+
+    /**
+     * Same 10-digit unique username scheme as generateUsername(), inlined so
+     * import() can call it directly instead of round-tripping through AJAX.
+     */
+    private function generateImportUsername(): string
+    {
+        $prefix  = date('ym');
+        $attempt = 0;
+
+        do {
+            $candidate = $prefix . str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $taken     = $this->db->table('users')->where('username', $candidate)->countAllResults() > 0;
+            $attempt++;
+        } while ($taken && $attempt < 30);
+
+        return $candidate;
+    }
 
     // UPDATED detail() method for UserController.php
     

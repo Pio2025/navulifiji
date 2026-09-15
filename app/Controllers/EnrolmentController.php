@@ -28,6 +28,7 @@ class EnrolmentController extends BaseController
         $data['canAdd']       = ($this->require_access('_add_enrolment')    === true);
         $data['canEdit']      = ($this->require_access('_edit_enrolment')   === true);
         $data['canDelete']    = ($this->require_access('_delete_enrolment') === true);
+        $data['canExport']    = $this->canImportExport('_export_enrolment');
         $data['isSuperAdmin'] = $isSuperAdmin;
 
         if ($isSuperAdmin) {

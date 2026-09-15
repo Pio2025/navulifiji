@@ -102,6 +102,7 @@ $flashError   = session('error');
             </select>
         </div>
         <!--Export-->
+        <?php if ($canExport ?? false): ?>
         <div class="d-flex align-items-center">
             <div class="dropdown">
                 <button type="button" class="btn btn-light-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
@@ -137,6 +138,7 @@ $flashError   = session('error');
                 </ul>
             </div>
         </div>
+        <?php endif; ?>
     </div>
     <!--end::Card header-->
 

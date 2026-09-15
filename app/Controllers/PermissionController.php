@@ -55,7 +55,8 @@ class PermissionController extends BaseController
         }
         
         $data['_view'] = $view;
-        
+        $data['canExport'] = $this->canImportExport('_export_permission');
+
         // Add user log using parent's method
         $userLogData = [
             'user_id_fk' => $this->session->get('userID'),

@@ -14,6 +14,9 @@
             </ul>
         </div>
         <div class="d-flex gap-2">
+            <?php if ($canExport): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php endif; ?>
             <?php if ($canAdd): ?>
             <a href="<?= base_url('transportation/add') ?>" class="btn btn-sm btn-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
@@ -113,7 +116,7 @@
 <script>
 "use strict";
 $(function () {
-    $('#allocations_table').DataTable({
+    const transportTable = $('#allocations_table').DataTable({
         pageLength: 15,
         lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
         order: [[0, 'asc']],
@@ -143,6 +146,19 @@ $(function () {
             { orderable: false, targets: 4 },
         ],
     });
+
+    <?php if ($canExport): ?>
+    KTExport.init(transportTable, {
+        filenamePrefix: 'transportation',
+        title: 'Transportation Report',
+        columns: [
+            { header: 'Student', index: 0 },
+            { header: 'Year', index: 1 },
+            { header: 'E-Transport Card', index: 2 },
+            { header: 'Status', index: 3 },
+        ]
+    });
+    <?php endif; ?>
 });
 
 function confirmDelete(id) {

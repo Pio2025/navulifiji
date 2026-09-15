@@ -569,10 +569,41 @@ abstract class BaseController extends Controller
             log_message('warning', "Unauthorized access attempt by user {$this->session->get('user_id')} to {$perm_code}");
             return false;
         }
-        
+
         return true;
     }
-    
+
+    /**
+     * Whether the current user may use an Import/Export action: requires both
+     * the permission code AND the school's active plan meeting $minRank.
+     * Super Admin is exempt from the plan check (not tied to one school's
+     * subscription) but still needs the permission itself.
+     *
+     * @param string   $permCode
+     * @param int|null $minRank   defaults to PlanModel::RANK_PREMIUM
+     * @param int|null $schoolId  override school id; defaults to session schID
+     */
+    protected function canImportExport($permCode, $minRank = null, $schoolId = null)
+    {
+        $minRank      = $minRank ?? \App\Models\PlanModel::RANK_PREMIUM;
+        $isSuperAdmin = (int) $this->session->get('roleID') === 1;
+
+        if (!$this->grant_access($permCode)) {
+            return false;
+        }
+
+        if ($isSuperAdmin) {
+            return true;
+        }
+
+        $schId = $schoolId ?? (int) $this->session->get('schID');
+        if ($schId <= 0) {
+            return false;
+        }
+
+        return $this->subscriptionModel->getActivePlanRank($schId) >= $minRank;
+    }
+
     
     /**
      * Check if user is logged in

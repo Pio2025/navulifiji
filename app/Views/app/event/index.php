@@ -8,6 +8,7 @@ $canDelete   = $canDelete   ?? false;
 $canDetail   = $canDetail   ?? false;
 $canCalendar = $canCalendar ?? false;
 $canReport   = $canReport   ?? false;
+$canExport   = $canExport   ?? false;
 
 use App\Models\EventModel;
 ?>
@@ -35,6 +36,9 @@ use App\Models\EventModel;
                 <i class="ki-duotone ki-chart-pie-3 fs-4 me-1"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
                 Report
             </a>
+            <?php endif; ?>
+            <?php if ($canExport): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
             <?php endif; ?>
             <?php if ($canAdd): ?>
             <a href="<?= base_url('event/add') ?>" class="btn btn-sm btn-primary fw-bold">
@@ -186,7 +190,7 @@ use App\Models\EventModel;
 <script>
 "use strict";
 $(function () {
-    $('#events_table').DataTable({
+    const eventsTable = $('#events_table').DataTable({
         pageLength: 15,
         lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
         order: [[3, 'desc']],
@@ -216,6 +220,22 @@ $(function () {
             { orderable: false, targets: 7 },
         ],
     });
+
+    <?php if ($canExport): ?>
+    KTExport.init(eventsTable, {
+        filenamePrefix: 'events',
+        title: 'Events Report',
+        columns: [
+            { header: '#', index: 0 },
+            { header: 'Event Title', index: 1 },
+            { header: 'Type', index: 2 },
+            { header: 'Start Date', index: 3 },
+            { header: 'End Date', index: 4 },
+            { header: 'Location', index: 5 },
+            { header: 'Status', index: 6 },
+        ]
+    });
+    <?php endif; ?>
 
     // Delete
     $(document).on('click', '.del-btn', function () {

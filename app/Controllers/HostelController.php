@@ -31,10 +31,11 @@ class HostelController extends BaseController
         $schId = $isSuperAdmin ? 0 : (int) $this->session->get('schID');
 
         $data['hostels']    = $this->hostelModel->getBySchoolWithOccupancy($schId);
-        $data['canAdd']     = true;
-        $data['canEdit']    = true;
-        $data['canDelete']  = true;
+        $data['canAdd']     = $isSuperAdmin || $this->grant_access('_hostel_manage');
+        $data['canEdit']    = $isSuperAdmin || $this->grant_access('_hostel_manage');
+        $data['canDelete']  = $isSuperAdmin || $this->grant_access('_hostel_manage');
         $data['canAllocate'] = $isSuperAdmin || $this->grant_access('_hostel_allocate');
+        $data['canExport']  = $this->canImportExport('_export_hostel');
         $data['_view']      = 'app/hostel/index';
 
         return view('app/layouts/main', $data);

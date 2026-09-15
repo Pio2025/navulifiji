@@ -3,6 +3,7 @@ $occupied  = $occupied  ?? [];
 $rooms     = $rooms     ?? [];
 $boarders  = $boarders  ?? [];
 $canDetail = $canDetail ?? false;
+$canExport = $canExport ?? false;
 ?>
 
 <!--begin::Toolbar-->
@@ -22,6 +23,11 @@ $canDetail = $canDetail ?? false;
                 <li class="breadcrumb-item text-muted">Room Allocation</li>
             </ul>
         </div>
+        <?php if ($canExport): ?>
+        <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 <!--end::Toolbar-->
@@ -98,7 +104,7 @@ $canDetail = $canDetail ?? false;
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 dataTable" id="hostel_allocations_table">
                         <thead>
                             <tr class="fw-bold text-muted fs-7 bg-light">
                                 <th class="ps-4">Boarder</th>

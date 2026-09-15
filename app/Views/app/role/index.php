@@ -57,6 +57,7 @@
 				<div class="card-toolbar">
 					<!--begin::Toolbar-->
 					<div class="d-flex justify-content-end" data-kt-role-table-toolbar="base">
+						<?php if ($canExport ?? false): ?>
 						<!--begin::Export-->
 						<button type="button" class="btn btn-light-primary me-3" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
 							<i class="ki-duotone ki-exit-up fs-2">
@@ -98,7 +99,8 @@
 						</div>
 						<!--end::Menu-->
 						<!--end::Export-->
-						
+						<?php endif; ?>
+
 						<!--begin::Add role-->
 						<a href="<?php echo base_url('role/add'); ?>" class="btn btn-primary">
 							<i class="ki-duotone ki-plus fs-2"></i>

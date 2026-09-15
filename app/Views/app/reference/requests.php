@@ -17,6 +17,11 @@
                 <li class="breadcrumb-item text-muted">Reference Requests</li>
             </ul>
         </div>
+        <?php if ($canExport): ?>
+        <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 <!--end::Toolbar-->
@@ -58,13 +63,8 @@
                 </tr>
             </thead>
             <tbody class="text-gray-600 fw-semibold">
-                <?php if (empty($requests)): ?>
+                <?php foreach ($requests as $r): ?>
                 <tr>
-                    <td colspan="7" class="text-center text-muted py-10">No reference requests found.</td>
-                </tr>
-                <?php else: foreach ($requests as $r): ?>
-                <tr data-status="<?= esc($r['request_status']) ?>"
-                    data-search="<?= esc(strtolower(($r['fname'] ?? '') . ' ' . ($r['lname'] ?? '') . ' ' . ($r['sch_name'] ?? ''))) ?>">
                     <td>
                         <div class="d-flex align-items-center">
                             <?php
@@ -152,7 +152,7 @@
                         </div>
                     </td>
                 </tr>
-                <?php endforeach; endif; ?>
+                <?php endforeach; ?>
             </tbody>
         </table>
         </div>
@@ -201,6 +201,8 @@
 <!--end::Update Request Modal-->
 
 <script>
+"use strict";
+
 (function () {
     let currentRequestId = null;
 
@@ -244,23 +246,64 @@
         });
     });
 
-    // Table filtering
-    const searchInput  = document.getElementById('refReqSearch');
-    const statusFilter = document.getElementById('refReqStatusFilter');
-
-    function filterTable() {
-        const query  = searchInput.value.toLowerCase();
-        const status = statusFilter.value;
-        document.querySelectorAll('#refReqTable tbody tr').forEach(function (row) {
-            const text   = (row.dataset.search || '') + ' ' + row.textContent.toLowerCase();
-            const rowSt  = row.dataset.status || '';
-            const matchQ = !query  || text.includes(query);
-            const matchS = !status || rowSt === status;
-            row.style.display = (matchQ && matchS) ? '' : 'none';
-        });
-    }
-
-    searchInput?.addEventListener('input', filterTable);
-    statusFilter?.addEventListener('change', filterTable);
 })();
+
+// ── DataTable ─────────────────────────────────────────────────────
+const referenceTable = $('#refReqTable').DataTable({
+    pageLength:  15,
+    lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+    order:       [[5, 'desc']],
+    dom:
+        '<"row align-items-center mb-4"' +
+            '<"col-sm-6"l>' +
+            '<"col-sm-6 d-flex justify-content-end"p>' +
+        '>' +
+        't' +
+        '<"row align-items-center mt-4"' +
+            '<"col-sm-6 text-muted fs-7"i>' +
+            '<"col-sm-6 d-flex justify-content-end"p>' +
+        '>',
+    language: {
+        lengthMenu:  'Show _MENU_ requests',
+        info:        'Showing _START_ to _END_ of _TOTAL_ requests',
+        infoEmpty:   'No reference requests found',
+        emptyTable:  '<div class="text-center text-muted py-10">No reference requests found</div>',
+        paginate: {
+            previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+        }
+    },
+    columnDefs: [
+        { targets: 6, orderable: false }
+    ],
+    drawCallback: function() {
+        $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+        $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+    }
+});
+
+<?php if ($canExport): ?>
+KTExport.init(referenceTable, {
+    filenamePrefix: 'reference_requests',
+    title: 'Reference Requests Report',
+    columns: [
+        { header: 'Student', index: 0 },
+        { header: 'School', index: 1 },
+        { header: 'Reference Type', index: 2 },
+        { header: 'Status', index: 3 },
+        { header: 'Note', index: 4 },
+        { header: 'Requested', index: 5 },
+    ]
+});
+<?php endif; ?>
+
+// ── Search ────────────────────────────────────────────────────────
+$('#refReqSearch').on('keyup', function() {
+    referenceTable.search($(this).val()).draw();
+});
+
+// ── Status filter ─────────────────────────────────────────────────
+$('#refReqStatusFilter').on('change', function() {
+    referenceTable.column(3).search($(this).val()).draw();
+});
 </script>

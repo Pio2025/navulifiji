@@ -49,6 +49,7 @@ class TimetableController extends BaseController
         $data['canAdd']            = $isSuperAdmin || $this->grant_access('_add_timetable');
         $data['canEdit']           = $isSuperAdmin || $this->grant_access('_edit_timetable');
         $data['canDelete']         = $isSuperAdmin || $this->grant_access('_remove_timetable');
+        $data['canExport']         = $this->canImportExport('_export_timetable');
         $data['hasSchoolTemplate'] = !$isSuperAdmin && $this->schoolHasTemplate($schId);
         $data['_view']             = 'app/timetable/index';
         return view('app/layouts/main', $data);

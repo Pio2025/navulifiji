@@ -28,6 +28,9 @@ $search     = $search     ?? '';
                 <i class="ki-duotone ki-category fs-2"><span class="path1"></span><span class="path2"></span><span class="path3"></span><span class="path4"></span></i>
                 Categories
             </a>
+            <?php if ($canExport ?? false): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php endif; ?>
             <?php if ($canAdd ?? false): ?>
             <a href="<?= base_url('library/add') ?>" class="btn btn-primary">
                 <i class="ki-duotone ki-plus fs-2"></i>
@@ -91,7 +94,7 @@ $search     = $search     ?? '';
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 dataTable" id="library_table">
                         <thead>
                             <tr class="fw-bold text-muted fs-7 bg-light">
                                 <th class="ps-4 min-w-40px rounded-start">#</th>
@@ -218,6 +221,8 @@ $search     = $search     ?? '';
 <!--end::Delete confirm modal-->
 
 <script>
+"use strict";
+
 function confirmDelete(btn) {
     var id    = btn.getAttribute('data-book-id');
     var title = btn.getAttribute('data-book-title');
@@ -225,5 +230,61 @@ function confirmDelete(btn) {
     document.getElementById('deleteBookForm').action = '<?= base_url('library/remove/') ?>' + id;
     var modal = new bootstrap.Modal(document.getElementById('deleteBookModal'));
     modal.show();
+}
+
+// ── DataTable ─────────────────────────────────────────────────────
+// The book list itself is still driven server-side (GET search/category_id
+// params reload the page, exactly as before) — this just layers DataTables'
+// own client-side pagination/sort/search on top of whatever rows the server
+// rendered for the current filter state. The two filter systems are not merged.
+if (document.getElementById('library_table')) {
+    const libraryTable = $('#library_table').DataTable({
+        pageLength:  15,
+        lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+        order:       [[1, 'asc']],
+        dom:
+            '<"row align-items-center mb-4"' +
+                '<"col-sm-6"l>' +
+                '<"col-sm-6 d-flex justify-content-end"f>' +
+            '>' +
+            't' +
+            '<"row align-items-center mt-4"' +
+                '<"col-sm-6 text-muted fs-7"i>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>',
+        language: {
+            lengthMenu:  'Show _MENU_ books',
+            info:        'Showing _START_ to _END_ of _TOTAL_ books',
+            infoEmpty:   'No books found',
+            emptyTable:  '<div class="text-center text-muted py-10">No book records found</div>',
+            search:      '',
+            searchPlaceholder: 'Search this page...',
+            paginate: {
+                previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+                next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            }
+        },
+        columnDefs: [
+            { targets: 6, orderable: false }
+        ],
+        drawCallback: function() {
+            $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+            $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+        }
+    });
+
+    <?php if ($canExport ?? false): ?>
+    KTExport.init(libraryTable, {
+        filenamePrefix: 'library_catalog',
+        title: 'Library Catalog Report',
+        columns: [
+            { header: 'Title', index: 1 },
+            { header: 'Author', index: 2 },
+            { header: 'Category', index: 3 },
+            { header: 'Copies', index: 4 },
+            { header: 'Available', index: 5 },
+        ]
+    });
+    <?php endif; ?>
 }
 </script>

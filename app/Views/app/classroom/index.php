@@ -13,13 +13,18 @@
                 <li class="breadcrumb-item text-muted">Classrooms</li>
             </ul>
         </div>
-        <?php if ($canAdd): ?>
-        <a href="<?= base_url('classroom/add') ?>" class="btn btn-sm btn-primary">
-            <i class="ki-duotone ki-plus fs-3 me-1">
-                <span class="path1"></span><span class="path2"></span>
-            </i>
-            Add Classroom
-        </a>
+        <?php if ($canAdd || $canExport): ?>
+        <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php if ($canAdd): ?>
+            <a href="<?= base_url('classroom/add') ?>" class="btn btn-sm btn-primary">
+                <i class="ki-duotone ki-plus fs-3 me-1">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                Add Classroom
+            </a>
+            <?php endif; ?>
+        </div>
         <?php endif; ?>
     </div>
 </div>
@@ -309,6 +314,27 @@ const classTable = $('#classrooms_table').DataTable({
         $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
     }
 });
+
+<?php if ($canExport): ?>
+KTExport.init(classTable, {
+    filenamePrefix: 'classrooms',
+    title: 'Classrooms Report',
+    columns: <?php if ($isSuperAdmin): ?>[
+        { header: 'Classroom', index: 0 },
+        { header: 'School', index: 1 },
+        { header: 'Stream / Level', index: 2 },
+        { header: 'Year', index: 3 },
+        { header: 'Created', index: 4 },
+        { header: 'Status', index: 5 },
+    ]<?php else: ?>[
+        { header: 'Classroom', index: 0 },
+        { header: 'Stream / Level', index: 1 },
+        { header: 'Year', index: 2 },
+        { header: 'Created', index: 3 },
+        { header: 'Status', index: 4 },
+    ]<?php endif; ?>
+});
+<?php endif; ?>
 
 $('#classroom_search').on('keyup', function() {
     classTable.search($(this).val()).draw();

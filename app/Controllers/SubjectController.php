@@ -26,6 +26,7 @@ class SubjectController extends BaseController
         $data['totalNonExam']    = $db->table('subject')->where('is_examinable', 0)->countAllResults();
         $data['levels']          = $this->levelModel->findAll();
         $data['canAdd']          = $isSuperAdmin || $this->grant_access('_add_subject');
+        $data['canExport']       = $this->canImportExport('_export_subject');
         $data['_view']           = 'app/subject/index';
         return view('app/layouts/main', $data);
     }
@@ -160,6 +161,9 @@ class SubjectController extends BaseController
 
         $isSuperAdmin = (int) $this->session->get('roleID') === 1;
         if (!$isSuperAdmin && !$this->require_access('_subject_listing')) {
+            return redirect()->to('subject');
+        }
+        if (!$this->canImportExport('_export_subject')) {
             return redirect()->to('subject');
         }
 

@@ -1,3 +1,7 @@
+<?php
+$canAdd    = $canAdd    ?? false;
+$canExport = $canExport ?? false;
+?>
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
     <div id="kt_app_toolbar_container" class="app-container container-xxl d-flex flex-stack">
@@ -11,14 +15,17 @@
                 <li class="breadcrumb-item text-muted">School Category Listing</li>
             </ul>
         </div>
+        <?php if ($canAdd || $canExport): ?>
         <div class="d-flex align-items-center gap-2">
-            <?php if ($canAdd ?? false): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php if ($canAdd): ?>
             <a href="<?= base_url('school/category/add') ?>" class="btn btn-primary">
                 <i class="ki-duotone ki-plus fs-2"></i>
                 Add School Category
             </a>
             <?php endif; ?>
         </div>
+        <?php endif; ?>
     </div>
 </div>
 <!--end::Toolbar-->
@@ -53,7 +60,7 @@
                     </i>
                     <div class="fs-6 fw-semibold text-gray-600 mb-2">No school categories found</div>
                     <div class="fs-7 text-muted mb-6">Add your first school category to get started.</div>
-                    <?php if ($canAdd ?? false): ?>
+                    <?php if ($canAdd): ?>
                     <a href="<?= base_url('school/category/add') ?>" class="btn btn-primary btn-sm">
                         <i class="ki-duotone ki-plus fs-4 me-1"></i>Add School Category
                     </a>
@@ -61,7 +68,7 @@
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="cat_table">
+                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 dataTable" id="cat_table">
                         <thead>
                             <tr class="fw-bold text-muted fs-7 bg-light">
                                 <th class="ps-4 min-w-40px rounded-start">#</th>
@@ -77,6 +84,19 @@
                         <?php
                         $canEdit   = $canEdit   ?? false;
                         $canDelete = $canDelete ?? false;
+
+                        // Term-detail blocks are rendered OUTSIDE the table body (see
+                        // #cat_term_templates below) and pulled in on demand via DataTables'
+                        // own row().child() API — NOT as sibling <tr class="collapse"> rows.
+                        // DataTables expects exactly one <tr> per data row in <tbody>; a raw
+                        // Bootstrap-collapse sibling row would get treated as its own
+                        // sortable/paginatable/exportable "row", which both breaks pagination
+                        // (an expanded category could land on a different page than its detail
+                        // row) and would leak term-detail text into CSV/Excel/PDF export. Using
+                        // row().child() keeps the detail HTML entirely outside DataTables' row
+                        // model — it is never counted, sorted, paginated, or exported.
+                        $termTemplates = '';
+
                         foreach ($categories as $i => $cat):
                             $config = $cat['config'] ?? null;
                             $terms  = $cat['terms']  ?? [];
@@ -108,9 +128,8 @@
                             <td class="text-center">
                                 <?php if (!empty($terms)): ?>
                                     <button type="button"
-                                        class="btn btn-sm btn-light-success py-1 px-3"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#terms_<?= $cat['sch_cat_id'] ?>">
+                                        class="btn btn-sm btn-light-success py-1 px-3 btn-toggle-terms"
+                                        data-cat-id="<?= (int)$cat['sch_cat_id'] ?>">
                                         <?= count($terms) ?> terms
                                         <i class="ki-duotone ki-down fs-6 ms-1"><span class="path1"></span></i>
                                     </button>
@@ -146,59 +165,62 @@
                                 </div>
                             </td>
                         </tr>
-                        <?php if (!empty($terms)): ?>
-                        <tr class="collapse" id="terms_<?= $cat['sch_cat_id'] ?>">
-                            <td colspan="7" class="px-4 pb-4 pt-0">
-                                <div class="bg-light-primary rounded p-4">
-                                    <div class="fw-bold text-gray-700 fs-7 mb-3">
-                                        <i class="ki-duotone ki-calendar fs-5 me-1 text-primary">
-                                            <span class="path1"></span><span class="path2"></span>
-                                        </i>
-                                        <?= esc($config['label_for_term'] ?? 'Term') ?> Dates — <?= esc($cat['sch_cat_name']) ?>
-                                    </div>
-                                    <?php
-                                    $MONTHS_SHORT = ['','Jan','Feb','Mar','Apr','May','Jun',
-                                                     'Jul','Aug','Sep','Oct','Nov','Dec'];
-                                    function termDateLabel(int $day, int $month, array $short): string {
-                                        if (!$day || !$month || !isset($short[$month])) return '—';
-                                        return $day . ' ' . $short[$month];
-                                    }
-                                    ?>
-                                    <div class="row g-3">
-                                    <?php foreach ($terms as $term): ?>
-                                        <div class="col-md-4 col-lg-3">
-                                            <div class="card border border-dashed border-primary-subtle">
-                                                <div class="card-body p-3">
-                                                    <div class="fw-bold text-primary fs-7 mb-2">
-                                                        <?= esc($config['label_for_term'] ?? 'Term') ?> <?= (int) $term['term_num'] ?>
-                                                    </div>
-                                                    <div class="d-flex flex-column gap-1 fs-8 text-gray-700">
-                                                        <div>
-                                                            <span class="text-muted">Weeks:</span>
-                                                            <span class="fw-semibold"><?= (int)($term['num_of_week'] ?? 0) ?></span>
-                                                        </div>
-                                                        <div>
-                                                            <span class="text-muted">Start:</span>
-                                                            <span class="fw-semibold"><?= termDateLabel((int)($term['term_start_day'] ?? 0), (int)($term['term_start_month'] ?? 0), $MONTHS_SHORT) ?></span>
-                                                        </div>
-                                                        <div>
-                                                            <span class="text-muted">End:</span>
-                                                            <span class="fw-semibold"><?= termDateLabel((int)($term['term_end_day'] ?? 0), (int)($term['term_end_month'] ?? 0), $MONTHS_SHORT) ?></span>
-                                                        </div>
-                                                    </div>
+                        <?php
+                        if (!empty($terms)):
+                            ob_start();
+                            $MONTHS_SHORT = ['','Jan','Feb','Mar','Apr','May','Jun',
+                                             'Jul','Aug','Sep','Oct','Nov','Dec'];
+                            $termDateLabel = function (int $day, int $month) use ($MONTHS_SHORT): string {
+                                if (!$day || !$month || !isset($MONTHS_SHORT[$month])) return '—';
+                                return $day . ' ' . $MONTHS_SHORT[$month];
+                            };
+                        ?>
+                        <div class="bg-light-primary rounded p-4">
+                            <div class="fw-bold text-gray-700 fs-7 mb-3">
+                                <i class="ki-duotone ki-calendar fs-5 me-1 text-primary">
+                                    <span class="path1"></span><span class="path2"></span>
+                                </i>
+                                <?= esc($config['label_for_term'] ?? 'Term') ?> Dates — <?= esc($cat['sch_cat_name']) ?>
+                            </div>
+                            <div class="row g-3">
+                            <?php foreach ($terms as $term): ?>
+                                <div class="col-md-4 col-lg-3">
+                                    <div class="card border border-dashed border-primary-subtle">
+                                        <div class="card-body p-3">
+                                            <div class="fw-bold text-primary fs-7 mb-2">
+                                                <?= esc($config['label_for_term'] ?? 'Term') ?> <?= (int) $term['term_num'] ?>
+                                            </div>
+                                            <div class="d-flex flex-column gap-1 fs-8 text-gray-700">
+                                                <div>
+                                                    <span class="text-muted">Weeks:</span>
+                                                    <span class="fw-semibold"><?= (int)($term['num_of_week'] ?? 0) ?></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-muted">Start:</span>
+                                                    <span class="fw-semibold"><?= $termDateLabel((int)($term['term_start_day'] ?? 0), (int)($term['term_start_month'] ?? 0)) ?></span>
+                                                </div>
+                                                <div>
+                                                    <span class="text-muted">End:</span>
+                                                    <span class="fw-semibold"><?= $termDateLabel((int)($term['term_end_day'] ?? 0), (int)($term['term_end_month'] ?? 0)) ?></span>
                                                 </div>
                                             </div>
                                         </div>
-                                    <?php endforeach; ?>
                                     </div>
                                 </div>
-                            </td>
-                        </tr>
-                        <?php endif; ?>
+                            <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <?php
+                            $termTemplates .= '<div data-cat-id="' . (int)$cat['sch_cat_id'] . '">' . ob_get_clean() . '</div>';
+                        endif;
+                        ?>
                         <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
+                <!--begin::Term detail templates (not part of the DataTable's row model)-->
+                <div id="cat_term_templates" class="d-none"><?= $termTemplates ?></div>
+                <!--end::Term detail templates-->
                 <?php endif; ?>
             </div>
             <!--end::Card body-->
@@ -253,6 +275,8 @@
 <!--end::Delete confirm modal-->
 
 <script>
+"use strict";
+
 function confirmDelete(btn) {
     var id   = btn.getAttribute('data-cat-id');
     var name = btn.getAttribute('data-cat-name');
@@ -262,17 +286,81 @@ function confirmDelete(btn) {
     modal.show();
 }
 
-(function () {
-    var searchInput = document.getElementById('cat_search');
-    var table = document.getElementById('cat_table');
-    if (searchInput && table) {
-        searchInput.addEventListener('keyup', function () {
-            var q = this.value.toLowerCase();
-            table.querySelectorAll('tbody tr').forEach(function (row) {
-                if (row.classList.contains('collapse') || row.id.startsWith('terms_')) return;
-                row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-            });
-        });
-    }
-})();
+if (document.getElementById('cat_table')) {
+    const catTable = $('#cat_table').DataTable({
+        pageLength:  15,
+        lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+        order:       [[2, 'asc']],
+        dom:
+            '<"row align-items-center mb-4"' +
+                '<"col-sm-6"l>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>' +
+            't' +
+            '<"row align-items-center mt-4"' +
+                '<"col-sm-6 text-muted fs-7"i>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>',
+        language: {
+            lengthMenu:  'Show _MENU_ categories',
+            info:        'Showing _START_ to _END_ of _TOTAL_ categories',
+            infoEmpty:   'No categories found',
+            emptyTable:  '<div class="text-center text-muted py-10">No school category records found</div>',
+            paginate: {
+                previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+                next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            }
+        },
+        columnDefs: [
+            { targets: 6, orderable: false }
+        ],
+        drawCallback: function() {
+            $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+            $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+        }
+    });
+
+    <?php if ($canExport): ?>
+    KTExport.init(catTable, {
+        filenamePrefix: 'school_categories',
+        title: 'School Categories Report',
+        columns: [
+            { header: 'Initial', index: 1 },
+            { header: 'Category Name', index: 2 },
+            { header: 'Terms/Year', index: 3 },
+            { header: 'Term Label', index: 4 },
+            { header: 'Terms Set', index: 5 },
+        ]
+    });
+    <?php endif; ?>
+
+    // ── Search (real DataTable search now — replaces the old vanilla-JS
+    //    keyup filter that had to explicitly skip collapse sibling rows;
+    //    that special-casing is no longer needed since child-row detail
+    //    content isn't part of DataTables' searchable row data at all) ──
+    $('#cat_search').on('keyup', function() {
+        catTable.search($(this).val()).draw();
+    });
+
+    // ── Expand/collapse term details via DataTables' own child-row API.
+    //    The detail HTML lives in the hidden #cat_term_templates container
+    //    (rendered once per category, outside <tbody>) and is injected as a
+    //    DataTables child row only when toggled open — never as a real
+    //    <tbody><tr> that DataTables would try to paginate/sort/export. ──
+    $('#cat_table tbody').on('click', '.btn-toggle-terms', function () {
+        const btn   = this;
+        const tr    = $(btn).closest('tr');
+        const row   = catTable.row(tr);
+        const catId = $(btn).data('cat-id');
+
+        if (row.child.isShown()) {
+            row.child.hide();
+            $(btn).find('i').removeClass('rotate-180');
+        } else {
+            const tpl = document.querySelector('#cat_term_templates [data-cat-id="' + catId + '"]');
+            row.child(tpl ? tpl.innerHTML : '<div class="p-4 text-muted">No term details.</div>').show();
+            $(btn).find('i').addClass('rotate-180');
+        }
+    });
+}
 </script>

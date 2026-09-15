@@ -70,6 +70,7 @@ class SchoolCategoryController extends BaseController
         $data['canAdd']     = $this->grant_access('_add_school_category');
         $data['canEdit']    = $this->grant_access('_edit_school_category');
         $data['canDelete']  = $this->grant_access('_remove_school_category');
+        $data['canExport']  = $this->canImportExport('_export_school_category');
         $data['_view']      = 'app/school/category/index';
 
         return view('app/layouts/main', $data);

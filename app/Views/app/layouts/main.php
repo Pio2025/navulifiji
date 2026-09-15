@@ -329,7 +329,10 @@
 		<!-- jsPDF for datatable export to PDF -->
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-        
+
+		<!-- Shared Import/Export toolbar helper -->
+		<script src="<?php echo base_url(); ?>app/assets/js/custom/shared/export-buttons.js?v=<?= filemtime(FCPATH . 'app/assets/js/custom/shared/export-buttons.js') ?>"></script>
+
 		<!--end::Javascript-->
 	</head>
 	<!--end::Head-->

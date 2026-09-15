@@ -68,6 +68,7 @@ class TaskController extends BaseController
         $data['tasks']    = $this->taskModel->getAllForSchool($schId, $status, $priority);
         $data['status']   = $status;
         $data['priority'] = $priority;
+        $data['canExport'] = $this->canImportExport('_export_task');
         $data['_view']    = 'app/task/all';
 
         return view('app/layouts/main', $data);

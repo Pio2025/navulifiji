@@ -33,10 +33,15 @@ function task_status_badge(string $status): string {
                 <li class="breadcrumb-item text-muted">All Tasks</li>
             </ul>
         </div>
-        <a href="<?= base_url('task') ?>" class="btn btn-light">
-            <i class="ki-duotone ki-arrow-left fs-2"><span class="path1"></span><span class="path2"></span></i>
-            My Tasks
-        </a>
+        <div class="d-flex align-items-center gap-2">
+            <?php if ($canExport): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php endif; ?>
+            <a href="<?= base_url('task') ?>" class="btn btn-light">
+                <i class="ki-duotone ki-arrow-left fs-2"><span class="path1"></span><span class="path2"></span></i>
+                My Tasks
+            </a>
+        </div>
     </div>
 </div>
 <!--end::Toolbar-->
@@ -87,7 +92,7 @@ function task_status_badge(string $status): string {
         </div>
         <?php else: ?>
         <div class="table-responsive">
-            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4" id="tasks_table">
                 <thead>
                     <tr class="fw-bold text-muted fs-7 bg-light">
                         <th class="ps-4">Task</th>
@@ -128,3 +133,58 @@ function task_status_badge(string $status): string {
 
 </div>
 </div>
+
+<script>
+"use strict";
+
+if ($('#tasks_table').length) {
+    // ── DataTable ─────────────────────────────────────────────────────
+    const tasksTable = $('#tasks_table').DataTable({
+        pageLength:  15,
+        lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+        order:       [],
+        dom:
+            '<"row align-items-center mb-4"' +
+                '<"col-sm-6"l>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>' +
+            't' +
+            '<"row align-items-center mt-4"' +
+                '<"col-sm-6 text-muted fs-7"i>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>',
+        language: {
+            lengthMenu:  'Show _MENU_ tasks',
+            info:        'Showing _START_ to _END_ of _TOTAL_ tasks',
+            infoEmpty:   'No tasks found',
+            emptyTable:  '<div class="text-center text-muted py-10">No tasks found</div>',
+            paginate: {
+                previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+                next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            }
+        },
+        columnDefs: [
+            { targets: 6, orderable: false }
+        ],
+        drawCallback: function() {
+            $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+            $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+        }
+    });
+
+    <?php if ($canExport): ?>
+    KTExport.init(tasksTable, {
+        filenamePrefix: 'tasks',
+        title: 'Tasks Report',
+        columns: [
+            { header: 'Task', index: 0 },
+            { header: 'Assignee', index: 1 },
+            { header: 'Created By', index: 2 },
+            { header: 'Priority', index: 3 },
+            { header: 'Status', index: 4 },
+            { header: 'Due', index: 5 },
+        ]
+    });
+    <?php endif; ?>
+}
+</script>

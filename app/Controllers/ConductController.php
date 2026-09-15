@@ -80,6 +80,7 @@ class ConductController extends BaseController
         $data['canAdd']          = $isSuperAdmin || $this->grant_access('_add_conduct');
         $data['canEdit']         = $isSuperAdmin || $this->grant_access('_edit_conduct');
         $data['canDelete']       = $isSuperAdmin || $this->grant_access('_remove_conduct');
+        $data['canExport']       = $this->canImportExport('_export_conduct');
         $data['isSuperAdmin']    = $isSuperAdmin;
         $data['_view']           = 'app/conduct/index';
 

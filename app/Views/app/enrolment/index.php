@@ -13,13 +13,18 @@
                 <li class="breadcrumb-item text-muted">Enrolments</li>
             </ul>
         </div>
-        <?php if ($canAdd): ?>
-        <a href="<?= base_url('enrolment/add') ?>" class="btn btn-sm btn-primary">
-            <i class="ki-duotone ki-plus fs-3 me-1">
-                <span class="path1"></span><span class="path2"></span>
-            </i>
-            Add Enrolment
-        </a>
+        <?php if ($canAdd || $canExport): ?>
+        <div class="d-flex align-items-center gap-2">
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php if ($canAdd): ?>
+            <a href="<?= base_url('enrolment/add') ?>" class="btn btn-sm btn-primary">
+                <i class="ki-duotone ki-plus fs-3 me-1">
+                    <span class="path1"></span><span class="path2"></span>
+                </i>
+                Add Enrolment
+            </a>
+            <?php endif; ?>
+        </div>
         <?php endif; ?>
     </div>
 </div>
@@ -344,6 +349,22 @@ const enrolTable = $('#enrolments_table').DataTable({
         $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
     }
 });
+
+<?php if ($canExport): ?>
+KTExport.init(enrolTable, {
+    filenamePrefix: 'enrolments',
+    title: 'Enrolments Report',
+    columns: [
+        { header: 'Student', index: 0 },
+        { header: 'School', index: 1 },
+        { header: 'Stream / Level', index: 2 },
+        { header: 'Year', index: 3 },
+        { header: 'Term', index: 4 },
+        { header: 'Enrol Date', index: 5 },
+        { header: 'Status', index: 6 },
+    ]
+});
+<?php endif; ?>
 
 $('#enrolment_search').on('keyup', function() {
     enrolTable.search($(this).val()).draw();

@@ -4,6 +4,7 @@ $canAdd      = $canAdd      ?? false;
 $canEdit     = $canEdit     ?? false;
 $canDelete   = $canDelete   ?? false;
 $canAllocate = $canAllocate ?? false;
+$canExport   = $canExport   ?? false;
 ?>
 <!--begin::Toolbar-->
 <div id="kt_app_toolbar" class="app-toolbar py-3 py-lg-6">
@@ -24,6 +25,9 @@ $canAllocate = $canAllocate ?? false;
                 <i class="ki-duotone ki-arrow-right-left fs-2"><span class="path1"></span><span class="path2"></span></i>
                 Room Allocation
             </a>
+            <?php endif; ?>
+            <?php if ($canExport): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
             <?php endif; ?>
             <?php if ($canAdd): ?>
             <a href="<?= base_url('hostel/add') ?>" class="btn btn-primary">
@@ -58,7 +62,7 @@ $canAllocate = $canAllocate ?? false;
                 </div>
                 <?php else: ?>
                 <div class="table-responsive">
-                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                    <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 dataTable" id="hostels_table">
                         <thead>
                             <tr class="fw-bold text-muted fs-7 bg-light">
                                 <th class="ps-4 min-w-40px rounded-start">#</th>
@@ -175,6 +179,8 @@ $canAllocate = $canAllocate ?? false;
 <!--end::Delete confirm modal-->
 
 <script>
+"use strict";
+
 function confirmDelete(btn) {
     var id   = btn.getAttribute('data-hostel-id');
     var name = btn.getAttribute('data-hostel-name');
@@ -182,5 +188,56 @@ function confirmDelete(btn) {
     document.getElementById('deleteHostelForm').action = '<?= base_url('hostel/remove/') ?>' + id;
     var modal = new bootstrap.Modal(document.getElementById('deleteHostelModal'));
     modal.show();
+}
+
+// ── DataTable ─────────────────────────────────────────────────────
+if (document.getElementById('hostels_table')) {
+    const hostelsTable = $('#hostels_table').DataTable({
+        pageLength:  15,
+        lengthMenu:  [[10, 15, 25, 50], [10, 15, 25, 50]],
+        order:       [[1, 'asc']],
+        dom:
+            '<"row align-items-center mb-4"' +
+                '<"col-sm-6"l>' +
+                '<"col-sm-6 d-flex justify-content-end"f>' +
+            '>' +
+            't' +
+            '<"row align-items-center mt-4"' +
+                '<"col-sm-6 text-muted fs-7"i>' +
+                '<"col-sm-6 d-flex justify-content-end"p>' +
+            '>',
+        language: {
+            lengthMenu:  'Show _MENU_ hostels',
+            info:        'Showing _START_ to _END_ of _TOTAL_ hostels',
+            infoEmpty:   'No hostels found',
+            emptyTable:  '<div class="text-center text-muted py-10">No hostel records found</div>',
+            search:      '',
+            searchPlaceholder: 'Search hostels...',
+            paginate: {
+                previous: '<i class="ki-duotone ki-arrow-left fs-4"><span class="path1"></span><span class="path2"></span></i>',
+                next:     '<i class="ki-duotone ki-arrow-right fs-4"><span class="path1"></span><span class="path2"></span></i>',
+            }
+        },
+        columnDefs: [
+            { targets: 5, orderable: false }
+        ],
+        drawCallback: function() {
+            $('.dataTables_paginate .paginate_button').addClass('btn btn-sm btn-light me-1');
+            $('.dataTables_paginate .paginate_button.current').removeClass('btn-light').addClass('btn-primary');
+        }
+    });
+
+    <?php if ($canExport): ?>
+    KTExport.init(hostelsTable, {
+        filenamePrefix: 'hostels',
+        title: 'Hostels Report',
+        columns: [
+            { header: 'Hostel', index: 1 },
+            { header: 'Type', index: 2 },
+            { header: 'Rooms', index: 3 },
+            { header: 'Occupancy', index: 4 },
+        ]
+    });
+    <?php endif; ?>
 }
 </script>

@@ -36,6 +36,7 @@ class LibraryController extends BaseController
         $data['canEdit']     = $isSuperAdmin || $this->grant_access('_edit_book');
         $data['canDelete']   = $isSuperAdmin || $this->grant_access('_remove_book');
         $data['canIssue']    = $isSuperAdmin || $this->grant_access('_issue_book');
+        $data['canExport']   = $this->canImportExport('_export_library');
         $data['_view']       = 'app/library/index';
 
         return view('app/layouts/main', $data);

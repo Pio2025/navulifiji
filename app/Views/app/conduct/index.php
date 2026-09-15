@@ -18,6 +18,9 @@
                 <i class="ki-duotone ki-chart-pie-3 fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
                 Report
             </a>
+            <?php if ($canExport): ?>
+            <?= $this->include('templates/import_export_toolbar', ['canExport' => $canExport]) ?>
+            <?php endif; ?>
             <?php if ($canAdd): ?>
             <a href="<?= base_url('conduct/add') ?>" class="btn btn-sm btn-primary">
                 <i class="ki-duotone ki-plus fs-3 me-1"><span class="path1"></span><span class="path2"></span></i>
@@ -181,7 +184,7 @@
 <script>
 "use strict";
 $(function () {
-    $('#incidents_table').DataTable({
+    const conductTable = $('#incidents_table').DataTable({
         pageLength: 15,
         lengthMenu: [[10, 15, 25, 50, 100], [10, 15, 25, 50, 100]],
         order: [[4, 'desc']],
@@ -211,6 +214,21 @@ $(function () {
             { orderable: false, targets: 6 },
         ],
     });
+
+    <?php if ($canExport): ?>
+    KTExport.init(conductTable, {
+        filenamePrefix: 'conduct_incidents',
+        title: 'Conduct Incidents Report',
+        columns: [
+            { header: 'Student', index: 0 },
+            { header: 'Type', index: 1 },
+            { header: 'Points', index: 2 },
+            { header: 'Severity', index: 3 },
+            { header: 'Date', index: 4 },
+            { header: 'Status', index: 5 },
+        ]
+    });
+    <?php endif; ?>
 });
 
 function confirmDelete(id) {
